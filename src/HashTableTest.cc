@@ -65,7 +65,7 @@ class TestObject {
     uint64_t count;             // Used in forEach callback tests
 
     DISALLOW_COPY_AND_ASSIGN(TestObject);   // NOLINT
-} __attribute__((aligned(64)));
+};// __attribute__((aligned(64)));
 
 /**
  * Unit tests for HashTable::Entry.
