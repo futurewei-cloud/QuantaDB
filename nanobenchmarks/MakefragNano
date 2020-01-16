@@ -24,7 +24,7 @@ $(NANOOBJDIR)/MigrateTabletBenchmark: $(NANOOBJDIR)/MigrateTabletBenchmark.o $(S
 	@mkdir -p $(@D)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-$(NANOOBJDIR)/ObjectManagerBenchmark: $(NANOOBJDIR)/ObjectManagerBenchmark.o $(SHARED_OBJFILES) $(SERVER_OBJFILES)
+$(NANOOBJDIR)/HashObjectManagerBenchmark: $(NANOOBJDIR)/HashObjectManagerBenchmark.o $(SHARED_OBJFILES) $(SERVER_OBJFILES)
 	@mkdir -p $(@D)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
@@ -43,7 +43,7 @@ nanobenchmarks: $(NANOOBJDIR)/CleanerCompactionBenchmark \
                 $(NANOOBJDIR)/HashTableBenchmark \
                 $(NANOOBJDIR)/LogCleanerBenchmark \
                 $(NANOOBJDIR)/MigrateTabletBenchmark \
-                $(NANOOBJDIR)/ObjectManagerBenchmark \
+                $(NANOOBJDIR)/HashObjectManagerBenchmark \
                 $(NANOOBJDIR)/Perf \
                 $(NANOOBJDIR)/RecoverSegmentBenchmark \
                 $(NULL)

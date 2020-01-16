@@ -18,7 +18,7 @@
 #include "Logger.h"
 #include "LogCleaner.h"
 #include "Memory.h"
-#include "ObjectManager.h"
+#include "HashObjectManager.h"
 #include "SegmentIterator.h"
 #include "Seglet.h"
 #include "TabletManager.h"
@@ -40,7 +40,7 @@ class ObjectManagerBenchmark {
     TransactionManager transactionManager;
     TxRecoveryManager txRecoveryManager;
     ServerId serverId;
-    ObjectManager* objectManager;
+    HashObjectManager* objectManager;
 
     ObjectManagerBenchmark(string logSize, string hashTableSize)
         : context()
@@ -68,7 +68,7 @@ class ObjectManagerBenchmark {
         config.master.disableLogCleaner = true;
         config.segmentSize = Segment::DEFAULT_SEGMENT_SIZE;
         config.segletSize = Seglet::DEFAULT_SEGLET_SIZE;
-        objectManager = new ObjectManager(&context,
+        objectManager = new HashObjectManager(&context,
                                           &serverId,
                                           &config,
                                           &tabletManager,

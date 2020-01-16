@@ -27,7 +27,7 @@
 #include "MasterTableMetadata.h"
 #include "Object.h"
 #include "ObjectFinder.h"
-#include "ObjectManager.h"
+#include "HashObjectManager.h"
 #include "ReplicaManager.h"
 #include "RpcResult.h"
 #include "SegmentIterator.h"
@@ -92,7 +92,7 @@ class MasterService : public Service {
     /**
      * The ObjectManager class that is responsible for object storage.
      */
-    ObjectManager objectManager;
+    HashObjectManager objectManager;
 
     /**
      * The TabletManager keeps track of ranges of tables that are assigned to

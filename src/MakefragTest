@@ -114,7 +114,7 @@ TESTS_SRCFILES := \
 		  src/NetUtilTest.cc \
 		  src/ObjectBufferTest.cc \
 		  src/ObjectFinderTest.cc \
-		  src/ObjectManagerTest.cc \
+		  src/HashObjectManagerTest.cc \
 		  src/ObjectPoolTest.cc \
 		  src/ObjectRpcWrapperTest.cc \
 		  src/ObjectTest.cc \

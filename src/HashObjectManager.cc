@@ -20,7 +20,7 @@
 #include "EnumerationIterator.h"
 #include "IndexletManager.h"
 #include "LogEntryRelocator.h"
-#include "ObjectManager.h"
+#include "HashObjectManager.h"
 #include "Object.h"
 #include "PerfStats.h"
 #include "ShortMacros.h"
@@ -37,7 +37,7 @@
 namespace RAMCloud {
 
 /**
- * Construct an ObjectManager.
+ * Construct an HashObjectManager.
  *
  * \param context
  *      Overall information about the RAMCloud server or client.
@@ -68,37 +68,24 @@ namespace RAMCloud {
  *      of ongoing transaction recoveries; these recoveries may need records
  *      stored in the log.
  */
-ObjectManager::ObjectManager(Context* context, ServerId* serverId,
+HashObjectManager::HashObjectManager(Context* context, ServerId* serverId,
                 const ServerConfig* config,
                 TabletManager* tabletManager,
                 MasterTableMetadata* masterTableMetadata,
                 UnackedRpcResults* unackedRpcResults,
                 TransactionManager* transactionManager,
                 TxRecoveryManager* txRecoveryManager)
-    : context(context)
-    , config(config)
-    , tabletManager(tabletManager)
-    , masterTableMetadata(masterTableMetadata)
-    , unackedRpcResults(unackedRpcResults)
-    , transactionManager(transactionManager)
-    , txRecoveryManager(txRecoveryManager)
-    , allocator(config)
-    , replicaManager(context, serverId,
-                     config->master.numReplicas,
-                     config->master.useMinCopysets,
-                     config->master.usePlusOneBackup,
-                     config->master.allowLocalBackup)
-    , segmentManager(context, config, serverId,
-                     allocator, replicaManager, masterTableMetadata)
+    : ObjectManager(context, serverId,
+		    config, tabletManager,
+		    masterTableMetadata, unackedRpcResults,
+		    transactionManager, txRecoveryManager)
     , log(context, config, this, &segmentManager, &replicaManager)
     , objectMap(config->master.hashTableBytes / HashTable::bytesPerCacheLine(),
             config->master.useHugepages)
     , anyWrites(false)
     , hashTableBucketLocks()
     , lockTable(1000, log)
-    , mutex("ObjectManager::mutex")
     , tombstoneRemover(this, &objectMap)
-    , tombstoneProtectorCount(0)
 {
     for (size_t i = 0; i < arrayLength(hashTableBucketLocks); i++)
         hashTableBucketLocks[i].setName("hashTableBucketLock");
@@ -107,7 +94,7 @@ ObjectManager::ObjectManager(Context* context, ServerId* serverId,
 /**
  * The destructor does nothing particularly interesting right now.
  */
-ObjectManager::~ObjectManager()
+HashObjectManager::~HashObjectManager()
 {
     if (tombstoneProtectorCount > 0) {
         LOG(ERROR, "Can't destroy ObjectManager with active "
@@ -127,7 +114,7 @@ ObjectManager::~ObjectManager()
  *      Log reference for log entry to be freed.
  */
 void
-ObjectManager::freeLogEntry(Log::Reference ref)
+HashObjectManager::freeLogEntry(Log::Reference ref)
 {
     assert(ref.toInteger());
     log.free(ref);
@@ -141,7 +128,7 @@ ObjectManager::freeLogEntry(Log::Reference ref)
  * otherwise the server may be timed out and declared failed by the coordinator.
  */
 void
-ObjectManager::initOnceEnlisted()
+HashObjectManager::initOnceEnlisted()
 {
     replicaManager.startFailureMonitor();
 
@@ -151,7 +138,7 @@ ObjectManager::initOnceEnlisted()
 
 /**
  * Read object(s) with the given primary key hashes, previously written by
- * ObjectManager.
+ * HashObjectManager.
  *
  * We'd typically expect one object to match one primary key hash, but it is
  * possible that zero (if that object was removed after client got the key
@@ -177,7 +164,7 @@ ObjectManager::initOnceEnlisted()
  *      Number of objects being returned.
  */
 void
-ObjectManager::readHashes(const uint64_t tableId, uint32_t reqNumHashes,
+HashObjectManager::readHashes(const uint64_t tableId, uint32_t reqNumHashes,
             Buffer* pKHashes, uint32_t initialPKHashesOffset,
             uint32_t maxLength, Buffer* response, uint32_t* respNumHashes,
             uint32_t* numObjects)
@@ -275,7 +262,7 @@ ObjectManager::readHashes(const uint64_t tableId, uint32_t reqNumHashes,
  *      do not contain keys; they are safely ignored.
  */
 inline void
-ObjectManager::prefetchHashTableBucket(SegmentIterator* it)
+HashObjectManager::prefetchHashTableBucket(SegmentIterator* it)
 {
     if (expect_false(it->isDone()))
         return;
@@ -300,7 +287,7 @@ ObjectManager::prefetchHashTableBucket(SegmentIterator* it)
 }
 
 /**
- * Read an object previously written to this ObjectManager.
+ * Read an object previously written to this HashObjectManager.
  *
  * \param key
  *      Key of the object being read.
@@ -322,7 +309,7 @@ ObjectManager::prefetchHashTableBucket(SegmentIterator* it)
  *      (object not found, tablet doesn't exist, reject rules applied, etc).
  */
 Status
-ObjectManager::readObject(Key& key, Buffer* outBuffer,
+HashObjectManager::readObject(Key& key, Buffer* outBuffer,
                 RejectRules* rejectRules, uint64_t* outVersion,
                 bool valueOnly)
 {
@@ -369,7 +356,7 @@ ObjectManager::readObject(Key& key, Buffer* outBuffer,
 }
 
 /**
- * Remove an object previously written to this ObjectManager.
+ * Remove an object previously written to this HashObjectManager.
  *
  * Note that just like writeObject(), this operation will not be stably commited
  * to backups until the syncChanges() method is called. This allows many remove
@@ -402,7 +389,7 @@ ObjectManager::readObject(Key& key, Buffer* outBuffer,
  *      different failures (tablet doesn't exist, reject rules applied, etc).
  */
 Status
-ObjectManager::removeObject(Key& key, RejectRules* rejectRules,
+HashObjectManager::removeObject(Key& key, RejectRules* rejectRules,
                 uint64_t* outVersion, Buffer* removedObjBuffer,
                 RpcResult* rpcResult, uint64_t* rpcResultPtr)
 {
@@ -496,7 +483,7 @@ ObjectManager::removeObject(Key& key, RejectRules* rejectRules,
  * created as part of an aborted recovery.
  */
 void
-ObjectManager::removeOrphanedObjects()
+HashObjectManager::removeOrphanedObjects()
 {
     for (uint64_t i = 0; i < objectMap.getNumBuckets(); i++) {
         HashTableBucketLock lock(*this, i);
@@ -548,7 +535,7 @@ class DelayedIncrementer {
  *       to be replayed into the log.
  */
 void
-ObjectManager::replaySegment(SideLog* sideLog, SegmentIterator& it)
+HashObjectManager::replaySegment(SideLog* sideLog, SegmentIterator& it)
 {
     replaySegment(sideLog, it, NULL);
 }
@@ -559,12 +546,12 @@ ObjectManager::replaySegment(SideLog* sideLog, SegmentIterator& it)
  * master's log. It is also used during tablet migration to receive objects
  * from another master.
  *
- * To support out-of-order replay (necessary for performance), ObjectManager
+ * To support out-of-order replay (necessary for performance), HashObjectManager
  * will keep track of tombstones during replay and remove any older objects
  * encountered to maintain delete consistency.
  *
  * Objects being replayed should belong to existing tablets in the NOT_READY
- * state. ObjectManager uses the state of the tablets to determine when it is
+ * state. HashObjectManager uses the state of the tablets to determine when it is
  * safe to prune tombstones created during replaySegment calls. In particular,
  * tombstones referring to unknown tablets or to tablets not in the NOT_READY
  * state will be pruned. The caller should ensure that when replaying objects
@@ -582,7 +569,7 @@ ObjectManager::replaySegment(SideLog* sideLog, SegmentIterator& it)
  *       each indexlet table.
  */
 void
-ObjectManager::replaySegment(SideLog* sideLog, SegmentIterator& it,
+HashObjectManager::replaySegment(SideLog* sideLog, SegmentIterator& it,
     std::unordered_map<uint64_t, uint64_t>* nextNodeIdMap)
 {
     uint64_t startReplicationTicks = metrics->master.replicaManagerTicks;
@@ -1131,13 +1118,13 @@ ObjectManager::replaySegment(SideLog* sideLog, SegmentIterator& it,
  * log since the previous syncChanges() operation.
  */
 void
-ObjectManager::syncChanges()
+HashObjectManager::syncChanges()
 {
     log.sync();
 }
 
 /**
- * Write an object to this ObjectManager, replacing a previous one if necessary.
+ * Write an object to this HashObjectManager, replacing a previous one if necessary.
  *
  * This method will do everything needed to store an object associated with
  * a particular key. This includes allocating or incrementing version numbers,
@@ -1179,7 +1166,7 @@ ObjectManager::syncChanges()
  *      STATUS_UKNOWN_TABLE may be returned.
  */
 Status
-ObjectManager::writeObject(Object& newObject, RejectRules* rejectRules,
+HashObjectManager::writeObject(Object& newObject, RejectRules* rejectRules,
                 uint64_t* outVersion, Buffer* removedObjBuffer,
                 RpcResult* rpcResult, uint64_t* rpcResultPtr)
 {
@@ -1362,7 +1349,7 @@ ObjectManager::writeObject(Object& newObject, RejectRules* rejectRules,
  *      The pointer to the RpcResult in log is returned.
  */
 void
-ObjectManager::writePrepareFail(RpcResult* rpcResult, uint64_t* rpcResultPtr)
+HashObjectManager::writePrepareFail(RpcResult* rpcResult, uint64_t* rpcResultPtr)
 {
     Log::AppendVector av;
     *(reinterpret_cast<WireFormat::TxPrepare::Vote*>(
@@ -1394,7 +1381,7 @@ ObjectManager::writePrepareFail(RpcResult* rpcResult, uint64_t* rpcResultPtr)
  *      The pointer to the RpcResult in log is returned.
  */
 void
-ObjectManager::writeRpcResultOnly(RpcResult* rpcResult, uint64_t* rpcResultPtr)
+HashObjectManager::writeRpcResultOnly(RpcResult* rpcResult, uint64_t* rpcResultPtr)
 {
     Log::AppendVector av;
     rpcResult->assembleForLog(av.buffer);
@@ -1443,7 +1430,7 @@ ObjectManager::writeRpcResultOnly(RpcResult* rpcResult, uint64_t* rpcResultPtr)
  *      STATUS_UNKNOWN_TABLE may be returned.
  */
 Status
-ObjectManager::prepareOp(PreparedOp& newOp, RejectRules* rejectRules,
+HashObjectManager::prepareOp(PreparedOp& newOp, RejectRules* rejectRules,
                 uint64_t* newOpPtr, bool* isCommitVote,
                 RpcResult* rpcResult, uint64_t* rpcResultPtr)
 {
@@ -1612,7 +1599,7 @@ ObjectManager::prepareOp(PreparedOp& newOp, RejectRules* rejectRules,
  *      STATUS_UNKNOWN_TABLE may be returned.
  */
 Status
-ObjectManager::prepareReadOnly(PreparedOp& newOp, RejectRules* rejectRules,
+HashObjectManager::prepareReadOnly(PreparedOp& newOp, RejectRules* rejectRules,
                 bool* isCommitVote)
 {
     *isCommitVote = false;
@@ -1701,7 +1688,7 @@ ObjectManager::prepareReadOnly(PreparedOp& newOp, RejectRules* rejectRules,
  *      Log reference to the PrepareOp object that represents the lock.
  */
 Status
-ObjectManager::tryGrabTxLock(Object& objToLock, Log::Reference& ref)
+HashObjectManager::tryGrabTxLock(Object& objToLock, Log::Reference& ref)
 {
     uint16_t keyLength = 0;
     const void *keyString = objToLock.getKey(0, &keyLength);
@@ -1729,7 +1716,7 @@ ObjectManager::tryGrabTxLock(Object& objToLock, Log::Reference& ref)
  *      state, it returns STATUS_OK.
  */
 Status
-ObjectManager::writeTxDecisionRecord(TxDecisionRecord& record)
+HashObjectManager::writeTxDecisionRecord(TxDecisionRecord& record)
 {
     // Lock the HashTableBucket to ensure that migration doesn't rip the tablet
     // out from under us.
@@ -1780,7 +1767,7 @@ ObjectManager::writeTxDecisionRecord(TxDecisionRecord& record)
  *      different failures (tablet doesn't exist, reject rules applied, etc).
  */
 Status
-ObjectManager::commitRead(PreparedOp& op, Log::Reference& refToPreparedOp)
+HashObjectManager::commitRead(PreparedOp& op, Log::Reference& refToPreparedOp)
 {
     uint16_t keyLength = 0;
     const void *keyString = op.object.getKey(0, &keyLength);
@@ -1849,7 +1836,7 @@ ObjectManager::commitRead(PreparedOp& op, Log::Reference& refToPreparedOp)
  *      different failures (tablet doesn't exist, reject rules applied, etc).
  */
 Status
-ObjectManager::commitRemove(PreparedOp& op,
+HashObjectManager::commitRemove(PreparedOp& op,
                             Log::Reference& refToPreparedOp,
                             Buffer* removedObjBuffer)
 {
@@ -1955,7 +1942,7 @@ ObjectManager::commitRemove(PreparedOp& op,
  *      STATUS_UKNOWN_TABLE may be returned.
  */
 Status
-ObjectManager::commitWrite(PreparedOp& op,
+HashObjectManager::commitWrite(PreparedOp& op,
                            Log::Reference& refToPreparedOp,
                            Buffer* removedObjBuffer)
 {
@@ -2087,7 +2074,7 @@ ObjectManager::commitWrite(PreparedOp& op,
  *      True, if successful, false otherwise.
  */
 bool
-ObjectManager::flushEntriesToLog(Buffer *logBuffer, uint32_t& numEntries)
+HashObjectManager::flushEntriesToLog(Buffer *logBuffer, uint32_t& numEntries)
 {
     if (numEntries == 0)
         return true;
@@ -2241,7 +2228,7 @@ ObjectManager::flushEntriesToLog(Buffer *logBuffer, uint32_t& numEntries)
  *      the proper state, this should return STATUS_OK
  */
 Status
-ObjectManager::prepareForLog(Object& newObject, Buffer *logBuffer,
+HashObjectManager::prepareForLog(Object& newObject, Buffer *logBuffer,
                              uint32_t* offset, bool *tombstoneAdded)
 {
     uint16_t keyLength = 0;
@@ -2341,7 +2328,7 @@ ObjectManager::prepareForLog(Object& newObject, Buffer *logBuffer,
  *      state, it returns STATUS_OK.
  */
 Status
-ObjectManager::writeTombstone(Key& key, Buffer *logBuffer)
+HashObjectManager::writeTombstone(Key& key, Buffer *logBuffer)
 {
     HashTableBucketLock lock(*this, key);
 
@@ -2390,7 +2377,7 @@ ObjectManager::writeTombstone(Key& key, Buffer *logBuffer)
  *      Buffer pointing to the object in the log being queried.
  */
 uint32_t
-ObjectManager::getTimestamp(LogEntryType type, Buffer& buffer)
+HashObjectManager::getTimestamp(LogEntryType type, Buffer& buffer)
 {
     if (type == LOG_ENTRY_TYPE_OBJ)
         return getObjectTimestamp(buffer);
@@ -2423,7 +2410,7 @@ ObjectManager::getTimestamp(LogEntryType type, Buffer& buffer)
  *      needed, the relocator should not be used.
  */
 void
-ObjectManager::relocate(LogEntryType type, Buffer& oldBuffer,
+HashObjectManager::relocate(LogEntryType type, Buffer& oldBuffer,
                 Log::Reference oldReference, LogEntryRelocator& relocator)
 {
     if (type == LOG_ENTRY_TYPE_OBJ)
@@ -2448,12 +2435,12 @@ ObjectManager::relocate(LogEntryType type, Buffer& oldBuffer,
  * Clean tombstones from #objectMap lazily and in the background.
  *
  * \param objectManager
- *      The instance of ObjectManager that owns the #objectMap.
+ *      The instance of HashObjectManager that owns the #objectMap.
  * \param objectMap
  *      The HashTable that will be purged of tombstones.
  */
-ObjectManager::TombstoneRemover::TombstoneRemover(
-                ObjectManager* objectManager,
+HashObjectManager::TombstoneRemover::TombstoneRemover(
+                HashObjectManager* objectManager,
                 HashTable* objectMap)
     : WorkerTimer(objectManager->context->dispatch)
     , currentBucket(0)
@@ -2467,7 +2454,7 @@ ObjectManager::TombstoneRemover::TombstoneRemover(
  * so we don't lock out other WorkerTimers for a long time.
  */
 void
-ObjectManager::TombstoneRemover::handleTimerEvent()
+HashObjectManager::TombstoneRemover::handleTimerEvent()
 {
     for (int i = 0; i < 100; i++) {
         if (currentBucket >= objectMap->getNumBuckets()) {
@@ -2489,135 +2476,6 @@ ObjectManager::TombstoneRemover::handleTimerEvent()
 }
 
 /**
- * Constructor for TombstoneProtectors. Make sure the tombstone
- * remover isn't running.
- */
-ObjectManager::TombstoneProtector::TombstoneProtector(
-        ObjectManager* objectManager)
-    : objectManager(objectManager)
-{
-    SpinLock::Guard guard(objectManager->mutex);
-    ++objectManager->tombstoneProtectorCount;
-    objectManager->tombstoneRemover.stop();
-}
-
-/**
- * Destructor for TombstoneProtectors: start the remover running if
- * there are no other protector objects in existence.
- */
-ObjectManager::TombstoneProtector::~TombstoneProtector()
-{
-    SpinLock::Guard guard(objectManager->mutex);
-    --objectManager->tombstoneProtectorCount;
-    if (objectManager->tombstoneProtectorCount == 0) {
-        objectManager->tombstoneRemover.currentBucket = 0;
-        objectManager->tombstoneRemover.start(0);
-    }
-}
-
-/**
- * Produce a human-readable description of the contents of a segment.
- * Intended primarily for use in unit tests.
- *
- * \param segment
- *       Segment whose contents should be dumped.
- *
- * \result
- *       A string describing the contents of the segment
- */
-string
-ObjectManager::dumpSegment(Segment* segment)
-{
-    const char* separator = "";
-    string result;
-    SegmentIterator it(*segment);
-    while (!it.isDone()) {
-        LogEntryType type = it.getType();
-        if (type == LOG_ENTRY_TYPE_OBJ) {
-            Buffer buffer;
-            it.appendToBuffer(buffer);
-            Object object(buffer);
-            result += format("%sobject at offset %u, length %u with tableId "
-                    "%lu, key '%.*s'",
-                    separator, it.getOffset(), it.getLength(),
-                    object.getTableId(), object.getKeyLength(),
-                    static_cast<const char*>(object.getKey()));
-        } else if (type == LOG_ENTRY_TYPE_OBJTOMB) {
-            Buffer buffer;
-            it.appendToBuffer(buffer);
-            ObjectTombstone tombstone(buffer);
-            result += format("%stombstone at offset %u, length %u with tableId "
-                    "%lu, key '%.*s'",
-                    separator, it.getOffset(), it.getLength(),
-                    tombstone.getTableId(),
-                    tombstone.getKeyLength(),
-                    static_cast<const char*>(tombstone.getKey()));
-        } else if (type == LOG_ENTRY_TYPE_SAFEVERSION) {
-            Buffer buffer;
-            it.appendToBuffer(buffer);
-            ObjectSafeVersion safeVersion(buffer);
-            result += format("%ssafeVersion at offset %u, length %u with "
-                    "version %lu",
-                    separator, it.getOffset(), it.getLength(),
-                    safeVersion.getSafeVersion());
-        } else if (type == LOG_ENTRY_TYPE_RPCRESULT) {
-            Buffer buffer;
-            it.appendToBuffer(buffer);
-            RpcResult rpcResult(buffer);
-            result += format("%srpcResult at offset %u, length %u with tableId "
-                    "%lu, keyHash 0x%016" PRIX64 ", leaseId %lu, rpcId %lu",
-                    separator, it.getOffset(), it.getLength(),
-                    rpcResult.getTableId(), rpcResult.getKeyHash(),
-                    rpcResult.getLeaseId(), rpcResult.getRpcId());
-        } else if (type == LOG_ENTRY_TYPE_PREP) {
-            Buffer buffer;
-            it.appendToBuffer(buffer);
-            PreparedOp op(buffer, 0, buffer.size());
-            result += format("%spreparedOp at offset %u, length %u with "
-                    "tableId %lu, key '%.*s', leaseId %lu, rpcId %lu",
-                    separator, it.getOffset(), it.getLength(),
-                    op.object.getTableId(), op.object.getKeyLength(),
-                    static_cast<const char*>(op.object.getKey()),
-                    op.header.clientId, op.header.rpcId);
-        } else if (type == LOG_ENTRY_TYPE_PREPTOMB) {
-            Buffer buffer;
-            it.appendToBuffer(buffer);
-            PreparedOpTombstone opTomb(buffer, 0);
-            result += format("%spreparedOpTombstone at offset %u, length %u "
-                    "with tableId %lu, keyHash 0x%016" PRIX64 ", leaseId %lu, "
-                    "rpcId %lu",
-                    separator, it.getOffset(), it.getLength(),
-                    opTomb.header.tableId, opTomb.header.keyHash,
-                    opTomb.header.clientLeaseId, opTomb.header.rpcId);
-        } else if (type == LOG_ENTRY_TYPE_TXDECISION) {
-            Buffer buffer;
-            it.appendToBuffer(buffer);
-            TxDecisionRecord decisionRecord(buffer);
-            result += format("%stxDecision at offset %u, length %u with tableId"
-                    " %lu, keyHash 0x%016" PRIX64 ", leaseId %lu",
-                    separator, it.getOffset(), it.getLength(),
-                    decisionRecord.getTableId(), decisionRecord.getKeyHash(),
-                    decisionRecord.getLeaseId());
-
-        } else if (type == LOG_ENTRY_TYPE_TXPLIST) {
-            Buffer buffer;
-            it.appendToBuffer(buffer);
-            ParticipantList participantList(buffer);
-            result += format("%sparticipantList at offset %u, length %u with "
-                    "TxId: (leaseId %lu, rpcId %lu) containing %u entries",
-                    separator, it.getOffset(), it.getLength(),
-                    participantList.getTransactionId().clientLeaseId,
-                    participantList.getTransactionId().clientTransactionId,
-                    participantList.getParticipantCount());
-        }
-
-        it.next();
-        separator = " | ";
-    }
-    return result;
-}
-
-/**
  * Callback used by the Log to determine the modification timestamp of an
  * Object. Timestamps are stored in the Object itself, rather than in the
  * Log, since not all Log entries need timestamps and other parts of the
@@ -2629,7 +2487,7 @@ ObjectManager::dumpSegment(Segment* segment)
  *      The Object's modification timestamp.
  */
 uint32_t
-ObjectManager::getObjectTimestamp(Buffer& buffer)
+HashObjectManager::getObjectTimestamp(Buffer& buffer)
 {
     Object object(buffer);
     return object.getTimestamp();
@@ -2644,7 +2502,7 @@ ObjectManager::getObjectTimestamp(Buffer& buffer)
  *      The tombstone's creation timestamp.
  */
 uint32_t
-ObjectManager::getTombstoneTimestamp(Buffer& buffer)
+HashObjectManager::getTombstoneTimestamp(Buffer& buffer)
 {
     ObjectTombstone tomb(buffer);
     return tomb.getTimestamp();
@@ -2660,7 +2518,7 @@ ObjectManager::getTombstoneTimestamp(Buffer& buffer)
  *      The record's creation timestamp.
  */
 uint32_t
-ObjectManager::getTxDecisionRecordTimestamp(Buffer& buffer)
+HashObjectManager::getTxDecisionRecordTimestamp(Buffer& buffer)
 {
     TxDecisionRecord record(buffer);
     return record.getTimestamp();
@@ -2701,7 +2559,7 @@ ObjectManager::getTxDecisionRecordTimestamp(Buffer& buffer)
  *      True if an entry is found matching the given key, otherwise false.
  */
 bool
-ObjectManager::lookup(HashTableBucketLock& lock, Key& key,
+HashObjectManager::lookup(HashTableBucketLock& lock, Key& key,
                 LogEntryType& outType, Buffer& buffer,
                 uint64_t* outVersion,
                 Log::Reference* outReference,
@@ -2755,7 +2613,7 @@ ObjectManager::lookup(HashTableBucketLock& lock, Key& key,
  *      in the hash table.
  */
 bool
-ObjectManager::remove(HashTableBucketLock& lock, Key& key)
+HashObjectManager::remove(HashTableBucketLock& lock, Key& key)
 {
     HashTable::Candidates candidates;
     objectMap.lookup(key.getHash(), candidates);
@@ -2788,10 +2646,10 @@ ObjectManager::remove(HashTableBucketLock& lock, Key& key)
  *      stored.
  */
 void
-ObjectManager::removeIfOrphanedObject(uint64_t reference, void *cookie)
+HashObjectManager::removeIfOrphanedObject(uint64_t reference, void *cookie)
 {
     CleanupParameters* params = reinterpret_cast<CleanupParameters*>(cookie);
-    ObjectManager* objectManager = params->objectManager;
+    HashObjectManager* objectManager = params->objectManager;
     LogEntryType type;
     Buffer buffer;
 
@@ -2820,10 +2678,10 @@ ObjectManager::removeIfOrphanedObject(uint64_t reference, void *cookie)
  * held.
  */
 void
-ObjectManager::removeIfTombstone(uint64_t maybeTomb, void *cookie)
+HashObjectManager::removeIfTombstone(uint64_t maybeTomb, void *cookie)
 {
     CleanupParameters* params = reinterpret_cast<CleanupParameters*>(cookie);
-    ObjectManager* objectManager = params->objectManager;
+    HashObjectManager* objectManager = params->objectManager;
     LogEntryType type;
     Buffer buffer;
 
@@ -2865,7 +2723,7 @@ ObjectManager::removeIfTombstone(uint64_t maybeTomb, void *cookie)
  * hell in unit tests.
  */
 void
-ObjectManager::removeTombstones()
+HashObjectManager::removeTombstones()
 {
     for (uint64_t i = 0; i < objectMap.getNumBuckets(); i++) {
         HashTableBucketLock lock(*this, i);
@@ -2890,7 +2748,7 @@ ObjectManager::removeTombstones()
  *      the return value indicates the reason for the rejection.
  */
 Status
-ObjectManager::rejectOperation(const RejectRules* rejectRules, uint64_t version)
+HashObjectManager::rejectOperation(const RejectRules* rejectRules, uint64_t version)
 {
     if (version == VERSION_NONEXISTENT) {
         if (rejectRules->doesntExist)
@@ -2930,7 +2788,7 @@ ObjectManager::rejectOperation(const RejectRules* rejectRules, uint64_t version)
  *      cleaner will note the failure, allocate more memory, and try again.
  */
 void
-ObjectManager::relocateObject(Buffer& oldBuffer, Log::Reference oldReference,
+HashObjectManager::relocateObject(Buffer& oldBuffer, Log::Reference oldReference,
                 LogEntryRelocator& relocator)
 {
     Key key(LOG_ENTRY_TYPE_OBJ, oldBuffer);
@@ -2984,7 +2842,7 @@ ObjectManager::relocateObject(Buffer& oldBuffer, Log::Reference oldReference,
  *      The reference to verify for presence in the hash table.
  */
 bool
-ObjectManager::keyPointsAtReference(Key& key, AbstractLog::Reference reference)
+HashObjectManager::keyPointsAtReference(Key& key, AbstractLog::Reference reference)
 {
 
     HashTableBucketLock lock(*this, key);
@@ -3022,7 +2880,7 @@ ObjectManager::keyPointsAtReference(Key& key, AbstractLog::Reference reference)
  *      cleaner will note the failure, allocate more memory, and try again.
  */
 void
-ObjectManager::relocateRpcResult(Buffer& oldBuffer,
+HashObjectManager::relocateRpcResult(Buffer& oldBuffer,
         LogEntryRelocator& relocator)
 {
     RpcResult rpcResult(oldBuffer);
@@ -3076,7 +2934,7 @@ ObjectManager::relocateRpcResult(Buffer& oldBuffer,
  *      cleaner will note the failure, allocate more memory, and try again.
  */
 void
-ObjectManager::relocatePreparedOp(Buffer& oldBuffer,
+HashObjectManager::relocatePreparedOp(Buffer& oldBuffer,
         Log::Reference oldReference,
         LogEntryRelocator& relocator)
 {
@@ -3131,7 +2989,7 @@ ObjectManager::relocatePreparedOp(Buffer& oldBuffer,
  *      cleaner will note the failure, allocate more memory, and try again.
  */
 void
-ObjectManager::relocatePreparedOpTombstone(Buffer& oldBuffer,
+HashObjectManager::relocatePreparedOpTombstone(Buffer& oldBuffer,
         LogEntryRelocator& relocator)
 {
     PreparedOpTombstone opTomb(oldBuffer, 0);
@@ -3175,7 +3033,7 @@ ObjectManager::relocatePreparedOpTombstone(Buffer& oldBuffer,
  *      cleaner will note the failure, allocate more memory, and try again.
  */
 void
-ObjectManager::relocateTombstone(Buffer& oldBuffer, Log::Reference oldReference,
+HashObjectManager::relocateTombstone(Buffer& oldBuffer, Log::Reference oldReference,
                 LogEntryRelocator& relocator)
 {
     ObjectTombstone tomb(oldBuffer);
@@ -3239,7 +3097,7 @@ ObjectManager::relocateTombstone(Buffer& oldBuffer, Log::Reference oldReference,
  *      cleaner will note the failure, allocate more memory, and try again.
  */
 void
-ObjectManager::relocateTxDecisionRecord(
+HashObjectManager::relocateTxDecisionRecord(
         Buffer& oldBuffer, LogEntryRelocator& relocator)
 {
     TxDecisionRecord record(oldBuffer);
@@ -3278,7 +3136,7 @@ ObjectManager::relocateTxDecisionRecord(
  *      exist. In either case, the hash table will refer to the given reference.
  */
 bool
-ObjectManager::replace(HashTableBucketLock& lock, Key& key,
+HashObjectManager::replace(HashTableBucketLock& lock, Key& key,
                 Log::Reference reference)
 {
     HashTable::Candidates candidates;

@@ -117,7 +117,7 @@ SHARED_SRCFILES := \
 		   src/Object.cc \
 		   src/ObjectBuffer.cc \
 		   src/ObjectFinder.cc \
-		   src/ObjectManager.cc \
+		   src/HashObjectManager.cc \
 		   src/ObjectRpcWrapper.cc \
 		   src/OptionParser.cc \
 		   src/ParticipantList.cc \

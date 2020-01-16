@@ -332,7 +332,7 @@ class MasterServiceTest : public ::testing::Test {
     isObjectLocked(Key& key)
     {
         service->objectManager.objectMap.prefetchBucket(key.getHash());
-        ObjectManager::HashTableBucketLock lock(service->objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(service->objectManager, key);
 
         TabletManager::Tablet tablet;
         if (!service->objectManager.tabletManager->getTablet(key, &tablet))

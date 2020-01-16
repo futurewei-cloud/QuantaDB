@@ -14,7 +14,7 @@
  */
 
 #include "TestUtil.h"
-#include "ObjectManager.h"
+#include "HashObjectManager.h"
 
 #include <gtest/gtest.h>
 #include "btreeRamCloud/Btree.h"
@@ -47,7 +47,7 @@ class BtreeTest: public ::testing::Test {
     TransactionManager transactionManager;
     TxRecoveryManager txRecoveryManager;
     TabletManager tabletManager;
-    ObjectManager objectManager;
+    HashObjectManager objectManager;
     uint64_t tableId;
 
     BtreeTest()

@@ -41,7 +41,7 @@ class TransactionManagerTest : public ::testing::Test {
     ServerList serverList;
     ServerConfig masterConfig;
     MasterTableMetadata masterTableMetadata;
-    ObjectManager objectManager;
+    HashObjectManager objectManager;
     UnackedRpcResults unackedRpcResults;
     TransactionManager transactionManager;
     TxRecoveryManager txRecoveryManager;

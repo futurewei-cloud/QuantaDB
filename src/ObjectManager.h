@@ -57,70 +57,85 @@ namespace RAMCloud {
 class ObjectManager : public LogEntryHandlers,
                       public AbstractLog::ReferenceFreer {
   public:
-
     ObjectManager(Context* context, ServerId* serverId,
-                const ServerConfig* config,
-                TabletManager* tabletManager,
-                MasterTableMetadata* masterTableMetadata,
-                UnackedRpcResults* unackedRpcResults,
-                TransactionManager* transactionManager,
-                TxRecoveryManager* txRecoveryManager);
-    virtual ~ObjectManager();
-    virtual void freeLogEntry(Log::Reference ref);
-    void initOnceEnlisted();
+		  const ServerConfig* config,
+		  TabletManager* tabletManager,
+		  MasterTableMetadata* masterTableMetadata,
+		  UnackedRpcResults* unackedRpcResults,
+		  TransactionManager* transactionManager,
+		  TxRecoveryManager* txRecoveryManager)
+    : context(context)
+    , config(config)
+    , tabletManager(tabletManager)
+    , masterTableMetadata(masterTableMetadata)
+    , unackedRpcResults(unackedRpcResults)
+    , transactionManager(transactionManager)
+    , txRecoveryManager(txRecoveryManager)
+    , allocator(config)
+    , replicaManager(context, serverId,
+                     config->master.numReplicas,
+                     config->master.useMinCopysets,
+                     config->master.usePlusOneBackup,
+                     config->master.allowLocalBackup)
+    , segmentManager(context, config, serverId,
+                     allocator, replicaManager, masterTableMetadata)
+    , mutex("ObjectManager::mutex")
+    , tombstoneProtectorCount(0) { }
 
-    void readHashes(const uint64_t tableId, uint32_t reqNumHashes,
+    virtual void freeLogEntry(Log::Reference ref) = 0;
+    virtual void initOnceEnlisted() = 0;
+
+    virtual void readHashes(const uint64_t tableId, uint32_t reqNumHashes,
                 Buffer* pKHashes, uint32_t initialPKHashesOffset,
                 uint32_t maxLength, Buffer* response, uint32_t* respNumHashes,
-                uint32_t* numObjects);
-    void prefetchHashTableBucket(SegmentIterator* it);
-    Status readObject(Key& key, Buffer* outBuffer,
+                uint32_t* numObjects) = 0;
+    virtual Status readObject(Key& key, Buffer* outBuffer,
                 RejectRules* rejectRules, uint64_t* outVersion,
-                bool valueOnly = false);
-    Status removeObject(Key& key, RejectRules* rejectRules,
+                bool valueOnly = false) = 0;
+    virtual Status removeObject(Key& key, RejectRules* rejectRules,
                 uint64_t* outVersion, Buffer* removedObjBuffer = NULL,
-                RpcResult* rpcResult = NULL, uint64_t* rpcResultPtr = NULL);
-    void removeOrphanedObjects();
-    void replaySegment(SideLog* sideLog, SegmentIterator& it,
-                std::unordered_map<uint64_t, uint64_t>* nextNodeIdMap);
-    void replaySegment(SideLog* sideLog, SegmentIterator& it);
-    void syncChanges();
-    Status writeObject(Object& newObject, RejectRules* rejectRules,
+                RpcResult* rpcResult = NULL, uint64_t* rpcResultPtr = NULL) = 0;
+    virtual void removeOrphanedObjects() = 0;
+    virtual void replaySegment(SideLog* sideLog, SegmentIterator& it,
+                std::unordered_map<uint64_t, uint64_t>* nextNodeIdMap) = 0;
+    virtual void replaySegment(SideLog* sideLog, SegmentIterator& it) = 0;
+    virtual void syncChanges() = 0;
+    virtual Status writeObject(Object& newObject, RejectRules* rejectRules,
                 uint64_t* outVersion, Buffer* removedObjBuffer = NULL,
-                RpcResult* rpcResult = NULL, uint64_t* rpcResultPtr = NULL);
-    bool keyPointsAtReference(Key& k, AbstractLog::Reference oldReference);
-    void writePrepareFail(RpcResult* rpcResult, uint64_t* rpcResultPtr);
-    void writeRpcResultOnly(RpcResult* rpcResult, uint64_t* rpcResultPtr);
-    Status prepareOp(PreparedOp& newOp, RejectRules* rejectRules,
+                RpcResult* rpcResult = NULL, uint64_t* rpcResultPtr = NULL) = 0;
+    virtual bool keyPointsAtReference(Key& k, AbstractLog::Reference oldReference) = 0;
+    virtual void writePrepareFail(RpcResult* rpcResult, uint64_t* rpcResultPtr) = 0;
+    virtual void writeRpcResultOnly(RpcResult* rpcResult, uint64_t* rpcResultPtr) = 0;
+    virtual Status prepareOp(PreparedOp& newOp, RejectRules* rejectRules,
                 uint64_t* newOpPtr, bool* isCommitVote,
-                RpcResult* rpcResult, uint64_t* rpcResultPtr);
-    Status prepareReadOnly(PreparedOp& newOp, RejectRules* rejectRules,
-                bool* isCommitVote);
-    Status tryGrabTxLock(Object& objToLock, Log::Reference& ref);
-    Status writeTxDecisionRecord(TxDecisionRecord& record);
-    Status commitRead(PreparedOp& op, Log::Reference& refToPreparedOp);
-    Status commitRemove(PreparedOp& op, Log::Reference& refToPreparedOp,
-                        Buffer* removedObjBuffer = NULL);
-    Status commitWrite(PreparedOp& op, Log::Reference& refToPreparedOp,
-                        Buffer* removedObjBuffer = NULL);
+                RpcResult* rpcResult, uint64_t* rpcResultPtr) = 0;
+    virtual Status prepareReadOnly(PreparedOp& newOp, RejectRules* rejectRules,
+                bool* isCommitVote) = 0;
+    virtual Status tryGrabTxLock(Object& objToLock, Log::Reference& ref) = 0;
+    virtual Status writeTxDecisionRecord(TxDecisionRecord& record) = 0;
+    virtual Status commitRead(PreparedOp& op, Log::Reference& refToPreparedOp) = 0;
+    virtual Status commitRemove(PreparedOp& op, Log::Reference& refToPreparedOp,
+                        Buffer* removedObjBuffer = NULL) = 0;
+    virtual Status commitWrite(PreparedOp& op, Log::Reference& refToPreparedOp,
+                        Buffer* removedObjBuffer = NULL) = 0;
 
     /**
      * The following three methods are used when multiple log entries
      * need to be committed to the log atomically.
      */
 
-    bool flushEntriesToLog(Buffer *logBuffer, uint32_t& numEntries);
-    Status prepareForLog(Object& newObject, Buffer *logBuffer,
-                uint32_t* offset, bool *tombstoneAdded);
-    Status writeTombstone(Key& key, Buffer *logBuffer);
+    virtual bool flushEntriesToLog(Buffer *logBuffer, uint32_t& numEntries) = 0;
+    virtual Status prepareForLog(Object& newObject, Buffer *logBuffer,
+                uint32_t* offset, bool *tombstoneAdded) = 0;
+    virtual Status writeTombstone(Key& key, Buffer *logBuffer) = 0;
 
     /**
      * The following two methods are used by the log cleaner. They aren't
      * intended to be called from any other modules.
      */
-    uint32_t getTimestamp(LogEntryType type, Buffer& buffer);
-    void relocate(LogEntryType type, Buffer& oldBuffer,
-                Log::Reference oldReference, LogEntryRelocator& relocator);
+    virtual uint32_t getTimestamp(LogEntryType type, Buffer& buffer) = 0;
+    virtual void relocate(LogEntryType type, Buffer& oldBuffer,
+                Log::Reference oldReference, LogEntryRelocator& relocator) = 0;
 
     /**
      * The following methods exist because our current abstraction doesn't quite
@@ -130,9 +145,11 @@ class ObjectManager : public LogEntryHandlers,
      *
      * If you're considering using these methods, please think twice.
      */
-    Log* getLog() { return &log; }
-    ReplicaManager* getReplicaManager() { return &replicaManager; }
-    HashTable* getObjectMap() { return &objectMap; }
+    virtual Log* getLog() = 0;
+    virtual ReplicaManager* getReplicaManager() = 0;
+    virtual HashTable* getObjectMap() = 0;
+    virtual void stopTombstoneRemover() = 0;
+    virtual void startTombstoneRemover() = 0;
 
     /**
      * An object of this class must be held by any activity that places
@@ -144,8 +161,25 @@ class ObjectManager : public LogEntryHandlers,
      */
     class TombstoneProtector {
       public:
-        explicit TombstoneProtector(ObjectManager* objectManager);
-        ~TombstoneProtector();
+        TombstoneProtector(ObjectManager* objectManager)
+	  : objectManager(objectManager)
+        {
+	    SpinLock::Guard guard(objectManager->mutex);
+	    ++objectManager->tombstoneProtectorCount;
+	    //objectManager->tombstoneRemover.stop();
+	    objectManager->stopTombstoneRemover();
+	}
+        ~TombstoneProtector()
+	{
+	    SpinLock::Guard guard(objectManager->mutex);
+	    --objectManager->tombstoneProtectorCount;
+	    if (objectManager->tombstoneProtectorCount == 0) {
+	      //objectManager->tombstoneRemover.currentBucket = 0;
+	      //objectManager->tombstoneRemover.start(0);
+	        objectManager->startTombstoneRemover();
+	    }
+	}
+
 
       PRIVATE:
         // Saved copy of the constructor argument.
@@ -154,154 +188,108 @@ class ObjectManager : public LogEntryHandlers,
         DISALLOW_COPY_AND_ASSIGN(TombstoneProtector);
     };
 
-  PRIVATE:
+  PROTECTED:
+
     /**
-     * An instance of this class locks the bucket of the hash table that a given
-     * key maps into. The lock is taken in the constructor and released in the
-     * destructor.
+     * Produce a human-readable description of the contents of a segment.
+     * Intended primarily for use in unit tests.
      *
-     * Taking the lock for a particular key serializes modifications to objects
-     * belonging to that key. ObjectManager maintains a number of fine-grained
-     * locks to reduce the likelihood of contention between operations on
-     * different keys (see ObjectManager::hashTableBucketLocks).
+     * \param segment
+     *       Segment whose contents should be dumped.
+     *
+     * \result
+     *       A string describing the contents of the segment
      */
-    class HashTableBucketLock {
-      public:
-        /**
-         * This constructor finds the bucket a given key maps to in the hash
-         * table and acquires the lock.
-         *
-         * \param objectManager
-         *      The ObjectManager that owns the hash table bucket to lock.
-         * \param key
-         *      Key whose corresponding bucket in the hash table will be locked.
-         */
-        HashTableBucketLock(ObjectManager& objectManager, Key& key)
-            : lock(NULL)
-        {
-            uint64_t unused;
-            uint64_t bucket = HashTable::findBucketIndex(
-                        objectManager.objectMap.getNumBuckets(),
-                        key.getHash(), &unused);
-            takeBucketLock(objectManager, bucket);
-        }
+    static string dumpSegment(Segment* segment)
+    {
+        const char* separator = "";
+	string result;
+	SegmentIterator it(*segment);
+	while (!it.isDone()) {
+	    LogEntryType type = it.getType();
+	    if (type == LOG_ENTRY_TYPE_OBJ) {
+	        Buffer buffer;
+		it.appendToBuffer(buffer);
+		Object object(buffer);
+		result += format("%sobject at offset %u, length %u with tableId "
+				 "%lu, key '%.*s'",
+				 separator, it.getOffset(), it.getLength(),
+				 object.getTableId(), object.getKeyLength(),
+				 static_cast<const char*>(object.getKey()));
+	    } else if (type == LOG_ENTRY_TYPE_OBJTOMB) {
+	        Buffer buffer;
+		it.appendToBuffer(buffer);
+		ObjectTombstone tombstone(buffer);
+		result += format("%stombstone at offset %u, length %u with tableId "
+				 "%lu, key '%.*s'",
+				 separator, it.getOffset(), it.getLength(),
+				 tombstone.getTableId(),
+				 tombstone.getKeyLength(),
+				 static_cast<const char*>(tombstone.getKey()));
+	    } else if (type == LOG_ENTRY_TYPE_SAFEVERSION) {
+	        Buffer buffer;
+		it.appendToBuffer(buffer);
+		ObjectSafeVersion safeVersion(buffer);
+		result += format("%ssafeVersion at offset %u, length %u with "
+				 "version %lu",
+				 separator, it.getOffset(), it.getLength(),
+				 safeVersion.getSafeVersion());
+	    } else if (type == LOG_ENTRY_TYPE_RPCRESULT) {
+	        Buffer buffer;
+		it.appendToBuffer(buffer);
+		RpcResult rpcResult(buffer);
+		result += format("%srpcResult at offset %u, length %u with tableId "
+				 "%lu, keyHash 0x%016" PRIX64 ", leaseId %lu, rpcId %lu",
+				 separator, it.getOffset(), it.getLength(),
+				 rpcResult.getTableId(), rpcResult.getKeyHash(),
+				 rpcResult.getLeaseId(), rpcResult.getRpcId());
+	    } else if (type == LOG_ENTRY_TYPE_PREP) {
+	        Buffer buffer;
+		it.appendToBuffer(buffer);
+		PreparedOp op(buffer, 0, buffer.size());
+		result += format("%spreparedOp at offset %u, length %u with "
+				 "tableId %lu, key '%.*s', leaseId %lu, rpcId %lu",
+				 separator, it.getOffset(), it.getLength(),
+				 op.object.getTableId(), op.object.getKeyLength(),
+				 static_cast<const char*>(op.object.getKey()),
+				 op.header.clientId, op.header.rpcId);
+	    } else if (type == LOG_ENTRY_TYPE_PREPTOMB) {
+	        Buffer buffer;
+		it.appendToBuffer(buffer);
+		PreparedOpTombstone opTomb(buffer, 0);
+		result += format("%spreparedOpTombstone at offset %u, length %u "
+				 "with tableId %lu, keyHash 0x%016" PRIX64 ", leaseId %lu, "
+				 "rpcId %lu",
+				 separator, it.getOffset(), it.getLength(),
+				 opTomb.header.tableId, opTomb.header.keyHash,
+				 opTomb.header.clientLeaseId, opTomb.header.rpcId);
+	    } else if (type == LOG_ENTRY_TYPE_TXDECISION) {
+	        Buffer buffer;
+		it.appendToBuffer(buffer);
+		TxDecisionRecord decisionRecord(buffer);
+		result += format("%stxDecision at offset %u, length %u with tableId"
+				 " %lu, keyHash 0x%016" PRIX64 ", leaseId %lu",
+				 separator, it.getOffset(), it.getLength(),
+				 decisionRecord.getTableId(), decisionRecord.getKeyHash(),
+				 decisionRecord.getLeaseId());
 
-        /**
-         * This constructor acquires the lock for a particular bucket index
-         * in the hash table.
-         *
-         * \param objectManager
-         *      The ObjectManager that owns the hash table bucket to lock.
-         * \param bucket
-         *      Index of the hash table bucket to lock.
-         */
-        HashTableBucketLock(ObjectManager& objectManager, uint64_t bucket)
-            : lock(NULL)
-        {
-            takeBucketLock(objectManager, bucket);
-        }
+	    } else if (type == LOG_ENTRY_TYPE_TXPLIST) {
+	        Buffer buffer;
+		it.appendToBuffer(buffer);
+		ParticipantList participantList(buffer);
+		result += format("%sparticipantList at offset %u, length %u with "
+				 "TxId: (leaseId %lu, rpcId %lu) containing %u entries",
+				 separator, it.getOffset(), it.getLength(),
+				 participantList.getTransactionId().clientLeaseId,
+				 participantList.getTransactionId().clientTransactionId,
+				 participantList.getParticipantCount());
+	    }
 
-        ~HashTableBucketLock()
-        {
-            lock->unlock();
-        }
-
-      PRIVATE:
-        /**
-         * Helper method that actually acquires the appropriate bucket lock.
-         * Used by both constructors.
-         *
-         * \param objectManager
-         *      The ObjectManager that owns the hash table bucket to lock.
-         * \param bucket
-         *      Index of the hash table bucket to lock.
-         */
-        void
-        takeBucketLock(ObjectManager& objectManager, uint64_t bucket)
-        {
-            assert(lock == NULL);
-            uint32_t numLocks = arrayLength(objectManager.hashTableBucketLocks);
-            assert(BitOps::isPowerOfTwo(numLocks));
-            uint64_t lockIndex = bucket & (numLocks - 1);
-            lock = &objectManager.hashTableBucketLocks[lockIndex];
-            lock->lock();
-        }
-
-        /// The hash table bucket spinlock this object acquired in the
-        /// constructor and will release in the destructor.
-        SpinLock* lock;
-
-        DISALLOW_COPY_AND_ASSIGN(HashTableBucketLock);
-    };
-
-    /**
-     * Struct used to pass parameters into the removeIfOrphanedObject and
-     * removeIfTombstone methods through the generic HashTable::forEachInBucket
-     * method.
-     */
-    struct CleanupParameters {
-        /// Pointer to the ObjectManager class owning the hash table.
-        ObjectManager* objectManager;
-
-        /// Pointer to the locking object that is keeping the hash table bucket
-        /// currently begin iterated thread-safe.
-        ObjectManager::HashTableBucketLock* lock;
-    };
-
-    /**
-     * This object executes in the background (as a WorkerTimer) to remove
-     * tombstones that were added to the objectMap by replaySegment().
-     */
-    class TombstoneRemover : public WorkerTimer {
-      public:
-        TombstoneRemover(ObjectManager* objectManager,
-                        HashTable* objectMap);
-        void handleTimerEvent();
-
-      PRIVATE:
-        /// Which bucket of #objectMap should be cleaned out next.
-        uint64_t currentBucket;
-
-        /// The ObjectManager that owns the hash table to remove tombstones
-        /// from in the #recoveryCleanup callback.
-        ObjectManager* objectManager;
-
-        /// The hash table to be purged of tombstones.
-        HashTable* objectMap;
-
-        friend class TombstoneProtector;
-
-        DISALLOW_COPY_AND_ASSIGN(TombstoneRemover);
-    };
-
-    static string dumpSegment(Segment* segment);
-    uint32_t getObjectTimestamp(Buffer& buffer);
-    uint32_t getTombstoneTimestamp(Buffer& buffer);
-    uint32_t getTxDecisionRecordTimestamp(Buffer& buffer);
-    bool lookup(HashTableBucketLock& lock, Key& key,
-                LogEntryType& outType, Buffer& buffer,
-                uint64_t* outVersion = NULL,
-                Log::Reference* outReference = NULL,
-                HashTable::Candidates* outCandidates = NULL);
-    friend void recoveryCleanup(uint64_t maybeTomb, void *cookie);
-    bool remove(HashTableBucketLock& lock, Key& key);
-    static void removeIfOrphanedObject(uint64_t reference, void *cookie);
-    static void removeIfTombstone(uint64_t maybeTomb, void *cookie);
-    void removeTombstones();
-    Status rejectOperation(const RejectRules* rejectRules, uint64_t version)
-                __attribute__((warn_unused_result));
-    void relocateObject(Buffer& oldBuffer, Log::Reference oldReference,
-                LogEntryRelocator& relocator);
-    void relocatePreparedOp(Buffer& oldBuffer, Log::Reference oldReference,
-                LogEntryRelocator& relocator);
-    void relocatePreparedOpTombstone(Buffer& oldBuffer,
-                                     LogEntryRelocator& relocator);
-    void relocateRpcResult(Buffer& oldBuffer, LogEntryRelocator& relocator);
-    void relocateTombstone(Buffer& oldBuffer, Log::Reference oldReference,
-            LogEntryRelocator& relocator);
-    void relocateTxDecisionRecord(
-            Buffer& oldBuffer, LogEntryRelocator& relocator);
-    bool replace(HashTableBucketLock& lock, Key& key, Log::Reference reference);
+	    it.next();
+	    separator = " | ";
+	}
+	return result;
+    }
 
     /**
      * Shared RAMCloud information.
@@ -364,51 +352,9 @@ class ObjectManager : public LogEntryHandlers,
     SegmentManager segmentManager;
 
     /**
-     * The log stores all of our objects and tombstones both in memory and on
-     * backups.
-     */
-    Log log;
-
-    /**
-     * The (table ID, key, keyLength) to #RAMCloud::Object pointer map for all
-     * objects stored on this server. Before accessing objects via the hash
-     * table, you usually need to check that the tablet still lives on this
-     * server; objects from deleted tablets are not immediately purged from the
-     * hash table.
-     */
-    HashTable objectMap;
-
-    /**
-     * Used to identify the first write request, so that we can initialize
-     * connections to all backups at that time (this is a temporary kludge
-     * that needs to be replaced with a better solution).  False means this
-     * service has not yet processed any write requests.
-     */
-    bool anyWrites;
-
-    /**
-     * Locks that serialise all object updates (creations, overwrites,
-     * deletions, and cleaning relocations) for the same key. This protects
-     * regular, parallel RPC operations from one another and from the log
-     * cleaner.
-     */
-    UnnamedSpinLock hashTableBucketLocks[1024];
-
-    /**
-     * Locks objects during transactions.
-     */
-    LockTable lockTable;
-
-    /**
      * Protects access to tombstoneRemover and tombstoneProtectorCount.
      */
     SpinLock mutex;
-
-    /**
-     * This object automatically garbage collects tombstones that were added
-     * to the hash table during replaySegment() calls.
-     */
-    TombstoneRemover tombstoneRemover;
 
     /**
      * Number of TombstoneProtector objects that currently exist for this

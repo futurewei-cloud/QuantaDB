@@ -31,6 +31,7 @@
 #include "ShortMacros.h"
 #include "StringUtil.h"
 #include "Tablets.pb.h"
+#include "HashObjectManager.h"
 
 namespace RAMCloud {
 
@@ -44,7 +45,7 @@ class ObjectManagerTest : public ::testing::Test,
     ServerList serverList;
     ServerConfig masterConfig;
     MasterTableMetadata masterTableMetadata;
-    ObjectManager objectManager;
+    HashObjectManager objectManager;
     UnackedRpcResults unackedRpcResults;
     TransactionManager transactionManager;
     TxRecoveryManager txRecoveryManager;
@@ -320,7 +321,7 @@ class ObjectManagerTest : public ::testing::Test,
         Log::Reference reference;
         objectManager.log.append(LOG_ENTRY_TYPE_OBJ, buffer, &reference);
         {
-            ObjectManager::HashTableBucketLock lock(objectManager, key);
+            HashObjectManager::HashTableBucketLock lock(objectManager, key);
             objectManager.replace(lock, key, reference);
         }
         TableStats::increment(&masterTableMetadata,
@@ -344,7 +345,7 @@ class ObjectManagerTest : public ::testing::Test,
         Log::Reference reference;
         objectManager.log.append(LOG_ENTRY_TYPE_OBJTOMB, buffer, &reference);
         {
-            ObjectManager::HashTableBucketLock lock(objectManager, key);
+            HashObjectManager::HashTableBucketLock lock(objectManager, key);
             objectManager.replace(lock, key, reference);
         }
         TableStats::increment(&masterTableMetadata,
@@ -381,7 +382,7 @@ class ObjectManagerTest : public ::testing::Test,
         Buffer value;
         Buffer buffer;
         LogEntryType type;
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         bool found = objectManager.lookup(lock, key, type, buffer);
         ASSERT_TRUE(found);
         ASSERT_EQ(LOG_ENTRY_TYPE_OBJ, type);
@@ -457,7 +458,7 @@ class ObjectManagerTest : public ::testing::Test,
     {
         Buffer unusedBuffer;
         LogEntryType unusedType;
-        ObjectManager::HashTableBucketLock fakeLock(objectManager, 0);
+        HashObjectManager::HashTableBucketLock fakeLock(objectManager, 0);
         return objectManager.lookup(
             fakeLock, key, unusedType, unusedBuffer, NULL, outReference);
     }
@@ -688,7 +689,7 @@ TEST_F(ObjectManagerTest, removeObject) {
         objectManager.readObject(key, &buffer, 0, 0));
     EXPECT_EQ(94UL, objectManager.segmentManager.safeVersion);
     LogEntryType type;
-    ObjectManager::HashTableBucketLock lock(objectManager, key);
+    HashObjectManager::HashTableBucketLock lock(objectManager, key);
     EXPECT_FALSE(objectManager.lookup(lock, key, type, buffer, 0, 0));
 }
 
@@ -719,7 +720,7 @@ TEST_F(ObjectManagerTest, removeObject_returnRemovedObj) {
         objectManager.readObject(key, &buffer, 0, 0));
     EXPECT_EQ(94UL, objectManager.segmentManager.safeVersion);
     LogEntryType type;
-    ObjectManager::HashTableBucketLock lock(objectManager, key);
+    HashObjectManager::HashTableBucketLock lock(objectManager, key);
     EXPECT_FALSE(objectManager.lookup(lock, key, type, buffer, 0, 0));
     EXPECT_EQ(format("free: free on reference %lu", ref), TestLog::get());
 
@@ -787,7 +788,7 @@ TEST_F(ObjectManagerTest, removeOrphanedObjects) {
 }
 
 TEST_F(ObjectManagerTest, replaySegment_nextNodeIdMap) {
-    ObjectManager::TombstoneProtector p(&objectManager);
+    HashObjectManager::TombstoneProtector p(&objectManager);
     uint32_t segLen = 8192;
     char seg[segLen];
     uint32_t len; // number of bytes in a recovery segment
@@ -810,7 +811,7 @@ TEST_F(ObjectManagerTest, replaySegment_nextNodeIdMap) {
 }
 
 TEST_F(ObjectManagerTest, replaySegment_tombstoneSynthesis) {
-    ObjectManager::TombstoneProtector p(&objectManager);
+    HashObjectManager::TombstoneProtector p(&objectManager);
     uint32_t segLen = 8192;
     char seg[segLen];
     uint32_t len; // number of bytes in a recovery segment
@@ -846,7 +847,7 @@ TEST_F(ObjectManagerTest, replaySegment_tombstoneSynthesis) {
 }
 
 TEST_F(ObjectManagerTest, replaySegment_tombstoneSegmentId) {
-    ObjectManager::TombstoneProtector p(&objectManager);
+    HashObjectManager::TombstoneProtector p(&objectManager);
     uint32_t segLen = 8192;
     char seg[segLen];
     uint32_t len; // number of bytes in a recovery segment
@@ -885,7 +886,7 @@ TEST_F(ObjectManagerTest, replaySegment_tombstoneSegmentId) {
 }
 
 TEST_F(ObjectManagerTest, replaySegment) {
-    ObjectManager::TombstoneProtector p(&objectManager);
+    HashObjectManager::TombstoneProtector p(&objectManager);
     uint32_t segLen = 8192;
     char seg[segLen];
     uint32_t len; // number of bytes in a recovery segment
@@ -955,7 +956,7 @@ TEST_F(ObjectManagerTest, replaySegment) {
     objectManager.log.append(LOG_ENTRY_TYPE_OBJTOMB, buffer, &logTomb1Ref);
     objectManager.log.sync();
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key2);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key2);
         ret = objectManager.replace(lock, key2, logTomb1Ref);
     }
     EXPECT_FALSE(ret);
@@ -986,7 +987,7 @@ TEST_F(ObjectManagerTest, replaySegment) {
     objectManager.log.sync();
     EXPECT_TRUE(ret);
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key3);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key3);
         ret = objectManager.replace(lock, key3, logTomb2Ref);
     }
     EXPECT_FALSE(ret);
@@ -1097,7 +1098,7 @@ TEST_F(ObjectManagerTest, replaySegment) {
     objectManager.replaySegment(&sl, *it);
     buffer.reset();
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key8);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key8);
         ret = objectManager.lookup(lock, key8, type, buffer);
     }
     EXPECT_EQ("found=true tableId=0 byteCount=507 recordCount=13"
@@ -1115,7 +1116,7 @@ TEST_F(ObjectManagerTest, replaySegment) {
     const uint8_t* t6LogPtr = buffer.getStart<uint8_t>();
     buffer.reset();
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key8);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key8);
         ret = objectManager.lookup(lock, key8, type, buffer);
     }
     EXPECT_EQ("found=true tableId=0 byteCount=507 recordCount=13"
@@ -1134,7 +1135,7 @@ TEST_F(ObjectManagerTest, replaySegment) {
     objectManager.replaySegment(&sl, *it);
     buffer.reset();
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key9);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key9);
         ret = objectManager.lookup(lock, key9, type, buffer);
     }
     EXPECT_EQ("found=true tableId=0 byteCount=543 recordCount=14"
@@ -1152,7 +1153,7 @@ TEST_F(ObjectManagerTest, replaySegment) {
     objectManager.replaySegment(&sl, *it);
     buffer.reset();
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key9);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key9);
         ret = objectManager.lookup(lock, key9, type, buffer);
     }
     EXPECT_EQ("found=true tableId=0 byteCount=579 recordCount=15"
@@ -1174,7 +1175,7 @@ TEST_F(ObjectManagerTest, replaySegment) {
     objectManager.replaySegment(&sl, *it);
     buffer.reset();
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key10);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key10);
         EXPECT_TRUE(objectManager.lookup(lock, key10, type, buffer));
     }
     EXPECT_EQ("found=true tableId=0 byteCount=616 recordCount=16"
@@ -1191,7 +1192,7 @@ TEST_F(ObjectManagerTest, replaySegment) {
 }
 
 TEST_F(ObjectManagerTest, replaySafeversion) {
-    ObjectManager::TombstoneProtector p(&objectManager);
+    HashObjectManager::TombstoneProtector p(&objectManager);
     uint32_t segLen = 8192;
     char seg[segLen];
     uint32_t len; // number of bytes in a recovery segment
@@ -1274,7 +1275,7 @@ TEST_F(ObjectManagerTest, replaySafeversion) {
 }
 
 TEST_F(ObjectManagerTest, replaySegment_rpcResult) {
-    ObjectManager::TombstoneProtector p(&objectManager);
+    HashObjectManager::TombstoneProtector p(&objectManager);
     uint32_t segLen = 8192;
     char seg[segLen];
     uint32_t len; // number of bytes in a recovery segment
@@ -1322,7 +1323,7 @@ TEST_F(ObjectManagerTest, replaySegment_rpcResult) {
 }
 
 TEST_F(ObjectManagerTest, replaySegment_preparedOp_basics) {
-    ObjectManager::TombstoneProtector p(&objectManager);
+    HashObjectManager::TombstoneProtector p(&objectManager);
     uint32_t segLen = 8192;
     char seg[segLen];
     uint32_t len; // number of bytes in a recovery segment
@@ -1401,7 +1402,7 @@ TEST_F(ObjectManagerTest, replaySegment_preparedOp_basics) {
 }
 
 TEST_F(ObjectManagerTest, replaySegment_preparedOp_withTombstone) {
-    ObjectManager::TombstoneProtector p(&objectManager);
+    HashObjectManager::TombstoneProtector p(&objectManager);
     uint32_t segLen = 8192;
     char seg[segLen];
     uint32_t len; // number of bytes in a recovery segment
@@ -1484,7 +1485,7 @@ TEST_F(ObjectManagerTest, replaySegment_preparedOp_withTombstone) {
 }
 
 TEST_F(ObjectManagerTest, replaySegment_TxDecisionRecord_basic) {
-    ObjectManager::TombstoneProtector p(&objectManager);
+    HashObjectManager::TombstoneProtector p(&objectManager);
     uint32_t segLen = 8192;
     char seg[segLen];
     uint32_t len; // number of bytes in a recovery segment
@@ -1514,7 +1515,7 @@ TEST_F(ObjectManagerTest, replaySegment_TxDecisionRecord_basic) {
 }
 
 TEST_F(ObjectManagerTest, replaySegment_TxDecisionRecord_nop) {
-    ObjectManager::TombstoneProtector p(&objectManager);
+    HashObjectManager::TombstoneProtector p(&objectManager);
     uint32_t segLen = 8192;
     char seg[segLen];
     uint32_t len; // number of bytes in a recovery segment
@@ -1546,7 +1547,7 @@ TEST_F(ObjectManagerTest, replaySegment_TxDecisionRecord_nop) {
 }
 
 TEST_F(ObjectManagerTest, replaySegment_ParticipantList) {
-    ObjectManager::TombstoneProtector p(&objectManager);
+    HashObjectManager::TombstoneProtector p(&objectManager);
     uint32_t segLen = 8192;
     char seg[segLen];
     uint32_t len; // number of bytes in a recovery segment
@@ -2093,7 +2094,7 @@ TEST_F(ObjectManagerTest, flushEntriesToLog) {
     EXPECT_EQ(STATUS_OBJECT_DOESNT_EXIST,
         objectManager.readObject(key2, &readBuffer, 0, 0));
     LogEntryType type;
-    ObjectManager::HashTableBucketLock lock(objectManager, key2);
+    HashObjectManager::HashTableBucketLock lock(objectManager, key2);
     EXPECT_FALSE(objectManager.lookup(lock, key2, type, buffer, 0, 0));
 }
 
@@ -2167,7 +2168,7 @@ TEST_F(ObjectManagerTest, TombstoneRemover_handleTimerEvent_noWorkToDo) {
     objectManager.tombstoneRemover.handleTimerEvent();
     EXPECT_EQ("handleTimerEvent: Tombstone cleanup complete",
             TestLog::get());
-    ObjectManager::HashTableBucketLock lock(objectManager, key1);
+    HashObjectManager::HashTableBucketLock lock(objectManager, key1);
     EXPECT_TRUE(objectManager.lookup(lock, key1, type, buffer, 0, 0));
 }
 
@@ -2202,18 +2203,18 @@ TEST_F(ObjectManagerTest, TombstoneRemover_handleTimerEvent_doWork) {
     EXPECT_EQ(objectManager.objectMap.getNumBuckets(),
             objectManager.tombstoneRemover.currentBucket);
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key1);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key1);
         EXPECT_FALSE(objectManager.lookup(lock, key1, type, buffer, 0, 0));
     }
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key2);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key2);
         EXPECT_FALSE(objectManager.lookup(lock, key2, type, buffer, 0, 0));
     }
 }
 
 TEST_F(ObjectManagerTest, TombstoneProtector) {
     TestLog::Enable logEnabler("handleTimerEvent");
-    Tub<ObjectManager::TombstoneProtector> protector1, protector2;
+    Tub<HashObjectManager::TombstoneProtector> protector1, protector2;
     protector1.construct(&objectManager);
     protector2.construct(&objectManager);
     objectManager.tombstoneRemover.currentBucket = 1000;
@@ -2248,14 +2249,14 @@ TEST_F(ObjectManagerTest, lookup_object) {
     LogEntryType type;
 
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         EXPECT_FALSE(objectManager.lookup(lock, key, type, buffer, 0, 0));
     }
 
     Log::Reference reference = storeObject(key, "value", 15);
 
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         EXPECT_TRUE(objectManager.lookup(lock, key, type, buffer, 0, 0));
     }
     Object o(buffer);
@@ -2269,7 +2270,7 @@ TEST_F(ObjectManagerTest, lookup_object) {
 
     uint64_t v;
     Log::Reference r;
-    ObjectManager::HashTableBucketLock lock(objectManager, key);
+    HashObjectManager::HashTableBucketLock lock(objectManager, key);
     EXPECT_TRUE(objectManager.lookup(lock, key, type, buffer, &v, &r));
     EXPECT_EQ(15U, v);
     EXPECT_EQ(reference, r);
@@ -2283,7 +2284,7 @@ TEST_F(ObjectManagerTest, lookup_tombstone) {
     Log::Reference reference = storeTombstone(key, 15);
 
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         EXPECT_TRUE(objectManager.lookup(lock, key, type, buffer, 0, 0));
     }
     ObjectTombstone t(buffer);
@@ -2294,7 +2295,7 @@ TEST_F(ObjectManagerTest, lookup_tombstone) {
 
     uint64_t v;
     Log::Reference r;
-    ObjectManager::HashTableBucketLock lock(objectManager, key);
+    HashObjectManager::HashTableBucketLock lock(objectManager, key);
     EXPECT_TRUE(objectManager.lookup(lock, key, type, buffer, &v, &r));
     EXPECT_EQ(15U, v);
     EXPECT_EQ(reference, r);
@@ -2305,7 +2306,7 @@ TEST_F(ObjectManagerTest, remove) {
     Key key2(2, "2", 2);
 
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         EXPECT_FALSE(objectManager.remove(lock, key));
     }
 
@@ -2313,7 +2314,7 @@ TEST_F(ObjectManagerTest, remove) {
     storeTombstone(key2, 827);
 
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         EXPECT_TRUE(objectManager.remove(lock, key));
         EXPECT_FALSE(objectManager.remove(lock, key));
 
@@ -2334,7 +2335,7 @@ TEST_F(ObjectManagerTest, removeIfTombstone_nonTombstone) {
     Key key(1, "key!", 4);
     Log::Reference reference = storeObject(key, "value!");
     tabletManager.addTablet(1, 0, ~0UL, TabletManager::NOT_READY);
-    ObjectManager::CleanupParameters params = { &objectManager, 0 };
+    HashObjectManager::CleanupParameters params = { &objectManager, 0 };
     objectManager.removeIfTombstone(reference.toInteger(), &params);
     EXPECT_EQ("", TestLog::get());
 }
@@ -2345,7 +2346,7 @@ TEST_F(ObjectManagerTest, removeIfTombstone_recoveringTablet) {
     Key key(1, "key!", 4);
     Log::Reference reference = storeTombstone(key);
     tabletManager.addTablet(1, 0, ~0UL, TabletManager::NOT_READY);
-    ObjectManager::CleanupParameters params = { &objectManager, 0 };
+    HashObjectManager::CleanupParameters params = { &objectManager, 0 };
     objectManager.removeIfTombstone(reference.toInteger(), &params);
     EXPECT_EQ("", TestLog::get());
 }
@@ -2356,7 +2357,7 @@ TEST_F(ObjectManagerTest, removeIfTombstone_nonRecoveringTablet) {
     Key key(1, "key!", 4);
     Log::Reference reference = storeTombstone(key);
     tabletManager.addTablet(1, 0, ~0UL, TabletManager::NORMAL);
-    ObjectManager::CleanupParameters params = { &objectManager, 0 };
+    HashObjectManager::CleanupParameters params = { &objectManager, 0 };
     objectManager.removeIfTombstone(reference.toInteger(), &params);
     EXPECT_EQ("removeIfTombstone: discarding", TestLog::get());
 }
@@ -2366,7 +2367,7 @@ TEST_F(ObjectManagerTest, removeIfTombstone_noTablet) {
     TestLog::Enable _(removeIfTombstoneFilter);
     Key key(1, "key!", 4);
     Log::Reference reference = storeTombstone(key);
-    ObjectManager::CleanupParameters params = { &objectManager, 0 };
+    HashObjectManager::CleanupParameters params = { &objectManager, 0 };
     objectManager.removeIfTombstone(reference.toInteger(), &params);
     EXPECT_EQ("removeIfTombstone: discarding", TestLog::get());
 }
@@ -2378,7 +2379,7 @@ TEST_F(ObjectManagerTest, removeTombstones) {
     objectManager.removeTombstones();
 
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         LogEntryType type;
         Buffer buffer;
         EXPECT_FALSE(objectManager.lookup(lock, key, type, buffer, 0, 0));
@@ -2453,7 +2454,7 @@ TEST_F(ObjectManagerTest, relocateObject_objectAlive) {
     Buffer oldBuffer;
     bool success = false;
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         success = objectManager.lookup(lock, key, oldType, oldBuffer, 0, 0);
     }
     EXPECT_TRUE(success);
@@ -2473,7 +2474,7 @@ TEST_F(ObjectManagerTest, relocateObject_objectAlive) {
     Buffer oldBuffer2;
     Log::Reference oldReference;
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         success = objectManager.lookup(lock, key, oldType2, oldBuffer2, 0,
             &oldReference);
     }
@@ -2492,7 +2493,7 @@ TEST_F(ObjectManagerTest, relocateObject_objectAlive) {
     Buffer newBuffer2;
     Log::Reference newReference2;
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         objectManager.lookup(lock, key, newType2, newBuffer2, 0,
             &newReference2);
     }
@@ -2518,7 +2519,7 @@ TEST_F(ObjectManagerTest, relocateObject_objectDeleted) {
     bool success = false;
     Log::Reference reference;
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         success = objectManager.lookup(lock, key, type, buffer, 0, &reference);
     }
     EXPECT_TRUE(success);
@@ -2550,7 +2551,7 @@ TEST_F(ObjectManagerTest, relocateObject_objectModified) {
     Buffer buffer;
     Log::Reference reference;
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         objectManager.lookup(lock, key, type, buffer, 0, &reference);
     }
 
@@ -2594,7 +2595,7 @@ TEST_F(ObjectManagerTest, keyPointsAtReference) {
                 key, reference));
 
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         objectManager.replace(lock, key, reference);
     }
 
@@ -2901,7 +2902,7 @@ TEST_F(ObjectManagerTest, relocateTombstone_basics) {
     Log::Reference reference;
     bool success = false;
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         success = objectManager.lookup(lock, key, type, buffer, 0, &reference);
     }
     EXPECT_TRUE(success);
@@ -3022,7 +3023,7 @@ TEST_F(ObjectManagerTest, tombstoneRelocationCallback_hashTableRefUpdate) {
                                           oldBufferInLog);
 
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         objectManager.replace(lock, key, tombstoneReference);
     }
     EXPECT_TRUE(objectManager.keyPointsAtReference(
@@ -3160,7 +3161,7 @@ TEST_F(ObjectManagerTest, relocateTxParticipantList) {
 TEST_F(ObjectManagerTest, replace_noPriorVersion) {
     Key key(1, "1", 1);
 
-    ObjectManager::HashTableBucketLock lock(objectManager, key);
+    HashObjectManager::HashTableBucketLock lock(objectManager, key);
     HashTable::Candidates c;
     objectManager.objectMap.lookup(key.getHash(), c);
     EXPECT_TRUE(c.isDone());
@@ -3177,13 +3178,13 @@ TEST_F(ObjectManagerTest, replace_priorVersion) {
 
     Log::Reference firstRef = storeObject(key, "old", 0);
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         EXPECT_TRUE(objectManager.remove(lock, key));
         EXPECT_FALSE(objectManager.replace(lock, key, firstRef));
     }
     Log::Reference secondRef = storeObject(key, "new", 1);
     {
-        ObjectManager::HashTableBucketLock lock(objectManager, key);
+        HashObjectManager::HashTableBucketLock lock(objectManager, key);
         EXPECT_TRUE(objectManager.replace(lock, key, secondRef));
     }
 

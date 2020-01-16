@@ -13,31 +13,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef RAMCLOUD_OBJECTMANAGER_H
-#define RAMCLOUD_OBJECTMANAGER_H
+#ifndef RAMCLOUD_HASHOBJECTMANAGER_H
+#define RAMCLOUD_HASHOBJECTMANAGER_H
 
-#include "Common.h"
-#include "Log.h"
-#include "SideLog.h"
-#include "LogEntryHandlers.h"
-#include "HashTable.h"
-#include "IndexKey.h"
-#include "Object.h"
-#include "ParticipantList.h"
-#include "PreparedOp.h"
-#include "SegmentManager.h"
-#include "SegmentIterator.h"
-#include "ReplicaManager.h"
-#include "RpcResult.h"
-#include "ServerConfig.h"
-#include "SpinLock.h"
-#include "TabletManager.h"
-#include "TransactionManager.h"
-#include "TxDecisionRecord.h"
-#include "TxRecoveryManager.h"
-#include "MasterTableMetadata.h"
-#include "UnackedRpcResults.h"
-#include "LockTable.h"
+#include "ObjectManager.h"
 
 namespace RAMCloud {
 
@@ -54,19 +33,18 @@ namespace RAMCloud {
  * ObjectManager is thread-safe. Multiple worker threads in MasterService may
  * call into it simultaneously.
  */
-class ObjectManager : public LogEntryHandlers,
-                      public AbstractLog::ReferenceFreer {
+class HashObjectManager : public ObjectManager {
   public:
 
-    ObjectManager(Context* context, ServerId* serverId,
+    HashObjectManager(Context* context, ServerId* serverId,
                 const ServerConfig* config,
                 TabletManager* tabletManager,
                 MasterTableMetadata* masterTableMetadata,
                 UnackedRpcResults* unackedRpcResults,
                 TransactionManager* transactionManager,
                 TxRecoveryManager* txRecoveryManager);
-    virtual ~ObjectManager();
-    virtual void freeLogEntry(Log::Reference ref);
+    ~HashObjectManager();
+    void freeLogEntry(Log::Reference ref);
     void initOnceEnlisted();
 
     void readHashes(const uint64_t tableId, uint32_t reqNumHashes,
@@ -134,26 +112,6 @@ class ObjectManager : public LogEntryHandlers,
     ReplicaManager* getReplicaManager() { return &replicaManager; }
     HashTable* getObjectMap() { return &objectMap; }
 
-    /**
-     * An object of this class must be held by any activity that places
-     * tombstones in the hash table temporarily (e.g., anyone who calls
-     * replaySegment). While there exist any of these objects, tombstones
-     * will not be removed from the hash table; however, once there are no
-     * more objects of this class, a background activity will be initiated
-     * to remove the tombstones.
-     */
-    class TombstoneProtector {
-      public:
-        explicit TombstoneProtector(ObjectManager* objectManager);
-        ~TombstoneProtector();
-
-      PRIVATE:
-        // Saved copy of the constructor argument.
-        ObjectManager* objectManager;
-
-        DISALLOW_COPY_AND_ASSIGN(TombstoneProtector);
-    };
-
   PRIVATE:
     /**
      * An instance of this class locks the bucket of the hash table that a given
@@ -176,12 +134,12 @@ class ObjectManager : public LogEntryHandlers,
          * \param key
          *      Key whose corresponding bucket in the hash table will be locked.
          */
-        HashTableBucketLock(ObjectManager& objectManager, Key& key)
+        HashTableBucketLock(HashObjectManager& objectManager, Key& key)
             : lock(NULL)
         {
             uint64_t unused;
             uint64_t bucket = HashTable::findBucketIndex(
-                        objectManager.objectMap.getNumBuckets(),
+			objectManager.objectMap.getNumBuckets(),
                         key.getHash(), &unused);
             takeBucketLock(objectManager, bucket);
         }
@@ -195,7 +153,7 @@ class ObjectManager : public LogEntryHandlers,
          * \param bucket
          *      Index of the hash table bucket to lock.
          */
-        HashTableBucketLock(ObjectManager& objectManager, uint64_t bucket)
+        HashTableBucketLock(HashObjectManager& objectManager, uint64_t bucket)
             : lock(NULL)
         {
             takeBucketLock(objectManager, bucket);
@@ -217,7 +175,7 @@ class ObjectManager : public LogEntryHandlers,
          *      Index of the hash table bucket to lock.
          */
         void
-        takeBucketLock(ObjectManager& objectManager, uint64_t bucket)
+        takeBucketLock(HashObjectManager& objectManager, uint64_t bucket)
         {
             assert(lock == NULL);
             uint32_t numLocks = arrayLength(objectManager.hashTableBucketLocks);
@@ -241,11 +199,11 @@ class ObjectManager : public LogEntryHandlers,
      */
     struct CleanupParameters {
         /// Pointer to the ObjectManager class owning the hash table.
-        ObjectManager* objectManager;
+        HashObjectManager* objectManager;
 
         /// Pointer to the locking object that is keeping the hash table bucket
         /// currently begin iterated thread-safe.
-        ObjectManager::HashTableBucketLock* lock;
+        HashObjectManager::HashTableBucketLock* lock;
     };
 
     /**
@@ -254,17 +212,17 @@ class ObjectManager : public LogEntryHandlers,
      */
     class TombstoneRemover : public WorkerTimer {
       public:
-        TombstoneRemover(ObjectManager* objectManager,
+        TombstoneRemover(HashObjectManager* objectManager,
                         HashTable* objectMap);
         void handleTimerEvent();
-
+	void resetCurrentBucket() { currentBucket = 0; }
       PRIVATE:
         /// Which bucket of #objectMap should be cleaned out next.
         uint64_t currentBucket;
 
         /// The ObjectManager that owns the hash table to remove tombstones
         /// from in the #recoveryCleanup callback.
-        ObjectManager* objectManager;
+        HashObjectManager* objectManager;
 
         /// The hash table to be purged of tombstones.
         HashTable* objectMap;
@@ -274,7 +232,9 @@ class ObjectManager : public LogEntryHandlers,
         DISALLOW_COPY_AND_ASSIGN(TombstoneRemover);
     };
 
-    static string dumpSegment(Segment* segment);
+    void startTombstoneRemover() { tombstoneRemover.resetCurrentBucket();
+                                   tombstoneRemover.start(0); }
+    void stopTombstoneRemover() { tombstoneRemover.stop(); }
     uint32_t getObjectTimestamp(Buffer& buffer);
     uint32_t getTombstoneTimestamp(Buffer& buffer);
     uint32_t getTxDecisionRecordTimestamp(Buffer& buffer);
@@ -303,65 +263,6 @@ class ObjectManager : public LogEntryHandlers,
             Buffer& oldBuffer, LogEntryRelocator& relocator);
     bool replace(HashTableBucketLock& lock, Key& key, Log::Reference reference);
 
-    /**
-     * Shared RAMCloud information.
-     */
-    Context* context;
-
-    /**
-     * The runtime configuration for the server this ObjectManager is in. Used
-     * to pass parameters to various subsystems such as the log, hash table,
-     * cleaner, and so on.
-     */
-    const ServerConfig* config;
-
-    /**
-     * The TabletManager keeps track of table hash ranges that belong to this
-     * server. ObjectManager uses this information to avoid returning objects
-     * that are still in the hash table, but whose tablets are not assigned to
-     * the server. This occurs, for instance, during recovery before a tablet's
-     * ownership is taken and after a tablet is dropped.
-     */
-    TabletManager* tabletManager;
-
-    /**
-     * Used to update table statistics.
-     */
-    MasterTableMetadata* masterTableMetadata;
-
-    /**
-     * Used to managed cleaning and recovery of RpcResult objects.
-     */
-    UnackedRpcResults* unackedRpcResults;
-
-    /**
-     * Used to manage cleaning and recovery of PreparedOp objects.
-     */
-    TransactionManager* transactionManager;
-
-    /**
-     * Used to managed cleaning and recovery of RpcResult objects.
-     */
-    TxRecoveryManager* txRecoveryManager;
-
-    /**
-     * Allocator used by the SegmentManager to obtain main memory for log
-     * segments.
-     */
-    SegletAllocator allocator;
-
-    /**
-     * Creates and tracks replicas of in-memory log segments on remote backups.
-     * Its BackupFailureMonitor must be started after the log is created
-     * and halted before the log is destroyed.
-     */
-    ReplicaManager replicaManager;
-
-    /**
-     * The SegmentManager manages all segments in the log and interfaces
-     * between the log and the cleaner modules.
-     */
-    SegmentManager segmentManager;
 
     /**
      * The log stores all of our objects and tombstones both in memory and on
@@ -400,28 +301,17 @@ class ObjectManager : public LogEntryHandlers,
     LockTable lockTable;
 
     /**
-     * Protects access to tombstoneRemover and tombstoneProtectorCount.
-     */
-    SpinLock mutex;
-
-    /**
      * This object automatically garbage collects tombstones that were added
      * to the hash table during replaySegment() calls.
      */
     TombstoneRemover tombstoneRemover;
 
-    /**
-     * Number of TombstoneProtector objects that currently exist for this
-     * ObjectsManager.
-     */
-    int tombstoneProtectorCount;
-
     friend class CleanerCompactionBenchmark;
     friend class ObjectManagerBenchmark;
 
-    DISALLOW_COPY_AND_ASSIGN(ObjectManager);
+    DISALLOW_COPY_AND_ASSIGN(HashObjectManager);
 };
 
 } // namespace RAMCloud
 
-#endif // RAMCLOUD_OBJECTMANAGER_H
+#endif // RAMCLOUD_HASHOBJECTMANAGER_H

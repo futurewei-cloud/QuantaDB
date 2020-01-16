@@ -18,7 +18,7 @@
 #include "Logger.h"
 #include "LogCleaner.h"
 #include "Memory.h"
-#include "ObjectManager.h"
+#include "HashObjectManager.h"
 #include "SegmentIterator.h"
 #include "Seglet.h"
 #include "TabletManager.h"
@@ -41,7 +41,7 @@ class CleanerCompactionBenchmark {
     TransactionManager transactionManager;
     TxRecoveryManager txRecoveryManager;
     ServerId serverId;
-    ObjectManager* objectManager;
+    HashObjectManager* objectManager;
 
     CleanerCompactionBenchmark(string logSize, string hashTableSize,
         int numSegments)
@@ -70,7 +70,7 @@ class CleanerCompactionBenchmark {
         config.master.disableLogCleaner = true;
         config.segmentSize = Segment::DEFAULT_SEGMENT_SIZE;
         config.segletSize = Seglet::DEFAULT_SEGLET_SIZE;
-        objectManager = new ObjectManager(&context,
+        objectManager = new HashObjectManager(&context,
                                           &serverId,
                                           &config,
                                           &tabletManager,
@@ -132,11 +132,11 @@ class CleanerCompactionBenchmark {
          */
         uint64_t before = Cycles::rdtsc();
         for (uint32_t i = 0; i < numSegments; i++)
-            objectManager->log.cleaner->doMemoryCleaning();
+	    objectManager->log.cleaner->doMemoryCleaning();
         uint64_t ticks = Cycles::rdtsc() - before;
 
         LogCleanerMetrics::InMemory<>* metrics =
-            &objectManager->log.cleaner->inMemoryMetrics;
+	    &objectManager->log.cleaner->inMemoryMetrics;
         printf("Compaction took %lu ms (%.2f%% in callbacks)\n",
             Cycles::toNanoseconds(ticks) / 1000 / 1000,
             100.0 * Cycles::toSeconds(metrics->relocationCallbackTicks) /
