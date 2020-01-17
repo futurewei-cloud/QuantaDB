@@ -20,7 +20,7 @@
 #include "BackupStorage.h"
 #include "Buffer.h"
 #include "Cycles.h"
-#include "EnumerationIterator.h"
+#include "HashEnumerationIterator.h"
 #include "LeaseCommon.h"
 #include "LogIterator.h"
 #include "LogMetadata.h"
@@ -581,8 +581,8 @@ TEST_F(MasterServiceTest, enumerate_mergeTablet) {
     // worked as expected because the enumeration will not return
     // objects that it thinks would have lived on the pre-merge
     // tablet.
-    EnumerationIterator initialIter(iter, 0, 0);
-    EnumerationIterator::Frame preMergeConfiguration(
+    HashEnumerationIterator initialIter(iter, 0, 0);
+    HashEnumerationIterator::Frame preMergeConfiguration(
             0x0000000000000000LLU, 0x8fffffffffffffffLLU,
             service->objectManager.objectMap.getNumBuckets(),
             service->objectManager.objectMap.getNumBuckets()*4/5, 0U);

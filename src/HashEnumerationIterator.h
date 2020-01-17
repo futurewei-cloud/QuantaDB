@@ -13,8 +13,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef RAMCLOUD_ENUMERATIONITERATOR_H
-#define RAMCLOUD_ENUMERATIONITERATOR_H
+#ifndef RAMCLOUD_HASHENUMERATIONITERATOR_H
+#define RAMCLOUD_HASHENUMERATIONITERATOR_H
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
@@ -47,7 +47,7 @@ namespace RAMCloud {
  * ProtoBuf::EnumerationIterator. Any changes made here must also be
  * made in ProtoBuf::EnumerationIterator.
  */
-class EnumerationIterator {
+class HashEnumerationIterator {
   public:
     /**
      * A stack frame in the iterator. Each frame is a filter that excludes
@@ -108,7 +108,7 @@ class EnumerationIterator {
         uint64_t bucketNextHash;
     };
 
-    EnumerationIterator(Buffer& buffer, uint32_t offset, uint32_t length);
+    HashEnumerationIterator(Buffer& buffer, uint32_t offset, uint32_t length);
     Frame& top();
     const Frame& get(uint32_t index);
     void pop();

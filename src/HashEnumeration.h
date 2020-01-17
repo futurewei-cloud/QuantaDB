@@ -13,11 +13,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef RAMCLOUD_ENUMERATION_H
-#define RAMCLOUD_ENUMERATION_H
+#ifndef RAMCLOUD_HASHENUMERATION_H
+#define RAMCLOUD_HASHENUMERATION_H
 
 #include "Buffer.h"
-#include "EnumerationIterator.h"
+#include "HashEnumerationIterator.h"
 #include "HashTable.h"
 #include "Log.h"
 
@@ -34,18 +34,18 @@ namespace RAMCloud {
  * provided EnumerationIterator with the state necessary to resume on
  * the next EnumerationRPC.
  */
-class Enumeration {
+class HashEnumeration {
   public:
-    Enumeration(uint64_t tableId,
-                bool keysOnly,
-                uint64_t requestedTabletStartHash,
-                uint64_t actualTabletStartHash,
-                uint64_t actualTabletEndHash,
-                uint64_t* nextTabletStartHash,
-                EnumerationIterator& iter,
-                Log& log,
-                HashTable& objectMap,
-                Buffer& payload, uint32_t maxPayloadBytes);
+    HashEnumeration(uint64_t tableId,
+		    bool keysOnly,
+		    uint64_t requestedTabletStartHash,
+		    uint64_t actualTabletStartHash,
+		    uint64_t actualTabletEndHash,
+		    uint64_t* nextTabletStartHash,
+		    HashEnumerationIterator& iter,
+		    Log& log,
+		    HashTable& objectMap,
+		    Buffer& payload, uint32_t maxPayloadBytes);
     void complete();
 
   PRIVATE:
@@ -71,7 +71,7 @@ class Enumeration {
     uint64_t* nextTabletStartHash;
 
     /// The iterator provided by the client.
-    EnumerationIterator& iter;
+    HashEnumerationIterator& iter;
 
     /// The log we're enumerating over. Needed to look up hash table references.
     Log& log;

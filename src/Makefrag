@@ -71,8 +71,8 @@ SHARED_SRCFILES := \
 		   src/DispatchExec.cc \
 		   src/Driver.cc \
 		   src/ZooStorage.cc \
-		   src/Enumeration.cc \
-		   src/EnumerationIterator.cc \
+		   src/HashEnumeration.cc \
+		   src/HashEnumerationIterator.cc \
 		   src/ExternalStorage.cc \
 		   src/FailureDetector.cc \
 		   src/FailSession.cc \

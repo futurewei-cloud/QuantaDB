@@ -13,7 +13,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "Enumeration.h"
+#include "HashEnumeration.h"
 #include "Object.h"
 
 namespace RAMCloud {
@@ -22,7 +22,7 @@ namespace RAMCloud {
  * Used internally by enumerateTablet() to pass arguments to
  * enumerateBucket().
  */
-struct EnumerateBucketArgs {
+struct HashEnumerateBucketArgs {
     /// The table containing the tablet being enumerated.
     uint64_t tableId;
 
@@ -34,7 +34,7 @@ struct EnumerateBucketArgs {
     Log* log;
 
     /// Iterator containing information about previous tablet configurations.
-    EnumerationIterator* iter;
+    HashEnumerationIterator* iter;
 
     /// A vector in which to place the resulting objects.
     std::vector<Log::Reference>* objectReferences;
@@ -58,7 +58,7 @@ struct EnumerateBucketArgs {
 static void
 enumerateBucket(uint64_t reference, void* cookie)
 {
-    EnumerateBucketArgs& args = *static_cast<EnumerateBucketArgs*>(cookie);
+    HashEnumerateBucketArgs& args = *static_cast<HashEnumerateBucketArgs*>(cookie);
 
     LogEntryType type;
     Buffer buffer;
@@ -80,7 +80,7 @@ enumerateBucket(uint64_t reference, void* cookie)
     // topmost entry, which refers to the current master's state.
     for (int64_t frameIndex = static_cast<int64_t>(args.iter->size()) - 2;
          frameIndex >= 0; frameIndex--) {
-        const EnumerationIterator::Frame& frame =
+        const HashEnumerationIterator::Frame& frame =
                 args.iter->get(downCast<uint32_t>(frameIndex));
         if (frame.tabletStartHash <= keyHash &&
             keyHash <= frame.tabletEndHash) {
@@ -235,13 +235,13 @@ class ObjectHashComparator {
  * \param maxPayloadBytes
  *      The maximum number of bytes of objects to be returned.
  */
-Enumeration::Enumeration(uint64_t tableId,
+HashEnumeration::HashEnumeration(uint64_t tableId,
                          bool keysOnly,
                          uint64_t requestedTabletStartHash,
                          uint64_t actualTabletStartHash,
                          uint64_t actualTabletEndHash,
                          uint64_t* nextTabletStartHash,
-                         EnumerationIterator& iter,
+                         HashEnumerationIterator& iter,
                          Log& log,
                          HashTable& objectMap,
                          Buffer& payload, uint32_t maxPayloadBytes)
@@ -267,7 +267,7 @@ Enumeration::Enumeration(uint64_t tableId,
  * for the client to iterate.
  */
 void
-Enumeration::complete()
+HashEnumeration::complete()
 {
     // Check iterator state to see if the tablet configuration has
     // changed since the last call to enumerateTablet().
@@ -276,7 +276,7 @@ Enumeration::complete()
         iter.top().tabletEndHash != actualTabletEndHash ||
         iter.top().numBuckets != objectMap.getNumBuckets()) {
 
-        EnumerationIterator::Frame frame(
+        HashEnumerationIterator::Frame frame(
             actualTabletStartHash, actualTabletEndHash,
             objectMap.getNumBuckets(), 0, 0);
         iter.push(frame);
@@ -288,7 +288,7 @@ Enumeration::complete()
     uint32_t initialPayloadLength = payload.size();
     bool payloadFull = false;
     std::vector<Log::Reference> objectRefs;
-    EnumerateBucketArgs args;
+    HashEnumerateBucketArgs args;
     args.tableId = tableId;
     args.requestedTabletStartHash = requestedTabletStartHash;
     args.log = &log;

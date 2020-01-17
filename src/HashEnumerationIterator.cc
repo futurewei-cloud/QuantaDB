@@ -13,7 +13,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "EnumerationIterator.h"
+#include "HashEnumerationIterator.h"
 #include "ProtoBuf.h"
 
 namespace RAMCloud {
@@ -34,10 +34,10 @@ namespace RAMCloud {
  *      The next key hash to iterate when resuming inside a
  *      bucket that was too large to fit inside a single RPC.
  */
-EnumerationIterator::Frame::Frame(uint64_t tabletStartHash,
-                                  uint64_t tabletEndHash,
-                                  uint64_t numBuckets, uint64_t bucketIndex,
-                                  uint64_t bucketNextHash)
+HashEnumerationIterator::Frame::Frame(uint64_t tabletStartHash,
+				      uint64_t tabletEndHash,
+				      uint64_t numBuckets, uint64_t bucketIndex,
+				      uint64_t bucketNextHash)
     : tabletStartHash(tabletStartHash)
     , tabletEndHash(tabletEndHash)
     , numBuckets(numBuckets)
@@ -56,8 +56,8 @@ EnumerationIterator::Frame::Frame(uint64_t tabletStartHash,
  * \param length
  *      The length of the iterator in bytes.
  */
-EnumerationIterator::EnumerationIterator(Buffer& buffer,
-                                         uint32_t offset, uint32_t length)
+HashEnumerationIterator::HashEnumerationIterator(Buffer& buffer,
+						 uint32_t offset, uint32_t length)
     : frames()
 {
     ProtoBuf::EnumerationIterator message;
@@ -76,8 +76,8 @@ EnumerationIterator::EnumerationIterator(Buffer& buffer,
  * \return
  *      The top Frame on the stack.
  */
-EnumerationIterator::Frame&
-EnumerationIterator::top()
+HashEnumerationIterator::Frame&
+HashEnumerationIterator::top()
 {
     return frames.back();
 }
@@ -90,8 +90,8 @@ EnumerationIterator::top()
  * \return
  *      The requested Frame.
  */
-const EnumerationIterator::Frame&
-EnumerationIterator::get(uint32_t index)
+const HashEnumerationIterator::Frame&
+HashEnumerationIterator::get(uint32_t index)
 {
     return frames[index];
 }
@@ -100,7 +100,7 @@ EnumerationIterator::get(uint32_t index)
  * Pops the top Frame from the iterator stack.
  */
 void
-EnumerationIterator::pop()
+HashEnumerationIterator::pop()
 {
     frames.pop_back();
 }
@@ -112,7 +112,7 @@ EnumerationIterator::pop()
  *      A Frame.
  */
 void
-EnumerationIterator::push(const Frame& frame)
+HashEnumerationIterator::push(const Frame& frame)
 {
     frames.push_back(frame);
 }
@@ -121,7 +121,7 @@ EnumerationIterator::push(const Frame& frame)
  * Clears the iterator stack.
  */
 void
-EnumerationIterator::clear()
+HashEnumerationIterator::clear()
 {
     frames.clear();
 }
@@ -130,7 +130,7 @@ EnumerationIterator::clear()
  * Returns the number of Frame's on the iterator stack.
  */
 uint32_t
-EnumerationIterator::size()
+HashEnumerationIterator::size()
 {
     return downCast<uint32_t>(frames.size());
 }
@@ -144,7 +144,7 @@ EnumerationIterator::size()
  *      The number of bytes added to the buffer.
  */
 uint32_t
-EnumerationIterator::serialize(Buffer& buffer)
+HashEnumerationIterator::serialize(Buffer& buffer)
 {
     uint32_t offsetAtStart = buffer.size();
 

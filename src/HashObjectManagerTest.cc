@@ -17,7 +17,7 @@
 #include "BackupStorage.h"
 #include "Buffer.h"
 #include "CoordinatorClient.h"
-#include "EnumerationIterator.h"
+#include "HashEnumerationIterator.h"
 #include "LogIterator.h"
 #include "MockCluster.h"
 #include "Memory.h"

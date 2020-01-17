@@ -20,8 +20,8 @@
 #include "ClientException.h"
 #include "Cycles.h"
 #include "Dispatch.h"
-#include "Enumeration.h"
-#include "EnumerationIterator.h"
+#include "HashEnumeration.h"
+#include "HashEnumerationIterator.h"
 #include "IndexKey.h"
 #include "LogIterator.h"
 #include "LogProtector.h"
@@ -430,15 +430,15 @@ MasterService::enumerate(const WireFormat::Enumerate::Request* reqHdr,
     uint64_t actualTabletStartHash = tablet.startKeyHash;
     uint64_t actualTabletEndHash = tablet.endKeyHash;
 
-    EnumerationIterator iter(*rpc->requestPayload,
-            downCast<uint32_t>(sizeof(*reqHdr)), reqHdr->iteratorBytes);
+    HashEnumerationIterator iter(*rpc->requestPayload,
+				 downCast<uint32_t>(sizeof(*reqHdr)), reqHdr->iteratorBytes);
 
     // Put at most maxPayloadBytes of enumerated objects in the reply. This
     // limit is used to leave enough room in the reply buffer for the response
     // header and also the serialized iteration state at the end of enumeration.
     uint32_t maxPayloadBytes = downCast<uint32_t>(
             Transport::MAX_RPC_LEN - sizeof(*respHdr) - (1 << 20));
-    Enumeration enumeration(
+    HashEnumeration enumeration(
             reqHdr->tableId, reqHdr->keysOnly,
             reqHdr->tabletFirstHash,
             actualTabletStartHash, actualTabletEndHash,
