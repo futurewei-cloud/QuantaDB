@@ -113,10 +113,10 @@ CWARNS   := $(COMWARNS) -Wmissing-prototypes -Wmissing-declarations -Wshadow \
 		-Wbad-function-cast
 CXXWARNS := $(COMWARNS) -Wno-non-template-friend -Woverloaded-virtual \
 		-Wcast-qual \
-		-Wcast-align -Wconversion
-ifeq ($(COMPILER),gnu)
-CXXWARNS += -Weffc++
-endif
+		-Wcast-align
+#ifeq ($(COMPILER),gnu)
+#CXXWARNS += -Weffc++
+#endif
 # Too many false positives list:
 # -Wunreachable-code
 # Failed deconstructor inlines are generating noise
@@ -124,11 +124,11 @@ endif
 
 # Library paths that will be searched by the linker before default system
 # locations; one -L option for each search directory.
-LIB_PATHS ?=
+LIB_PATHS ?= -L$(TOP)/hot/build/tbb_cmake_build/tbb_cmake_build_subdir_release
 LIBS := $(LIB_PATHS) $(EXTRALIBS) $(LOGCABIN_LIB) $(ZOOKEEPER_LIB) \
 	-lpcrecpp -lboost_program_options \
 	-lprotobuf -lrt -lboost_filesystem -lboost_system \
-	-lpthread -lssl -lcrypto
+	-lpthread -lssl -lcrypto -ltbb
 ifeq ($(DEBUG),yes)
 # -rdynamic generates more useful backtraces when you have debugging symbols
 LIBS += -rdynamic
@@ -138,7 +138,13 @@ INCLUDES := -I$(TOP)/src \
             -I$(TOP)/$(OBJDIR) \
             -I$(GTEST_DIR)/include \
             -I/usr/local/openonload-201405/src/include \
+	    -I$(TOP)/src/dssn/ \
+	    -I$(TOP)/hot/third-party/tbb/include/ \
+	    -I$(TOP)/hot/libs/hot/rowex/include/ \
+	    -I$(TOP)/hot/libs/hot/commons/include/ \
+	    -I$(TOP)/hot/libs/idx/content-helpers/include/ \
              $(NULL)
+
 ifeq ($(LOGCABIN),yes)
 INCLUDES := $(INCLUDES) -I$(LOGCABIN_DIR)/include
 endif
@@ -156,8 +162,8 @@ EPYDOC ?= epydoc
 EPYDOCFLAGS ?= --simple-term -v
 DOXYGEN ?= doxygen
 
-C_STANDARD ?= c11
-CXX_STANDARD ?= c++11
+C_STANDARD ?= c14
+CXX_STANDARD ?= c++14
 
 # Using ccache is as simple as prefixing the compilation commands with `ccache`.
 ifeq ($(CCACHE),yes)

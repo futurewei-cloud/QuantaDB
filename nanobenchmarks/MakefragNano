@@ -16,6 +16,10 @@ $(NANOOBJDIR)/HashTableBenchmark: $(NANOOBJDIR)/HashTableBenchmark.o $(SHARED_OB
 	@mkdir -p $(@D)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
+$(NANOOBJDIR)/HOTKVBenchmark: $(NANOOBJDIR)/HOTKVBenchmark.o $(SHARED_OBJFILES) $(SERVER_OBJFILES)
+	@mkdir -p $(@D)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+
 $(NANOOBJDIR)/LogCleanerBenchmark: $(NANOOBJDIR)/LogCleanerBenchmark.o $(OBJDIR)/Histogram.pb.o $(OBJDIR)/OptionParser.o $(OBJDIR)/LogEntryTypes.o $(OBJDIR)/LogMetrics.pb.o $(OBJDIR)/ServerConfig.pb.o $(OBJDIR)/libramcloud.a
 	@mkdir -p $(@D)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
@@ -41,6 +45,7 @@ $(NANOOBJDIR)/RecoverSegmentBenchmark: $(NANOOBJDIR)/RecoverSegmentBenchmark.o $
 nanobenchmarks: $(NANOOBJDIR)/CleanerCompactionBenchmark \
                 $(NANOOBJDIR)/Echo \
                 $(NANOOBJDIR)/HashTableBenchmark \
+		$(NANOOBJDIR)/HOTKVBenchmark \
                 $(NANOOBJDIR)/LogCleanerBenchmark \
                 $(NANOOBJDIR)/MigrateTabletBenchmark \
                 $(NANOOBJDIR)/HashObjectManagerBenchmark \
