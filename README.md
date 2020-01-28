@@ -26,3 +26,16 @@ The RAMCloud project is based in the Department of Computer Science at Stanford 
 
 # Learn More about RAMCloud
 https://ramcloud.atlassian.net/wiki/spaces/RAM/overview
+
+Build Instruction
+1. checkout the submodules
+git submodule update --init --recursive
+
+2. build the tbb library required by HOT
+cd hot
+mkdir build
+cd build; cmake ..
+
+3. build RAMCloud
+make
+
