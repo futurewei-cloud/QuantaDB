@@ -5,17 +5,30 @@
 
 #include <string>
 #include <memory>
+#include <atomic>
 
 namespace DSSN
 {
+    struct dssnMeta {
+        uint64_t pStamp;   //eta
+        uint64_t prevStamp; //pi
+	uint64_t cStamp;   //current
+    };
     //Key value format to be stored in the underlying data structure
     struct KeyValue {
         bool isTombStone;
-        uint64_t meta;
+        dssnMeta meta;
+        std::atomic_flag slock = ATOMIC_FLAG_INIT;
         std::string key;
         std::string value;
         std::string& getKey() {
 	    return key;
+	}
+        void lock() {
+	    while (slock.test_and_set(std::memory_order_acquire)) {}
+	}
+        void unlock() {
+	    slock.clear(std::memory_order_release);
 	}
     };
 
@@ -43,9 +56,11 @@ namespace DSSN
  */    
 class KVInterface {
       public:
-      virtual bool put(const std::string &key, const std::string &value, const uint64_t meta) = 0;
-      virtual const std::string& get(const std::string &searchKey, uint64_t* meta) = 0;
-      virtual void removeVersion(const std::string &searchKey, const uint64_t meta) = 0;
+      virtual bool put(const std::string &key, const std::string &value, const dssnMeta& meta) = 0;
+      virtual bool updateMeta(const std::string &searchKey, const dssnMeta& newMeta) = 0;
+      virtual const std::string* get(const std::string &searchKey, dssnMeta& meta) const = 0;
+      virtual bool getMeta(const std::string &searchKey, dssnMeta& meta) = 0;
+      virtual void removeVersion(const std::string &searchKey, const dssnMeta& meta) = 0;
       virtual void remove(const std::string &searchKey) = 0;
       
 };

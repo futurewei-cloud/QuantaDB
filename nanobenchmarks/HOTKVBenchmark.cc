@@ -31,107 +31,241 @@
 #include "OptionParser.h"
 
 
-struct ThreadData {
-    ThreadData() {};
-    uint64_t keyoffset;
-    uint64_t nkeys;
-    DSSN::HOTKV* kvs;
-};
-
 namespace RAMCloud {
-uint64_t TotalGetCycles = 0;
-uint64_t TotalPutCycles = 0;
-uint64_t BaseTotalGetCycles = 0;
-uint64_t BaseTotalPutCycles = 0;
+  class HOTBenchmark;
+  struct ThreadData {
+      ThreadData() {};
+      uint64_t keyoffset;
+      uint64_t nkeys;
+      DSSN::HOTKV* kvs;
+      HOTBenchmark* hb;
+  };
 
-inline void
-hotKVPut(uint64_t keyoffset, uint64_t nkeys, DSSN::HOTKV* kvs)
-{
-    uint64_t i;
-    uint64_t insertCycles = Cycles::rdtsc();
-    for (i = keyoffset; i < nkeys; i++) {
-        std::string key = std::to_string(i);
-	std::string value = std::to_string(i);
-	kvs->put(key, value, 0);
-    }
-    i = Cycles::rdtsc() - insertCycles;
-    TotalPutCycles += i;
-}
   
-inline void
-hotKVGet(uint64_t keyoffset, uint64_t nkeys, DSSN::HOTKV* kvs)
-{
-    uint64_t i;
-    uint64_t lookupCycles = Cycles::rdtsc();
-    bool success;
-    for (i = keyoffset; i < nkeys; i++) {
-        uint64_t meta = 0;
-        std::string key = std::to_string(i);
-	std::string value = kvs->get(key, &meta);
-	if (value.length()> 0 && key == value)
-	  success = true;
-	else success = false;
-	assert(success);
+  class HOTBenchmark {
+    
+  public:
+    HOTBenchmark(uint64_t nkeys):
+        totalGetCycles(0),
+        totalPutCycles(0),
+	totalUpdateCycles(0),
+	totalGetMetaCycles(0),
+        baseTotalGetCycles(0),
+        baseTotalPutCycles(0),
+        nKeys(nkeys)
+    {
+
     }
-    i = Cycles::rdtsc() - lookupCycles;
-    TotalGetCycles += i;
-}
+    void
+    run(uint64_t nthreads)
+    {
+        uint64_t nkeysPerThread = nKeys/nthreads;
+	float speedup = 0;
+	DSSN::HOTKV hotkv;
+	printf("Number of Threads = %u, Number of Keys = %u\n", nthreads, nKeys);
+ 
+	for (uint32_t i = 0; i< nthreads; i++) {
+	  ThreadData* data = new ThreadData();
+	  data->keyoffset = nkeysPerThread * i;
+	  data->nkeys = nkeysPerThread;
+	  data->kvs = &hotkv;
+	  data->hb = this;
+	  std::thread t(hotKVPutTest, data);
+	  t.join();
+	}
+	printf("== Put() took %.3f s ==\n", Cycles::toSeconds(totalPutCycles));
 
-void
-hotKVPutTest(struct ThreadData *data)
-{
-  hotKVPut(data->keyoffset, data->nkeys, data->kvs);
-}
+	printf("    external avg: %lu ticks, %lu nsec\n", totalPutCycles / nKeys,
+	       Cycles::toNanoseconds(totalPutCycles / nKeys));
+	printf("    Operations/sec: %f\n", ((float)nKeys/Cycles::toSeconds(totalPutCycles)));
+	if (baseTotalPutCycles) {
+	  speedup = ((float)baseTotalPutCycles)/totalPutCycles;
+	}
+	printf("    Speedup: %f\n", speedup);
 
-void
-hotKVGetTest(struct ThreadData *data)
-{
-  hotKVGet(data->keyoffset, data->nkeys, data->kvs);
-}
+	if (nthreads == 1) {
+	    baseTotalPutCycles = totalPutCycles;
+	}
+	totalUpdateCycles = 0;
+	
+	for (uint32_t i = 0; i< nthreads; i++) {
+	  ThreadData* data = new ThreadData();
+	  data->keyoffset = nkeysPerThread * i;
+	  data->nkeys = nkeysPerThread;
+	  data->kvs = &hotkv;
+	  data->hb = this;
+	  std::thread t(hotKVPutTest, data);
+	  t.join();
+	}
+	printf("== Replace took %.3f s ==\n", Cycles::toSeconds(totalPutCycles));
 
-void
-hotKVBenchmarkMt(uint64_t nkeys, uint64_t nthreads)
-{
-    uint64_t nkeysPerThread = nkeys/nthreads;
-    float speedup = 0;
-    DSSN::HOTKV hotkv;
-    printf("Number of Threads = %u, Number of Keys = %u\n", nthreads, nkeys);
-    for (uint32_t i = 0; i< nthreads; i++) {
-        ThreadData* data = new ThreadData();
-	data->keyoffset = nkeysPerThread * i;
-	data->nkeys = nkeysPerThread;
-	data->kvs = &hotkv;
-	std::thread t(hotKVPutTest, data);
-	t.join();
+	printf("    external avg: %lu ticks, %lu nsec\n", totalPutCycles / nKeys,
+	       Cycles::toNanoseconds(totalPutCycles / nKeys));
+	printf("    Operations/sec: %f\n", ((float)nKeys/Cycles::toSeconds(totalPutCycles)));
+	
+
+	for (uint32_t i = 0; i< nthreads; i++) {
+	  ThreadData* data = new ThreadData();
+	  data->keyoffset = nkeysPerThread * i;
+	  data->nkeys = nkeysPerThread;
+	  data->kvs = &hotkv;
+	  data->hb = this;
+	  std::thread t(hotKVGetTest, data);
+	  t.join();
+	}
+	printf("== Get() took %.3f s ==\n", Cycles::toSeconds(totalGetCycles));
+
+	printf("    external avg: %lu ticks, %lu nsec\n", totalGetCycles / nKeys,
+	       Cycles::toNanoseconds(totalGetCycles / nKeys));
+	printf("    Operations/sec: %f\n", ((float)nKeys/Cycles::toSeconds(totalGetCycles)));
+	if (baseTotalGetCycles) {
+	  speedup = ((float)baseTotalGetCycles)/totalGetCycles;
+	}
+	printf("    Speedup: %f\n", speedup);
+
+	if (nthreads == 1) {
+	    baseTotalGetCycles = totalGetCycles;
+	}
+	for (uint32_t i = 0; i< nthreads; i++) {
+	  ThreadData* data = new ThreadData();
+	  data->keyoffset = nkeysPerThread * i;
+	  data->nkeys = nkeysPerThread;
+	  data->kvs = &hotkv;
+	  data->hb = this;
+	  std::thread t(hotKVUpdateMetaTest, data);
+	  t.join();
+	}
+	printf("== UpdateMetaData() took %.3f s ==\n", Cycles::toSeconds(totalUpdateCycles));
+
+	printf("    external avg: %lu ticks, %lu nsec\n", totalUpdateCycles / nKeys,
+	       Cycles::toNanoseconds(totalUpdateCycles / nKeys));
+	printf("    Operations/sec: %f\n", ((float)nKeys/Cycles::toSeconds(totalUpdateCycles)));
+
+	for (uint32_t i = 0; i< nthreads; i++) {
+	  ThreadData* data = new ThreadData();
+	  data->keyoffset = nkeysPerThread * i;
+	  data->nkeys = nkeysPerThread;
+	  data->kvs = &hotkv;
+	  data->hb = this;
+	  std::thread t(hotKVGetMetaTest, data);
+	  t.join();
+	}
+	printf("== GetMetaData() took %.3f s ==\n", Cycles::toSeconds(totalGetMetaCycles));
+
+	printf("    external avg: %lu ticks, %lu nsec\n", totalGetMetaCycles / nKeys,
+	       Cycles::toNanoseconds(totalGetMetaCycles / nKeys));
+	printf("    Operations/sec: %f\n", ((float)nKeys/Cycles::toSeconds(totalGetMetaCycles)));
+
+	totalUpdateCycles = 0;
+	totalGetCycles = 0;
+	totalPutCycles = 0;
+	totalGetMetaCycles = 0;
     }
-    printf("== Put() took %.3f s ==\n", Cycles::toSeconds(TotalPutCycles));
+    
+  private:
 
-    printf("    external avg: %lu ticks, %lu nsec\n", TotalPutCycles / nkeys,
-	   Cycles::toNanoseconds(TotalPutCycles / nkeys));
-    printf("    Operations/sec: %f\n", ((float)nkeys/Cycles::toSeconds(TotalPutCycles)));
-    if (BaseTotalPutCycles) {
-        speedup = ((float)BaseTotalPutCycles)/TotalPutCycles;
+    inline void
+    hotKVPut(uint64_t keyoffset, uint64_t nkeys, DSSN::HOTKV* kvs)
+    {
+        uint64_t i;
+	uint64_t insertCycles = Cycles::rdtsc();
+	for (i = keyoffset; i < nkeys; i++) {
+	    std::string key = std::to_string(i);
+	    std::string value = std::to_string(i);
+	    DSSN::dssnMeta meta;
+	    kvs->put(key, value, meta);
+	}
+	i = Cycles::rdtsc() - insertCycles;
+	totalPutCycles += i;
     }
-    printf("    Speedup: %f\n", speedup);
+  
+    inline void
+    hotKVGet(uint64_t keyoffset, uint64_t nkeys, DSSN::HOTKV* kvs)
+    {
+        uint64_t i;
+	uint64_t lookupCycles = Cycles::rdtsc();
+	bool success;
+	for (i = keyoffset; i < nkeys; i++) {
+	    DSSN::dssnMeta meta;
+	    std::string key = std::to_string(i);
+	    const std::string* value = kvs->get(key, meta);
+	    if (value->length()> 0 && key == *value)
+	        success = true;
+	    else success = false;
+	    assert(success);
+	}
+	i = Cycles::rdtsc() - lookupCycles;
+	totalGetCycles += i;
+    }
 
-    for (uint32_t i = 0; i< nthreads; i++) {
-        ThreadData* data = new ThreadData();
-	data->keyoffset = nkeysPerThread * i;
-	data->nkeys = nkeysPerThread;
-	data->kvs = &hotkv;
-	std::thread t(hotKVGetTest, data);
-	t.join();
+    inline void
+    hotKVUpdateMeta(uint64_t keyoffset, uint64_t nkeys, DSSN::HOTKV* kvs)
+    {
+        uint64_t i;
+	uint64_t lookupCycles = Cycles::rdtsc();
+	bool result = false;
+	for (i = keyoffset; i < nkeys; i++) {
+	    DSSN::dssnMeta meta;
+	    meta.cStamp = i;
+	    std::string key = std::to_string(i);
+	    result = kvs->updateMeta(key, meta);
+	    assert(result);
+	}
+	i = Cycles::rdtsc() - lookupCycles;
+	totalUpdateCycles += i;
     }
-    printf("== Get() took %.3f s ==\n", Cycles::toSeconds(TotalGetCycles));
 
-    printf("    external avg: %lu ticks, %lu nsec\n", TotalGetCycles / nkeys,
-	   Cycles::toNanoseconds(TotalGetCycles / nkeys));
-    printf("    Operations/sec: %f\n", ((float)nkeys/Cycles::toSeconds(TotalGetCycles)));
-    if (BaseTotalGetCycles) {
-        speedup = ((float)BaseTotalGetCycles)/TotalGetCycles;
+        inline void
+    hotKVGetMeta(uint64_t keyoffset, uint64_t nkeys, DSSN::HOTKV* kvs)
+    {
+        uint64_t i;
+	uint64_t lookupCycles = Cycles::rdtsc();
+	bool result = false;
+	for (i = keyoffset; i < nkeys; i++) {
+	    DSSN::dssnMeta meta;
+	    meta.cStamp = 0;
+	    std::string key = std::to_string(i);
+	    result = kvs->getMeta(key, meta);
+	    assert(result);
+	    assert(meta.cStamp == i);
+	}
+	i = Cycles::rdtsc() - lookupCycles;
+	totalGetMetaCycles += i;
     }
-    printf("    Speedup: %f\n", speedup);
-}
+
+    static void
+    hotKVPutTest(struct ThreadData *data)
+    {
+        data->hb->hotKVPut(data->keyoffset, data->nkeys, data->kvs);
+    }
+
+    static void
+    hotKVGetTest(struct ThreadData *data)
+    {
+        data->hb->hotKVGet(data->keyoffset, data->nkeys, data->kvs);
+    }
+
+    static void
+    hotKVUpdateMetaTest(struct ThreadData *data)
+    {
+        data->hb->hotKVUpdateMeta(data->keyoffset, data->nkeys, data->kvs);
+    }
+    
+    static void
+    hotKVGetMetaTest(struct ThreadData *data)
+    {
+        data->hb->hotKVGetMeta(data->keyoffset, data->nkeys, data->kvs);
+    }
+    
+    uint64_t totalGetCycles;
+    uint64_t totalPutCycles;
+    uint64_t totalUpdateCycles;
+    uint64_t totalGetMetaCycles;
+    uint64_t baseTotalGetCycles;
+    uint64_t baseTotalPutCycles;
+    uint64_t nKeys;
+  };
+
   
 } // namespace RAMCloud
 
@@ -144,17 +278,11 @@ main(int argc, char **argv)
 
     uint64_t numberOfKeys;
 
-    numberOfKeys = 10000000;
-
+    numberOfKeys = 1000000;
+    RAMCloud::HOTBenchmark hb(numberOfKeys);
+    
     for (uint32_t nthreads = 1; nthreads < 16; nthreads++) {
-        hotKVBenchmarkMt(numberOfKeys, nthreads);
-	if (nthreads == 1) {
-	    BaseTotalGetCycles = TotalGetCycles;
-	    BaseTotalPutCycles = TotalPutCycles;
-	}
-	TotalGetCycles = 0;
-	TotalPutCycles = 0;
-
+        hb.run(nthreads);
     }
     return 0;
 }
