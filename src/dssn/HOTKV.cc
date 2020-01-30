@@ -19,23 +19,30 @@ namespace DSSN
   }
 
   bool
-  HOTKV::put(const std::string &key, const std::string &value, const uint64_t meta)
+  HOTKV::put(const std::string &key, const std::string &value, const dssnMeta& meta)
   {
       bool result = false;
 
       KeyValue* kv = new KeyValue;
       if (kv) {
 	  kv->isTombStone = false;
-	  kv->meta = meta;
+	  kv->meta = std::move(meta);
 	  kv->key = std::move(key);
 	  kv->value = std::move(value);
-	  result = ((HotKeyValueType *)kvStore)->insert(kv);
+ 
+	  idx::contenthelpers::OptionalValue<DSSN::KeyValue*> ret = ((HotKeyValueType *)kvStore)->upsert(kv);
+	  if (ret.mIsValid == true && ret.mValue != kv) {
+	      KeyValue* oldkv = ret.mValue;
+	      delete oldkv;
+	      assert(ret.mValue);
+	  }
+	  result = true;
       }
       return result;
   }
 
-  const std::string&
-  HOTKV::get(const std::string &searchKey, uint64_t* meta)
+  const std::string*
+  HOTKV::get(const std::string &searchKey, dssnMeta& meta) const
   {
 
       HotKeyValueType::KeyType key;
@@ -44,16 +51,62 @@ namespace DSSN
       if (ret.mIsValid) {
 	  KeyValue* kv = ret.mValue;
 	  if (!kv->isTombStone) {
-	      *meta = kv->meta;
-	      return kv->value;
+	      kv->lock();
+	      meta = kv->meta;
+	      kv->unlock();
+	      return &kv->value;
 	  }
       }
-
       return NULL;
   }
   
+  bool
+  HOTKV::getMeta(const std::string &searchKey, dssnMeta& meta)
+  {
+      HotKeyValueType::KeyType key;
+      key = searchKey.c_str();
+      bool result = false;
+      idx::contenthelpers::OptionalValue<KeyValue*> ret = ((HotKeyValueType *)kvStore)->lookup(key);
+      if (ret.mIsValid) {
+	  KeyValue* kv = ret.mValue;
+	  if (!kv->isTombStone) {
+	      kv->lock();
+	      meta = kv->meta;
+	      kv->unlock();
+	      result = true;
+	  }
+      }
+      return result;
+  }
+
+  bool
+  HOTKV::updateMeta(const std::string &searchKey, const dssnMeta& meta)
+  {
+    return updateMetaThreadSafe(searchKey, meta);
+  }
+
+  bool
+  HOTKV::updateMetaThreadSafe(const std::string &searchKey, const dssnMeta& meta)
+  {
+      bool result = false;
+      HotKeyValueType::KeyType key;
+      key = searchKey.c_str();
+      idx::contenthelpers::OptionalValue<KeyValue*> ret = ((HotKeyValueType *)kvStore)->lookup(key);
+      if (ret.mIsValid) {
+	  KeyValue* kv = ret.mValue;
+	  if (!kv->isTombStone) {
+	      //Acquire lock
+	      kv->lock();
+	      kv->meta = meta;
+	      result = true;
+	      kv->unlock();
+	  }
+      }
+      return result;
+  }
+
   void
-  HOTKV::removeVersion(const std::string &searchKey, const uint64_t meta)
+  HOTKV::removeVersion(const std::string &searchKey, const dssnMeta& meta)
   {
       HotKeyValueType::KeyType key;
       key = searchKey.c_str();
@@ -71,7 +124,7 @@ namespace DSSN
   void
   HOTKV::remove(const std::string &searchKey)
   {
-      uint64_t meta = 0xFFFFFFFF;
+      dssnMeta meta;;
       removeVersion(searchKey, meta);
   }
 }
