@@ -10,10 +10,11 @@
 
 namespace DSSN {
 
+/*
 template <typename T>
 static inline T volatile_read(T volatile &x) {
   return *&x;
-}
+}*/
 
 inline static std::string formTupleKey(Object& tuple) {
 	KeyLength* kLen;
@@ -29,13 +30,6 @@ inline static std::string formTupleKey(Object& tuple) {
 }
 
 static uint64_t
-getTupleEta(Object& object) {
-	dssnMeta meta;
-	TxEntry::tupleStore.getMeta(formTupleKey(object), meta);
-	return meta.pStamp;
-}
-
-static uint64_t
 TxEntry::getTuplePi(Object& object) {
 	dssnMeta meta;
 	TxEntry::tupleStore.getMeta(formTupleKey(object), meta);
@@ -43,39 +37,29 @@ TxEntry::getTuplePi(Object& object) {
 }
 
 static uint64_t
-getTuplePrevEta(Object& object) {
+TxEntry::getTuplePrevEta(Object& object) {
 	dssnMeta meta;
 	TxEntry::tupleStore.getMeta(formTupleKey(object), meta);
-	return meta.pStampPrev;
+	return meta.sStampPrev;
 }
 
 static uint64_t
-getTuplePrevPi(uint8_t* key, KeyLength len) {
+TxEntry::getTuplePrevPi(Object& object) {
 	return 0; //not used yet
 }
 
 static bool
-setTupleEta(Object& object) {
+TxEntry::maximizeTupleEta(Object& object, uint64_t eta) {
+	dssnMeta meta;
+	std::string key = formTupleKey(object);
+	TxEntry::tupleStore.getMeta(key, meta);
+	meta.pStamp = std::max(eta, meta.pStamp);
+	TxEntry::tupleStore.updateMeta(key, meta);
 	return true;
 }
 
 static bool
-setTuplePi(Object& object) {
-	return true;
-}
-
-static bool
-setTuplePrevEta(Object& object) {
-	return true;
-}
-
-static bool
-setTuplePrevPi(Object& object) {
-	return true;
-}
-
-static bool
-setTupleValue(Object& object) {
+TxEntry::setTupleValue(Object& object) {
 	return true;
 }
 
@@ -88,7 +72,7 @@ TxEntry::TxEntry() {
 }
 
 bool
-TxEntry::updateEtaPi() {
+TxEntry::updateTxEtaPi() {
 	/*
 	 * Find out my largest predecessor (eta) and smallest successor (pi).
 	 * For reads, see if another has over-written the tuples by checking successor LSN.
@@ -126,28 +110,69 @@ TxEntry::updateEtaPi() {
 }
 
 bool
+TxEntry::updateReadsetSSNData() {
+	auto &readSet = this->readSet;
+	for (uint32_t i = 0; i < readSet.size(); i++) {
+		TxEntry::maximizeTupleEta(*readSet.at(i), this->cts);
+	}
+	return true;
+}
+
+bool
+TxEntry::updateWritesetSSNData() {
+	auto &writeSet = this->writeSet;
+	for (uint32_t i = 0; i < writeSet.size(); i++) {
+		dssnMeta meta;
+		std::string key = formTupleKey(*writeSet.at(i));
+		TxEntry::tupleStore.getMeta(key, meta);
+
+		/* because we have a single version HOT, copy current data to prev data */
+		meta.pStampPrev = meta.pStamp;
+
+		/* SSN required operations */
+		meta.sStampPrev = this->pi;
+		meta.cStamp = meta.pStamp = this->cts;
+		meta.sStamp = std::numeric_limits<uint64_t>::max();
+
+		TxEntry::tupleStore.updateMeta(key, meta);
+	}
+	return true;
+}
+
+bool
 TxEntry::validate() {
 	//calculate local eta and pi
-	this->updateEtaPi();
+	updateTxEtaPi();
 
 	//update commit intent state
-	this->commitIntentState = TX_CI_INPROGRESS;
+	commitIntentState = TX_CI_INPROGRESS;
 
-	//if CS txn,
-	//check exclusion; update state if needed
-	//send out eta and pi
-	//wait and check for all peers
-	//if timed-out, loop to recover
+	if (getShardSet().size() > 1) { // cross-shard transaction
+		//send out eta and pi
+		//wait and check for all peers
+		//if timed-out, loop to recover
+	}
 
 	//check exclusion
 	//if failed, update states;
 	//if passed, log and commit and update states.
+	if (isExclusionViolated()) {
+		txState = TX_ABORT;
+	} else {
+		/*
+		 * Validation is passed. Record decision in this sequence:
+		 * WAL, update state, update tuple store (in-mem and then pmem).
+		 */
 
+		// WAL - write-ahead log, for failure recovery
 
+		// update state
+		txState = TX_COMMIT;
+		updateReadsetSSNData();
 
-	const std::vector<uint64_t>& shardSet = this->getShardSet();
-	if (shardSet.size() > 1) {
-		;
+		// update in-mem tuple store
+		updateWritesetSSNData();
+
 	}
 
 	return true;
