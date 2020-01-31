@@ -8,6 +8,7 @@
 
 #include "Common.h"
 #include "Object.h"
+#include "HOTKV.h"
 
 namespace DSSN {
 
@@ -16,8 +17,7 @@ namespace DSSN {
  */
 class TxEntry {
   PROTECTED:
-    uint64_t txId;
-    uint64_t cts; //commit time-stamp
+    uint64_t cts; //commit time-stamp, also used a globally unique ID of the transaction
     uint64_t eta;
     uint64_t pi;
     uint32_t txState;
@@ -28,6 +28,17 @@ class TxEntry {
 
     bool updateEtaPi();
     bool isExclusionViolated();
+
+    static HOTKV tupleStore;
+    static uint64_t getTupleEta(Object& object);
+    static uint64_t getTuplePi(Object& tuple);
+    static uint64_t getTuplePrevEta(Object& object);
+    static uint64_t getTuplePrevPi(Object& object);
+    static bool setTupleEta(Object& object);
+    static bool setTuplePi(Object& object);
+    static bool setTuplePrevEta(Object& object);
+    static bool setTuplePrevPi(Object& object);
+    static bool setTupleValue(Object& object);
 
   PUBLIC:
     enum {
@@ -72,10 +83,8 @@ class TxEntry {
 		TX_CONFLICT = 5
     };
 
-
-
+    TxEntry();
     bool validate();
-
     inline std::vector<uint64_t>& getShardSet() { return shardSet; }
 
 }; // end TxEntry

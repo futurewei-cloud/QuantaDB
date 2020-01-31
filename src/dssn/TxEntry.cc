@@ -5,6 +5,8 @@
 
 
 #include "TxEntry.h"
+#include "HOTKV.h"
+#include "KVInterface.h"
 
 namespace DSSN {
 
@@ -16,6 +18,77 @@ static inline T volatile_read(T volatile &x) {
   return *&x;
 }
 
+inline static std::string formTupleKey(Object& tuple) {
+	KeyLength* kLen;
+	uint8_t* key = tuple.getKey(0, kLen);
+	if (key == NULL) // there is a bug if it happens
+		return std::numeric_limits<uint64_t>::max();
+	uint64_t tableId = tuple.getTableId();
+	std::vector<uint8_t> ckey(sizeof(uint64_t) + *kLen);
+	*(uint64_t *)ckey = tableId;
+	for (uint32_t i = 0; i < *kLen; i++)
+		ckey[sizeof(uint64_t) + i] = key[i];
+	return std::string(ckey.begin(), ckey.end());
+}
+
+static uint64_t
+getTupleEta(Object& object) {
+	dssnMeta meta;
+	TxEntry::tupleStore.getMeta(formTupleKey(object), meta);
+	return meta.pStamp;
+}
+
+static uint64_t
+getTuplePi(Object& object) {
+	dssnMeta meta;
+	TxEntry::tupleStore.getMeta(formTupleKey(object), meta);
+	return meta.cStamp;
+}
+
+static uint64_t
+getTuplePrevEta(Object& object) {
+	dssnMeta meta;
+	TxEntry::tupleStore.getMeta(formTupleKey(object), meta);
+	return meta.pStampPrev;
+}
+
+static uint64_t
+getTuplePrevPi(uint8_t* key, KeyLength len) {
+	return 0; //not used yet
+}
+
+static bool
+setTupleEta(Object& object) {
+	return true;
+}
+
+static bool
+setTuplePi(Object& object) {
+	return true;
+}
+
+static bool
+setTuplePrevEta(Object& object) {
+	return true;
+}
+
+static bool
+setTuplePrevPi(Object& object) {
+	return true;
+}
+
+static bool
+setTupleValue(Object& object) {
+	return true;
+}
+
+TxEntry::TxEntry() {
+	this->pi = std::numeric_limits<uint64_t>::max();
+	this->eta = 0;
+	this->txState = TX_PENDING;
+	this->commitIntentState = TX_CI_UNQUEUED;
+	this->cts = 0;
+}
 
 bool
 TxEntry::isExclusionViolated() {
@@ -39,13 +112,10 @@ TxEntry::updateEtaPi() {
 
 	auto &readSet = this->readSet;
 	for (uint32_t i = 0; i < readSet.size(); i++) {
-		auto &tuple = readSet[i];
+		Object& tuple = readSet[i];
 		// get the key; use the key into the in-memory KV store to retrieve its pi
-		// the key is a composite of key, table id, tenant id, etc.
-		KeyLength kLen;
-		auto key = tuple->getKey(0, &kLen);
-		// ...
-		uint64_t vPi = 1; //LATER get it from Object
+
+		uint64_t vPi = getTuplePi(tuple);
 
 		this->pi = std::min(this->pi, vPi);
 
@@ -61,8 +131,7 @@ TxEntry::updateEtaPi() {
 		// get the key; use the key into the in-memory KV store to retrieve its pi
 		KeyLength kLen;
 		auto key = tuple->getKey(0, &kLen);
-		// ...
-		uint64_t vPrevEta = 1;
+		uint64_t vPrevEta = getTuplePrevEta(key, kLen);
 
 		this->eta = std::max(this->eta, vPrevEta);
 
@@ -99,6 +168,8 @@ TxEntry::validate() {
 	if (shardSet.size() > 1) {
 		;
 	}
+
+	return true;
 };
 
 } // end TxEntry

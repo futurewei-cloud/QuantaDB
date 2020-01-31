@@ -68,13 +68,15 @@ namespace DSSN
       bool result = false;
       idx::contenthelpers::OptionalValue<KeyValue*> ret = ((HotKeyValueType *)kvStore)->lookup(key);
       if (ret.mIsValid) {
-	  KeyValue* kv = ret.mValue;
-	  if (!kv->isTombStone) {
-	      kv->lock();
-	      meta = kv->meta;
-	      kv->unlock();
-	      result = true;
-	  }
+    	  KeyValue* kv = ret.mValue;
+    	  /*if (!kv->isTombStone) {
+    		  kv->lock();
+    		  meta = kv->meta;
+    		  kv->unlock();
+    		  result = true;
+    	  }*/ // by Henry
+		  meta = kv->meta;
+		  result = true;
       }
       return result;
   }

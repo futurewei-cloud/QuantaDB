@@ -10,9 +10,13 @@
 namespace DSSN
 {
     struct dssnMeta {
+    	/*
         uint64_t pStamp;   //eta
         uint64_t prevStamp; //pi
-	uint64_t cStamp;   //current
+        uint64_t cStamp;   //current */ // by Henry
+    	uint64_t pStamp; //eta
+    	uint64_t cStamp; //pi
+    	uint64_t pStampPrev; //prev version's eta
     };
     //Key value format to be stored in the underlying data structure
     struct KeyValue {
