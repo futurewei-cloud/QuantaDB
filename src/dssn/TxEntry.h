@@ -30,17 +30,18 @@ class TxEntry {
     std::vector<RAMCloud::Object *> readSet;
 
     bool updateTxEtaPi();
-    bool updateReadsetSSNData();
-    bool updateWritesetSSNData();
+    bool updateReadsetEta();
+    bool updateWriteset();
     inline bool isExclusionViolated() {return (this->pi <= this->eta);}
 
+    // all operations about tuple store
     static HOTKV tupleStore;
     static uint64_t getTupleEta(Object& object);
     static uint64_t getTuplePi(Object& object);
     static uint64_t getTuplePrevEta(Object& object);
     static uint64_t getTuplePrevPi(Object& object);
     static bool maximizeTupleEta(Object& object, uint64_t eta);
-    static bool setTupleValue(Object& object);
+    static bool updateTuple(Object& object);
 
   PUBLIC:
     enum {

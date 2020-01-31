@@ -7,6 +7,7 @@
 #include "TxEntry.h"
 #include "HOTKV.h"
 #include "KVInterface.h"
+#include "sstream"
 
 namespace DSSN {
 
@@ -59,7 +60,23 @@ TxEntry::maximizeTupleEta(Object& object, uint64_t eta) {
 }
 
 static bool
-TxEntry::setTupleValue(Object& object) {
+TxEntry::updateTuple(Object& object) {
+	dssnMeta meta;
+	std::string key = formTupleKey(object);
+	TxEntry::tupleStore.getMeta(key, meta);
+
+	/* because we have a single version HOT, copy current data to prev data */
+	meta.pStampPrev = meta.pStamp;
+
+	/* SSN required operations */
+	meta.sStampPrev = this->pi;
+	meta.cStamp = meta.pStamp = this->cts;
+	meta.sStamp = std::numeric_limits<uint64_t>::max();
+
+	/* tuple: key, pointer to object, meta-data */
+	std::stringstream ss;
+	ss << static_cast<const void*>(object);
+	tupleStore.put(key, ss.str(), meta);
 	return true;
 }
 
@@ -110,31 +127,19 @@ TxEntry::updateTxEtaPi() {
 }
 
 bool
-TxEntry::updateReadsetSSNData() {
+TxEntry::updateReadsetEta() {
 	auto &readSet = this->readSet;
 	for (uint32_t i = 0; i < readSet.size(); i++) {
-		TxEntry::maximizeTupleEta(*readSet.at(i), this->cts);
+		maximizeTupleEta(*readSet.at(i), this->cts);
 	}
 	return true;
 }
 
 bool
-TxEntry::updateWritesetSSNData() {
+TxEntry::updateWriteset() {
 	auto &writeSet = this->writeSet;
 	for (uint32_t i = 0; i < writeSet.size(); i++) {
-		dssnMeta meta;
-		std::string key = formTupleKey(*writeSet.at(i));
-		TxEntry::tupleStore.getMeta(key, meta);
-
-		/* because we have a single version HOT, copy current data to prev data */
-		meta.pStampPrev = meta.pStamp;
-
-		/* SSN required operations */
-		meta.sStampPrev = this->pi;
-		meta.cStamp = meta.pStamp = this->cts;
-		meta.sStamp = std::numeric_limits<uint64_t>::max();
-
-		TxEntry::tupleStore.updateMeta(key, meta);
+		updateTuple(*writeSet.at(i));
 	}
 	return true;
 }
@@ -153,25 +158,22 @@ TxEntry::validate() {
 		//if timed-out, loop to recover
 	}
 
-	//check exclusion
-	//if failed, update states;
-	//if passed, log and commit and update states.
 	if (isExclusionViolated()) {
 		txState = TX_ABORT;
 	} else {
 		/*
 		 * Validation is passed. Record decision in this sequence:
-		 * WAL, update state, update tuple store (in-mem and then pmem).
+		 * WAL, update state, update tuple store: in-mem (and then pmem).
 		 */
 
 		// WAL - write-ahead log, for failure recovery
 
 		// update state
 		txState = TX_COMMIT;
-		updateReadsetSSNData();
 
 		// update in-mem tuple store
-		updateWritesetSSNData();
+		updateReadsetEta();
+		updateWriteset();
 
 	}
 
