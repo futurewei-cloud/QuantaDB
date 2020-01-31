@@ -10,9 +10,6 @@
 
 namespace DSSN {
 
-typedef RAMCloud::Object Object;
-typedef RAMCloud::KeyLength KeyLength;
-
 template <typename T>
 static inline T volatile_read(T volatile &x) {
   return *&x;
@@ -39,7 +36,7 @@ getTupleEta(Object& object) {
 }
 
 static uint64_t
-getTuplePi(Object& object) {
+TxEntry::getTuplePi(Object& object) {
 	dssnMeta meta;
 	TxEntry::tupleStore.getMeta(formTupleKey(object), meta);
 	return meta.cStamp;
@@ -91,11 +88,6 @@ TxEntry::TxEntry() {
 }
 
 bool
-TxEntry::isExclusionViolated() {
-	return (this->pi <= this->eta);
-}
-
-bool
 TxEntry::updateEtaPi() {
 	/*
 	 * Find out my largest predecessor (eta) and smallest successor (pi).
@@ -112,13 +104,8 @@ TxEntry::updateEtaPi() {
 
 	auto &readSet = this->readSet;
 	for (uint32_t i = 0; i < readSet.size(); i++) {
-		Object& tuple = readSet[i];
-		// get the key; use the key into the in-memory KV store to retrieve its pi
-
-		uint64_t vPi = getTuplePi(tuple);
-
+		uint64_t vPi = TxEntry::getTuplePi(*readSet.at(i));
 		this->pi = std::min(this->pi, vPi);
-
 		if (this->isExclusionViolated()) {
 			this->txState = TX_ABORT;
 			return false;
@@ -127,14 +114,8 @@ TxEntry::updateEtaPi() {
 
 	auto  &writeSet = this->writeSet;
 	for (uint32_t i = 0; i < readSet.size(); i++) {
-		auto &tuple = writeSet[i];
-		// get the key; use the key into the in-memory KV store to retrieve its pi
-		KeyLength kLen;
-		auto key = tuple->getKey(0, &kLen);
-		uint64_t vPrevEta = getTuplePrevEta(key, kLen);
-
+		uint64_t vPrevEta = TxEntry::getTuplePrevEta(*writeSet.at(i));
 		this->eta = std::max(this->eta, vPrevEta);
-
 		if (this->isExclusionViolated()) {
 			this->txState = TX_ABORT;
 			return false;

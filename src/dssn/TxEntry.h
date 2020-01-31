@@ -12,6 +12,9 @@
 
 namespace DSSN {
 
+typedef RAMCloud::Object Object;
+typedef RAMCloud::KeyLength KeyLength;
+
 /**
  * Each TxEntry object represents a single transaction attempt to an DSSN validator.
  */
@@ -27,11 +30,11 @@ class TxEntry {
     std::vector<RAMCloud::Object *> readSet;
 
     bool updateEtaPi();
-    bool isExclusionViolated();
+    inline bool isExclusionViolated() {return (this->pi <= this->eta);}
 
     static HOTKV tupleStore;
     static uint64_t getTupleEta(Object& object);
-    static uint64_t getTuplePi(Object& tuple);
+    static uint64_t getTuplePi(Object& object);
     static uint64_t getTuplePrevEta(Object& object);
     static uint64_t getTuplePrevPi(Object& object);
     static bool setTupleEta(Object& object);
