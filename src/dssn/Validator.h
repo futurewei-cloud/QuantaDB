@@ -10,11 +10,13 @@
 #include "Object.h"
 #include "TXEntry.h"
 #include "HOTKV.h"
+#include "tbb.h"
 
 namespace DSSN {
 
 typedef RAMCloud::Object Object;
 typedef RAMCloud::KeyLength KeyLength;
+typedef tbb::concurrent_queue<TXEntry*> WaitQueue;
 
 /**
  * Supposedly one Validator instance per storage node, to handle DSSN validation.
@@ -25,6 +27,9 @@ typedef RAMCloud::KeyLength KeyLength;
  */
 class Validator {
     PROTECTED:
+    WaitQueue localTXQueue;
+
+
 
     // all operations about tuple store
     static HOTKV tupleStore;
@@ -35,13 +40,18 @@ class Validator {
     static bool maximizeTupleEta(Object& object, uint64_t eta);
     static bool updateTuple(Object& object, TXEntry& txEntry);
 
+    // all SSN data maintenance operations
     bool updateTxEtaPi(TXEntry& txEntry);
     bool updateReadsetEta(TXEntry& txEntry);
     bool updateWriteset(TXEntry& txEntry);
+    bool validate(TXEntry& txEntry);
+
+    // serializer of commit-intent validation
+    void dispatch();
+
 
     PUBLIC:
     Validator();
-    bool validate(TXEntry& txEntry);
 
 }; // end Validator class
 

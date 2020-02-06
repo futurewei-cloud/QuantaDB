@@ -20,14 +20,14 @@ typedef RAMCloud::KeyLength KeyLength;
  *
  * The class is expected to be used by the validator and by the coordinator.
  *
- * At the coordinator, its object contains the complete readset and writeset of
+ * At the coordinator, its object contains the complete read set and write set of
  * all relevant shards though the sets may be built incrementally. It would use
- * the writeset Bloom Filter to facilitate making the readset non-overlapping with
- * the writeset. It would also use the writeset Bloom Filter to help provide the read operation
+ * the write set Bloom Filter to facilitate making the read set non-overlapping with
+ * the write set. It would also use the write set Bloom Filter to help provide the read operation
  * of any tuple that it has written.
  *
- * At the validator, its object contains the readset and writeset of the local shard.
- * It uses the readset Bloom Filter and writeset Bloom Filter to facilitate
+ * At the validator, its object contains the read set and write set of the local shard.
+ * It uses the read set Bloom Filter and write set Bloom Filter to facilitate
  * dependency checking for serialization.
  */
 class TXEntry {
@@ -38,11 +38,11 @@ class TXEntry {
     uint32_t txState;
     uint32_t commitIntentState;
     std::vector<uint64_t> shardSet; //set of participating shards
-    std::vector<RAMCloud::Object *> writeSet;
-    std::vector<RAMCloud::Object *> readSet;
+    std::vector<RAMCloud::Object *> writeSet; //coordinator, for 'is in' operation, may benefit from using 'set' instead?!
+    std::vector<RAMCloud::Object *> readSet; //coordinator, for 'remove' operation, may benefit from using 'set' instead?!
     /* Henry: possibly put parameterized Bloom Filters here.
-    BloomFilter writesetFilter;
-    BloomFilter readsetFilter;
+    BloomFilter writeSetFilter;
+    BloomFilter readSetFilter;
     Henry: possibly needs these
     uint64_t id; //transaction globally unique ID
     uint64_t readSnapshotTimestamp; //0 - not a read-only tx, max - most recent, [1, max) - specific snapshot

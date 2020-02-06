@@ -21,9 +21,11 @@ typedef RAMCloud::KeyLength KeyLength;
  *
  * It does early-abort by performing SSN exclusion check upon each read operation.
  * It does not send any write operation RPC to the storage node. Instead, it caches
- * the writeset to support any read of tuple that it has written.
- * It makes the readset non-overlapping with the writeset.
+ * the write set to support any read of tuple that it has written.
+ * It makes the read set non-overlapping with the write set.
  * It uses its sequencer to get a CTS before initiating the commit-intent.
+ * It partitions the read set and write set according to the relevant shards
+ * and initiates commit-intent(s) to relevant validator(s).
  *
  */
 class Coordinator {
