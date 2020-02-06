@@ -63,16 +63,19 @@ namespace RAMCloud {
 	float speedup = 0;
 	DSSN::HOTKV hotkv;
 	printf("Number of Threads = %u, Number of Keys = %u\n", nthreads, nKeys);
- 
+	std::vector<std::thread> workers(std::thread::hardware_concurrency());
 	for (uint32_t i = 0; i< nthreads; i++) {
 	  ThreadData* data = new ThreadData();
 	  data->keyoffset = nkeysPerThread * i;
 	  data->nkeys = nkeysPerThread;
 	  data->kvs = &hotkv;
 	  data->hb = this;
-	  std::thread t(hotKVPutTest, data);
-	  t.join();
+	  workers[i] = std::thread(hotKVPutTest, data);
 	}
+	for (uint32_t i = 0; i< nthreads; i++) {
+	  workers[i].join();
+	}
+	workers.clear();
 	printf("== Put() took %.3f s ==\n", Cycles::toSeconds(totalPutCycles));
 
 	printf("    external avg: %lu ticks, %lu nsec\n", totalPutCycles / nKeys,
@@ -87,16 +90,20 @@ namespace RAMCloud {
 	    baseTotalPutCycles = totalPutCycles;
 	}
 	totalUpdateCycles = 0;
-	
+
 	for (uint32_t i = 0; i< nthreads; i++) {
 	  ThreadData* data = new ThreadData();
 	  data->keyoffset = nkeysPerThread * i;
 	  data->nkeys = nkeysPerThread;
 	  data->kvs = &hotkv;
 	  data->hb = this;
-	  std::thread t(hotKVPutTest, data);
-	  t.join();
+	  workers[i] = std::thread(hotKVPutTest, data);
 	}
+	for (uint32_t i = 0; i< nthreads; i++) {
+	  workers[i].join();
+	}
+	workers.clear();
+
 	printf("== Replace took %.3f s ==\n", Cycles::toSeconds(totalPutCycles));
 
 	printf("    external avg: %lu ticks, %lu nsec\n", totalPutCycles / nKeys,
@@ -110,9 +117,12 @@ namespace RAMCloud {
 	  data->nkeys = nkeysPerThread;
 	  data->kvs = &hotkv;
 	  data->hb = this;
-	  std::thread t(hotKVGetTest, data);
-	  t.join();
+	  workers[i] = std::thread(hotKVGetTest, data);
 	}
+	for (uint32_t i = 0; i< nthreads; i++) {
+	  workers[i].join();
+	}
+	workers.clear();
 	printf("== Get() took %.3f s ==\n", Cycles::toSeconds(totalGetCycles));
 
 	printf("    external avg: %lu ticks, %lu nsec\n", totalGetCycles / nKeys,
@@ -132,9 +142,12 @@ namespace RAMCloud {
 	  data->nkeys = nkeysPerThread;
 	  data->kvs = &hotkv;
 	  data->hb = this;
-	  std::thread t(hotKVUpdateMetaTest, data);
-	  t.join();
+	  workers[i] = std::thread(hotKVUpdateMetaTest, data);
 	}
+	for (uint32_t i = 0; i< nthreads; i++) {
+	  workers[i].join();
+	}
+	workers.clear();
 	printf("== UpdateMetaData() took %.3f s ==\n", Cycles::toSeconds(totalUpdateCycles));
 
 	printf("    external avg: %lu ticks, %lu nsec\n", totalUpdateCycles / nKeys,
@@ -147,9 +160,13 @@ namespace RAMCloud {
 	  data->nkeys = nkeysPerThread;
 	  data->kvs = &hotkv;
 	  data->hb = this;
-	  std::thread t(hotKVGetMetaTest, data);
-	  t.join();
+	  workers[i] = std::thread(hotKVGetMetaTest, data);
 	}
+
+	for (uint32_t i = 0; i< nthreads; i++) {
+	  workers[i].join();
+	}
+	workers.clear();
 	printf("== GetMetaData() took %.3f s ==\n", Cycles::toSeconds(totalGetMetaCycles));
 
 	printf("    external avg: %lu ticks, %lu nsec\n", totalGetMetaCycles / nKeys,
