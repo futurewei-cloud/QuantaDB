@@ -24,6 +24,8 @@ namespace DSSN {
  * a max of 1024 Sequencers can be supported. The upper 54-bit is taken directly from the PHC's micro-second 
  * readings.
  *
+ * [TBD: Sequencer management: How to automatically assign the 'weight' at Sequencer startup time? ]
+ *
  * An embedded error detection is built-in to Sequencer by checking the same logical time-stamp is not
  * issued twice. The maximum transaction throught of a single node should be much less than 1M transaction
  * per second. So it should be impossible for this error to happen.
