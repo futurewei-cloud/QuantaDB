@@ -7,6 +7,7 @@
 #include "KVInterface.h"
 #include "sstream"
 #include "Validator.h"
+#include <thread>
 
 namespace DSSN {
 
@@ -74,6 +75,7 @@ Validator::updateTuple(Object& object, TXEntry& txEntry) {
 }
 
 Validator::Validator() {
+    std::thread commitIntentsSerializer(dispatch);
 }
 
 bool
@@ -167,6 +169,30 @@ Validator::validate(TXEntry& txEntry) {
 
     return true;
 };
+
+void
+Validator::dispatch() {
+    /*
+     * This loop handles the DSSN serialization window critical section
+     */
+    while (true) {
+        // process due commit-intents on cross-shard transaction queue
+
+        // process all commit-intents on local transaction queue
+        for (uint32_t i = 0; i < localTXQueue.unsafe_size(); i++) {
+            TXEntry* txEntry;
+            if (localTXQueue.try_pop(txEntry)) {
+                if (activeTXs.isDependent(txEntry)) {
+                    localTXQueue.push(txEntry); // re-enqueued
+                } else {
+                    txEntry->setTxCIState = TXEntry::TX_CI_TRANSIENT;
+                    txEntry->setCTS(12345 /* get uint64_t CTS LATER */);
+                    activeTXs.insert(txEntry);
+                }
+            }
+        }
+    }
+}
 
 } // end Validator class
 
