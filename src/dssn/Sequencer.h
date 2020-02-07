@@ -7,14 +7,14 @@
 
 namespace DSSN {
 /**
- * DSSN Sequencer Description - ver 1
+ * DSSN Sequencer Description - ver 2
  *
  * A DSSN Sequencer provides time stamp service to DSSN Coordinator for obantining CTS value. DSSN Sequencer is
  * a per client node service daemon. A client side library is used to send request and get time stamp value.
  *
  * DSSN Sequencer generates logical time-stamp that is monotonically increasing and unique across the DSSN cluster.
  *
- * A logical time-stamp is a 64-bit value consisted of <44-bit phc time in usec><10-bit weight><10-bit counter>.
+ * A logical time-stamp is a 64-bit value consisted of <46-bit phc time in usec><10-bit weight><8-bit counter>.
  * How these three fields are generated is explained below. 
  *
  * DSSN Sequencer works in a distributed model. One challenge in distributed sequencer is multi-node clock
@@ -28,9 +28,9 @@ namespace DSSN {
  * a different weight to ensures no logical time stamp collison between nodes. A 10-bit weight field implies
  * a maximum of 1024 Sequencers can be supported. 
  *
- * The 10-bit counter field allows Sequencer to generate as much as 1024 unique time stamps in a microsecond interval.
- * If more then 1024 was requested, Sequencer will need to wait until the next microsecond. This is a theoretical
- * assurance. In practice, it is impossible for Sequencer to handle 1024 time stamp requests per micro-second
+ * The 8-bit counter field allows Sequencer to generate as much as 256 unique time stamps in a microsecond interval.
+ * If more then 256 was requested, Sequencer will need to wait until the next microsecond. This is a theoretical
+ * assurance. In practice, it is unlikely for Sequencer to handle 256 time stamp requests per micro-second
  *
  * Automatic 'weight' assignment at Sequencer startup time.
  * A formal solution to the unique weight assignment problem is probably to hook-up to cluster node managerment
@@ -46,7 +46,7 @@ class Sequencer {
     u_int64_t    readPHC();      // return micro-second time stamp from PHC
     u_int64_t    last_phc;       // Last PHC time-stamp read
     u_int32_t    counter;        // local counter to ensure unique logical time-stamp is geneerated.
-                                 // If last_phc == this_phc, then counter++, else counter = 0;
+                                 // If last_phc == this_phc, then counter--, else counter = 0xFF;
 }; // end Sequencer class
 
 } // end namespace DSSN
