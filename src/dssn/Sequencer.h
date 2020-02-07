@@ -10,7 +10,7 @@
 namespace DSSN {
 /**
  * A DSSN Sequencer issues a 64-bit logical time-stamp that is unique and monotonically increasing.
- * DSSN Sequencer works in a distributed model and is a lib that go side-by-side with a Coordinator.
+ * DSSN Sequencer works in a distributed model and is a lib that goes side-by-side with a Coordinator.
  * 
  * One challenge in distributed sequencer is in multi-node clock synchronization. Clock synchronization
  * s an issue ndependent from DSSN. There are many clock synchronization solutions. This implementation
