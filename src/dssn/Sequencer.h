@@ -7,29 +7,35 @@
 
 namespace DSSN {
 /**
- * A DSSN Sequencer issues a 64-bit logical time-stamp that is unique and monotonically increasing.
- * DSSN Sequencer works in a distributed model and is a lib that goes side-by-side with a Coordinator.
- * 
- * One challenge in distributed sequencer is in multi-node clock synchronization. Clock synchronization
- * is a topic independent from DSSN. There are many clock synchronization solutions. This implementation
- * gets time-stamp from a PHC (Physical Hardware Clock) on a NIC/IB card which is managed by LinuxPTP.
+ * DSSN Sequencer Description - ver 1
  *
- * LinuxPTP provides sub-microsecond time synchronization precision. A sub-microsecond precision should
- * be sufficient to support 1M transactions per second.
+ * A DSSN Sequencer provides time stamp service to DSSN Coordinator for obantining CTS value. DSSN Sequencer is
+ * a per client node service daemon. A client side library is used to send request and get time stamp value.
  *
- * A logical time-stamp is a 64-bit value consisted of <44-bit phc time in usec><10-bit weight><10-bit counter> 
+ * DSSN Sequencer generates logical time-stamp that is monotonically increasing and unique across the DSSN cluster.
  *
- * The 10-bit counter field is used by Sequencer to ensure unique logical time-stamps. This allows
- * Sequencer to handle upto 1024 requests within a one microsecond period. More then 1024, Sequencer will
- * need to re-read PHC until the next microsecond has arrived. 
+ * A logical time-stamp is a 64-bit value consisted of <44-bit phc time in usec><10-bit weight><10-bit counter>.
+ * How these three fields are generated is explained below. 
+ *
+ * DSSN Sequencer works in a distributed model. One challenge in distributed sequencer is multi-node clock
+ * synchronization. Clock synchronization is a topic independent from DSSN. There are many clock synchronization
+ * solutions. This implementation uses LinuxPTP to synchronize clocks. LinuxPTP can achieve sub-microsecond
+ * synchronization precision. A sub-microsecond precision is sufficient to support 1M transactions per second.
+ *
+ * The 44-bit field is PHC (Physical Hardware Clock) time rounded down to microsecond.
  *
  * The 10-bit weight field is used to avoid time-stamp collision between nodes. Each Sequencer is assigned
- * a different weight and its initialization time. When multiple nodes generated logical time-stamp from the
- * the same PHC time-stamp and the same local counter, the weight field will serve as a tie-breaker to ensure
- * no logical time-stamp collision will happen between any node. A 10-bit weight field implies a max of 1024
- * Sequencers can be supported. 
+ * a different weight to ensures no logical time stamp collison between nodes. A 10-bit weight field implies
+ * a maximum of 1024 Sequencers can be supported. 
  *
- * [TBD: How to automatically assign 'weight' at Sequencer startup time? ]
+ * The 10-bit counter field allows Sequencer to generate as much as 1024 unique time stamps in a microsecond interval.
+ * If more then 1024 was requested, Sequencer will need to wait until the next microsecond. This is a theoretical
+ * assurance. In practice, it is impossible for Sequencer to handle 1024 time stamp requests per micro-second
+ *
+ * Automatic 'weight' assignment at Sequencer startup time.
+ * A formal solution to the unique weight assignment problem is probably to hook-up to cluster node managerment
+ * such as zookeeper. In this implementation, we choose a light-weight approach by picking up the last number of
+ * the IP address of the PTP port.
  */
 class Sequencer {
     public:
@@ -37,10 +43,10 @@ class Sequencer {
     u_int64_t getTimeStamp();    // return logical time-stamp
 
     private:
-    u_int64_t    readPHC();      // Read time-stamp from PHC
+    u_int64_t    readPHC();      // return micro-second time stamp from PHC
     u_int64_t    last_phc;       // Last PHC time-stamp read
     u_int32_t    counter;        // local counter to ensure unique logical time-stamp is geneerated.
-                                // If last_phc == this_phc, then counter++, else counter = 0;
+                                 // If last_phc == this_phc, then counter++, else counter = 0;
 }; // end Sequencer class
 
 } // end namespace DSSN
