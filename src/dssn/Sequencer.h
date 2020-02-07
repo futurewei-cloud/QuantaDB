@@ -3,8 +3,7 @@
  */
 #pragma once
 
-#include "Common.h"
-#include "Object.h"
+#include <sys/types.h>
 
 namespace DSSN {
 /**
@@ -33,16 +32,14 @@ namespace DSSN {
  * [TBD: How to automatically assign 'weight' at Sequencer startup time? ]
  */
 class Sequencer {
-    PROTECTED:
-
-    PUBLIC:
+    public:
     Sequencer();
-    uint64_t getTimeStamp();    // return logical time-stamp
+    u_int64_t getTimeStamp();    // return logical time-stamp
 
-    PRIVATE:
-    uint64_t    readPHC();      // Read time-stamp from PHC
-    uint64_t    last_phc;       // Last PHC time-stamp read
-    uint32_t    counter;        // local counter to ensure unique logical time-stamp is geneerated.
+    private:
+    u_int64_t    readPHC();      // Read time-stamp from PHC
+    u_int64_t    last_phc;       // Last PHC time-stamp read
+    u_int32_t    counter;        // local counter to ensure unique logical time-stamp is geneerated.
                                 // If last_phc == this_phc, then counter++, else counter = 0;
 }; // end Sequencer class
 
