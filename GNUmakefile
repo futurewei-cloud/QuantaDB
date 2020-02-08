@@ -128,7 +128,7 @@ LIB_PATHS ?= -L$(TOP)/hot/build/tbb_cmake_build/tbb_cmake_build_subdir_release
 LIBS := $(LIB_PATHS) $(EXTRALIBS) $(LOGCABIN_LIB) $(ZOOKEEPER_LIB) \
 	-lpcrecpp -lboost_program_options \
 	-lprotobuf -lrt -lboost_filesystem -lboost_system \
-	-lpthread -lssl -lcrypto -ltbb
+	-lpthread -lssl -lcrypto -ltbb -ljemalloc
 ifeq ($(DEBUG),yes)
 # -rdynamic generates more useful backtraces when you have debugging symbols
 LIBS += -rdynamic
