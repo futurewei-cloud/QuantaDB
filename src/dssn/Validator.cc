@@ -75,7 +75,7 @@ Validator::updateTuple(Object& object, TXEntry& txEntry) {
 }
 
 Validator::Validator() {
-    std::thread commitIntentsSerializer(dispatch);
+    std::thread commitIntentsSerializer(serialize);
 }
 
 bool
@@ -171,7 +171,7 @@ Validator::validate(TXEntry& txEntry) {
 };
 
 void
-Validator::dispatch() {
+Validator::serialize() {
     /*
      * This loop handles the DSSN serialization window critical section
      */
@@ -182,17 +182,21 @@ Validator::dispatch() {
         for (uint32_t i = 0; i < localTXQueue.unsafe_size(); i++) {
             TXEntry* txEntry;
             if (localTXQueue.try_pop(txEntry)) {
-                if (activeTXs.isDependent(txEntry)) {
-                    localTXQueue.push(txEntry); // re-enqueued
+                if (activeTxSet.contains(txEntry)) {
+                    localTXQueue.push(txEntry); // re-enqueued as this tx may be unblocked later
                 } else {
-                    txEntry->setTxCIState = TXEntry::TX_CI_TRANSIENT;
-                    txEntry->setCTS(12345 /* get uint64_t CTS LATER */);
-                    activeTXs.insert(txEntry);
+                    // As local transactions can be validated in any order, we can set the CTS.
+                    txEntry->setCTS(12345 /* deduce an approx uint64_t CTS LATER */);
+
+                    // There is no need to update activeTXs because this tx is validated and concluded shortly
+
+                    validateLocalTx(txEntry);
+
+                    conclude(txEntry);
                 }
             }
         }
     }
 }
-
 } // end Validator class
 

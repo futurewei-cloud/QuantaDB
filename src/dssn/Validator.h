@@ -11,6 +11,7 @@
 #include "TXEntry.h"
 #include "HOTKV.h"
 #include "tbb.h"
+#include "CountBloomFilter.h"
 
 namespace DSSN {
 
@@ -28,7 +29,7 @@ typedef tbb::concurrent_queue<TXEntry*> WaitQueue;
 class Validator {
     PROTECTED:
     WaitQueue localTXQueue;
-
+    ActiveTxSet activeTxSet;
 
 
     // all operations about tuple store
@@ -47,8 +48,13 @@ class Validator {
     bool validate(TXEntry& txEntry);
 
     // serializer of commit-intent validation
-    void dispatch();
+    void serialize();
 
+    // performs SSN validation on a local transaction
+    bool validateLocalTx(TXEntry* txEntry);
+
+    // log validation result, update storage, and reply to commit-intent
+    bool conclude(TXEntry* txEntry);
 
     PUBLIC:
     Validator();

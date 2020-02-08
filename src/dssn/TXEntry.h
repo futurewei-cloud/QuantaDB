@@ -107,9 +107,8 @@ class TXEntry {
     inline void setTxState(uint32_t val) { txState = val; }
     inline void setTxCIState(uint32_t val) { commitIntentState = val; }
     inline bool isExclusionViolated() { return pi <= eta; }
-
-    bool insertWriteSet(RAMCloud::Object* object);
-    bool insertReadSet(RAMCloud::Object* object);
+    void insertWriteSet(RAMCloud::Object* object) { writeSet.push_back(object); }
+    void insertReadSet(RAMCloud::Object* object) { readSet.push_back(object); }
 
 }; // end TXEntry class
 

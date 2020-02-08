@@ -13,7 +13,7 @@ namespace DSSN {
  * DSSN Sequencer works in a distributed model and is a lib that go side-by-side with a Coordinator.
  * 
  * One challenge in distributed sequencer is in multi-node clock synchronization. Clock synchronization
- * s an issue ndependent from DSSN. There are many clock synchronization solutions. This implementation
+ * is an issue independent from DSSN. There are many clock synchronization solutions. This implementation
  * gets time-stamp from a PHC (Physical Hardware Clock) on a NIC/IB card which is managed by LinuxPTP.
  *
  * LinuxPTP provides sub-microsecond time synchronization precision. A sub-microsecond precision should
@@ -27,7 +27,7 @@ namespace DSSN {
  * [TBD: Sequencer management: How to automatically assign the 'weight' at Sequencer startup time? ]
  *
  * An embedded error detection is built-in to Sequencer by checking the same logical time-stamp is not
- * issued twice. The maximum transaction throught of a single node should be much less than 1M transaction
+ * issued twice. The maximum transaction throughput of a single node should be much less than 1M transaction
  * per second. So it should be impossible for this error to happen.
  */
 class Sequencer {
