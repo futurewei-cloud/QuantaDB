@@ -10,7 +10,7 @@
 
 namespace DSSN {
 
-typedef std::string T;
+typedef uint8_t T;
 
 /**
  * Counting Bloom Filter

@@ -11,7 +11,7 @@
 #include "TXEntry.h"
 #include "HOTKV.h"
 #include "tbb.h"
-#include "CountBloomFilter.h"
+#include "ActiveTxSet.h"
 
 namespace DSSN {
 

@@ -182,7 +182,7 @@ Validator::serialize() {
         for (uint32_t i = 0; i < localTXQueue.unsafe_size(); i++) {
             TXEntry* txEntry;
             if (localTXQueue.try_pop(txEntry)) {
-                if (activeTxSet.contains(txEntry)) {
+                if (activeTxSet.depends(txEntry)) {
                     localTXQueue.push(txEntry); // re-enqueued as this tx may be unblocked later
                 } else {
                     // As local transactions can be validated in any order, we can set the CTS.
