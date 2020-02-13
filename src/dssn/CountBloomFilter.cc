@@ -9,7 +9,7 @@
 
 namespace DSSN {
 
-inline bool
+bool
 CountBloomFilter::add(const T *key, uint32_t size) {
      uint64_t idx1, idx2;
      createIndexesFromKey(key, size, &idx1, &idx2);
@@ -21,7 +21,7 @@ CountBloomFilter::add(const T *key, uint32_t size) {
      return false;
 }
 
-inline bool
+bool
 CountBloomFilter::remove(const T *key, uint32_t size) {
      uint64_t idx1, idx2;
      // assume that the key has actually been added
@@ -34,7 +34,7 @@ CountBloomFilter::remove(const T *key, uint32_t size) {
      return false;
 }
 
-inline bool
+bool
 CountBloomFilter::contains(const T *key, uint32_t size) {
      uint64_t idx1, idx2;
      // assume that the key has actually been added
@@ -42,12 +42,20 @@ CountBloomFilter::contains(const T *key, uint32_t size) {
      return (counters[idx1] > 0 && counters[idx2] > 0);
 }
 
-inline void
+bool
+CountBloomFilter::clear() {
+    for (uint32_t i = 0; i < BFSize; i++) {
+        counters[i] = 0;
+    }
+    return true;
+}
+
+void
 CountBloomFilter::createIndexesFromKey(const T *key, uint32_t size, uint64_t *idx1, uint64_t *idx2) {
     std::array<uint64_t, 2> indexes;
     RAMCloud::MurmurHash3_x64_128(key, size, 0, indexes.data());
-    *idx1 = indexes[0] % counters.size();
-    *idx2 = indexes[1] % counters.size();
+    *idx1 = indexes[0] % BFSize;
+    *idx2 = indexes[1] % BFSize;
 }
 
 } // end CountBloomFilter class

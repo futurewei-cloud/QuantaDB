@@ -7,7 +7,7 @@
 #define ACTIVE_TX_SET_H
 
 #include "CountBloomFilter.h"
-#include "TXEntry.h"
+#include "TxEntry.h"
 
 namespace DSSN {
 
@@ -23,18 +23,17 @@ class ActiveTxSet {
     CountBloomFilter cbf;
 
     PUBLIC:
-    ActiveTxSet(uint32_t size) { cbf = CountBloomFilter(size); }
-    ~ActiveTxSet();
-
     // false if the key is failed to be added due to overflow
-    inline bool add(TXEntry *txEntry);
+    bool add(TxEntry *txEntry);
 
     // for performance, the key is assumed to have been added
-    inline bool remove(TXEntry *txEntry);
+    bool remove(TxEntry *txEntry);
 
-    inline bool depends(TXEntry *txEntry);
+    bool depends(TxEntry *txEntry);
 
-    inline void createIndexes(TXEntry *txEntry);
+    void createIndexes(TxEntry *txEntry);
+
+    ActiveTxSet() { cbf.clear(); }
 
 }; // end ActiveTxSet class
 

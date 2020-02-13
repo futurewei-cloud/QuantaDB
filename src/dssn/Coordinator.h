@@ -8,7 +8,7 @@
 
 #include "Common.h"
 #include "Object.h"
-#include "TXEntry.h"
+#include "TxEntry.h"
 
 namespace DSSN {
 

@@ -11,53 +11,67 @@
 
 namespace DSSN {
 
-inline static std::string formTupleKey(Object& tuple) {
-    KeyLength* kLen;
-    uint8_t* key = tuple.getKey(0, kLen);
+const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
+const uint64_t minTimeStamp = 0;
+
+inline std::string formTupleKey(Object& tuple) {
+    KeyLength kLen;
+    const uint8_t* key = (const uint8_t *)tuple.getKey(0, &kLen);
     if (key == NULL) // there is a bug if it happens
-        return std::numeric_limits<uint64_t>::max();
+        return "";
     uint64_t tableId = tuple.getTableId();
-    std::vector<uint8_t> ckey(sizeof(uint64_t) + *kLen);
-    *(uint64_t *)ckey = tableId;
-    for (uint32_t i = 0; i < *kLen; i++)
+    std::vector<uint8_t> ckey(sizeof(uint64_t) + kLen);
+    for (uint32_t i = 0; i < sizeof(uint64_t); i++)
+        ckey[i] = ((uint32_t *)&tableId)[i];
+    for (uint32_t i = 0; i < kLen; i++)
         ckey[sizeof(uint64_t) + i] = key[i];
     return std::string(ckey.begin(), ckey.end());
 }
 
-static uint64_t
+uint64_t
 Validator::getTuplePi(Object& object) {
+    std::string tupleKey = formTupleKey(object);
+    if (tupleKey.empty())
+        return minTimeStamp; //cause exclusion violation
     dssnMeta meta;
-    Validator::tupleStore.getMeta(formTupleKey(object), meta);
+    Validator::tupleStore.getMeta(tupleKey, meta);
     return meta.cStamp;
 }
 
-static uint64_t
+uint64_t
 Validator::getTuplePrevEta(Object& object) {
+    std::string tupleKey = formTupleKey(object);
+    if (tupleKey.empty())
+        return maxTimeStamp; //cause exclusion violation
     dssnMeta meta;
-    Validator::tupleStore.getMeta(formTupleKey(object), meta);
+    Validator::tupleStore.getMeta(tupleKey, meta);
     return meta.sStampPrev;
 }
 
-static uint64_t
+uint64_t
 Validator::getTuplePrevPi(Object& object) {
     return 0; //not used yet
 }
 
-static bool
+bool
 Validator::maximizeTupleEta(Object& object, uint64_t eta) {
+    std::string tupleKey = formTupleKey(object);
+    if (tupleKey.empty())
+        return false;
     dssnMeta meta;
-    std::string key = formTupleKey(object);
-    Validator::tupleStore.getMeta(key, meta);
+    Validator::tupleStore.getMeta(tupleKey, meta);
     meta.pStamp = std::max(eta, meta.pStamp);
-    Validator::tupleStore.updateMeta(key, meta);
+    Validator::tupleStore.updateMeta(tupleKey, meta);
     return true;
 }
 
-static bool
-Validator::updateTuple(Object& object, TXEntry& txEntry) {
+bool
+Validator::updateTuple(Object& object, TxEntry& txEntry) {
+    std::string tupleKey = formTupleKey(object);
+    if (tupleKey.empty())
+        return false;
     dssnMeta meta;
-    std::string key = formTupleKey(object);
-    Validator::tupleStore.getMeta(key, meta);
+    Validator::tupleStore.getMeta(tupleKey, meta);
 
     /* because we have a single version HOT, copy current data to prev data */
     meta.pStampPrev = meta.pStamp;
@@ -65,21 +79,23 @@ Validator::updateTuple(Object& object, TXEntry& txEntry) {
     /* SSN required operations */
     meta.sStampPrev = txEntry.getPi();
     meta.cStamp = meta.pStamp = txEntry.getCTS();
-    meta.sStamp = std::numeric_limits<uint64_t>::max();
+    meta.sStamp = maxTimeStamp;
 
     /* tuple: key, pointer to object, meta-data */
     std::stringstream ss;
-    ss << static_cast<const void*>(object);
-    tupleStore.put(key, ss.str(), meta);
+    ss << static_cast<const void*>(&object);
+    tupleStore.put(tupleKey, ss.str(), meta);
     return true;
 }
 
 Validator::Validator() {
-    std::thread commitIntentsSerializer(serialize);
+    // Henry: may need to use TBB to pin the threads to specific cores LATER
+    std::thread( [=] { serialize(); });
+    std::thread( [=] { validateDistributedTxs(); });
 }
 
 bool
-Validator::updateTxEtaPi(TXEntry &txEntry) {
+Validator::updateTxEtaPi(TxEntry &txEntry) {
     /*
      * Find out my largest predecessor (eta) and smallest successor (pi).
      * For reads, see if another has over-written the tuples by checking successor LSN.
@@ -98,7 +114,7 @@ Validator::updateTxEtaPi(TXEntry &txEntry) {
         uint64_t vPi = Validator::getTuplePi(*readSet.at(i));
         txEntry.setPi(std::min(txEntry.getPi(), vPi));
         if (txEntry.isExclusionViolated()) {
-            txEntry.setTxState(TXEntry::TX_ABORT);
+            txEntry.setTxState(TxEntry::TX_ABORT);
             return false;
         }
     }
@@ -108,7 +124,7 @@ Validator::updateTxEtaPi(TXEntry &txEntry) {
         uint64_t vPrevEta = Validator::getTuplePrevEta(*writeSet.at(i));
         txEntry.setEta(std::max(txEntry.getEta(), vPrevEta));
         if (txEntry.isExclusionViolated()) {
-            txEntry.setTxState(TXEntry::TX_ABORT);
+            txEntry.setTxState(TxEntry::TX_ABORT);
             return false;
         }
     }
@@ -117,7 +133,7 @@ Validator::updateTxEtaPi(TXEntry &txEntry) {
 }
 
 bool
-Validator::updateReadsetEta(TXEntry &txEntry) {
+Validator::updateReadsetEta(TxEntry &txEntry) {
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < readSet.size(); i++) {
         maximizeTupleEta(*readSet.at(i), txEntry.getCTS());
@@ -126,7 +142,7 @@ Validator::updateReadsetEta(TXEntry &txEntry) {
 }
 
 bool
-Validator::updateWriteset(TXEntry &txEntry) {
+Validator::updateWriteset(TxEntry &txEntry) {
     auto &writeSet = txEntry.getWriteSet();
     for (uint32_t i = 0; i < writeSet.size(); i++) {
         updateTuple(*writeSet.at(i), txEntry);
@@ -135,40 +151,68 @@ Validator::updateWriteset(TXEntry &txEntry) {
 }
 
 bool
-Validator::validate(TXEntry& txEntry) {
+Validator::validateLocalTx(TxEntry& txEntry) {
     //calculate local eta and pi
     updateTxEtaPi(txEntry);
 
-    //update commit intent state
-    txEntry.setTxCIState = TXEntry::TX_CI_INPROGRESS;
-
-    if (txEntry.getShardSet().size() > 1) { // cross-shard transaction
-        //send out eta and pi
-        //wait and check for all peers
-        //if timed-out, loop to recover
-    }
-
     if (txEntry.isExclusionViolated()) {
-        txEntry.setTxState(TXEntry::TX_ABORT);
+        txEntry.setTxState(TxEntry::TX_ABORT);
     } else {
-        /*
-         * Validation is passed. Record decision in this sequence:
-         * WAL, update state, update tuple store: in-mem (and then pmem).
-         */
-
-        // WAL - write-ahead log, for failure recovery
-
-        // update state
-        txEntry.setTxState(TXEntry::TX_COMMIT);
-
-        // update in-mem tuple store
-        updateReadsetEta(txEntry);
-        updateWriteset(txEntry);
-
+        txEntry.setTxState(TxEntry::TX_COMMIT);
     }
+    txEntry.setTxCIState(TxEntry::TX_CI_CONCLUDED);
 
     return true;
 };
+
+void
+Validator::validateDistributedTxs() {
+    /*
+    while (true) {
+        for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = reorderQueue.begin(); itr != reorderQueue.end(); ++itr) {
+            TXEntry *txEntry = itr;
+            if (txEntry->getCTS() > currentTime()) {
+                break; //no need to look further in the sorted queue
+            }
+            if (txEntry->getTxState() == TXEntry::TX_PENDING
+                    && txEntry->getTxCIState() == TXEntry::TX_CI_TRANSIENT) {
+                //calculate local eta and pi
+                updateTxEtaPi(*txEntry);
+
+                //log the commit-intent for failure recovery
+                //LATER
+
+                //send non-blocking SEND_SSN_INFO IPC messages to tx peers
+                //LATER
+
+                //update state
+                txEntry->setTxCIState(TXEntry::TX_CI_INPROGRESS);
+            }
+            if (txEntry->getTxState() == TXEntry::TX_PENDING) {
+                //if tx takes too long, try to abort it
+                if (txEntry->getCTS() - currentTime() > alertThreshold)
+                    txEntry->setTxState(TXEntry::TX_ALERT);
+            } else if (txEntry->getTxState() == TXEntry::TX_ALERT) {
+                //send non-blocking REQUEST_SSN_INFO IPC to tx peers
+            } else if (txEntry->getTxState() == TXEntry::TX_ABORT
+                    || txEntry->getTxState() == TXEntry::TX_COMMIT) {
+                //remove tx from reorder queue
+                reorderQueue.remove(txEntry);
+
+                //trigger conclusion, be it an abort or a commit
+                conclude(*txEntry);
+
+                //remove from active tx set if needed
+                if (txEntry->getTxCIState() == TXEntry::TX_CI_TRANSIENT
+                        || txEntry->getTxCIState() == TXEntry::TX_CI_INPROGRESS
+                        || txEntry->getTxCIState() == TXEntry::TX_CI_CONCLUDED) {
+                    activeTxSet.remove(txEntry);
+                }
+            }
+        }
+    }
+    */
+}
 
 void
 Validator::serialize() {
@@ -177,26 +221,80 @@ Validator::serialize() {
      */
     while (true) {
         // process due commit-intents on cross-shard transaction queue
-
-        // process all commit-intents on local transaction queue
-        for (uint32_t i = 0; i < localTXQueue.unsafe_size(); i++) {
-            TXEntry* txEntry;
-            if (localTXQueue.try_pop(txEntry)) {
+        /*
+        for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = reorderQueue.begin(); itr != reorderQueue.end(); ++itr) {
+            TXEntry *txEntry = itr;
+            if (txEntry->getCTS() > currentTime()) {
+                break; //no need to look further in the sorted queue
+            } else if (txEntry->getTxCIState() == TXEntry::TX_CI_QUEUED) {
+                //check dependency on earlier transactions
                 if (activeTxSet.depends(txEntry)) {
-                    localTXQueue.push(txEntry); // re-enqueued as this tx may be unblocked later
-                } else {
-                    // As local transactions can be validated in any order, we can set the CTS.
-                    txEntry->setCTS(12345 /* deduce an approx uint64_t CTS LATER */);
+                    if (txEntry->getTxCIState() == TXEntry::TX_CI_QUEUED) {
+                        txEntry->setTxCIState(TXEntry::TX_CI_WAITING);
+                        blockedTxSet.add(txEntry);
+                    }
+                    continue;
+                }
+                if (blockedTxSet.depends(txEntry)) {
+                    continue;
+                }
 
-                    // There is no need to update activeTXs because this tx is validated and concluded shortly
+                //schedule for validation as there is no dependency
+                if (activeTxSet.add(txEntry)) {
+                    txEntry->setTxCIState(TXEntry::TX_CI_TRANSIENT);
 
-                    validateLocalTx(txEntry);
-
-                    conclude(txEntry);
+                    //remove from blocked tx set if needed
+                    if (blockedTxSet.contains(txEntry)
+                        blockedTxSet.remove(txEntry);
                 }
             }
         }
+        */
+
+        // process all commit-intents on local transaction queue
+        for (uint32_t i = 0; i < localTxQueue.unsafe_size(); i++) {
+            TxEntry* txEntry;
+            if (localTxQueue.try_pop(txEntry)) {
+                if (activeTxSet.depends(txEntry)) {
+                    localTxQueue.push(txEntry); // re-enqueued as this tx may be unblocked later
+                } else {
+                    /* There is no need to update activeTXs because this tx is validated
+                     * and concluded shortly. If the conclude() does through a queue and another
+                     * task, then we should add tx to active tx set here.
+                     */
+
+                    // As local transactions can be validated in any order, we can set the CTS.
+                    txEntry->setCTS(12345 /* deduce an approx uint64_t CTS LATER */);
+
+                    validateLocalTx(*txEntry);
+
+                    conclude(*txEntry);
+                }
+            }
+        }
+    } //end while(true)
+}
+
+bool
+Validator::conclude(TxEntry& txEntry) {
+    /*
+     * log the commit result of a local tx.
+     * log the commit/abort result of a distributed tx as its CI has been logged
+     */
+    if (txEntry.getShardSet().size() > 1
+            || txEntry.getTxState() == TxEntry::TX_COMMIT) {
+        //WAL and persist value LATER
+
+        // update in-mem tuple store
+        if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
+            updateReadsetEta(txEntry);
+            updateWriteset(txEntry);
+        }
+
+        //reply to commit intent client
+        //LATER
     }
+    return true;
 }
 } // end Validator class
 

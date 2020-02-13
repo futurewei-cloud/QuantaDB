@@ -30,7 +30,7 @@ typedef RAMCloud::KeyLength KeyLength;
  * It uses the read set Bloom Filter and write set Bloom Filter to facilitate
  * dependency checking for serialization.
  */
-class TXEntry {
+class TxEntry {
     PROTECTED:
     uint64_t cts; //commit time-stamp, globally unique
     uint64_t eta;
@@ -91,8 +91,8 @@ class TXEntry {
         TX_CONFLICT = 5
     };
 
-    TXEntry();
-    ~TXEntry();
+    TxEntry();
+    ~TxEntry();
     inline uint64_t getCTS() { return cts; }
     inline uint64_t getEta() { return eta; }
     inline uint64_t getPi() { return pi; }
