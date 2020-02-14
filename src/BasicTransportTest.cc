@@ -155,6 +155,42 @@ TEST_F(BasicTransportTest, sanityCheck) {
     EXPECT_EQ("ok", TestUtil::checkLargeBuffer(&rpc2.response, 50000));
 }
 
+TEST_F(BasicTransportTest, Notification) {
+    // Create a server and a client and verify that we can
+    // send a request, receive it
+    // Then try a second request with bigger chunks of data.
+
+    ServiceLocator serverLocator("basic+udp: host=localhost, port=11102");
+    UdpDriver* serverDriver = new UdpDriver(&context, &serverLocator);
+    BasicTransport server(&context, &serverLocator, serverDriver, true, 1);
+    UdpDriver* clientDriver = new UdpDriver(&context);
+    BasicTransport client(&context, NULL, clientDriver, true, 2);
+    Transport::SessionRef session = client.getSession(&serverLocator);
+
+    MockWrapper rpc1("abcdefg", false);
+    session->sendRequest(&rpc1.request, &rpc1.response, &rpc1);
+    Transport::ServerRpc* serverRpc =
+        context.workerManager->waitForRpc(1.0);
+    EXPECT_TRUE(serverRpc != NULL);
+    EXPECT_EQ("abcdefg", TestUtil::toString(&serverRpc->requestPayload));
+    EXPECT_STREQ("completed: 1, failed: 0", rpc1.getState());
+    EXPECT_EQ(0u, transport.outgoingRpcs.size());
+    EXPECT_EQ(0u, transport.outgoingRequests.size());
+    EXPECT_EQ(0u, transport.activeOutgoingMessages.size());
+
+    MockWrapper rpc2(NULL, false);
+    TestUtil::fillLargeBuffer(&rpc2.request, 100000);
+    session->sendRequest(&rpc2.request, &rpc2.response, &rpc2);
+    serverRpc = context.workerManager->waitForRpc(1.0);
+    EXPECT_TRUE(serverRpc != NULL);
+    EXPECT_EQ("ok",
+          TestUtil::checkLargeBuffer(&serverRpc->requestPayload, 100000));
+    EXPECT_STREQ("completed: 1, failed: 0", rpc2.getState());
+    EXPECT_EQ(0u, transport.outgoingRpcs.size());
+    EXPECT_EQ(0u, transport.outgoingRequests.size());
+    EXPECT_EQ(0u, transport.activeOutgoingMessages.size());
+}
+
 TEST_F(BasicTransportTest, constructor) {
     EXPECT_EQ(10960u, transport.roundTripBytes);
 }

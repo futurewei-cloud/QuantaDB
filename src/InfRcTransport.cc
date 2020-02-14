@@ -580,6 +580,11 @@ InfRcTransport::InfRcSession::sendRequest(Buffer* request,
                                                         t->nextClientRpcNonce);
     t->nextClientRpcNonce++;
     rpc->sendOrQueue();
+    if ((!notifier->requiredRsp()) &&
+	(rpc->isRequestSent())) {
+        notifier->completed();
+	transport->clientRpcPool.destroy(rpc);
+    }
 }
 
 /**
@@ -907,6 +912,11 @@ InfRcTransport::postSrqReceiveAndKickTransmit(ibv_srq* srq,
             ClientRpc& rpc = clientSendQueue.front();
             clientSendQueue.pop_front();
             rpc.sendOrQueue();
+	    if ((!rpc.notifier->requiredRsp()) &&
+		(rpc.isRequestSent())) {
+	        rpc.notifier->completed();
+		rpc.transport->clientRpcPool.destroy(&rpc);
+	    }
             double waitTimeMs =
                     Cycles::toSeconds(Cycles::rdtsc() - rpc.waitStart)*1e3;
             if (waitTimeMs > 0.1) {
@@ -1392,11 +1402,12 @@ InfRcTransport::ClientRpc::sendOrQueue()
         ++metrics->transport.transmit.packetCount;
 
         t->sendZeroCopy(nonce, request, session->qp, false);
-
-        t->outstandingRpcs.push_back(*this);
-        session->sessionAlarm.rpcStarted();
-        ++t->numUsedClientSrqBuffers;
-        state = REQUEST_SENT;
+	if (notifier->requiredRsp()) {
+	    t->outstandingRpcs.push_back(*this);
+	    session->sessionAlarm.rpcStarted();
+	    ++t->numUsedClientSrqBuffers;
+	}
+	state = REQUEST_SENT;
     } else {
         // no available receive buffers
         waitStart = Cycles::rdtsc();

@@ -268,14 +268,24 @@ class Transport {
      * software when an RPC has completed.  The RpcNotifier also serves as a
      * unique identifier for the RPC, which can be used to cancel it.
      *
+     * There are two RPC mode.
+     * - Request/Response RPC
+     * - Request only (Notification) RPC
      */
     class RpcNotifier {
       public:
-        explicit RpcNotifier() {}
+        explicit RpcNotifier() {
+	    isRspRequired = true;
+	}
+        explicit RpcNotifier(bool required_rsp)
+	  : isRspRequired(required_rsp)
+        {}
         virtual ~RpcNotifier() {}
         virtual void completed();
         virtual void failed();
-
+	bool requiredRsp() { return isRspRequired; }
+      PROTECTED:
+	bool isRspRequired;
         DISALLOW_COPY_AND_ASSIGN(RpcNotifier);
     };
 

@@ -572,6 +572,11 @@ BasicTransport::tryToTransmitData()
                 erase(outgoingRequests, *clientRpc);
                 message->active = false;
                 erase(activeOutgoingMessages, *message);
+		if (!clientRpc->notifier->requiredRsp()) {
+		    //This is a notification request, not expecting any response
+		    clientRpc->notifier->completed();
+		    deleteClientRpc(clientRpc);
+		}
             } else {
                 // Delete the ServerRpc object as soon as we have
                 // transmitted the last byte. This has the disadvantage
@@ -724,6 +729,11 @@ BasicTransport::Session::sendRequest(Buffer* request, Buffer* response,
         clientRpc->request.transmitOffset = length;
         clientRpc->transmitPending = false;
         bytesSent = length;
+	if (!clientRpc->notifier->requiredRsp()) {
+	    //This is a notification request, not expecting any response
+	    clientRpc->notifier->completed();
+	    t->deleteClientRpc(clientRpc);
+	}
     } else {
         t->outgoingRequests.push_back(*clientRpc);
         clientRpc->request.activate(t);

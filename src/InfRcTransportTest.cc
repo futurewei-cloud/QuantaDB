@@ -76,6 +76,40 @@ TEST_F(InfRcTransportTest, sanityCheck) {
     EXPECT_EQ("ok", TestUtil::checkLargeBuffer(&rpc.response, 50000));
 }
 
+
+TEST_F(InfRcTransportTest, Notification) {
+    // Verify that we can send a request, receive it,
+    // Then try a second request with bigger chunks
+    // of data.
+    Transport::SessionRef session = client.getSession(&locator);
+    MockWrapper rpc("abcdefg", false);
+    // Put junk in the response buffer to make sure it gets cleared properly.
+    rpc.response.fillFromString("abcde");
+    session->sendRequest(&rpc.request, &rpc.response, &rpc);
+    Transport::ServerRpc* serverRpc =
+            context.workerManager->waitForRpc(1.0);
+    ASSERT_TRUE(serverRpc != NULL);
+    EXPECT_EQ("abcdefg", TestUtil::toString(&serverRpc->requestPayload));
+    EXPECT_STREQ("completed: 1, failed: 0", rpc.getState());
+    EXPECT_EQ(0U, client.outstandingRpcs.size());
+
+    server.serverRpcPool.destroy(
+        static_cast<InfRcTransport::ServerRpc*>(serverRpc));
+
+    rpc.reset();
+    TestUtil::fillLargeBuffer(&rpc.request, 100000);
+    session->sendRequest(&rpc.request, &rpc.response, &rpc);
+    serverRpc = context.workerManager->waitForRpc(1.0);
+    EXPECT_TRUE(serverRpc != NULL);
+    EXPECT_EQ("ok",
+            TestUtil::checkLargeBuffer(&serverRpc->requestPayload, 100000));
+    EXPECT_STREQ("completed: 1, failed: 0", rpc.getState());
+    EXPECT_EQ(0U, client.outstandingRpcs.size());
+
+    server.serverRpcPool.destroy(
+        static_cast<InfRcTransport::ServerRpc*>(serverRpc));
+}
+
 namespace {
 bool sendZeroCopyFilter(string s) {
     return s == "sendZeroCopy";

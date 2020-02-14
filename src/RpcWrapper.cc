@@ -38,7 +38,8 @@ namespace RAMCloud {
  *      of this buffer will be cleared automatically by the transport.
  */
 RpcWrapper::RpcWrapper(uint32_t responseHeaderLength, Buffer* response)
-    : request()
+    : RpcNotifier(true)
+    , request()
     , response(response)
     , defaultResponse()
     , state(NOT_STARTED)

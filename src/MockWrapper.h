@@ -36,8 +36,9 @@ class MockWrapper : public Transport::RpcNotifier {
      *      Initial value for the request buffer.  NULL means don't
      *      set an initial value.
      */
-    explicit MockWrapper(const char* requestInfo = NULL)
-        : request()
+    explicit MockWrapper(const char* requestInfo = NULL, bool isRspReq = true)
+        : RpcNotifier(isRspReq)
+        , request()
         , response()
         , completedCount(0)
         , failedCount(0)
