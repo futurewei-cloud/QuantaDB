@@ -4,12 +4,12 @@
  */
 
 
-#include "TXEntry.h"
+#include "TxEntry.h"
 
 namespace DSSN {
 
 
-TXEntry::TXEntry() {
+TxEntry::TxEntry() {
     this->pi = std::numeric_limits<uint64_t>::max();
     this->eta = 0;
     this->txState = TX_PENDING;

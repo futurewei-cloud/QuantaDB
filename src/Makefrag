@@ -80,6 +80,10 @@ SHARED_SRCFILES := \
 		   src/HashTable.cc \
 		   src/HomaTransport.cc \
 		   src/dssn/HOTKV.cc \
+		   src/dssn/CountBloomFilter.cc \
+		   src/dssn/ActiveTxSet.cc \
+		   src/dssn/TxEntry.cc \
+		   src/dssn/Validator.cc \
 		   src/IndexKey.cc \
 		   src/IndexletManager.cc \
 		   src/IndexLookup.cc \

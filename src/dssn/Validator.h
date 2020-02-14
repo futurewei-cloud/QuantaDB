@@ -8,16 +8,16 @@
 
 #include "Common.h"
 #include "Object.h"
-#include "TXEntry.h"
 #include "HOTKV.h"
-#include "tbb.h"
+#include <tbb/tbb.h>
 #include "ActiveTxSet.h"
+#include "TxEntry.h"
 
 namespace DSSN {
 
 typedef RAMCloud::Object Object;
 typedef RAMCloud::KeyLength KeyLength;
-typedef tbb::concurrent_queue<TXEntry*> WaitQueue;
+typedef tbb::concurrent_queue<TxEntry*> WaitQueue;
 
 /**
  * Supposedly one Validator instance per storage node, to handle DSSN validation.
@@ -28,33 +28,36 @@ typedef tbb::concurrent_queue<TXEntry*> WaitQueue;
  */
 class Validator {
     PROTECTED:
-    WaitQueue localTXQueue;
+    WaitQueue localTxQueue;
     ActiveTxSet activeTxSet;
-
+    uint64_t alertThreshold = 1000; //LATER
+    //LATER DependencyMatrix blockedTxSet;
 
     // all operations about tuple store
-    static HOTKV tupleStore;
-    static uint64_t getTupleEta(Object& object);
-    static uint64_t getTuplePi(Object& object);
-    static uint64_t getTuplePrevEta(Object& object);
-    static uint64_t getTuplePrevPi(Object& object);
-    static bool maximizeTupleEta(Object& object, uint64_t eta);
-    static bool updateTuple(Object& object, TXEntry& txEntry);
+    HOTKV tupleStore;
+    uint64_t getTupleEta(Object& object);
+    uint64_t getTuplePi(Object& object);
+    uint64_t getTuplePrevEta(Object& object);
+    uint64_t getTuplePrevPi(Object& object);
+    bool maximizeTupleEta(Object& object, uint64_t eta);
+    bool updateTuple(Object& object, TxEntry& txEntry);
 
     // all SSN data maintenance operations
-    bool updateTxEtaPi(TXEntry& txEntry);
-    bool updateReadsetEta(TXEntry& txEntry);
-    bool updateWriteset(TXEntry& txEntry);
-    bool validate(TXEntry& txEntry);
+    bool updateTxEtaPi(TxEntry& txEntry);
+    bool updateReadsetEta(TxEntry& txEntry);
+    bool updateWriteset(TxEntry& txEntry);
 
-    // serializer of commit-intent validation
+    // serialization of commit-intent validation
     void serialize();
 
-    // performs SSN validation on a local transaction
-    bool validateLocalTx(TXEntry* txEntry);
+    // perform SSN validation on distributed transactions
+    void validateDistributedTxs();
 
-    // log validation result, update storage, and reply to commit-intent
-    bool conclude(TXEntry* txEntry);
+    // perform SSN validation on a local transaction
+    bool validateLocalTx(TxEntry& txEntry);
+
+    // handle validation commit/abort conclusion
+    bool conclude(TxEntry& txEntry);
 
     PUBLIC:
     Validator();
