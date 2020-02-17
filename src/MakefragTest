@@ -255,7 +255,9 @@ test: $(OBJDIR)/zooTest \
       testInstall \
       unit-test
 
+
 unit-test: $(OBJDIR)/test
+	export LD_LIBRARY_PATH=$(TOP)/hot/build/tbb_cmake_build/tbb_cmake_build_subdir_release/; \
 	$(OBJDIR)/test
 
 # This target is intended for running a subset of tests, such as those
