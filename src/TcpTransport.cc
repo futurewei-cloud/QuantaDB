@@ -843,8 +843,13 @@ TcpTransport::TcpSession::sendRequest(Buffer* request, Buffer* response,
     if (bytesLeftToSend == 0) {
         // The whole request was sent immediately (this should be the
         // common case).
-        rpcsWaitingForResponse.push_back(*rpc);
-        rpc->sent = true;
+      if (notifier->requiredRsp()) {
+          rpcsWaitingForResponse.push_back(*rpc);
+	  rpc->sent = true;
+      } else {
+	  rpc->notifier->completed();
+	  transport->clientRpcPool.destroy(rpc);
+      }
     } else {
         rpcsWaitingToSend.push_back(*rpc);
         clientIoHandler->setEvents(Dispatch::FileEvent::READABLE |
@@ -910,10 +915,15 @@ TcpTransport::ClientSocketHandler::handleFileEvent(int events)
                 }
                 // The current RPC is finished; start the next one, if
                 // there is one.
-                session->rpcsWaitingToSend.pop_front();
-                session->rpcsWaitingForResponse.push_back(rpc);
-                rpc.sent = true;
-                session->bytesLeftToSend = -1;
+		if (rpc.notifier->requiredRsp()) {
+		    session->rpcsWaitingToSend.pop_front();
+		    session->rpcsWaitingForResponse.push_back(rpc);
+		    rpc.sent = true;
+		    session->bytesLeftToSend = -1;
+		} else {
+		    rpc.notifier->completed();
+		    session->transport->clientRpcPool.destroy(&rpc);
+		}
             }
             setEvents(Dispatch::FileEvent::READABLE);
         }

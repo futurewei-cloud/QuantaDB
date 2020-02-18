@@ -136,7 +136,7 @@ class InfRcTransport : public Transport {
                                RpcNotifier* notifier,
                                uint64_t nonce);
             void sendOrQueue();
-
+	    inline bool isRequestSent() { return state == REQUEST_SENT; }
         PRIVATE:
             InfRcTransport*     transport;
             InfRcSession*       session;

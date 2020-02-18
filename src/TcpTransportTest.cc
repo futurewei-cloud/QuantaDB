@@ -146,6 +146,37 @@ TEST_F(TcpTransportTest, sanityCheck) {
     EXPECT_STREQ("completed: 1, failed: 0", rpc2.getState());
 }
 
+TEST_F(TcpTransportTest, Notification) {
+    Transport::SessionRef session = client.getSession(&locator);
+    TcpTransport::TcpSession* rawSession =
+      reinterpret_cast<TcpTransport::TcpSession*>(session.get());
+
+    // Send two requests from the client.
+    MockWrapper rpc1("request1", false);
+    session->sendRequest(&rpc1.request, &rpc1.response, &rpc1);
+    MockWrapper rpc2("request2", false);
+    session->sendRequest(&rpc2.request, &rpc2.response, &rpc2);
+
+    // Receive the two requests on the server.
+    Transport::ServerRpc* serverRpc1 = workerManager->waitForRpc(1.0);
+    EXPECT_TRUE(serverRpc1 != NULL);
+    EXPECT_EQ("request1", TestUtil::toString(&serverRpc1->requestPayload));
+    Transport::ServerRpc* serverRpc2 = workerManager->waitForRpc(1.0);
+    EXPECT_TRUE(serverRpc2 != NULL);
+    EXPECT_EQ("request2", TestUtil::toString(&serverRpc2->requestPayload));
+    server.serverRpcPool.destroy(
+        static_cast<TcpTransport::TcpServerRpc*>(serverRpc1));
+    server.serverRpcPool.destroy(
+        static_cast<TcpTransport::TcpServerRpc*>(serverRpc2));
+
+    // Check make sure the requests are not enqueued in the RPC queue
+    EXPECT_TRUE(rawSession->rpcsWaitingForResponse.size() == 0);
+
+    // Receive the responses in the client.
+    EXPECT_STREQ("completed: 1, failed: 0", rpc1.getState());
+    EXPECT_STREQ("completed: 1, failed: 0", rpc2.getState());
+}
+
 TEST_F(TcpTransportTest, constructor_clientSideOnly) {
     sys->socketErrno = EPERM;
 }
