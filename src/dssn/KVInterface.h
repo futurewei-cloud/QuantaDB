@@ -55,10 +55,17 @@ namespace DSSN
         typedef KVType KeyType;
 	
         size_t getKeyLength(const KVType &kv) const {
-	    return (const size_t) kv->getKey().length();
+	    if (kv != 0) {
+	        return (const size_t) kv->getKey().length();
+	    }
+	    return 0;
 	}
         const char* operator() (const KVType &kv) const {
-	    return kv->getKey().c_str();
+	    static char s = 0;
+	    if (kv != 0) {
+	        return kv->getKey().c_str();
+	    }
+	    return &s;
 	}
     };
 
