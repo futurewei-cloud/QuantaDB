@@ -44,6 +44,7 @@ class TxEntry {
     BloomFilter writeSetFilter;
     BloomFilter readSetFilter;
     Henry: possibly needs these
+    std::vector<PeerInfo> peerInfoSet;
     uint64_t id; //transaction globally unique ID
     uint64_t readSnapshotTimestamp; //0 - not a read-only tx, max - most recent, [1, max) - specific snapshot
      */
@@ -92,7 +93,6 @@ class TxEntry {
     };
 
     TxEntry();
-    ~TxEntry();
     inline uint64_t getCTS() { return cts; }
     inline uint64_t getEta() { return eta; }
     inline uint64_t getPi() { return pi; }

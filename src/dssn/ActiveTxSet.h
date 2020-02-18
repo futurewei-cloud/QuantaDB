@@ -15,6 +15,7 @@ namespace DSSN {
  * It is an approximate membership set of transactions undergoing validation.
  * Instead of using fine grain locks of tuples, using approximate membership
  * reduces the amount of locks at the cost of a small amount of false positives.
+ * It supports one incrementer and one or more decrementers.
  *
  * LATER: may have caller to provide idx1 and idx2 if the caller pre-calculates and stores hash values
  */

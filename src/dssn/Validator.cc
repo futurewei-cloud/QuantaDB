@@ -20,11 +20,11 @@ inline std::string formTupleKey(Object& tuple) {
     if (key == NULL) // there is a bug if it happens
         return "";
     uint64_t tableId = tuple.getTableId();
-    std::vector<uint8_t> ckey(sizeof(uint64_t) + kLen);
-    for (uint32_t i = 0; i < sizeof(uint64_t); i++)
-        ckey[i] = ((uint32_t *)&tableId)[i];
+    std::vector<uint8_t> ckey(sizeof(tableId) + kLen);
+    for (uint32_t i = 0; i < sizeof(tableId); i++)
+        ckey[i] = ((uint8_t *)&tableId)[i];
     for (uint32_t i = 0; i < kLen; i++)
-        ckey[sizeof(uint64_t) + i] = key[i];
+        ckey[sizeof(tableId) + i] = key[i];
     return std::string(ckey.begin(), ckey.end());
 }
 
@@ -33,7 +33,7 @@ Validator::getTuplePi(Object& object) {
     std::string tupleKey = formTupleKey(object);
     if (tupleKey.empty())
         return minTimeStamp; //cause exclusion violation
-    dssnMeta meta;
+    DSSNMeta meta;
     Validator::tupleStore.getMeta(tupleKey, meta);
     return meta.cStamp;
 }
@@ -43,7 +43,7 @@ Validator::getTuplePrevEta(Object& object) {
     std::string tupleKey = formTupleKey(object);
     if (tupleKey.empty())
         return maxTimeStamp; //cause exclusion violation
-    dssnMeta meta;
+    DSSNMeta meta;
     Validator::tupleStore.getMeta(tupleKey, meta);
     return meta.sStampPrev;
 }
@@ -53,12 +53,21 @@ Validator::getTuplePrevPi(Object& object) {
     return 0; //not used yet
 }
 
+const std::string *
+Validator::getTupleValue(Object& object) {
+    std::string tupleKey = formTupleKey(object);
+    if (tupleKey.empty())
+        return NULL;
+    DSSNMeta meta;
+    return Validator::tupleStore.get(tupleKey, meta);
+}
+
 bool
 Validator::maximizeTupleEta(Object& object, uint64_t eta) {
     std::string tupleKey = formTupleKey(object);
     if (tupleKey.empty())
         return false;
-    dssnMeta meta;
+    DSSNMeta meta;
     Validator::tupleStore.getMeta(tupleKey, meta);
     meta.pStamp = std::max(eta, meta.pStamp);
     Validator::tupleStore.updateMeta(tupleKey, meta);
@@ -70,7 +79,7 @@ Validator::updateTuple(Object& object, TxEntry& txEntry) {
     std::string tupleKey = formTupleKey(object);
     if (tupleKey.empty())
         return false;
-    dssnMeta meta;
+    DSSNMeta meta;
     Validator::tupleStore.getMeta(tupleKey, meta);
 
     /* because we have a single version HOT, copy current data to prev data */
@@ -88,7 +97,8 @@ Validator::updateTuple(Object& object, TxEntry& txEntry) {
     return true;
 }
 
-Validator::Validator() {
+void
+Validator::start() {
     // Henry: may need to use TBB to pin the threads to specific cores LATER
     std::thread( [=] { serialize(); });
     std::thread( [=] { validateDistributedTxs(); });

@@ -194,6 +194,7 @@ TESTS_SRCFILES := \
 		  src/WorkerSessionTest.cc \
 		  src/WorkerTimerTest.cc \
 		  src/RamCloudTest.cc \
+		  src/dssn/ValidatorTest.cc \
 		  $(INFINIBAND_SRCFILES) \
 		  $(SOLARFLARE_SRCFILES) \
 		  $(DPDK_SRCFILES) \

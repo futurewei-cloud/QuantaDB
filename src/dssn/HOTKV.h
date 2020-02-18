@@ -15,15 +15,15 @@ namespace DSSN
     public:
         HOTKV();
         HOTKV(bool versionChain);
-        bool put(const std::string &key, const std::string &value, const dssnMeta& meta);
-	bool updateMeta(const std::string &searchKey, const dssnMeta& meta);
-	const std::string* get(const std::string &searchKey, dssnMeta& meta) const;
-	bool getMeta(const std::string &searchKey, dssnMeta &meta);
-	void removeVersion(const std::string &searchKey, const dssnMeta& meta);
+        bool put(const std::string &key, const std::string &value, const DSSNMeta& meta);
+	bool updateMeta(const std::string &searchKey, const DSSNMeta& meta);
+	const std::string* get(const std::string &searchKey, DSSNMeta& meta) const;
+	bool getMeta(const std::string &searchKey, DSSNMeta &meta);
+	void removeVersion(const std::string &searchKey, const DSSNMeta& meta);
 	// Remove all versions belonging to the key 
 	void remove(const std::string &searchKey);
     private:
-	bool updateMetaThreadSafe(const std::string &searchKey, const dssnMeta& meta);
+	bool updateMetaThreadSafe(const std::string &searchKey, const DSSNMeta& meta);
 	// Pointer to the underlying HOT data structure
         void* kvStore;
 	// Indicates if multiversion is enabled

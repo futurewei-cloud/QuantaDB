@@ -9,7 +9,7 @@
 #include "Common.h"
 #include "Object.h"
 #include "HOTKV.h"
-#include <tbb/tbb.h>
+#include "tbb/tbb.h"
 #include "ActiveTxSet.h"
 #include "TxEntry.h"
 
@@ -39,6 +39,7 @@ class Validator {
     uint64_t getTuplePi(Object& object);
     uint64_t getTuplePrevEta(Object& object);
     uint64_t getTuplePrevPi(Object& object);
+    const std::string* getTupleValue(Object& object);
     bool maximizeTupleEta(Object& object, uint64_t eta);
     bool updateTuple(Object& object, TxEntry& txEntry);
 
@@ -60,8 +61,8 @@ class Validator {
     bool conclude(TxEntry& txEntry);
 
     PUBLIC:
-    Validator();
-
+    // start threads and work
+    void start();
 }; // end Validator class
 
 } // end namespace DSSN

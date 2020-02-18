@@ -19,7 +19,7 @@ namespace DSSN
   }
 
   bool
-  HOTKV::put(const std::string &key, const std::string &value, const dssnMeta& meta)
+  HOTKV::put(const std::string &key, const std::string &value, const DSSNMeta &meta)
   {
       bool result = false;
 
@@ -42,7 +42,7 @@ namespace DSSN
   }
 
   const std::string*
-  HOTKV::get(const std::string &searchKey, dssnMeta& meta) const
+  HOTKV::get(const std::string &searchKey, DSSNMeta &meta) const
   {
 
       HotKeyValueType::KeyType key;
@@ -61,7 +61,7 @@ namespace DSSN
   }
   
   bool
-  HOTKV::getMeta(const std::string &searchKey, dssnMeta& meta)
+  HOTKV::getMeta(const std::string &searchKey, DSSNMeta &meta)
   {
       HotKeyValueType::KeyType key;
       key = searchKey.c_str();
@@ -82,13 +82,13 @@ namespace DSSN
   }
 
   bool
-  HOTKV::updateMeta(const std::string &searchKey, const dssnMeta& meta)
+  HOTKV::updateMeta(const std::string &searchKey, const DSSNMeta &meta)
   {
     return updateMetaThreadSafe(searchKey, meta);
   }
 
   bool
-  HOTKV::updateMetaThreadSafe(const std::string &searchKey, const dssnMeta& meta)
+  HOTKV::updateMetaThreadSafe(const std::string &searchKey, const DSSNMeta &meta)
   {
       bool result = false;
       HotKeyValueType::KeyType key;
@@ -108,7 +108,7 @@ namespace DSSN
   }
 
   void
-  HOTKV::removeVersion(const std::string &searchKey, const dssnMeta& meta)
+  HOTKV::removeVersion(const std::string &searchKey, const DSSNMeta &meta)
   {
       HotKeyValueType::KeyType key;
       key = searchKey.c_str();
@@ -126,7 +126,7 @@ namespace DSSN
   void
   HOTKV::remove(const std::string &searchKey)
   {
-      dssnMeta meta;;
+      DSSNMeta meta;;
       removeVersion(searchKey, meta);
   }
 }

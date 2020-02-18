@@ -18,9 +18,8 @@ const uint32_t BFSize = 65536;
  *
  * It must protect itself from overflowing any counter.
  * For now, only use two hash functions.
- * It assumes one incrementer thread and one decrementer thread,
- * and those two can be the same one. That is, neither multiple incrementers nor multiple
- * decrementers are supported.
+ * It supports one incrementer thread and one or more decrementer threads,
+ * and those two can be the same one.
  *
  * LATER: may have caller to provide idx1 and idx2 if the caller pre-calculates and stores hash values
  */

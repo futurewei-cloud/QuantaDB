@@ -189,7 +189,7 @@ namespace RAMCloud {
 	for (i = keyoffset; i < nkeys; i++) {
 	    std::string key = std::to_string(i);
 	    std::string value = std::to_string(i);
-	    DSSN::dssnMeta meta;
+	    DSSN::DSSNMeta meta;
 	    kvs->put(key, value, meta);
 	}
 	i = Cycles::rdtsc() - insertCycles;
@@ -203,7 +203,7 @@ namespace RAMCloud {
 	uint64_t lookupCycles = Cycles::rdtsc();
 	bool success;
 	for (i = keyoffset; i < nkeys; i++) {
-	    DSSN::dssnMeta meta;
+	    DSSN::DSSNMeta meta;
 	    std::string key = std::to_string(i);
 	    const std::string* value = kvs->get(key, meta);
 	    if (value->length()> 0 && key == *value)
@@ -222,7 +222,7 @@ namespace RAMCloud {
 	uint64_t lookupCycles = Cycles::rdtsc();
 	bool result = false;
 	for (i = keyoffset; i < nkeys; i++) {
-	    DSSN::dssnMeta meta;
+	    DSSN::DSSNMeta meta;
 	    meta.cStamp = i;
 	    std::string key = std::to_string(i);
 	    result = kvs->updateMeta(key, meta);
@@ -239,7 +239,7 @@ namespace RAMCloud {
 	uint64_t lookupCycles = Cycles::rdtsc();
 	bool result = false;
 	for (i = keyoffset; i < nkeys; i++) {
-	    DSSN::dssnMeta meta;
+	    DSSN::DSSNMeta meta;
 	    meta.cStamp = 0;
 	    std::string key = std::to_string(i);
 	    result = kvs->getMeta(key, meta);
