@@ -9,7 +9,7 @@
 namespace DSSN {
 
 
-SequencerClient::SequencerClient() {}
+Sequencer::Sequencer() : counter(0), last_phc(0) {}
 
-} // DSSN
+} // end TxEntry class
 

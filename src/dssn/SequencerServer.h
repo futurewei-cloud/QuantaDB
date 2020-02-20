@@ -38,7 +38,7 @@ namespace DSSN {
  * the IP address of the PTP port.
  */
 
-#ifdef  SEQUENCER_CLIENT // Client side Sequencer class
+// Client side Sequencer class
 class SequencerClient {
     public:
     SequencerClient();
@@ -48,19 +48,5 @@ class SequencerClient {
     private:
     // u_int32_t weight;		 // Sequencer weight. Client side has no use of this info for now.
 }; // end Sequencer class
-
-#else // SEQUENCER_SERVER
-
-// Client side Sequencer class
-class SequencerServer {
-    public:
-    SequencerServer();
-    u_int64_t readPHC();    // return PHC time stamp
-
-    private:
-    u_int32_t weight;		// Sequencer weight. Client side has no use of this info for now.
-    u_int64_t last_usec;    // usec of the last LTS issued
-}; // end SequencerServer class
-#endif // 
 
 } // end namespace DSSN
