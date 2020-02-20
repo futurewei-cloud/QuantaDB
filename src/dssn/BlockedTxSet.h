@@ -23,7 +23,7 @@ class BlockedTxSet {
 
     TxEntry* findReadyTx() {return NULL;}
 
-    BlockedTxSet();
+    BlockedTxSet() {};
 
 }; 
 
