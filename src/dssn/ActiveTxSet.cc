@@ -57,7 +57,7 @@ ActiveTxSet::remove(TxEntry *txEntry) {
 }
 
 bool
-ActiveTxSet::depends(TxEntry *txEntry) {
+ActiveTxSet::blocks(TxEntry *txEntry) {
     // only check write set of txEntry against the active tx set
     std::vector<RAMCloud::Object *> &writeSet = txEntry->getWriteSet();
     for (uint32_t i = 0; i < writeSet.size(); i++) {

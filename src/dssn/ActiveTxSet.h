@@ -30,7 +30,7 @@ class ActiveTxSet {
     // for performance, the key is assumed to have been added
     bool remove(TxEntry *txEntry);
 
-    bool depends(TxEntry *txEntry);
+    bool blocks(TxEntry *txEntry);
 
     void createIndexes(TxEntry *txEntry);
 
