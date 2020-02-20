@@ -120,7 +120,7 @@ void
 Validator::start() {
     // Henry: may need to use TBB to pin the threads to specific cores LATER
     std::thread( [=] { serialize(); });
-    std::thread( [=] { validateDistributedTxs(); });
+    std::thread( [=] { validateDistributedTxs(0); });
 }
 
 bool
@@ -197,8 +197,58 @@ Validator::validateLocalTx(TxEntry& txEntry) {
 };
 
 void
-Validator::validateDistributedTxs() {
-    /*
+Validator::validateDistributedTxs(int worker) {
+
+    /* Scheme B3
+    while (true) {
+        for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = activeTxSet[worker].begin(); itr != activeTxSet[worker].end(); ++itr) {
+            TXEntry *txEntry = itr;
+
+            if (txEntry->getTxState() == TXEntry::TX_PENDING 
+                    && txEntry->getTxCIState() == TXEntry::TX_CI_TRANSIENT) {
+
+                //normal case first try:
+
+                //calculate local ETA and PI
+                updateTxEtaPi(*txEntry);
+
+                //send PEER_SSN_INFO to Tx peers.
+                //FIXME: SendTxPeerSSNInfo(txEntry);
+
+                txEntry->setTXCiState(TXEntry::TX_CI_INPROGRESS);
+            }
+
+            if (txEntry->getTxState() == TXEntry::TX_PENDING) {
+                uint64_t waitingTime = currentTime() - txEntry->getCTS();
+                if (waitingTime > abortThreshold) {
+                    txEntry->setTxState(TXEntry::TX_ABORT);
+                } else if (waitingTime > alertThreshold) {
+                    //such tx should be waiting for the peer's SSN info
+                    assert (txEntry->getTxCiState() == TXEntry::TX_CI_INPROGRESS);
+
+                    //request PEER_SSN_INFO from Tx peers. (blocking/non-blocking)
+                    //FIXME: RequestTxPeerSSNInfo(txEntry);
+                    //
+                    //after the request, either here or the PEER_SSN_INFO handler
+                    //will set the TxEntry's state to TX_ABORT or TX_COMMIT.
+                }
+            }
+
+            if (txEntry->getTxState() == TXEntry::TX_ABORT
+                    || (txEntry->getTxState() == TXEntry::TX_COMMIT) {
+
+                //FIXME: the PEER_SSN_INFO RPC handler will conclude
+                //conclude(*txEntry);
+
+                activeTxSet[worker].remove(txEntry);
+            }
+        }
+    }
+    */
+            
+
+
+    /*  
     while (true) {
         for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = reorderQueue.begin(); itr != reorderQueue.end(); ++itr) {
             TXEntry *txEntry = itr;
@@ -254,6 +304,33 @@ Validator::serialize() {
     while (!isUnderTest || !isEmpty) {
     	isEmpty = true;
         // process due commit-intents on cross-shard transaction queue
+        
+        /* Scheme B3
+        TXEntry *txEntry;
+        // FIXME: do we need to wait for empty execution slot here?
+        
+        if (txEntry = blockedTxSet.findReadyTx()) {
+            activeTxSet[worker].add(txEntry);
+            blockedTxSet.remove(txEntry);
+            continue;
+        }
+
+        //FIXME consider changing this to add itr one at a time.
+        for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = reorderQueue.begin(); itr != reorderQueue.end(); ++itr) {
+            txEntry = itr;
+            if (txEntry->getCTS() > currentTime() ) {
+                break;
+            } else if (blockfactor = blockedTxSet.blocks(txEntry)) {
+                blockedTxSet.add(txEntry, blockfactor);
+            } else if (blockfactor = activeTxSet.blocks(txEntry)) {
+                blockedTxSet.add(txEntry, blockfactor);
+            } else {
+                activeTxSet[worker].add(txEntry);
+                // FIXME: Log the Commit Intent 
+            }
+        }
+        */
+
         /*
         for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = reorderQueue.begin(); itr != reorderQueue.end(); ++itr) {
             TXEntry *txEntry = itr;

@@ -11,6 +11,7 @@
 #include "HOTKV.h"
 #include <tbb/tbb.h>
 #include "ActiveTxSet.h"
+#include "BlockedTxSet.h"
 #include "TxEntry.h"
 
 namespace DSSN {
@@ -30,6 +31,7 @@ class Validator {
     PROTECTED:
     WaitQueue localTxQueue;
     ActiveTxSet activeTxSet;
+    BlockedTxSet blockedTxSet;
     uint64_t alertThreshold = 1000; //LATER
     bool isUnderTest = false;
     //LATER DependencyMatrix blockedTxSet;
@@ -53,7 +55,7 @@ class Validator {
     void serialize();
 
     // perform SSN validation on distributed transactions
-    void validateDistributedTxs();
+    void validateDistributedTxs(int worker);
 
     // perform SSN validation on a local transaction
     bool validateLocalTx(TxEntry& txEntry);
