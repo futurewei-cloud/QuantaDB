@@ -52,9 +52,9 @@ class SequencerClient {
 #else // SEQUENCER_SERVER
 
 // Client side Sequencer class
-class SequencerServer {
+class Sequencer {
     public:
-    SequencerServer();
+    Sequencer();
     u_int64_t readPHC();    // return PHC time stamp
 
     private:

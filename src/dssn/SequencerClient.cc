@@ -3,13 +3,12 @@
  * All rights are reserved.
  */
 
-
+#define SEQUENCER_CLIENT
 #include "Sequencer.h"
 
 namespace DSSN {
 
-
-Sequencer::Sequencer() : counter(0), last_phc(0) {}
+SequencerClient::SequencerClient() {}
 
 } // end TxEntry class
 
