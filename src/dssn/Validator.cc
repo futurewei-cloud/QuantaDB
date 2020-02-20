@@ -35,7 +35,17 @@ Validator::getTuplePi(Object& object) {
         return minTimeStamp; //cause exclusion violation
     DSSNMeta meta;
     Validator::tupleStore.getMeta(tupleKey, meta);
-    return meta.cStamp;
+    return meta.sStamp;
+}
+
+uint64_t
+Validator::getTupleEta(Object& object) {
+    std::string tupleKey = formTupleKey(object);
+    if (tupleKey.empty())
+        return maxTimeStamp; //cause exclusion violation
+    DSSNMeta meta;
+    Validator::tupleStore.getMeta(tupleKey, meta);
+    return meta.pStamp;
 }
 
 uint64_t
@@ -45,7 +55,7 @@ Validator::getTuplePrevEta(Object& object) {
         return maxTimeStamp; //cause exclusion violation
     DSSNMeta meta;
     Validator::tupleStore.getMeta(tupleKey, meta);
-    return meta.sStampPrev;
+    return meta.pStampPrev;
 }
 
 uint64_t
@@ -92,8 +102,17 @@ Validator::updateTuple(Object& object, TxEntry& txEntry) {
 
     /* tuple: key, pointer to object, meta-data */
     std::stringstream ss;
-    ss << static_cast<const void*>(&object);
-    tupleStore.put(tupleKey, ss.str(), meta);
+    if (true) { // LATER: with PelagoDB, we won't need to store the actual value
+    	uint32_t valueLength;
+    	const uint8_t *valuePtr = (const uint8_t *)object.getValue(&valueLength);
+    	if (valuePtr == NULL)
+    		return false;
+    	std::vector<uint8_t> value(valueLength);
+    	for (uint32_t i = 0; i < valueLength; i++) {
+    		value[i] = *(valuePtr + i);
+    	}
+        tupleStore.put(tupleKey, std::string(value.begin(), value.end()), meta);
+    }
     return true;
 }
 
@@ -119,6 +138,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
 
     txEntry.setPi(std::min(txEntry.getPi(), txEntry.getCTS()));
 
+    //update pi of transaction
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < readSet.size(); i++) {
         uint64_t vPi = Validator::getTuplePi(*readSet.at(i));
@@ -129,10 +149,11 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
         }
     }
 
+    //update eta of transaction
     auto  &writeSet = txEntry.getWriteSet();
     for (uint32_t i = 0; i < writeSet.size(); i++) {
-        uint64_t vPrevEta = Validator::getTuplePrevEta(*writeSet.at(i));
-        txEntry.setEta(std::max(txEntry.getEta(), vPrevEta));
+        uint64_t vEta = Validator::getTupleEta(*writeSet.at(i));
+        txEntry.setEta(std::max(txEntry.getEta(), vEta));
         if (txEntry.isExclusionViolated()) {
             txEntry.setTxState(TxEntry::TX_ABORT);
             return false;
@@ -143,7 +164,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
 }
 
 bool
-Validator::updateReadsetEta(TxEntry &txEntry) {
+Validator::updateReadsetTupleEta(TxEntry &txEntry) {
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < readSet.size(); i++) {
         maximizeTupleEta(*readSet.at(i), txEntry.getCTS());
@@ -152,7 +173,7 @@ Validator::updateReadsetEta(TxEntry &txEntry) {
 }
 
 bool
-Validator::updateWriteset(TxEntry &txEntry) {
+Validator::updateWritesetTuple(TxEntry &txEntry) {
     auto &writeSet = txEntry.getWriteSet();
     for (uint32_t i = 0; i < writeSet.size(); i++) {
         updateTuple(*writeSet.at(i), txEntry);
@@ -229,7 +250,9 @@ Validator::serialize() {
     /*
      * This loop handles the DSSN serialization window critical section
      */
-    while (true) {
+	bool isEmpty = false;
+    while (!isUnderTest || !isEmpty) {
+    	isEmpty = true;
         // process due commit-intents on cross-shard transaction queue
         /*
         for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = reorderQueue.begin(); itr != reorderQueue.end(); ++itr) {
@@ -265,7 +288,7 @@ Validator::serialize() {
         for (uint32_t i = 0; i < localTxQueue.unsafe_size(); i++) {
             TxEntry* txEntry;
             if (localTxQueue.try_pop(txEntry)) {
-                if (activeTxSet.depends(txEntry)) {
+                if (activeTxSet.blocks(txEntry)) {
                     localTxQueue.push(txEntry); // re-enqueued as this tx may be unblocked later
                 } else {
                     /* There is no need to update activeTXs because this tx is validated
@@ -280,6 +303,7 @@ Validator::serialize() {
 
                     conclude(*txEntry);
                 }
+                isEmpty = false;
             }
         }
     } //end while(true)
@@ -297,8 +321,8 @@ Validator::conclude(TxEntry& txEntry) {
 
         // update in-mem tuple store
         if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
-            updateReadsetEta(txEntry);
-            updateWriteset(txEntry);
+            updateReadsetTupleEta(txEntry);
+            updateWritesetTuple(txEntry);
         }
 
         //reply to commit intent client

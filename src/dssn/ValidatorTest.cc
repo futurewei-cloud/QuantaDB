@@ -42,14 +42,39 @@ TEST_F(ValidatorTest, BATUpdateTuple) {
 
     snprintf(dataBlob, sizeof(dataBlob), "YO!");
     snprintf(stringKey, sizeof(stringKey), "ha");
-    Key key(57, stringKey, sizeof(stringKey));
-
-    objectFromVoidPointer.construct(key, dataBlob, 4, 75, 723, buffer3);
-
+    Key key(57 /*tableId*/, stringKey, sizeof(stringKey));
+    objectFromVoidPointer.construct(key, dataBlob, 3 /*value length*/, 123 /*version*/, 723 /*timestamp*/, buffer3);
     singleKeyObject = &*objectFromVoidPointer;
 
+    EXPECT_EQ(3, (int)singleKeyObject->getValueLength());
     validator.updateTuple(*singleKeyObject, txEntry);
-    EXPECT_EQ("YO!", *validator.getTupleValue(*singleKeyObject));
+    const string* tupleValue = validator.getTupleValue(*singleKeyObject);
+    EXPECT_EQ("YO!", *tupleValue);
+    EXPECT_EQ(3, (int)tupleValue->size());
+}
+
+TEST_F(ValidatorTest, BATValidateLocalTx) {
+    Object* singleKeyObject;
+    Tub<Object> objectFromVoidPointer;
+    char stringKey[3];
+    char dataBlob[4];
+    Buffer buffer3;
+    TxEntry txEntry;
+
+    snprintf(dataBlob, sizeof(dataBlob), "YO!");
+    snprintf(stringKey, sizeof(stringKey), "ha");
+    Key key(57 /*tableId*/, stringKey, sizeof(stringKey));
+    objectFromVoidPointer.construct(key, dataBlob, 3, 123, 723, buffer3);
+    singleKeyObject = &*objectFromVoidPointer;
+    txEntry.writeSet.push_back(singleKeyObject);
+    validator.localTxQueue.push(&txEntry);
+    EXPECT_EQ(1, (int)validator.localTxQueue.unsafe_size());
+    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
+    validator.serialize();
+    EXPECT_EQ(3, (int)txEntry.txState); //COMMIT
+    const string* tupleValue = validator.getTupleValue(*singleKeyObject);
+    EXPECT_EQ("YO!", *tupleValue);
+    EXPECT_EQ(3, (int)tupleValue->size());
 }
 
 }  // namespace RAMCloud

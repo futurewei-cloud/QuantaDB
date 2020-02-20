@@ -52,8 +52,8 @@ CountBloomFilter::clear() {
 
 void
 CountBloomFilter::createIndexesFromKey(const T *key, uint32_t size, uint64_t *idx1, uint64_t *idx2) {
-    std::array<uint64_t, 2> indexes;
-    RAMCloud::MurmurHash3_x64_128(key, size, 0, indexes.data());
+    uint64_t indexes[2];
+    RAMCloud::MurmurHash3_x64_128(key, size, 0, indexes);
     *idx1 = indexes[0] % BFSize;
     *idx2 = indexes[1] % BFSize;
 }

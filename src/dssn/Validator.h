@@ -9,7 +9,7 @@
 #include "Common.h"
 #include "Object.h"
 #include "HOTKV.h"
-#include "tbb/tbb.h"
+#include <tbb/tbb.h>
 #include "ActiveTxSet.h"
 #include "TxEntry.h"
 
@@ -31,6 +31,7 @@ class Validator {
     WaitQueue localTxQueue;
     ActiveTxSet activeTxSet;
     uint64_t alertThreshold = 1000; //LATER
+    bool isUnderTest = false;
     //LATER DependencyMatrix blockedTxSet;
 
     // all operations about tuple store
@@ -45,8 +46,8 @@ class Validator {
 
     // all SSN data maintenance operations
     bool updateTxEtaPi(TxEntry& txEntry);
-    bool updateReadsetEta(TxEntry& txEntry);
-    bool updateWriteset(TxEntry& txEntry);
+    bool updateReadsetTupleEta(TxEntry& txEntry);
+    bool updateWritesetTuple(TxEntry& txEntry);
 
     // serialization of commit-intent validation
     void serialize();
