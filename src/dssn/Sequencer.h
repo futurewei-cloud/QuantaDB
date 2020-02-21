@@ -22,7 +22,7 @@ namespace DSSN {
  * solutions. This implementation uses LinuxPTP to synchronize clocks. LinuxPTP can achieve sub-microsecond
  * synchronization precision. A sub-microsecond precision is sufficient to support 1M transactions per second.
  *
- * The 44-bit field is PHC (Physical Hardware Clock) time rounded down to microsecond.
+ * The 46-bit field is PHC (Physical Hardware Clock) time rounded down to microsecond.
  *
  * The 10-bit weight field is used to avoid time-stamp collision between nodes. Each Sequencer is assigned
  * a different weight to ensures no logical time stamp collision between nodes. A 10-bit weight field implies
@@ -37,16 +37,30 @@ namespace DSSN {
  * such as zookeeper. In this implementation, we choose a light-weight approach by picking up the last number of
  * the IP address of the PTP port.
  */
+
+#ifdef  SEQUENCER_CLIENT // Client side Sequencer class
+class SequencerClient {
+    public:
+    SequencerClient();
+    u_int64_t getLTS();    	            // return Sequencer time-stamp (logical time stamp)
+    u_int64_t LTS2PHCTS(u_int64_t);     // Convert logical TS to PHC TS in micro-second
+
+    private:
+    // u_int32_t weight;		 // Sequencer weight. Client side has no use of this info for now.
+}; // end Sequencer class
+
+#else // SEQUENCER_SERVER
+
+// Client side Sequencer class
 class Sequencer {
     public:
     Sequencer();
-    u_int64_t getTimeStamp();    // return logical time-stamp
+    u_int64_t readPHC();    // return PHC time stamp
 
     private:
-    u_int64_t    readPHC();      // return micro-second time stamp from PHC
-    u_int64_t    last_phc;       // Last PHC time-stamp read
-    u_int32_t    counter;        // local counter to ensure unique logical time-stamp is geneerated.
-                                 // If last_phc == this_phc, then counter--, else counter = 0xFF;
-}; // end Sequencer class
+    u_int32_t weight;		// Sequencer weight. Client side has no use of this info for now.
+    u_int64_t last_usec;    // usec of the last LTS issued
+}; // end SequencerServer class
+#endif // 
 
 } // end namespace DSSN

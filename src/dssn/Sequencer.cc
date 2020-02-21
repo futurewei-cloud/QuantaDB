@@ -8,8 +8,12 @@
 
 namespace DSSN {
 
+Sequencer::Sequencer() : weight(0), last_usec(0) {}
 
-Sequencer::Sequencer() : counter(0), last_phc(0) {}
+u_int64_t Sequencer::readPHC()    // return PHC time stamp
+{
+    return 0; // for now
+}
 
-} // end TxEntry class
+} // DSSN
 
