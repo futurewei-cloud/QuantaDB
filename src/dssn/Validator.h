@@ -13,11 +13,13 @@
 #include "ActiveTxSet.h"
 #include "BlockedTxSet.h"
 #include "TxEntry.h"
+#include "WaitQueue.h"
 
 namespace DSSN {
 typedef RAMCloud::Object Object;
 typedef RAMCloud::KeyLength KeyLength;
-typedef tbb::concurrent_queue<TxEntry*> WaitQueue;
+//typedef tbb::concurrent_queue<TxEntry*> WaitQueue;
+
 
 /**
  * Supposedly one Validator instance per storage node, to handle DSSN validation.

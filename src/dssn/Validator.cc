@@ -16,16 +16,17 @@ const uint64_t minTimeStamp = 0;
 
 inline std::string formTupleKey(Object& tuple) {
     KeyLength kLen;
-    const uint8_t* key = (const uint8_t *)tuple.getKey(0, &kLen);
+    const char* key = (const char *)tuple.getKey(0, &kLen);
     if (key == NULL) // there is a bug if it happens
         return "";
-    uint64_t tableId = tuple.getTableId();
+    /*uint64_t tableId = tuple.getTableId();
     std::vector<uint8_t> ckey(sizeof(tableId) + kLen);
     for (uint32_t i = 0; i < sizeof(tableId); i++)
         ckey[i] = ((uint8_t *)&tableId)[i];
     for (uint32_t i = 0; i < kLen; i++)
         ckey[sizeof(tableId) + i] = key[i];
-    return std::string(ckey.begin(), ckey.end());
+    return std::string(ckey.begin(), ckey.end());*/
+    return std::string (key, kLen);
 }
 
 uint64_t
@@ -365,7 +366,7 @@ Validator::serialize() {
 
         // process all commit-intents on local transaction queue
         TxEntry* txEntry;
-        while (localTxQueue.try_pop(txEntry)) {
+       while (localTxQueue.try_pop(txEntry)) {
         	if (activeTxSet.blocks(txEntry)) {
         		localTxQueue.push(txEntry); // re-enqueued as this tx may be unblocked later
         	} else {

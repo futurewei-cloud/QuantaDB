@@ -73,7 +73,6 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
     singleKeyObject = &*objectFromVoidPointer;
     txEntry.writeSet.push_back(singleKeyObject);
     validator.localTxQueue.push(&txEntry);
-    EXPECT_EQ(1, (int)validator.localTxQueue.unsafe_size());
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
     EXPECT_EQ(3, (int)txEntry.txState); //COMMIT
@@ -95,25 +94,48 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     objectFromVoidPointer.construct(key, dataBlob, 3, 123, 723, buffer3);
     singleKeyObject = &*objectFromVoidPointer;
     int size = (int)(sizeof(txEntry) / sizeof(TxEntry));
+    int count = 0;
+    uint64_t start, stop;
 
-    uint64_t start = Cycles::rdtscp();
+    //time pop()
+    count = 0;
+    for (int i = 0; i < size; i++) {
+    	txEntry[i].writeSet.push_back(singleKeyObject);
+    	if (validator.localTxQueue.push(&txEntry[i])) count++;
+    }
+    EXPECT_EQ(size, count);
+    count = 0;
+    start = Cycles::rdtscp();
+    for (int i = 0; i < size; i++) {
+    	TxEntry *tmp;
+    	if (validator.localTxQueue.try_pop(tmp)) count++;
+    }
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "localTxQueue.try_pop(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
+    GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
+    EXPECT_EQ(size, count);
+
+    //time blocks()
+    start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
     	if (validator.activeTxSet.blocks(&txEntry[i])) {
     		EXPECT_EQ(0, 1);
     	}
     }
-    uint64_t stop = Cycles::rdtscp();
-    GTEST_COUT << "ActiveTxSet.blocks(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "activeTxSet.blocks(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
 
+    //time validate()
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
     	validator.validateLocalTx(txEntry[i]);
     }
     stop = Cycles::rdtscp();
-    GTEST_COUT << "validateLocalTx: Total cycles (" << size << " txs): " << (stop - start) << std::endl;
+    GTEST_COUT << "validateLocalTx(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
 
+    // time conclude()
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
     	validator.conclude(txEntry[i]);
@@ -122,46 +144,28 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     GTEST_COUT << "conclude(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
 
+    //time all operations
     for (int i = 0; i < size; i++) {
     	txEntry[i].writeSet.push_back(singleKeyObject);
     	validator.localTxQueue.push(&txEntry[i]);
     }
-    EXPECT_EQ(size, (int)validator.localTxQueue.unsafe_size());
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
     	TxEntry *tmp;
     	validator.localTxQueue.try_pop(tmp);
-    }
-    stop = Cycles::rdtscp();
-    GTEST_COUT << "localTxQueue.try_pop(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
-    GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
-
-
-    for (int i = 0; i < size; i++) {
-    	txEntry[i].writeSet.push_back(singleKeyObject);
-    	validator.localTxQueue.push(&txEntry[i]);
-    }
-    EXPECT_EQ(size, (int)validator.localTxQueue.unsafe_size());
-    start = Cycles::rdtscp();
-    for (int i = 0; i < size; i++) {
-    	TxEntry *tmp;
-    	validator.localTxQueue.try_pop(tmp);
-    	validator.activeTxSet.blocks(&txEntry[i]);
-    	validator.validateLocalTx(txEntry[i]);
-    	validator.conclude(txEntry[i]);
+    	validator.activeTxSet.blocks(tmp);
+    	validator.validateLocalTx(*tmp);
+    	validator.conclude(*tmp);
     }
     stop = Cycles::rdtscp();
     GTEST_COUT << "pop,blocks,validate,conclude: Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
 
-
-
-
+    //time serializa()
     for (int i = 0; i < size; i++) {
     	txEntry[i].writeSet.push_back(singleKeyObject);
     	validator.localTxQueue.push(&txEntry[i]);
     }
-    EXPECT_EQ(size, (int)validator.localTxQueue.unsafe_size());
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     start = Cycles::rdtscp();
     validator.serialize();
