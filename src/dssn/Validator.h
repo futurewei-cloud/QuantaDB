@@ -15,7 +15,6 @@
 #include "TxEntry.h"
 
 namespace DSSN {
-
 typedef RAMCloud::Object Object;
 typedef RAMCloud::KeyLength KeyLength;
 typedef tbb::concurrent_queue<TxEntry*> WaitQueue;
@@ -33,6 +32,7 @@ class Validator {
     ActiveTxSet activeTxSet;
     BlockedTxSet blockedTxSet;
     uint64_t alertThreshold = 1000; //LATER
+    uint64_t lastCTS = 0;
     bool isUnderTest = false;
     //LATER DependencyMatrix blockedTxSet;
 
@@ -48,8 +48,8 @@ class Validator {
 
     // all SSN data maintenance operations
     bool updateTxEtaPi(TxEntry& txEntry);
-    bool updateReadsetTupleEta(TxEntry& txEntry);
-    bool updateWritesetTuple(TxEntry& txEntry);
+    bool updateReadSetTupleEta(TxEntry& txEntry);
+    bool updateWriteSetTuple(TxEntry& txEntry);
 
     // serialization of commit-intent validation
     void serialize();

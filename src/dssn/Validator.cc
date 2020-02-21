@@ -164,7 +164,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
 }
 
 bool
-Validator::updateReadsetTupleEta(TxEntry &txEntry) {
+Validator::updateReadSetTupleEta(TxEntry &txEntry) {
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < readSet.size(); i++) {
         maximizeTupleEta(*readSet.at(i), txEntry.getCTS());
@@ -173,7 +173,7 @@ Validator::updateReadsetTupleEta(TxEntry &txEntry) {
 }
 
 bool
-Validator::updateWritesetTuple(TxEntry &txEntry) {
+Validator::updateWriteSetTuple(TxEntry &txEntry) {
     auto &writeSet = txEntry.getWriteSet();
     for (uint32_t i = 0; i < writeSet.size(); i++) {
         updateTuple(*writeSet.at(i), txEntry);
@@ -300,9 +300,10 @@ Validator::serialize() {
     /*
      * This loop handles the DSSN serialization window critical section
      */
-	bool isEmpty = false;
-    while (!isUnderTest || !isEmpty) {
-    	isEmpty = true;
+	bool hasEvent = true;
+    while (!isUnderTest || hasEvent) {
+    	hasEvent = false;
+
         // process due commit-intents on cross-shard transaction queue
         
         /* Scheme B3
@@ -352,6 +353,7 @@ Validator::serialize() {
                 //schedule for validation as there is no dependency
                 if (activeTxSet.add(txEntry)) {
                     txEntry->setTxCIState(TXEntry::TX_CI_TRANSIENT);
+                    lastCTS = txEntry->getCTS();
 
                     //remove from blocked tx set if needed
                     if (blockedTxSet.contains(txEntry)
@@ -362,26 +364,25 @@ Validator::serialize() {
         */
 
         // process all commit-intents on local transaction queue
-        for (uint32_t i = 0; i < localTxQueue.unsafe_size(); i++) {
-            TxEntry* txEntry;
-            if (localTxQueue.try_pop(txEntry)) {
-                if (activeTxSet.blocks(txEntry)) {
-                    localTxQueue.push(txEntry); // re-enqueued as this tx may be unblocked later
-                } else {
-                    /* There is no need to update activeTXs because this tx is validated
-                     * and concluded shortly. If the conclude() does through a queue and another
-                     * task, then we should add tx to active tx set here.
-                     */
+        TxEntry* txEntry;
+        while (localTxQueue.try_pop(txEntry)) {
+        	if (activeTxSet.blocks(txEntry)) {
+        		localTxQueue.push(txEntry); // re-enqueued as this tx may be unblocked later
+        	} else {
+        		/* There is no need to update activeTXs because this tx is validated
+        		 * and concluded shortly. If the conclude() does through a queue and another
+        		 * task, then we should add tx to active tx set here.
+        		 */
 
-                    // As local transactions can be validated in any order, we can set the CTS.
-                    txEntry->setCTS(12345 /* deduce an approx uint64_t CTS LATER */);
+        		// As local transactions can be validated in any order, we can set the CTS.
+        		// Use lastCTS+1 as CTS. That has very little impact on cross-shard txs.
+        		txEntry->setCTS(++lastCTS);
 
-                    validateLocalTx(*txEntry);
+        		validateLocalTx(*txEntry);
 
-                    conclude(*txEntry);
-                }
-                isEmpty = false;
-            }
+        		conclude(*txEntry);
+        	}
+        	hasEvent = true;
         }
     } //end while(true)
 }
@@ -398,8 +399,8 @@ Validator::conclude(TxEntry& txEntry) {
 
         // update in-mem tuple store
         if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
-            updateReadsetTupleEta(txEntry);
-            updateWritesetTuple(txEntry);
+            updateReadSetTupleEta(txEntry);
+            updateWriteSetTuple(txEntry);
         }
 
         //reply to commit intent client
