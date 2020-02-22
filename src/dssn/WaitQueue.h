@@ -7,6 +7,7 @@
 #define WAIT_QUEUE_H
 
 #include <boost/lockfree/spsc_queue.hpp>
+#include <boost/lockfree/queue.hpp>
 #include <atomic>
 #include "TxEntry.h"
 
@@ -34,18 +35,23 @@ namespace DSSN {
 class WaitQueue {
 	PRIVATE:
 	boost::lockfree::spsc_queue<TxEntry*, boost::lockfree::capacity<1000000>> queue;
+	//boost::lockfree::queue<TxEntry*> queue{1000000};
 
     PUBLIC:
-    // false if the key is failed to be added due to overflow
+	//for dequeueing by the consumer
     bool try_pop(TxEntry *&txEntry) {
     	return queue.pop(txEntry);
     }
 
-    // for performance, the key is assumed to have been added
+    //for enqueueing by producers
     bool push(TxEntry *txEntry) {
     	return queue.push(txEntry);
     }
 
+    //for high-performance re-queueing by the consumer
+    bool repush(TxEntry *txEntry) {
+    	return true; //FIXME
+    }
 }; // end WaitQueue class
 
 } // end namespace DSSN

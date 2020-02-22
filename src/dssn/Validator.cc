@@ -199,7 +199,6 @@ Validator::validateLocalTx(TxEntry& txEntry) {
 
 void
 Validator::validateDistributedTxs(int worker) {
-
     /* Scheme B3
     while (true) {
         for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = activeTxSet[worker].begin(); itr != activeTxSet[worker].end(); ++itr) {
@@ -306,6 +305,17 @@ Validator::serialize() {
     	hasEvent = false;
 
         // process due commit-intents on cross-shard transaction queue
+
+
+    	/*
+    	 * Henry: To dequeue from the skip list could lower performance of this critical section.
+    	 * I propose we use a thread before this serializer thread to move the scheduled
+    	 * CIs from the skip list to a boost spsc queue. The serializer dequeues CIs
+    	 * from the spsc queue. Now whether this spsc queue is tied to the DM
+    	 * or using a different spsc queue that only contains blocked CIs to tie to DM
+    	 * is something to consider.
+    	 */
+
         
         /* Scheme B3
         TXEntry *txEntry;

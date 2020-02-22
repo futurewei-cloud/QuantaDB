@@ -97,13 +97,19 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     int count = 0;
     uint64_t start, stop;
 
-    //time pop()
+    //time push()
     count = 0;
+    start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
     	txEntry[i].writeSet.push_back(singleKeyObject);
     	if (validator.localTxQueue.push(&txEntry[i])) count++;
     }
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "localTxQueue.push(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
+    GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
     EXPECT_EQ(size, count);
+
+    //time pop()
     count = 0;
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
