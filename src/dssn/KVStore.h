@@ -41,6 +41,23 @@ struct KVLayout {
 	KLayout k; //could be of variable length, therefore placed next
 };
 
+/*
+ * This class contains a k-v store whose structure is optimized for look-up by key.
+ * The size of key is limited to 256B currently. The key is supposed to be
+ * globally unique. That is, the key may be composed of tenant ID, table ID, tuple key, etc.
+ * The value part is composed of the tuple value data and the DSSN meta data.
+ * Since the tuple value data is variable in size, the class separates the storage of the
+ * value and the storage of the pointer to the value storage.
+ *
+ * The class could encapsulate the PelagoDB or a persistent store. When it is backed by
+ * such a persistent store, the class serves as an in-memory cache,
+ * supporting latest-version point query of tuples
+ * while the PelagoDB would support snapshot reads, range queries, and point queries of
+ * cold tuples.
+ *
+ * The class is expected to be used by the critical section, serialize(). Therefore,
+ * it is designed to minimize memory copy of key data and value data.
+ */
 class KVStore {
     /*
      * The caller provides the object in the RPC message.
@@ -66,9 +83,15 @@ class KVStore {
     bool getMeta(const KLayout& k, DSSNMeta *meta);
 
     /*
-     * The caller prepares k.keyLength and k.key. Returns toe pointers to the valuePtr and valueLength.
+     * The caller prepares k.keyLength and k.key. Returns the valuePtr and valueLength.
      */
     bool getValue(const KLayout& k, uint8_t *valuePtr, uint32_t &valueLength);
+
+    /*
+     * The caller prepares k.keyLength and k.key. Returns the pointer to VLayout.
+     */
+    bool getValue(const KLayout& k, VLayout *v);
+
 }; //end class KVStore
 } //end namespace DSSN
 
