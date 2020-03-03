@@ -4,6 +4,7 @@
 #define __KVSTORE_H__
 
 #include <memory>
+#include <boost/scoped_array.hpp>
 
 namespace DSSN {
 
@@ -13,58 +14,72 @@ struct DSSNMeta {
 	uint64_t pStampPrev; //eta of prev version
 	uint64_t sStampPrev; //pi of prev version
 	uint64_t cStamp; //creation time (or CTS)
-	bool isTombStone;
 	DSSNMeta() {
 		cStamp = 0;
 		pStampPrev = pStamp = 0;
 		sStampPrev = sStamp = 0xffffffffffffffff;
-		isTombStone = false;
 	}
 };
 
 struct VLayout {
 	uint32_t valueLength;
-	uint8_t *valuePtr;
+	union {
+		uint8_t *valuePtr;
+		uint64_t offsetToValue; //assume 64-bit system, matching pointer size
+	};
 	DSSNMeta meta;
+	bool isTombStone = false;
 };
 
 struct KLayout {
 	uint32_t keyLength;
 	union {
-		uint8_t key[256];
-		uint8_t keyHead[0];
+		uint32_t offsetToKey; //LATER to uint64_t
+		boost::scoped_array<uint8_t> key;
 	};
+
+	explicit KLayout(uint32_t keySize) : keyLength(0), key(new uint8_t[keySize]) {}
 };
 
 struct KVLayout {
-	VLayout v; //fixed length, therefore placed first
-	KLayout k; //could be of variable length, therefore placed next
+	VLayout v;
+	KLayout k;
+	uint8_t dataKeyAndValue[0];
+
+	explicit KVLayout(uint32_t keySize) : k(keySize) {}
 };
 
 /*
- * This class contains a k-v store whose structure is optimized for look-up by key.
- * The size of key is limited to 256B currently. The key is supposed to be
- * globally unique. That is, the key may be composed of tenant ID, table ID, tuple key, etc.
- * The value part is composed of the tuple value data and the DSSN meta data.
- * Since the tuple value data is variable in size, the class separates the storage of the
- * value and the storage of the pointer to the value storage.
+ * This class contains a k-v store whose structure is optimized for using it
+ * with minimal key data copy and value data copy outside the critical section
+ * of DSSN, namely serialize().
  *
- * The class could encapsulate the PelagoDB or a persistent store. When it is backed by
- * such a persistent store, the class serves as an in-memory cache,
- * supporting latest-version point query of tuples
- * while the PelagoDB would support snapshot reads, range queries, and point queries of
- * cold tuples.
+ * The k-v store's implementation may change over time. It is intended to
+ * be backed by RAM and then later by PelagoDB. Therefore, it is intended to encapsulate
+ * the underlying backing store(s).
  *
- * The class is expected to be used by the critical section, serialize(). Therefore,
- * it is designed to minimize memory copy of key data and value data.
+ * The key is supposed to be globally unique.
+ * That is, the key may be composed of tenant ID, table ID, tuple key, etc.
+ * The value part is composed of the data and meta data.
+ * Since the data is variable in size, the class separates the storage of the
+ * value and the storage of the pointer to the data.
+ *
  */
 class KVStore {
     /*
+     * THe routine is intended to be used by a routine (say, RPC handler) prior to serialize() in
+     * the transaction validation pipeline.
+     *
+     * Its purpose to have the KV store prepares its internal memory for the KV tuple so
+     * that there would be minimal data copy within serialize().
+     *
+     * Whatever memory is allocated by the class will be freed by the class.
+     *
      * The caller provides the object in the RPC message.
-     * The kvIn should have the k.keyHead at the start of the key data
-     * and v.valuePtr correctly point to the temp memory of the RPC message.
-     * This class will produce a new KVLayout object and possibly allocate value memory with the
-     * v.valuePtr pointing to it.
+     * The kvIn should have the k.offsetToKey at the start of the key data
+     * and v.offsetToValue correctly point to the value data.
+     * This class will fill kvOut with k.key pointing to a key data copy
+     * and v.valuePtr pointing to a value data copy.
      */
     bool preput(const KVLayout &kvIn, KVLayout *kvOut);
 
@@ -78,9 +93,13 @@ class KVStore {
 
     /*
      * The caller provides k.keyLength and k.key. Upon successful return, meta points to the meta data.
-     *
      */
     bool getMeta(const KLayout& k, DSSNMeta *meta);
+
+    /*
+     * The caller provides k.keyLength and k.key. Upon successful return, meta points to the meta data.
+     */
+    bool updateMeta(const KLayout& k, DSSNMeta &meta);
 
     /*
      * The caller prepares k.keyLength and k.key. Returns the valuePtr and valueLength.
@@ -91,6 +110,12 @@ class KVStore {
      * The caller prepares k.keyLength and k.key. Returns the pointer to VLayout.
      */
     bool getValue(const KLayout& k, VLayout *v);
+
+    /*
+     * The caller prepares k.keyLength and k.key.
+     * The KV tuple is marked tomb-stoned and would be removed lazily.
+     */
+    bool remove(const KLayout& k);
 
 }; //end class KVStore
 } //end namespace DSSN
