@@ -17,5 +17,12 @@ TxEntry::TxEntry() {
     this->cts = 0;
 }
 
+TxEntry::~TxEntry() {
+	for (uint32_t i = 0; i < writeSet.size(); i++)
+		delete writeSet[i];
+	for (uint32_t i = 0; i < readSet.size(); i++)
+		delete readSet[i];
+}
+
 } // end TxEntry class
 

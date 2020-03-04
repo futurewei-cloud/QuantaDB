@@ -4,7 +4,6 @@
  */
 
 
-#include "KVInterface.h"
 #include "sstream"
 #include "Validator.h"
 #include <thread>
@@ -14,18 +13,57 @@ namespace DSSN {
 const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
 const uint64_t minTimeStamp = 0;
 
+uint64_t
+Validator::getTuplePi(KVLayout *kv) {
+    DSSNMeta meta;
+    Validator::kvStore.getMeta(kv->k, meta);
+    return meta.sStamp;
+}
+
+uint64_t
+Validator::getTupleEta(KVLayout *kv) {
+    DSSNMeta meta;
+    Validator::kvStore.getMeta(kv->k, meta);
+    return meta.pStamp;
+}
+
+uint8_t *
+Validator::getTupleValue(KVLayout *kv, uint32_t& valueLength) {
+    uint8_t *valuePtr;
+    Validator::kvStore.getValue(kv->k, valuePtr, valueLength);
+    return valuePtr;
+}
+
+bool
+Validator::maximizeTupleEta(KVLayout *kv, uint64_t eta) {
+    DSSNMeta meta;
+    Validator::kvStore.getMeta(kv->k, meta);
+    meta.pStamp = std::max(eta, meta.pStamp);
+    Validator::kvStore.updateMeta(kv->k, meta);
+    return true;
+}
+
+bool
+Validator::updateTuple(KVLayout *kv, TxEntry& txEntry) {
+    Validator::kvStore.getMeta(kv->k, kv->meta);
+
+    kv->meta.pStampPrev = kv->meta.pStamp;
+
+    /* SSN required operations */
+    kv->meta.sStampPrev = txEntry.getPi();
+    kv->meta.cStamp = kv->meta.pStamp = txEntry.getCTS();
+    kv->meta.sStamp = maxTimeStamp;
+
+    Validator::kvStore.put(*kv);
+    return true;
+}
+
+/*
 inline std::string formTupleKey(Object& tuple) {
     KeyLength kLen;
     const char* key = (const char *)tuple.getKey(0, &kLen);
     if (key == NULL) // there is a bug if it happens
         return "";
-    /*uint64_t tableId = tuple.getTableId();
-    std::vector<uint8_t> ckey(sizeof(tableId) + kLen);
-    for (uint32_t i = 0; i < sizeof(tableId); i++)
-        ckey[i] = ((uint8_t *)&tableId)[i];
-    for (uint32_t i = 0; i < kLen; i++)
-        ckey[sizeof(tableId) + i] = key[i];
-    return std::string(ckey.begin(), ckey.end());*/
     return std::string (key, kLen);
 }
 
@@ -47,21 +85,6 @@ Validator::getTupleEta(Object& object) {
     DSSNMeta meta;
     Validator::tupleStore.getMeta(tupleKey, meta);
     return meta.pStamp;
-}
-
-uint64_t
-Validator::getTuplePrevEta(Object& object) {
-    std::string tupleKey = formTupleKey(object);
-    if (tupleKey.empty())
-        return maxTimeStamp; //cause exclusion violation
-    DSSNMeta meta;
-    Validator::tupleStore.getMeta(tupleKey, meta);
-    return meta.pStampPrev;
-}
-
-uint64_t
-Validator::getTuplePrevPi(Object& object) {
-    return 0; //not used yet
 }
 
 const std::string *
@@ -93,15 +116,15 @@ Validator::updateTuple(Object& object, TxEntry& txEntry) {
     DSSNMeta meta;
     Validator::tupleStore.getMeta(tupleKey, meta);
 
-    /* because we have a single version HOT, copy current data to prev data */
+    // because we have a single version HOT, copy current data to prev data
     meta.pStampPrev = meta.pStamp;
 
-    /* SSN required operations */
+    // SSN required operations
     meta.sStampPrev = txEntry.getPi();
     meta.cStamp = meta.pStamp = txEntry.getCTS();
     meta.sStamp = maxTimeStamp;
 
-    /* tuple: key, pointer to object, meta-data */
+    // tuple: key, pointer to object, meta-data
     std::stringstream ss;
     if (true) { // LATER: with PelagoDB, we won't need to store the actual value
     	uint32_t valueLength;
@@ -116,7 +139,7 @@ Validator::updateTuple(Object& object, TxEntry& txEntry) {
     }
     return true;
 }
-
+*/
 void
 Validator::start() {
     // Henry: may need to use TBB to pin the threads to specific cores LATER
@@ -142,7 +165,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
     //update pi of transaction
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < readSet.size(); i++) {
-        uint64_t vPi = Validator::getTuplePi(*readSet.at(i));
+        uint64_t vPi = Validator::getTuplePi(readSet.at(i));
         txEntry.setPi(std::min(txEntry.getPi(), vPi));
         if (txEntry.isExclusionViolated()) {
             txEntry.setTxState(TxEntry::TX_ABORT);
@@ -153,7 +176,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
     //update eta of transaction
     auto  &writeSet = txEntry.getWriteSet();
     for (uint32_t i = 0; i < writeSet.size(); i++) {
-        uint64_t vEta = Validator::getTupleEta(*writeSet.at(i));
+        uint64_t vEta = Validator::getTupleEta(writeSet.at(i));
         txEntry.setEta(std::max(txEntry.getEta(), vEta));
         if (txEntry.isExclusionViolated()) {
             txEntry.setTxState(TxEntry::TX_ABORT);
@@ -168,7 +191,7 @@ bool
 Validator::updateReadSetTupleEta(TxEntry &txEntry) {
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < readSet.size(); i++) {
-        maximizeTupleEta(*readSet.at(i), txEntry.getCTS());
+        maximizeTupleEta(readSet.at(i), txEntry.getCTS());
     }
     return true;
 }
@@ -177,7 +200,7 @@ bool
 Validator::updateWriteSetTuple(TxEntry &txEntry) {
     auto &writeSet = txEntry.getWriteSet();
     for (uint32_t i = 0; i < writeSet.size(); i++) {
-        updateTuple(*writeSet.at(i), txEntry);
+        updateTuple(writeSet.at(i), txEntry);
     }
     return true;
 }

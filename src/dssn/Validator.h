@@ -8,17 +8,15 @@
 
 #include "Common.h"
 #include "Object.h"
-#include "HOTKV.h"
-#include <tbb/tbb.h>
 #include "ActiveTxSet.h"
 #include "BlockedTxSet.h"
 #include "TxEntry.h"
 #include "WaitQueue.h"
+#include "KVStore.h"
 
 namespace DSSN {
 typedef RAMCloud::Object Object;
 typedef RAMCloud::KeyLength KeyLength;
-//typedef tbb::concurrent_queue<TxEntry*> WaitQueue;
 
 
 /**
@@ -39,14 +37,19 @@ class Validator {
     //LATER DependencyMatrix blockedTxSet;
 
     // all operations about tuple store
+    KVStore kvStore;
+    uint64_t getTupleEta(KVLayout *kv);
+    uint64_t getTuplePi(KVLayout *kv);
+    uint8_t* getTupleValue(KVLayout *kv, uint32_t& valueLength);
+    bool maximizeTupleEta(KVLayout *kv, uint64_t eta);
+    bool updateTuple(KVLayout *kv, TxEntry& txEntry);
+/*
     HOTKV tupleStore;
     uint64_t getTupleEta(Object& object);
     uint64_t getTuplePi(Object& object);
-    uint64_t getTuplePrevEta(Object& object);
-    uint64_t getTuplePrevPi(Object& object);
     const std::string* getTupleValue(Object& object);
     bool maximizeTupleEta(Object& object, uint64_t eta);
-    bool updateTuple(Object& object, TxEntry& txEntry);
+    bool updateTuple(Object& object, TxEntry& txEntry);*/
 
     // all SSN data maintenance operations
     bool updateTxEtaPi(TxEntry& txEntry);

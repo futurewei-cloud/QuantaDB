@@ -3,7 +3,7 @@
 #ifndef __KVSTORE_H__
 #define __KVSTORE_H__
 
-#include <memory>
+#include "Common.h"
 #include <boost/scoped_array.hpp>
 
 namespace DSSN {
@@ -22,31 +22,50 @@ struct DSSNMeta {
 };
 
 struct VLayout {
-	uint32_t valueLength;
+	uint32_t valueLength = 0;
 	union {
 		uint8_t *valuePtr;
 		uint64_t offsetToValue; //assume 64-bit system, matching pointer size
 	};
-	DSSNMeta meta;
-	bool isTombStone = false;
 };
 
 struct KLayout {
-	uint32_t keyLength;
-	union {
-		uint32_t offsetToKey; //LATER to uint64_t
-		boost::scoped_array<uint8_t> key;
-	};
-
+	uint32_t keyLength = 0;
+	boost::scoped_array<uint8_t> key;
+	KLayout() {}
 	explicit KLayout(uint32_t keySize) : keyLength(0), key(new uint8_t[keySize]) {}
 };
 
 struct KVLayout {
 	VLayout v;
 	KLayout k;
-	uint8_t dataKeyAndValue[0];
+	DSSNMeta meta;
+	bool isTombStone = false;
 
 	explicit KVLayout(uint32_t keySize) : k(keySize) {}
+	uint8_t* getKey() { return k.key.get(); }
+	uint32_t getKeyLength() {return k.keyLength; }
+};
+
+//The helper structure to extract key from the stored key value
+template<typename KVType>
+struct HOTKeyExtractor {
+	typedef KVType KeyType;
+
+	size_t getKeyLength(const KVType &kv) const {
+		if (kv != 0) {
+			return (const size_t) kv->k.keyLength;
+		}
+		return 0;
+	}
+
+	const char* operator() (const KVType &kv) const {
+		static char s = 0;
+		if (kv != 0) {
+			return (char *)kv->k.key.get();
+		}
+		return &s;
+	}
 };
 
 /*
@@ -66,6 +85,15 @@ struct KVLayout {
  *
  */
 class KVStore {
+	PRIVATE:
+
+	// Pointer to the underlying HOT data structure
+	void* hotKVStore;
+
+    PUBLIC:
+
+	KVStore();
+
     /*
      * THe routine is intended to be used by a routine (say, RPC handler) prior to serialize() in
      * the transaction validation pipeline.
@@ -78,10 +106,10 @@ class KVStore {
      * The caller provides the object in the RPC message.
      * The kvIn should have the k.offsetToKey at the start of the key data
      * and v.offsetToValue correctly point to the value data.
-     * This class will fill kvOut with k.key pointing to a key data copy
+     * This class will return a new object with k.key pointing to a key data copy
      * and v.valuePtr pointing to a value data copy.
      */
-    bool preput(const KVLayout &kvIn, KVLayout *kvOut);
+    KVLayout* preput(KVLayout &kvIn);
 
     /*
      * The key and value will be directly (i.e., without reformatting) copied into the search tree,
@@ -89,33 +117,33 @@ class KVStore {
 	 * the v.valuePtr is to point to the value memory.
 	 * Internally the KVStore will free the value memory if the v.valuePtr is to be changed.
      */
-    bool put(const KVLayout& kv);
+    bool put(KVLayout& kv);
 
     /*
      * The caller provides k.keyLength and k.key. Upon successful return, meta points to the meta data.
      */
-    bool getMeta(const KLayout& k, DSSNMeta *meta);
+    bool getMeta(KLayout& k, DSSNMeta &meta);
 
     /*
      * The caller provides k.keyLength and k.key. Upon successful return, meta points to the meta data.
      */
-    bool updateMeta(const KLayout& k, DSSNMeta &meta);
+    bool updateMeta(KLayout& k, DSSNMeta &meta);
 
     /*
      * The caller prepares k.keyLength and k.key. Returns the valuePtr and valueLength.
      */
-    bool getValue(const KLayout& k, uint8_t *valuePtr, uint32_t &valueLength);
+    bool getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength);
 
     /*
      * The caller prepares k.keyLength and k.key. Returns the pointer to VLayout.
      */
-    bool getValue(const KLayout& k, VLayout *v);
+    bool getValue(KLayout& k, VLayout *v);
 
     /*
      * The caller prepares k.keyLength and k.key.
      * The KV tuple is marked tomb-stoned and would be removed lazily.
      */
-    bool remove(const KLayout& k);
+    bool remove(KLayout& k, DSSNMeta &meta);
 
 }; //end class KVStore
 } //end namespace DSSN
