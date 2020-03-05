@@ -10,10 +10,6 @@
 namespace DSSN
 {
     struct DSSNMeta {
-    	/*
-        uint64_t pStamp;   //eta
-        uint64_t pStampPrev; //pi
-        uint64_t cStamp;   //current */ // by Henry
     	uint64_t pStamp; //eta
     	uint64_t sStamp; //pi
     	uint64_t pStampPrev; //eta of prev version

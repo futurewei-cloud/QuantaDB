@@ -45,7 +45,7 @@ $(NANOOBJDIR)/RecoverSegmentBenchmark: $(NANOOBJDIR)/RecoverSegmentBenchmark.o $
 nanobenchmarks: $(NANOOBJDIR)/CleanerCompactionBenchmark \
                 $(NANOOBJDIR)/Echo \
                 $(NANOOBJDIR)/HashTableBenchmark \
-		$(NANOOBJDIR)/HOTKVBenchmark \
+#		$(NANOOBJDIR)/HOTKVBenchmark \
                 $(NANOOBJDIR)/LogCleanerBenchmark \
                 $(NANOOBJDIR)/MigrateTabletBenchmark \
                 $(NANOOBJDIR)/HashObjectManagerBenchmark \

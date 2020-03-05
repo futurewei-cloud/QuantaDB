@@ -79,13 +79,14 @@ SHARED_SRCFILES := \
 		   src/FileLogger.cc \
 		   src/HashTable.cc \
 		   src/HomaTransport.cc \
-		   src/dssn/HOTKV.cc \
+#		    src/dssn/HOTKV.cc \
 		   src/dssn/CountBloomFilter.cc \
 		   src/dssn/ActiveTxSet.cc \
 		   src/dssn/TxEntry.cc \
 		   src/dssn/Validator.cc \
 		   src/dssn/Sequencer.cc \
 		   src/dssn/ClusterTimeService.cc \
+		   src/dssn/KVStore.cc \
 		   src/IndexKey.cc \
 		   src/IndexletManager.cc \
 		   src/IndexLookup.cc \
