@@ -85,6 +85,7 @@ SHARED_SRCFILES := \
 		   src/dssn/TxEntry.cc \
 		   src/dssn/Validator.cc \
 		   src/dssn/Sequencer.cc \
+		   src/dssn/ClusterTimeService.cc \
 		   src/IndexKey.cc \
 		   src/IndexletManager.cc \
 		   src/IndexLookup.cc \

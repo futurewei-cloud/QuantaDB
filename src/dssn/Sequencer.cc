@@ -4,15 +4,17 @@
  */
 
 
+#include "ClusterTimeService.h"
 #include "Sequencer.h"
 
 namespace DSSN {
 
-Sequencer::Sequencer() : weight(0), last_usec(0) {}
+Sequencer::Sequencer() { }
 
-u_int64_t Sequencer::readPHC()    // return PHC time stamp
+// Return CTS
+uint64_t Sequencer::getCTS()
 {
-    return 0; // for now
+    return clock.getClusterTime(SEQUENCER_DELTA);
 }
 
 } // DSSN
