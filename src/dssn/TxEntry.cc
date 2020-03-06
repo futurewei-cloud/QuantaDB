@@ -5,6 +5,7 @@
 
 
 #include "TxEntry.h"
+#include "MurmurHash3.h"
 
 namespace DSSN {
 
@@ -24,6 +25,24 @@ TxEntry::~TxEntry() {
 	for (uint32_t i = 0; i < readSet.size(); i++) {
 		delete readSet[i];
 	}
+}
+
+bool
+TxEntry::insertReadSet(KVLayout* kv) {
+	readSet.push_back(kv);
+	uint64_t indexes[2];
+	RAMCloud::MurmurHash3_x64_128(kv->k.key.get(), kv->k.keyLength, 0, indexes);
+	readSetHash.push_back((indexes[0] << 32) | (indexes[1] & 0xffffffff));
+	return true;
+}
+
+bool
+TxEntry::insertWriteSet(KVLayout* kv) {
+	writeSet.push_back(kv);
+	uint64_t indexes[2];
+	RAMCloud::MurmurHash3_x64_128(kv->k.key.get(), kv->k.keyLength, 0, indexes);
+	writeSetHash.push_back((indexes[0] << 32) | (indexes[1] & 0xffffffff));
+	return true;
 }
 
 } // end TxEntry class

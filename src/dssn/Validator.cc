@@ -115,7 +115,8 @@ bool
 Validator::updateWriteSetTuple(TxEntry &txEntry) {
     auto &writeSet = txEntry.getWriteSet();
     for (uint32_t i = 0; i < writeSet.size(); i++) {
-        updateTuple(writeSet.at(i), txEntry);
+        //updateTuple(writeSet.at(i), txEntry);
+        kvStore.put(*writeSet.at(i), txEntry.getCTS(), txEntry.getPi());
     }
     return true;
 }

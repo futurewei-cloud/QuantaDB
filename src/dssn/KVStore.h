@@ -108,6 +108,7 @@ class KVStore {
      * and v.offsetToValue correctly point to the value data.
      * This class will return a new object with k.key pointing to a key data copy
      * and v.valuePtr pointing to a value data copy.
+     * The KV tuple is not searchable in KV store yet,
      */
     KVLayout* preput(KVLayout &kvIn);
 
@@ -118,6 +119,11 @@ class KVStore {
 	 * Internally the KVStore will free the value memory if the v.valuePtr is to be changed.
      */
     bool put(KVLayout& kv);
+
+    /*
+     * Optimized for DSSN
+     */
+    bool put(KVLayout& kv, uint64_t cts, uint64_t pi);
 
     /*
      * The caller provides k.keyLength and k.key. Upon successful return, meta points to the meta data.

@@ -34,6 +34,31 @@ KVStore::put(KVLayout& kv) {
 }
 
 bool
+KVStore::put(KVLayout& kv, uint64_t cts, uint64_t pi) {
+	HotKVType::KeyType key = (char *)kv.k.key.get();
+	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
+	if (ret.mIsValid) {
+		KVLayout* oldkv = ret.mValue;
+		oldkv->meta.pStampPrev = oldkv->meta.pStamp;
+		oldkv->meta.sStampPrev = pi;
+		oldkv->meta.cStamp = oldkv->meta.pStamp = cts;
+		oldkv->meta.sStamp = 0xffffffffffffffff;
+		oldkv->v.valueLength = kv.v.valueLength;
+		delete oldkv->v.valuePtr;
+		oldkv->v.valuePtr = kv.v.valuePtr;
+	} else {
+	    kv.meta.pStampPrev = 0;
+	    kv.meta.sStampPrev = pi;
+	    kv.meta.cStamp = kv.meta.pStamp = cts;
+	    kv.meta.sStamp = 0xffffffffffffffff;
+		idx::contenthelpers::OptionalValue<DSSN::KVLayout*> ret = ((HotKVType *)hotKVStore)->upsert(&kv);
+		if (!ret.mIsValid)
+			return false;
+	}
+	return true;
+}
+
+bool
 KVStore::getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength) {
 
 	HotKVType::KeyType key = (char *)k.key.get();

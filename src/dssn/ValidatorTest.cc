@@ -50,7 +50,7 @@ class ValidatorTest : public ::testing::Test {
                 kv.v.valuePtr = (uint8_t *)dataBlob;
                 kv.v.valueLength = sizeof(dataBlob);
                 KVLayout *kvOut = validator.kvStore.preput(kv);
-        		if (j % 2 == 0)
+        		if (j % 5 == 0)
         			txEntry[i]->insertWriteSet(kvOut);
         		else
         			txEntry[i]->insertReadSet(kvOut);
@@ -179,7 +179,7 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf) {
     int count = 0;
     uint64_t start, stop;
 
-    fillTxEntry(size, 2);
+    fillTxEntry(size, 10);
 
     count = 0;
     start = Cycles::rdtscp();
