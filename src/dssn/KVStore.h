@@ -130,14 +130,19 @@ class KVStore {
     bool updateMeta(KLayout& k, DSSNMeta &meta);
 
     /*
+     * Update eta with the input eta and existing eta, whichever is larger.
+     */
+    bool maximizeMetaEta(KLayout& k, uint64_t eta);
+
+    /*
      * The caller prepares k.keyLength and k.key. Returns the valuePtr and valueLength.
      */
     bool getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength);
 
     /*
-     * The caller prepares k.keyLength and k.key. Returns the pointer to VLayout.
+     * The caller prepares k.keyLength and k.key. Returns the pointer to VKLayout.
      */
-    bool getValue(KLayout& k, VLayout *v);
+    bool getValue(KLayout& k, KVLayout *&kv);
 
     /*
      * The caller prepares k.keyLength and k.key.

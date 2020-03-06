@@ -38,13 +38,8 @@ class TxEntry {
     uint32_t txState;
     uint32_t commitIntentState;
     std::vector<uint64_t> shardSet; //set of participating shards
-    /*std::vector<RAMCloud::Object *> writeSet; //coordinator, for 'is in' operation, may benefit from using 'set' instead?!
-    std::vector<RAMCloud::Object *> readSet; //coordinator, for 'remove' operation, may benefit from using 'set' instead?!
-    std::vector<RAMCloud::Object *> writeTuples; //coordinator, for 'is in' operation, may benefit from using 'set' instead?!
-    std::vector<RAMCloud::Object *> readTuples; //coordinator, for 'remove' operation, may benefit from using 'set' instead?!
-    */
-    std::vector<KVLayout *> writeSet;
-    std::vector<KVLayout *> readSet;
+    std::vector<KVLayout *> writeSet; //coordinator, for 'is in' operation, may benefit from using 'set' instead?
+    std::vector<KVLayout *> readSet; //coordinator, for 'remove' operation, may benefit from using 'set' instead?!
     /* Henry: possibly put parameterized Bloom Filters here.
     BloomFilter writeSetFilter;
     BloomFilter readSetFilter;
