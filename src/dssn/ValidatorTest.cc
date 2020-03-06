@@ -11,6 +11,7 @@
 #include "Cycles.h"
 
 #include <ostream>
+#include <string>
 #define GTEST_COUT  std::cerr << "[ INFO ] "
 
 namespace RAMCloud {
@@ -24,11 +25,8 @@ class ValidatorTest : public ::testing::Test {
     MockCluster cluster;
     ClusterClock clusterClock;
     DSSN::Validator validator;
-    TxEntry txEntry[1000000];
-    Tub<Object> objectFromVoidPointer;
-    char stringKey[256];
+    TxEntry *txEntry[1000000];
     uint8_t dataBlob[512];
-    Buffer buffer3;
 
     ValidatorTest()
         : logEnabler()
@@ -40,20 +38,44 @@ class ValidatorTest : public ::testing::Test {
 
     DISALLOW_COPY_AND_ASSIGN(ValidatorTest);
 
-    void fillTxEntry(int noEntries, int noKeys = 1, int keySize = 3) {
-        KVLayout kv(keySize);
-        snprintf((char *)kv.k.key.get(), 3, "ha");
-        kv.k.keyLength = 3;
-        kv.v.valuePtr = (uint8_t *)dataBlob;
-        kv.v.valueLength = sizeof(dataBlob);
-        KVLayout *kvOut = validator.kvStore.preput(kv);
-    	memset(txEntry, 0, sizeof(txEntry)); //FIXME: watch out for mem leak
+    void fillTxEntry(int noEntries, int noKeys = 1, int keySize = 32) {
+
         for (int i = 0; i < noEntries; i++) {
+        	txEntry[i] = new TxEntry();
+        	txEntry[i]->setCTS(i+1);
         	for (int j = 0; j < noKeys; j++) {
-        		if (j % 5 == 0)
-        			txEntry[i].writeSet.push_back(kvOut);
+                KVLayout kv(keySize);
+                snprintf((char *)kv.k.key.get(), keySize, "%dhajfk78uj3kjciu3jj9jij39u9j93j", j);
+                kv.k.keyLength = keySize;
+                kv.v.valuePtr = (uint8_t *)dataBlob;
+                kv.v.valueLength = sizeof(dataBlob);
+                KVLayout *kvOut = validator.kvStore.preput(kv);
+        		if (j % 2 == 0)
+        			txEntry[i]->insertWriteSet(kvOut);
         		else
-        			txEntry[i].readSet.push_back(kvOut);
+        			txEntry[i]->insertReadSet(kvOut);
+        	}
+        }
+    }
+
+    void freeTxEntry(int noEntries) {
+        for (int i = 0; i < noEntries; i++) {
+        	delete txEntry[i];
+        	txEntry[i] = 0;
+        }
+    }
+
+    void printTxEntry(int noEntries) {
+        for (int i = 0; i < noEntries; i++) {
+        	if (txEntry[i] == 0)
+        		break;
+        	for (uint32_t j = 0; j < txEntry[i]->readSet.size(); j++) {
+        		std::string str((char *)txEntry[i]->readSet[j]->k.key.get());
+        		GTEST_COUT << "read key: " << str  << std::endl;
+        	}
+        	for (uint32_t j = 0; j < txEntry[i]->writeSet.size(); j++) {
+        		std::string str((char *)txEntry[i]->writeSet[j]->k.key.get());
+        	    GTEST_COUT << "write key: " << str  << std::endl;
         	}
         }
     }
@@ -61,26 +83,50 @@ class ValidatorTest : public ::testing::Test {
 
 TEST_F(ValidatorTest, BATKVStorePutGet) {
 	fillTxEntry(1);
-	for (uint32_t i = 0; i < txEntry[0].writeSet.size(); i++) {
-		validator.kvStore.put(*txEntry[0].writeSet[i]);
+
+	for (uint32_t i = 0; i < txEntry[0]->getWriteSet().size(); i++) {
+		validator.kvStore.put(*txEntry[0]->getWriteSet()[i]);
 		uint8_t *valuePtr = 0;
 		uint32_t valueLength;
-		validator.kvStore.getValue(txEntry[0].writeSet[i]->k, valuePtr, valueLength);
+		validator.kvStore.getValue(txEntry[0]->getWriteSet()[i]->k, valuePtr, valueLength);
+	    EXPECT_NE(dataBlob, valuePtr);
 	    EXPECT_EQ(sizeof(dataBlob), valueLength);
 	    EXPECT_EQ(0, std::memcmp(dataBlob, valuePtr, valueLength));
 	}
+
+	freeTxEntry(1);
+}
+
+TEST_F(ValidatorTest, BATKVStorePutPerf) {
+    uint64_t start, stop;
+
+	fillTxEntry(1,1000000);
+
+    uint32_t size = txEntry[0]->getWriteSet().size();
+    auto writeSet = txEntry[0]->getWriteSet();
+    start = Cycles::rdtscp();
+	for (uint32_t i = 0; i < size; i++) {
+		validator.kvStore.put(*writeSet[i]);
+	}
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "write (" << size << " keys): " << (stop - start) << std::endl;
+    GTEST_COUT << "Sec per write: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
+    //printTxEntry(1);
+
+	freeTxEntry(1);
 }
 
 TEST_F(ValidatorTest, BATKVStorePutGetMulti) {
-	fillTxEntry(10);
-	for (uint32_t i = 0; i < txEntry[0].writeSet.size(); i++) {
-		validator.kvStore.put(*txEntry[0].writeSet[i]);
+	fillTxEntry(5, 10);
+	for (uint32_t i = 0; i < txEntry[0]->getWriteSet().size(); i++) {
+		validator.kvStore.put(*txEntry[0]->getWriteSet()[i]);
 		uint8_t *valuePtr = 0;
 		uint32_t valueLength;
-		validator.kvStore.getValue(txEntry[0].writeSet[i]->k, valuePtr, valueLength);
+		validator.kvStore.getValue(txEntry[0]->getWriteSet()[i]->k, valuePtr, valueLength);
 	    EXPECT_EQ(sizeof(dataBlob), valueLength);
 	    EXPECT_EQ(0, std::memcmp(dataBlob, valuePtr, valueLength));
 	}
+	freeTxEntry(5);
 }
 /*
 TEST_F(ValidatorTest, BATKVStorePutGetVarious) {
@@ -95,172 +141,50 @@ TEST_F(ValidatorTest, BATKVStorePutGetVarious) {
 	}
 }*/
 
-TEST_F(ValidatorTest, BATValidateLocalTxs) {
-
-    int size = (int)(sizeof(txEntry) / sizeof(TxEntry));
-    int count = 0;
-    uint64_t start, stop;
-
-    fillTxEntry(size);
-
-    count = 0;
-    start = Cycles::rdtscp();
-    for (int i = 0; i < size; i++) {
-    	if (validator.localTxQueue.push(&txEntry[i])) count++;
-    }
-    stop = Cycles::rdtscp();
-    GTEST_COUT << "localTxQueue.push(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
-    GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
-    EXPECT_EQ(size, count);
-
-    //time pop()
-    count = 0;
-    start = Cycles::rdtscp();
-    for (int i = 0; i < size; i++) {
-    	TxEntry *tmp;
-    	if (validator.localTxQueue.try_pop(tmp)) count++;
-    }
-    stop = Cycles::rdtscp();
-    GTEST_COUT << "localTxQueue.try_pop(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
-    GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
-    EXPECT_EQ(size, count);
-
-    //time blocks()
-    start = Cycles::rdtscp();
-    for (int i = 0; i < size; i++) {
-    	if (validator.activeTxSet.blocks(&txEntry[i])) {
-    		EXPECT_EQ(0, 1);
-    	}
-    }
-    stop = Cycles::rdtscp();
-    GTEST_COUT << "activeTxSet.blocks(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
-    GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
-
-    //time validate()
-    start = Cycles::rdtscp();
-    for (int i = 0; i < size; i++) {
-    	validator.validateLocalTx(txEntry[i]);
-    }
-    stop = Cycles::rdtscp();
-    GTEST_COUT << "validateLocalTx(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
-    GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
-
-    // time conclude()
-    start = Cycles::rdtscp();
-    for (int i = 0; i < size; i++) {
-    	validator.conclude(txEntry[i]);
-    }
-    stop = Cycles::rdtscp();
-    GTEST_COUT << "conclude(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
-    GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
-
-    //time all operations
-    for (int i = 0; i < size; i++) {
-    	validator.localTxQueue.push(&txEntry[i]);
-    }
-    start = Cycles::rdtscp();
-    for (int i = 0; i < size; i++) {
-    	TxEntry *tmp;
-    	validator.localTxQueue.try_pop(tmp);
-    	validator.activeTxSet.blocks(tmp);
-    	validator.validateLocalTx(*tmp);
-    	validator.conclude(*tmp);
-    }
-    stop = Cycles::rdtscp();
-    GTEST_COUT << "pop,blocks,validate,conclude: Total cycles (" << size << " txs): " << (stop - start) << std::endl;
-    GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
-
-    //time serializa()
-    for (int i = 0; i < size; i++) {
-    	validator.localTxQueue.push(&txEntry[i]);
-    }
-    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
-    start = Cycles::rdtscp();
-    validator.serialize();
-    stop = Cycles::rdtscp();
-    GTEST_COUT << "Serialize local txs: Total cycles (" << size << " txs): " << (stop - start) << std::endl;
-    GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
-}
-/*
-TEST_F(ValidatorTest, BATUpdateTuple) {
-    Object* singleKeyObject;
-    Tub<Object> objectFromVoidPointer;
-    char stringKey[3];
-    char dataBlob[4];
-    Buffer buffer3;
-    TxEntry txEntry[1];
-
-    snprintf(dataBlob, sizeof(dataBlob), "YO!");
-    snprintf(stringKey, sizeof(stringKey), "ha");
-    Key key(57, stringKey, sizeof(stringKey));
-    objectFromVoidPointer.construct(key, dataBlob, 3, 123, 723, buffer3);
-    singleKeyObject = &*objectFromVoidPointer;
-
-    EXPECT_EQ(3, (int)singleKeyObject->getValueLength());
-    validator.updateTuple(*singleKeyObject, txEntry[0]);
-    const string* tupleValue = validator.getTupleValue(*singleKeyObject);
-    EXPECT_EQ("YO!", *tupleValue);
-    EXPECT_EQ(3, (int)tupleValue->size());
-	//fillTxEntry(1);
-	/EXPECT_EQ(3, (int)txEntry[0].writeTuples[0]->getValueLength());
-    //validator.updateTuple(*txEntry[0].writeTuples[0], txEntry[0]);
-    //const string* tupleValue = validator.getTupleValue(*txEntry[0].writeTuples[0]);
-    //EXPECT_EQ("YO!", *tupleValue);
-    //EXPECT_EQ(3, (int)tupleValue->size());
-}
-
 TEST_F(ValidatorTest, BATValidateLocalTx) {
-    Object* singleKeyObject;
-    Tub<Object> objectFromVoidPointer;
-    char stringKey[3];
-    char dataBlob[4];
-    Buffer buffer3;
-    TxEntry txEntry[1];
+	// this tests the correctness of local tx validation
 
-    snprintf(dataBlob, sizeof(dataBlob), "YO!");
-    snprintf(stringKey, sizeof(stringKey), "ha");
-    Key key(57, stringKey, sizeof(stringKey));
-    objectFromVoidPointer.construct(key, dataBlob, 3, 123, 723, buffer3);
-    singleKeyObject = &*objectFromVoidPointer;
-    txEntry[0].writeTuples.push_back(singleKeyObject);
+	uint8_t *valuePtr = 0;
+	uint32_t valueLength;
 
+    fillTxEntry(1);
 
-   // fillTxEntry(1);
-    validator.localTxQueue.push(&txEntry[0]);
-
+    validator.localTxQueue.push(txEntry[0]);
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
-    EXPECT_EQ(3, (int)txEntry[0].txState); //COMMIT
-    const string* tupleValue = validator.getTupleValue(*txEntry[0].writeTuples[0]);
+    EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
+	validator.kvStore.getValue(txEntry[0]->getWriteSet()[0]->k, valuePtr, valueLength);
+    EXPECT_EQ(sizeof(dataBlob), valueLength);
+    EXPECT_EQ(0, std::memcmp(dataBlob, valuePtr, valueLength));
 
-    EXPECT_EQ("YO!", *tupleValue);
-    EXPECT_EQ(3, (int)tupleValue->size());
+    freeTxEntry(1);
+
+    fillTxEntry(1, 4); //one write key, three read keys
+
+    validator.localTxQueue.push(txEntry[0]);
+    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
+    validator.serialize();
+    EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
+	validator.kvStore.getValue(txEntry[0]->getWriteSet()[0]->k, valuePtr, valueLength);
+    EXPECT_EQ(sizeof(dataBlob), valueLength);
+    EXPECT_EQ(0, std::memcmp(dataBlob, valuePtr, valueLength));
+
+    freeTxEntry(1);
 }
 
-TEST_F(ValidatorTest, BATValidateLocalTxs) {
-    Object* singleKeyObject;
-    Tub<Object> objectFromVoidPointer;
-    char stringKey[3];
-    char dataBlob[4];
-    Buffer buffer3;
+TEST_F(ValidatorTest, BATValidateLocalTxPerf) {
+	// this tests performance of local tx validation
 
-    snprintf(dataBlob, sizeof(dataBlob), "YO!");
-    snprintf(stringKey, sizeof(stringKey), "ha");
-    Key key(57, stringKey, sizeof(stringKey));
-    objectFromVoidPointer.construct(key, dataBlob, 3, 123, 723, buffer3);
-    singleKeyObject = &*objectFromVoidPointer;
-    int size = (int)(sizeof(txEntry) / sizeof(TxEntry));
+    int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     int count = 0;
     uint64_t start, stop;
 
-    //time push()
-    for (int i = 0; i < size; i++) {
-    	txEntry[i].writeTuples.push_back(singleKeyObject);
-    }
+    fillTxEntry(size, 2);
+
     count = 0;
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
-    	if (validator.localTxQueue.push(&txEntry[i])) count++;
+    	if (validator.localTxQueue.push(txEntry[i])) count++;
     }
     stop = Cycles::rdtscp();
     GTEST_COUT << "localTxQueue.push(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
@@ -282,7 +206,7 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     //time blocks()
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
-    	if (validator.activeTxSet.blocks(&txEntry[i])) {
+    	if (validator.activeTxSet.blocks(txEntry[i])) {
     		EXPECT_EQ(0, 1);
     	}
     }
@@ -293,7 +217,7 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     //time validate()
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
-    	validator.validateLocalTx(txEntry[i]);
+    	validator.validateLocalTx(*txEntry[i]);
     }
     stop = Cycles::rdtscp();
     GTEST_COUT << "validateLocalTx(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
@@ -302,22 +226,42 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     // time conclude()
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
-    	validator.conclude(txEntry[i]);
+    	validator.conclude(*txEntry[i]);
     }
     stop = Cycles::rdtscp();
     GTEST_COUT << "conclude(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
 
+    count = 0;
+    for (int i = 0; i < size; i++) {
+    	if (txEntry[i]->txState == TxEntry::TX_COMMIT)
+    		count++;
+    }
+    GTEST_COUT << "Total commits: " << count << std::endl;
+
+    freeTxEntry(size);
+}
+
+TEST_F(ValidatorTest, BATValidateLocalTxPerf2) {
+    int size = 100000; //(int)(sizeof(txEntry) / sizeof(TxEntry *));
+    uint64_t start, stop;
+    int count;
+
+    fillTxEntry(size, 2);
+
+    printTxEntry(3);
+
     //time all operations
     for (int i = 0; i < size; i++) {
-    	txEntry[i].writeTuples.push_back(singleKeyObject);
-    	validator.localTxQueue.push(&txEntry[i]);
+    	validator.localTxQueue.push(txEntry[i]);
     }
+    //uint64_t lastCTS = 1234;
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
     	TxEntry *tmp;
     	validator.localTxQueue.try_pop(tmp);
     	validator.activeTxSet.blocks(tmp);
+    	//tmp->setCTS(++lastCTS);
     	validator.validateLocalTx(*tmp);
     	validator.conclude(*tmp);
     }
@@ -325,10 +269,24 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     GTEST_COUT << "pop,blocks,validate,conclude: Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
 
+    count = 0;
+    for (int i = 0; i < size; i++) {
+    	if (txEntry[i]->txState == TxEntry::TX_COMMIT)
+    		count++;
+    }
+    GTEST_COUT << "Total commits: " << count << std::endl;
+
+    freeTxEntry(size);
+}
+
+TEST_F(ValidatorTest, BATValidateLocalTxs) {
+    int size = 100000;//(int)(sizeof(txEntry) / sizeof(TxEntry *));
+    uint64_t start, stop;
+
+    fillTxEntry(size, 10);
     //time serializa()
     for (int i = 0; i < size; i++) {
-    	txEntry[i].writeTuples.push_back(singleKeyObject);
-    	validator.localTxQueue.push(&txEntry[i]);
+    	validator.localTxQueue.push(txEntry[i]);
     }
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     start = Cycles::rdtscp();
@@ -336,6 +294,8 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     stop = Cycles::rdtscp();
     GTEST_COUT << "Serialize local txs: Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
-}*/
+
+    freeTxEntry(size);
+}
 
 }  // namespace RAMCloud

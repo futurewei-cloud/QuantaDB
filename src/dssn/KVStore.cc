@@ -44,8 +44,23 @@ KVStore::getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength) {
 		valueLength = kv->v.valueLength;
 		return true;
 	}
+	valueLength = 0;
 	return false;
 }
+
+bool
+KVStore::getValue(KLayout& k, KVLayout *&kv) {
+
+	HotKVType::KeyType key = (char *)k.key.get();
+	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
+	if (ret.mIsValid) {
+		kv = ret.mValue;
+		return true;
+	}
+	kv = 0;
+	return false;
+}
+
 
 bool
 KVStore::getMeta(KLayout& k, DSSNMeta &meta)
@@ -71,6 +86,19 @@ KVStore::updateMeta(KLayout& k, DSSNMeta &meta) {
 	}
 	return false;
 }
+
+bool
+KVStore::maximizeMetaEta(KLayout& k, uint64_t eta) {
+	HotKVType::KeyType key = (char *)k.key.get();
+	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
+	if (ret.mIsValid) {
+		KVLayout* kv = ret.mValue;
+		kv->meta.pStamp = std::max(eta, kv->meta.pStamp);;
+		return true;
+	}
+	return false;
+}
+
 
 bool
 KVStore::remove(KLayout& k, DSSNMeta &meta) {
