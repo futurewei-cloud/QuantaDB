@@ -33,7 +33,7 @@ struct KLayout {
 	uint32_t keyLength = 0;
 	boost::scoped_array<uint8_t> key;
 	KLayout() {}
-	explicit KLayout(uint32_t keySize) : keyLength(0), key(new uint8_t[keySize]) {}
+	explicit KLayout(uint32_t keySize) : keyLength(keySize), key(new uint8_t[keySize]) {}
 };
 
 struct KVLayout {
@@ -100,17 +100,22 @@ class KVStore {
      *
      * Its purpose to have the KV store prepares its internal memory for the KV tuple so
      * that there would be minimal data copy within serialize().
+     * It is to transfer KV tuple from non-KVStore-managed memory into KVStore-managed memory.
+     * Whatever memory is allocated by the KVStore class will be freed by the class.
      *
-     * Whatever memory is allocated by the class will be freed by the class.
-     *
-     * The caller provides the object in the RPC message.
-     * The kvIn should have the k.offsetToKey at the start of the key data
-     * and v.offsetToValue correctly point to the value data.
-     * This class will return a new object with k.key pointing to a key data copy
-     * and v.valuePtr pointing to a value data copy.
-     * The KV tuple is not searchable in KV store yet,
+     * The kvIn should have k.key and v.valuePtr point to RPC-managed memory.
+     * This class will return a new object with k.key pointing to caller-managed memory
+     * and v.valuePtr pointing to KVStore-managed memory.
+     * Note that the KV tuple is not indexed nor search-able in KV store yet.
      */
     KVLayout* preput(KVLayout &kvIn);
+
+    /*
+     * The caller provides k.keyLength and k.key.
+     * If the tuple exists in KV store, the stored KVLayout pointer is returned,
+     * enabling the caller to access the KV memory in KV store directly.
+     */
+    KVLayout* fetch(KLayout& kIn);
 
     /*
      * The key and value will be directly (i.e., without reformatting) copied into the search tree,
@@ -118,12 +123,9 @@ class KVStore {
 	 * the v.valuePtr is to point to the value memory.
 	 * Internally the KVStore will free the value memory if the v.valuePtr is to be changed.
      */
-    bool put(KVLayout& kv);
+    bool putNew(KVLayout *kv, uint64_t cts, uint64_t pi);
+    bool put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength);
 
-    /*
-     * Optimized for DSSN
-     */
-    bool put(KVLayout& kv, uint64_t cts, uint64_t pi);
 
     /*
      * The caller provides k.keyLength and k.key. Upon successful return, meta points to the meta data.
@@ -131,14 +133,9 @@ class KVStore {
     bool getMeta(KLayout& k, DSSNMeta &meta);
 
     /*
-     * The caller provides k.keyLength and k.key. Upon successful return, meta points to the meta data.
-     */
-    bool updateMeta(KLayout& k, DSSNMeta &meta);
-
-    /*
      * Update eta with the input eta and existing eta, whichever is larger.
      */
-    bool maximizeMetaEta(KLayout& k, uint64_t eta);
+    bool maximizeMetaEta(KVLayout *kv, uint64_t eta);
 
     /*
      * The caller prepares k.keyLength and k.key. Returns the valuePtr and valueLength.

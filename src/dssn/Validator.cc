@@ -13,50 +13,6 @@ namespace DSSN {
 const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
 const uint64_t minTimeStamp = 0;
 
-inline uint64_t
-Validator::getTuplePi(KVLayout *kv) {
-    DSSNMeta meta;
-    Validator::kvStore.getMeta(kv->k, meta);
-    return meta.sStamp;
-}
-
-inline uint64_t
-Validator::getTupleEta(KVLayout *kv) {
-    DSSNMeta meta;
-    Validator::kvStore.getMeta(kv->k, meta);
-    return meta.pStamp;
-}
-
-inline uint8_t *
-Validator::getTupleValue(KVLayout *kv, uint32_t& valueLength) {
-    uint8_t *valuePtr;
-    Validator::kvStore.getValue(kv->k, valuePtr, valueLength);
-    return valuePtr;
-}
-
-inline bool
-Validator::maximizeTupleEta(KVLayout *kv, uint64_t eta) {
-    DSSNMeta meta;
-    Validator::kvStore.getMeta(kv->k, meta);
-    meta.pStamp = std::max(eta, meta.pStamp);
-    Validator::kvStore.updateMeta(kv->k, meta);
-    return true;
-}
-
-inline bool
-Validator::updateTuple(KVLayout *kv, TxEntry& txEntry) {
-    Validator::kvStore.getMeta(kv->k, kv->meta);
-
-    kv->meta.pStampPrev = kv->meta.pStamp;
-
-    /* SSN required operations */
-    kv->meta.sStampPrev = txEntry.getPi();
-    kv->meta.cStamp = kv->meta.pStamp = txEntry.getCTS();
-    kv->meta.sStamp = maxTimeStamp;
-
-    return kvStore.put(*kv);
-}
-
 void
 Validator::start() {
     // Henry: may need to use TBB to pin the threads to specific cores LATER
@@ -74,7 +30,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
      * We use single-version in-memory KV store. Any stored tuple is the latest
      * committed version. Therefore, we are implementing SSN over RC (Read-Committed).
      * Moreover, the validator does not store the uncommitted write set; the tx client
-     * is to pass the write set through the commit-intent.
+     * is to pass the write set (and read set) through the commit-intent.
      */
 
     txEntry.setPi(std::min(txEntry.getPi(), txEntry.getCTS()));
@@ -83,40 +39,64 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
     auto &readSet = txEntry.getReadSet();
     uint32_t size = readSet.size();
     for (uint32_t i = 0; i < size; i++) {
-        txEntry.setPi(std::min(txEntry.getPi(), Validator::getTuplePi(readSet[i])));
-        if (txEntry.isExclusionViolated()) {
-            return false;
+    	KVLayout *kv = kvStore.fetch(readSet[i]->k);
+    	if (kv) {
+    		txEntry.setPi(std::min(txEntry.getPi(), kv->meta.sStamp));
+    		if (txEntry.isExclusionViolated()) {
+    			return false;
+    		}
         }
+    	txEntry.insertReadSetInStore(kv);
     }
 
     //update eta of transaction
     auto  &writeSet = txEntry.getWriteSet();
     size = writeSet.size();
     for (uint32_t i = 0; i < size; i++) {
-        txEntry.setEta(std::max(txEntry.getEta(), Validator::getTupleEta(writeSet[i])));
-        if (txEntry.isExclusionViolated()) {
-            return false;
-        }
+    	KVLayout *kv = kvStore.fetch(writeSet[i]->k);
+    	if (kv) {
+    		txEntry.setEta(std::max(txEntry.getEta(), kv->meta.pStamp));
+    		if (txEntry.isExclusionViolated()) {
+    			return false;
+    		}
+    	}
+    	txEntry.insertWriteSetInStore(kv);
     }
 
     return true;
 }
 
 bool
-Validator::updateReadSetTupleEta(TxEntry &txEntry) {
+Validator::updateKVReadSetEta(TxEntry &txEntry) {
+	/*
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < readSet.size(); i++) {
         kvStore.maximizeMetaEta(readSet.at(i)->k, txEntry.getCTS());
-    }
+    }*/
+	auto &readSet = txEntry.getReadSetInStore();
+	for (uint32_t i = 0; i < readSet.size(); i++) {
+		if (readSet[i]) {
+			kvStore.maximizeMetaEta(readSet[i], txEntry.getCTS());
+		} else {
+			//put a tombstoned entry in KVStore???
+			//or leave it blank???
+		}
+	}
     return true;
 }
 
 bool
-Validator::updateWriteSetTuple(TxEntry &txEntry) {
+Validator::updateKVWriteSet(TxEntry &txEntry) {
     auto &writeSet = txEntry.getWriteSet();
+    auto &writeSetInStore = txEntry.getWriteSetInStore();
     for (uint32_t i = 0; i < writeSet.size(); i++) {
-        //updateTuple(writeSet.at(i), txEntry);
-        kvStore.put(*writeSet.at(i), txEntry.getCTS(), txEntry.getPi());
+        if (writeSetInStore[i]) {
+        	kvStore.put(writeSetInStore[i], txEntry.getCTS(), txEntry.getPi(),
+        			writeSet[i]->v.valuePtr, writeSet[i]->v.valueLength);
+        } else {
+        	kvStore.putNew(writeSet[i], txEntry.getCTS(), txEntry.getPi());
+        	writeSet[i] = 0; //prevent txEntry destructor from freeing the KVLayout pointer
+        }
     }
     return true;
 }
@@ -363,8 +343,8 @@ Validator::conclude(TxEntry& txEntry) {
 
         // update in-mem tuple store
         if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
-            updateReadSetTupleEta(txEntry);
-            updateWriteSetTuple(txEntry);
+            updateKVReadSetEta(txEntry);
+            updateKVWriteSet(txEntry);
         }
 
         //reply to commit intent client

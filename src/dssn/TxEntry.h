@@ -50,8 +50,9 @@ class TxEntry {
     std::vector<uint64_t> writeSetHash;
     std::vector<uint64_t> readSetHash;
 
-    //Handy pointer to KV store tuple that is matching the writeSet key
+    //Handy pointer to KV store tuple that is matching the readSet/writeSet key
     std::vector<KVLayout *> writeSetInStore;
+    std::vector<KVLayout *> readSetInStore;
 
     /* Henry: possibly put parameterized Bloom Filters here.
     BloomFilter writeSetFilter;
@@ -117,6 +118,8 @@ class TxEntry {
     inline std::vector<KVLayout *>& getReadSet() { return readSet; }
     inline std::vector<uint64_t>& getWriteSetHash() { return writeSetHash; }
     inline std::vector<uint64_t>& getReadSetHash() { return readSetHash; }
+    inline std::vector<KVLayout *>& getWriteSetInStore() { return writeSetInStore; }
+    inline std::vector<KVLayout *>& getReadSetInStore() { return readSetInStore; }
     inline void setCTS(uint64_t val) { cts = val; }
     inline void setPi(uint64_t val) { pi = val; }
     inline void setEta(uint64_t val) { eta = val; }
@@ -125,6 +128,8 @@ class TxEntry {
     inline bool isExclusionViolated() { return pi <= eta; }
     bool insertWriteSet(KVLayout* kv);
     bool insertReadSet(KVLayout* kv);
+    inline void insertWriteSetInStore(KVLayout* kv) { writeSetInStore.push_back(kv); }
+    inline void insertReadSetInStore(KVLayout* kv) { readSetInStore.push_back(kv); }
 
 }; // end TXEntry class
 

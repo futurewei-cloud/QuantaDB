@@ -14,47 +14,45 @@ KVStore::KVStore() {
 KVLayout*
 KVStore::preput(KVLayout &kvIn) {
 	KVLayout* kvOut = new KVLayout(kvIn.k.keyLength);
-	kvOut->k.keyLength = kvIn.k.keyLength;
-	std::memcpy((void *)kvOut->k.key.get(), (void *)kvIn.k.key.get(), kvIn.k.keyLength);
+	std::memcpy((void *)kvOut->k.key.get(), (void *)kvIn.k.key.get(), kvOut->k.keyLength);
 	kvOut->v.valueLength = kvIn.v.valueLength;
 	kvOut->v.valuePtr = new uint8_t[kvIn.v.valueLength];
 	std::memcpy((void *)kvOut->v.valuePtr, (void *)kvIn.v.valuePtr, kvIn.v.valueLength);
 	return kvOut;
 }
 
-bool
-KVStore::put(KVLayout& kv) {
-	idx::contenthelpers::OptionalValue<DSSN::KVLayout*> ret = ((HotKVType *)hotKVStore)->upsert(&kv);
-	if (ret.mIsValid == true && ret.mValue != &kv) {
-		KVLayout* oldkv = ret.mValue;
-		delete oldkv->v.valuePtr;
-		//assert(ret.mValue);
+KVLayout *
+KVStore::fetch(KLayout& k) {
+
+	HotKVType::KeyType key = (char *)k.key.get();
+	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
+	if (ret.mIsValid) {
+		return ret.mValue;
 	}
+	return 0;
+}
+
+bool
+KVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi) {
+	kv->meta.pStampPrev = 0;
+	kv->meta.sStampPrev = pi;
+	kv->meta.cStamp = kv->meta.pStamp = cts;
+	kv->meta.sStamp = 0xffffffffffffffff;
+	idx::contenthelpers::OptionalValue<DSSN::KVLayout*> ret = ((HotKVType *)hotKVStore)->upsert(kv);
+	if (!ret.mIsValid)
+		return false;
 	return true;
 }
 
 bool
-KVStore::put(KVLayout& kv, uint64_t cts, uint64_t pi) {
-	HotKVType::KeyType key = (char *)kv.k.key.get();
-	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
-	if (ret.mIsValid) {
-		KVLayout* oldkv = ret.mValue;
-		oldkv->meta.pStampPrev = oldkv->meta.pStamp;
-		oldkv->meta.sStampPrev = pi;
-		oldkv->meta.cStamp = oldkv->meta.pStamp = cts;
-		oldkv->meta.sStamp = 0xffffffffffffffff;
-		oldkv->v.valueLength = kv.v.valueLength;
-		delete oldkv->v.valuePtr;
-		oldkv->v.valuePtr = kv.v.valuePtr;
-	} else {
-	    kv.meta.pStampPrev = 0;
-	    kv.meta.sStampPrev = pi;
-	    kv.meta.cStamp = kv.meta.pStamp = cts;
-	    kv.meta.sStamp = 0xffffffffffffffff;
-		idx::contenthelpers::OptionalValue<DSSN::KVLayout*> ret = ((HotKVType *)hotKVStore)->upsert(&kv);
-		if (!ret.mIsValid)
-			return false;
-	}
+KVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength) {
+	kv->meta.pStampPrev = kv->meta.pStamp;
+	kv->meta.sStampPrev = pi;
+	kv->meta.cStamp = kv->meta.pStamp = cts;
+	kv->meta.sStamp = 0xffffffffffffffff;
+	delete kv->v.valuePtr;
+	kv->v.valueLength = valueLength;
+	kv->v.valuePtr = valuePtr;
 	return true;
 }
 
@@ -101,27 +99,9 @@ KVStore::getMeta(KLayout& k, DSSNMeta &meta)
 }
 
 bool
-KVStore::updateMeta(KLayout& k, DSSNMeta &meta) {
-	HotKVType::KeyType key = (char *)k.key.get();
-	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
-	if (ret.mIsValid) {
-		KVLayout* kv = ret.mValue;
-		kv->meta = meta;
-		return true;
-	}
-	return false;
-}
-
-bool
-KVStore::maximizeMetaEta(KLayout& k, uint64_t eta) {
-	HotKVType::KeyType key = (char *)k.key.get();
-	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
-	if (ret.mIsValid) {
-		KVLayout* kv = ret.mValue;
-		kv->meta.pStamp = std::max(eta, kv->meta.pStamp);;
-		return true;
-	}
-	return false;
+KVStore::maximizeMetaEta(KVLayout *kv, uint64_t eta) {
+	kv->meta.pStamp = std::max(eta, kv->meta.pStamp);;
+	return true;
 }
 
 
