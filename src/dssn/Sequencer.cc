@@ -6,6 +6,7 @@
 
 #include "ClusterTimeService.h"
 #include "Sequencer.h"
+#include "HashmapKVStore.h"
 
 namespace DSSN {
 

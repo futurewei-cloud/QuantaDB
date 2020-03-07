@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string.h>
+
 using namespace std;
 
 struct hash_c_str {

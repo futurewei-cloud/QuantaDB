@@ -67,13 +67,16 @@ public:
 		for (uint32_t idx = 0; idx < bucket_count; idx++) {
 			buckets_[idx].hdr_.valid_ = 0;
 		}
+        lossy = true;
     }
 
     ~hash_table()
     {
-	if (buckets_)
-	    delete buckets_;
+        if (buckets_)
+            delete buckets_;
     }
+
+    void set_no_lossy() { lossy = false; }
 
     elem_pointer<Elem> get(const K & key) {
         return find_or_prepare_insert(key);
@@ -82,13 +85,15 @@ public:
     elem_pointer<Elem> put(const K & key, const Elem *ptr) {
         bool ret;
         elem_pointer<Elem> l_hint = find_or_prepare_insert(key);
-        if (l_hint.ptr_ != NULL) { 
+        if (l_hint.ptr_ == NULL) {
+            l_hint = insert_internal(key, ptr, l_hint);
+        } else if (lossy) {
             while ((ret = update_internal(key, ptr, l_hint)) == false) {
                 // what if l_hint is empty?
                 l_hint = find_or_prepare_insert(key); 
             }
         } else {
-            l_hint = insert_internal(key, ptr, l_hint);
+            l_hint = elem_pointer<Elem>(0, 0, NULL);
         }
         return l_hint;
     }
@@ -216,6 +221,7 @@ public:
     uint32_t bucket_count_;
     hash_bucket<Elem> *buckets_;
     std::vector<int> victim_;
+    bool lossy;                     // if true, put will replace old value
 };
 
 
