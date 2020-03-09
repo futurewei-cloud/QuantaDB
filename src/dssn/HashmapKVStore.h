@@ -17,9 +17,23 @@
 
 namespace DSSN {
 
+#define MAX_KEYLEN  127
+
 class Element {
-    char *key;
-    KVLayout kv;
+    char key[MAX_KEYLEN + 1];
+    KVLayout * kv;
+
+    Element(KVLayout &ikv)
+    {
+        kv = &ikv;
+        assert(kv->k.keyLength <= MAX_KEYLEN);
+        strncpy(key, (const char *)kv->k.key.get(), MAX_KEYLEN);
+    }  
+
+    ~Element()
+    {
+        // delete kv;
+    }
 };
 
 class HashmapKV : public KVStore
