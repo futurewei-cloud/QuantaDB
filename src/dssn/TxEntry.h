@@ -7,13 +7,9 @@
 #define TX_ENTRY_H
 
 #include "Common.h"
-#include "Object.h"
 #include "KVStore.h"
 
 namespace DSSN {
-
-typedef RAMCloud::Object Object;
-typedef RAMCloud::KeyLength KeyLength;
 
 /**
  * Each TxEntry object represents a single transaction.
@@ -32,14 +28,32 @@ typedef RAMCloud::KeyLength KeyLength;
  */
 class TxEntry {
     PROTECTED:
+
+    //DSSN data
     uint64_t cts; //commit time-stamp, globally unique
     uint64_t eta;
     uint64_t pi;
+
+    //DSSN tx states
     uint32_t txState;
     uint32_t commitIntentState;
-    std::vector<uint64_t> shardSet; //set of participating shards
+
+    //Set of IDs of participant shards, excluding self
+    std::vector<uint64_t> shardSet;
+
+    //write set and read set under validation
     std::vector<KVLayout *> writeSet; //coordinator, for 'is in' operation, may benefit from using 'set' instead?
     std::vector<KVLayout *> readSet; //coordinator, for 'remove' operation, may benefit from using 'set' instead?!
+
+    //Handy hash value of write/read key for Bloom Filter etc.
+    //a 64-bit number is composed of 2 32-bit numbers in upper 32 bits and lower 32 bits
+    std::vector<uint64_t> writeSetHash;
+    std::vector<uint64_t> readSetHash;
+
+    //Handy pointer to KV store tuple that is matching the readSet/writeSet key
+    std::vector<KVLayout *> writeSetInStore;
+    std::vector<KVLayout *> readSetInStore;
+
     /* Henry: possibly put parameterized Bloom Filters here.
     BloomFilter writeSetFilter;
     BloomFilter readSetFilter;
@@ -102,14 +116,20 @@ class TxEntry {
     inline std::vector<uint64_t>& getShardSet() { return shardSet; }
     inline std::vector<KVLayout *>& getWriteSet() { return writeSet; }
     inline std::vector<KVLayout *>& getReadSet() { return readSet; }
+    inline std::vector<uint64_t>& getWriteSetHash() { return writeSetHash; }
+    inline std::vector<uint64_t>& getReadSetHash() { return readSetHash; }
+    inline std::vector<KVLayout *>& getWriteSetInStore() { return writeSetInStore; }
+    inline std::vector<KVLayout *>& getReadSetInStore() { return readSetInStore; }
     inline void setCTS(uint64_t val) { cts = val; }
     inline void setPi(uint64_t val) { pi = val; }
     inline void setEta(uint64_t val) { eta = val; }
     inline void setTxState(uint32_t val) { txState = val; }
     inline void setTxCIState(uint32_t val) { commitIntentState = val; }
     inline bool isExclusionViolated() { return pi <= eta; }
-    void insertWriteSet(KVLayout* kv) { writeSet.push_back(kv); }
-    void insertReadSet(KVLayout* kv) { readSet.push_back(kv); }
+    bool insertWriteSet(KVLayout* kv);
+    bool insertReadSet(KVLayout* kv);
+    inline void insertWriteSetInStore(KVLayout* kv) { writeSetInStore.push_back(kv); }
+    inline void insertReadSetInStore(KVLayout* kv) { readSetInStore.push_back(kv); }
 
 }; // end TXEntry class
 

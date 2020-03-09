@@ -37,6 +37,14 @@ class CountBloomFilter {
 
     bool contains(const T *key, uint32_t size);
 
+    // false if the key is failed to be added due to overflow
+    bool add(uint64_t hash);
+
+    // for performance, the key is assumed to have been added
+    bool remove(uint64_t hash);
+
+    bool contains(uint64_t hash);
+
     bool clear();
 
     void createIndexesFromKey(const T *key, uint32_t size, uint64_t *idx1, uint64_t *idx2);

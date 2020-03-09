@@ -32,8 +32,6 @@ class ActiveTxSet {
 
     bool blocks(TxEntry *txEntry);
 
-    void createIndexes(TxEntry *txEntry);
-
     ActiveTxSet() { cbf.clear(); }
 
 }; // end ActiveTxSet class

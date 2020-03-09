@@ -35,19 +35,12 @@ class Validator {
     uint64_t lastCTS = 0;
     bool isUnderTest = false;
     //LATER DependencyMatrix blockedTxSet;
-
-    // all operations about tuple store
     KVStore kvStore;
-    inline uint64_t getTupleEta(KVLayout *kv);
-    inline uint64_t getTuplePi(KVLayout *kv);
-    inline uint8_t* getTupleValue(KVLayout *kv, uint32_t& valueLength);
-    inline bool maximizeTupleEta(KVLayout *kv, uint64_t eta);
-    inline bool updateTuple(KVLayout *kv, TxEntry& txEntry);
 
     // all SSN data maintenance operations
     bool updateTxEtaPi(TxEntry& txEntry);
-    bool updateReadSetTupleEta(TxEntry& txEntry);
-    bool updateWriteSetTuple(TxEntry& txEntry);
+    bool updateKVReadSetEta(TxEntry& txEntry);
+    bool updateKVWriteSet(TxEntry& txEntry);
 
     // used for read/write by coordinator
     // validator does not track pre-CI tx data, so return SSN data to coordinator

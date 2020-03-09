@@ -50,7 +50,7 @@ class ValidatorTest : public ::testing::Test {
                 kv.v.valuePtr = (uint8_t *)dataBlob;
                 kv.v.valueLength = sizeof(dataBlob);
                 KVLayout *kvOut = validator.kvStore.preput(kv);
-        		if (j % 2 == 0)
+        		if (j % 5 == 0)
         			txEntry[i]->insertWriteSet(kvOut);
         		else
         			txEntry[i]->insertReadSet(kvOut);
@@ -78,6 +78,15 @@ class ValidatorTest : public ::testing::Test {
         	    GTEST_COUT << "write key: " << str  << std::endl;
         	}
         }
+    }
+
+    void printTxEntryCommits(int noEntries) {
+    	int count = 0;
+    	for (int i = 0; i < noEntries; i++) {
+    		if (txEntry[i]->txState == TxEntry::TX_COMMIT)
+    			count++;
+    	}
+    	GTEST_COUT << "Total commits: " << count << std::endl;
     }
 };
 
@@ -148,12 +157,14 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
 	uint32_t valueLength;
 
     fillTxEntry(1);
+    KLayout k(txEntry[0]->getWriteSet()[0]->k.keyLength);
+    std::memcpy(k.key.get(), txEntry[0]->getWriteSet()[0]->k.key.get(), k.keyLength);
 
     validator.localTxQueue.push(txEntry[0]);
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
     EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
-	validator.kvStore.getValue(txEntry[0]->getWriteSet()[0]->k, valuePtr, valueLength);
+	validator.kvStore.getValue(k, valuePtr, valueLength);
     EXPECT_EQ(sizeof(dataBlob), valueLength);
     EXPECT_EQ(0, std::memcmp(dataBlob, valuePtr, valueLength));
 
@@ -165,7 +176,7 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
     EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
-	validator.kvStore.getValue(txEntry[0]->getWriteSet()[0]->k, valuePtr, valueLength);
+	validator.kvStore.getValue(k, valuePtr, valueLength);
     EXPECT_EQ(sizeof(dataBlob), valueLength);
     EXPECT_EQ(0, std::memcmp(dataBlob, valuePtr, valueLength));
 
@@ -179,7 +190,10 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf) {
     int count = 0;
     uint64_t start, stop;
 
-    fillTxEntry(size, 2);
+    fillTxEntry(size, 10);
+
+    GTEST_COUT << "WriteSet size " << txEntry[0]->getWriteSet().size() << std::endl;
+    GTEST_COUT << "ReadSet size " << txEntry[0]->getReadSet().size() << std::endl;
 
     count = 0;
     start = Cycles::rdtscp();
@@ -232,24 +246,20 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf) {
     GTEST_COUT << "conclude(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
 
-    count = 0;
-    for (int i = 0; i < size; i++) {
-    	if (txEntry[i]->txState == TxEntry::TX_COMMIT)
-    		count++;
-    }
-    GTEST_COUT << "Total commits: " << count << std::endl;
+    printTxEntryCommits(size);
 
     freeTxEntry(size);
 }
 
 TEST_F(ValidatorTest, BATValidateLocalTxPerf2) {
-    int size = 100000; //(int)(sizeof(txEntry) / sizeof(TxEntry *));
+    int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     uint64_t start, stop;
-    int count;
 
     fillTxEntry(size, 2);
 
-    printTxEntry(3);
+    //printTxEntry(1);
+    GTEST_COUT << "WriteSet size " << txEntry[0]->getWriteSet().size() << std::endl;
+    GTEST_COUT << "ReadSet size " << txEntry[0]->getReadSet().size() << std::endl;
 
     //time all operations
     for (int i = 0; i < size; i++) {
@@ -269,21 +279,20 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf2) {
     GTEST_COUT << "pop,blocks,validate,conclude: Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
 
-    count = 0;
-    for (int i = 0; i < size; i++) {
-    	if (txEntry[i]->txState == TxEntry::TX_COMMIT)
-    		count++;
-    }
-    GTEST_COUT << "Total commits: " << count << std::endl;
+    printTxEntryCommits(size);
 
     freeTxEntry(size);
 }
 
 TEST_F(ValidatorTest, BATValidateLocalTxs) {
-    int size = 100000;//(int)(sizeof(txEntry) / sizeof(TxEntry *));
+    int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     uint64_t start, stop;
 
     fillTxEntry(size, 10);
+
+    GTEST_COUT << "WriteSet size " << txEntry[0]->getWriteSet().size() << std::endl;
+    GTEST_COUT << "ReadSet size " << txEntry[0]->getReadSet().size() << std::endl;
+
     //time serializa()
     for (int i = 0; i < size; i++) {
     	validator.localTxQueue.push(txEntry[i]);
@@ -294,6 +303,8 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     stop = Cycles::rdtscp();
     GTEST_COUT << "Serialize local txs: Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
+
+    printTxEntryCommits(size);
 
     freeTxEntry(size);
 }
