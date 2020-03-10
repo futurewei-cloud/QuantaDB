@@ -39,9 +39,9 @@ class ValidatorTest : public ::testing::Test {
     DISALLOW_COPY_AND_ASSIGN(ValidatorTest);
 
     void fillTxEntry(int noEntries, int noKeys = 1, int keySize = 32) {
-
         for (int i = 0; i < noEntries; i++) {
-        	txEntry[i] = new TxEntry();
+        	uint32_t rr = 0, ww = 0;
+        	txEntry[i] = new TxEntry(4 * noKeys / 5, (noKeys + 4) / 5);
         	txEntry[i]->setCTS(i+1);
         	for (int j = 0; j < noKeys; j++) {
                 KVLayout kv(keySize);
@@ -51,9 +51,9 @@ class ValidatorTest : public ::testing::Test {
                 kv.v.valueLength = sizeof(dataBlob);
                 KVLayout *kvOut = validator.kvStore.preput(kv);
         		if (j % 5 == 0)
-        			txEntry[i]->insertWriteSet(kvOut);
+        			txEntry[i]->insertWriteSet(kvOut, rr++);
         		else
-        			txEntry[i]->insertReadSet(kvOut);
+        			txEntry[i]->insertReadSet(kvOut, ww++);
         	}
         }
     }
@@ -69,11 +69,11 @@ class ValidatorTest : public ::testing::Test {
         for (int i = 0; i < noEntries; i++) {
         	if (txEntry[i] == 0)
         		break;
-        	for (uint32_t j = 0; j < txEntry[i]->readSet.size(); j++) {
+        	for (uint32_t j = 0; j < txEntry[i]->getReadSetSize(); j++) {
         		std::string str((char *)txEntry[i]->readSet[j]->k.key.get());
         		GTEST_COUT << "read key: " << str  << std::endl;
         	}
-        	for (uint32_t j = 0; j < txEntry[i]->writeSet.size(); j++) {
+        	for (uint32_t j = 0; j < txEntry[i]->getWriteSetSize(); j++) {
         		std::string str((char *)txEntry[i]->writeSet[j]->k.key.get());
         	    GTEST_COUT << "write key: " << str  << std::endl;
         	}
@@ -93,8 +93,8 @@ class ValidatorTest : public ::testing::Test {
 TEST_F(ValidatorTest, BATKVStorePutGet) {
 	fillTxEntry(1);
 
-	for (uint32_t i = 0; i < txEntry[0]->getWriteSet().size(); i++) {
-		validator.kvStore.put(*txEntry[0]->getWriteSet()[i]);
+	for (uint32_t i = 0; i < txEntry[0]->getWriteSetSize(); i++) {
+		validator.kvStore.putNew(txEntry[0]->getWriteSet()[i], 0, 0);
 		uint8_t *valuePtr = 0;
 		uint32_t valueLength;
 		validator.kvStore.getValue(txEntry[0]->getWriteSet()[i]->k, valuePtr, valueLength);
@@ -111,11 +111,11 @@ TEST_F(ValidatorTest, BATKVStorePutPerf) {
 
 	fillTxEntry(1,1000000);
 
-    uint32_t size = txEntry[0]->getWriteSet().size();
-    auto writeSet = txEntry[0]->getWriteSet();
+    uint32_t size = txEntry[0]->getWriteSetSize();
+    auto& writeSet = txEntry[0]->getWriteSet();
     start = Cycles::rdtscp();
 	for (uint32_t i = 0; i < size; i++) {
-		validator.kvStore.put(*writeSet[i]);
+		validator.kvStore.putNew(writeSet[i], 0, 0);
 	}
     stop = Cycles::rdtscp();
     GTEST_COUT << "write (" << size << " keys): " << (stop - start) << std::endl;
@@ -127,8 +127,8 @@ TEST_F(ValidatorTest, BATKVStorePutPerf) {
 
 TEST_F(ValidatorTest, BATKVStorePutGetMulti) {
 	fillTxEntry(5, 10);
-	for (uint32_t i = 0; i < txEntry[0]->getWriteSet().size(); i++) {
-		validator.kvStore.put(*txEntry[0]->getWriteSet()[i]);
+	for (uint32_t i = 0; i < txEntry[0]->getWriteSetSize(); i++) {
+		validator.kvStore.putNew(txEntry[0]->getWriteSet()[i], 0, 0);
 		uint8_t *valuePtr = 0;
 		uint32_t valueLength;
 		validator.kvStore.getValue(txEntry[0]->getWriteSet()[i]->k, valuePtr, valueLength);
@@ -186,14 +186,14 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
 TEST_F(ValidatorTest, BATValidateLocalTxPerf) {
 	// this tests performance of local tx validation
 
-    int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
+    int size = 10000;//(int)(sizeof(txEntry) / sizeof(TxEntry *));
     int count = 0;
     uint64_t start, stop;
 
     fillTxEntry(size, 10);
 
-    GTEST_COUT << "WriteSet size " << txEntry[0]->getWriteSet().size() << std::endl;
-    GTEST_COUT << "ReadSet size " << txEntry[0]->getReadSet().size() << std::endl;
+    GTEST_COUT << "WriteSet size " << txEntry[0]->getWriteSetSize() << std::endl;
+    GTEST_COUT << "ReadSet size " << txEntry[0]->getReadSetSize() << std::endl;
 
     count = 0;
     start = Cycles::rdtscp();
@@ -258,8 +258,8 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf2) {
     fillTxEntry(size, 2);
 
     //printTxEntry(1);
-    GTEST_COUT << "WriteSet size " << txEntry[0]->getWriteSet().size() << std::endl;
-    GTEST_COUT << "ReadSet size " << txEntry[0]->getReadSet().size() << std::endl;
+    GTEST_COUT << "WriteSet size " << txEntry[0]->getWriteSetSize() << std::endl;
+    GTEST_COUT << "ReadSet size " << txEntry[0]->getReadSetSize() << std::endl;
 
     //time all operations
     for (int i = 0; i < size; i++) {
@@ -290,8 +290,8 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
 
     fillTxEntry(size, 10);
 
-    GTEST_COUT << "WriteSet size " << txEntry[0]->getWriteSet().size() << std::endl;
-    GTEST_COUT << "ReadSet size " << txEntry[0]->getReadSet().size() << std::endl;
+    GTEST_COUT << "WriteSet size " << txEntry[0]->getWriteSetSize() << std::endl;
+    GTEST_COUT << "ReadSet size " << txEntry[0]->getReadSetSize() << std::endl;
 
     //time serializa()
     for (int i = 0; i < size; i++) {

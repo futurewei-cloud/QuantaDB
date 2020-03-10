@@ -10,24 +10,22 @@ namespace DSSN {
 
 bool
 ActiveTxSet::add(TxEntry *txEntry) {
-    std::vector<uint64_t> &hash = txEntry->getReadSetHash();
-    for (uint32_t i = 0; i < hash.size(); i++) {
-        bool success = cbf.add(hash[i]);
+    for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
+        bool success = cbf.add(txEntry->getReadSetHash()[i]);
         if (!success) {
             // undo effects
             for (int j = i - 1; j >= 0; j--) {
-                cbf.remove(hash[j]);
+                cbf.remove(txEntry->getReadSetHash()[j]);
             }
             return false;
         }
     }
-    hash = txEntry->getWriteSetHash();
-    for (uint32_t i = 0; i < hash.size(); i++) {
-        bool success = cbf.add(hash[i]);
+    for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
+        bool success = cbf.add(txEntry->getWriteSetHash()[i]);
         if (!success) {
             // undo effects
             for (int j = i - 1; j >= 0; j--) {
-                cbf.remove(hash[j]);
+                cbf.remove(txEntry->getWriteSetHash()[j]);
             }
             return false;
         }
@@ -37,27 +35,23 @@ ActiveTxSet::add(TxEntry *txEntry) {
 
 bool
 ActiveTxSet::remove(TxEntry *txEntry) {
-    std::vector<uint64_t> &hash = txEntry->getReadSetHash();
-    for (uint32_t i = 0; i < hash.size(); i++) {
-        cbf.remove(hash[i]);
+    for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
+        cbf.remove(txEntry->getReadSetHash()[i]);
     }
-    hash = txEntry->getWriteSetHash();
-    for (uint32_t i = 0; i < hash.size(); i++) {
-        cbf.remove(hash[i]);
+    for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
+        cbf.remove(txEntry->getWriteSetHash()[i]);
     }
     return true;
 }
 
 bool
 ActiveTxSet::blocks(TxEntry *txEntry) {
-    std::vector<uint64_t> &hash = txEntry->getReadSetHash();
-    for (uint32_t i = 0; i < hash.size(); i++) {
-        if (cbf.contains(hash[i]))
+    for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
+        if (cbf.contains(txEntry->getReadSetHash()[i]))
             return true;
     }
-    hash = txEntry->getWriteSetHash();
-    for (uint32_t i = 0; i < hash.size(); i++) {
-        if (cbf.contains(hash[i]))
+    for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
+        if (cbf.contains(txEntry->getWriteSetHash()[i]))
             return true;
     }
     return false;

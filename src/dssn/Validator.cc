@@ -37,8 +37,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
 
     //update pi of transaction
     auto &readSet = txEntry.getReadSet();
-    uint32_t size = readSet.size();
-    for (uint32_t i = 0; i < size; i++) {
+    for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
     	KVLayout *kv = kvStore.fetch(readSet[i]->k);
     	if (kv) {
     		txEntry.setPi(std::min(txEntry.getPi(), kv->meta.sStamp));
@@ -46,13 +45,12 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
     			return false;
     		}
         }
-    	txEntry.insertReadSetInStore(kv);
+    	txEntry.insertReadSetInStore(kv, i);
     }
 
     //update eta of transaction
     auto  &writeSet = txEntry.getWriteSet();
-    size = writeSet.size();
-    for (uint32_t i = 0; i < size; i++) {
+    for (uint32_t i = 0; i < txEntry.getWriteSetSize(); i++) {
     	KVLayout *kv = kvStore.fetch(writeSet[i]->k);
     	if (kv) {
     		txEntry.setEta(std::max(txEntry.getEta(), kv->meta.pStamp));
@@ -60,7 +58,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
     			return false;
     		}
     	}
-    	txEntry.insertWriteSetInStore(kv);
+    	txEntry.insertWriteSetInStore(kv, i);
     }
 
     return true;
@@ -68,13 +66,8 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
 
 bool
 Validator::updateKVReadSetEta(TxEntry &txEntry) {
-	/*
-    auto &readSet = txEntry.getReadSet();
-    for (uint32_t i = 0; i < readSet.size(); i++) {
-        kvStore.maximizeMetaEta(readSet.at(i)->k, txEntry.getCTS());
-    }*/
 	auto &readSet = txEntry.getReadSetInStore();
-	for (uint32_t i = 0; i < readSet.size(); i++) {
+	for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
 		if (readSet[i]) {
 			kvStore.maximizeMetaEta(readSet[i], txEntry.getCTS());
 		} else {
@@ -89,7 +82,7 @@ bool
 Validator::updateKVWriteSet(TxEntry &txEntry) {
     auto &writeSet = txEntry.getWriteSet();
     auto &writeSetInStore = txEntry.getWriteSetInStore();
-    for (uint32_t i = 0; i < writeSet.size(); i++) {
+    for (uint32_t i = 0; i < txEntry.getWriteSetSize(); i++) {
         if (writeSetInStore[i]) {
         	kvStore.put(writeSetInStore[i], txEntry.getCTS(), txEntry.getPi(),
         			writeSet[i]->v.valuePtr, writeSet[i]->v.valueLength);

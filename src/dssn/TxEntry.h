@@ -42,17 +42,19 @@ class TxEntry {
     std::vector<uint64_t> shardSet;
 
     //write set and read set under validation
-    std::vector<KVLayout *> writeSet; //coordinator, for 'is in' operation, may benefit from using 'set' instead?
-    std::vector<KVLayout *> readSet; //coordinator, for 'remove' operation, may benefit from using 'set' instead?!
+    uint32_t writeSetSize;
+    uint32_t readSetSize;
+    boost::scoped_array<KVLayout *> writeSet;
+    boost::scoped_array<KVLayout *> readSet;
 
     //Handy hash value of write/read key for Bloom Filter etc.
     //a 64-bit number is composed of 2 32-bit numbers in upper 32 bits and lower 32 bits
-    std::vector<uint64_t> writeSetHash;
-    std::vector<uint64_t> readSetHash;
+    boost::scoped_array<uint64_t> writeSetHash;
+    boost::scoped_array<uint64_t> readSetHash;
 
     //Handy pointer to KV store tuple that is matching the readSet/writeSet key
-    std::vector<KVLayout *> writeSetInStore;
-    std::vector<KVLayout *> readSetInStore;
+    boost::scoped_array<KVLayout *> writeSetInStore;
+    boost::scoped_array<KVLayout *> readSetInStore;
 
     /* Henry: possibly put parameterized Bloom Filters here.
     BloomFilter writeSetFilter;
@@ -107,29 +109,32 @@ class TxEntry {
     };
 
     TxEntry();
+    TxEntry(uint32_t readSetSize, uint32_t writeSetSize);
     ~TxEntry();
     inline uint64_t getCTS() { return cts; }
     inline uint64_t getEta() { return eta; }
     inline uint64_t getPi() { return pi; }
     inline uint32_t getTxState() { return txState; }
     inline uint32_t getTxCIState() { return commitIntentState; }
-    inline std::vector<uint64_t>& getShardSet() { return shardSet; }
-    inline std::vector<KVLayout *>& getWriteSet() { return writeSet; }
-    inline std::vector<KVLayout *>& getReadSet() { return readSet; }
-    inline std::vector<uint64_t>& getWriteSetHash() { return writeSetHash; }
-    inline std::vector<uint64_t>& getReadSetHash() { return readSetHash; }
-    inline std::vector<KVLayout *>& getWriteSetInStore() { return writeSetInStore; }
-    inline std::vector<KVLayout *>& getReadSetInStore() { return readSetInStore; }
+    inline auto& getShardSet() { return shardSet; }
+    inline auto& getWriteSet() { return writeSet; }
+    inline auto& getReadSet() { return readSet; }
+    inline auto getWriteSetSize() { return writeSetSize; }
+    inline auto getReadSetSize() { return readSetSize; }
+    inline auto& getWriteSetHash() { return writeSetHash; }
+    inline auto& getReadSetHash() { return readSetHash; }
+    inline auto& getWriteSetInStore() { return writeSetInStore; }
+    inline auto& getReadSetInStore() { return readSetInStore; }
     inline void setCTS(uint64_t val) { cts = val; }
     inline void setPi(uint64_t val) { pi = val; }
     inline void setEta(uint64_t val) { eta = val; }
     inline void setTxState(uint32_t val) { txState = val; }
     inline void setTxCIState(uint32_t val) { commitIntentState = val; }
     inline bool isExclusionViolated() { return pi <= eta; }
-    bool insertWriteSet(KVLayout* kv);
-    bool insertReadSet(KVLayout* kv);
-    inline void insertWriteSetInStore(KVLayout* kv) { writeSetInStore.push_back(kv); }
-    inline void insertReadSetInStore(KVLayout* kv) { readSetInStore.push_back(kv); }
+    bool insertWriteSet(KVLayout* kv, uint32_t i);
+    bool insertReadSet(KVLayout* kv, uint32_t i);
+    inline void insertWriteSetInStore(KVLayout* kv, uint32_t i) { writeSetInStore[i] = kv; }
+    inline void insertReadSetInStore(KVLayout* kv, uint32_t i) { readSetInStore[i] = kv; }
 
 }; // end TXEntry class
 
