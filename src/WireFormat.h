@@ -39,6 +39,7 @@ enum ServiceType {
     BACKUP_SERVICE,
     COORDINATOR_SERVICE,
     ADMIN_SERVICE,
+    DSSN_SERVICE,
     INVALID_SERVICE, // One higher than the max.
 };
 
@@ -130,7 +131,11 @@ enum Opcode {
     TX_REQUEST_ABORT            = 78,
     TX_HINT_FAILED              = 79,
     ECHO                        = 80,
-    ILLEGAL_RPC_TYPE            = 81, // 1 + the highest legitimate Opcode
+    DSSN_TXN_READ               = 81,
+    DSSN_TXN_COMMIT             = 82,
+    DSSN_TXN_SEND_SSN           = 83,
+    DSSN_TXN_REQUEST_SSN        = 84,
+    ILLEGAL_RPC_TYPE            = 85, // 1 + the highest legitimate Opcode
 };
 
 /**
@@ -1175,6 +1180,15 @@ struct MultiOp {
             /// Version of the written object.
             uint64_t version;
         } __attribute__((packed));
+    } __attribute__((packed));
+};
+
+struct Notification {
+    Opcode opcode;
+    static const ServiceType service = DSSN_SERVICE;
+    struct Request {
+        RequestCommon common;
+        uint32_t length;            // Length of the payload.
     } __attribute__((packed));
 };
 
