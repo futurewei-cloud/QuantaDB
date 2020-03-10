@@ -46,17 +46,17 @@ public:
 private:
 };
 
-class HashmapKV : public KVStore
+class HashmapKVStore : public KVStore
 {
 public:
-	HashmapKV(uint32_t nbucket = 1024)
+	HashmapKVStore(uint32_t nbucket = 1024)
 	{
 		bucket_count = nbucket;
 		my_hashtable = new hash_table<HASH_TABLE_TEMPLATE>(bucket_count);
         my_hashtable->set_no_lossy();
 	}
 
-	~HashmapKV()
+	~HashmapKVStore()
 	{
         delete my_hashtable;
 	}

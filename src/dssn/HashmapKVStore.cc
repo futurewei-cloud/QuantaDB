@@ -10,7 +10,7 @@
 
 namespace DSSN {
 
-KVLayout* HashmapKV::preput(KVLayout &kvIn)
+KVLayout* HashmapKVStore::preput(KVLayout &kvIn)
 {
 	KVLayout* kvOut = new KVLayout(kvIn.k.keyLength);
 	std::memcpy((void *)kvOut->k.key.get(), (void *)kvIn.k.key.get(), kvOut->k.keyLength);
@@ -20,7 +20,7 @@ KVLayout* HashmapKV::preput(KVLayout &kvIn)
 	return kvOut;
 }
 
-bool HashmapKV::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
+bool HashmapKVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
 {
 	kv->meta.pStampPrev = 0;
 	kv->meta.sStampPrev = pi;
@@ -31,7 +31,7 @@ bool HashmapKV::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
     return lptr.ptr_ != NULL;
 }
 
-bool HashmapKV::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength)
+bool HashmapKVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength)
 {
 	kv->meta.pStampPrev = kv->meta.pStamp;
 	kv->meta.sStampPrev = pi;
@@ -44,7 +44,7 @@ bool HashmapKV::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, 
 	return true;
 }
 
-KVLayout * HashmapKV::fetch(KLayout& k)
+KVLayout * HashmapKVStore::fetch(KLayout& k)
 {
     const Element * elem;
     char key[k.keyLength + 1];
@@ -59,7 +59,7 @@ KVLayout * HashmapKV::fetch(KLayout& k)
     return NULL;
 }
 
-bool HashmapKV::getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength)
+bool HashmapKVStore::getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength)
 {
     KVLayout * kv = fetch(k);
 
@@ -72,13 +72,13 @@ bool HashmapKV::getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength)
 	return true;
 }
 
-bool HashmapKV::getValue(KLayout& k, KVLayout *&kv)
+bool HashmapKVStore::getValue(KLayout& k, KVLayout *&kv)
 {
     kv = fetch(k);
     return (kv != NULL);
 }
 
-bool HashmapKV::getMeta(KLayout& k, DSSNMeta &meta)
+bool HashmapKVStore::getMeta(KLayout& k, DSSNMeta &meta)
 {
     KVLayout * kv = fetch(k);
     if (kv) {
@@ -88,12 +88,12 @@ bool HashmapKV::getMeta(KLayout& k, DSSNMeta &meta)
 	return false;
 }
 
-bool HashmapKV::maximizeMetaEta(KVLayout *kv, uint64_t eta) {
+bool HashmapKVStore::maximizeMetaEta(KVLayout *kv, uint64_t eta) {
 	kv->meta.pStamp = std::max(eta, kv->meta.pStamp);;
 	return true;
 }
 
-bool HashmapKV::remove(KLayout& k, DSSNMeta &meta)
+bool HashmapKVStore::remove(KLayout& k, DSSNMeta &meta)
 {
     KVLayout * kv = fetch(k);
     if (kv) {

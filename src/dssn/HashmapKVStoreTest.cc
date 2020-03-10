@@ -17,7 +17,7 @@ class HashmapKVTest : public ::testing::Test {
   HashmapKVTest() {};
   ~HashmapKVTest() {};
 
-  HashmapKV KVStore;
+  HashmapKVStore KVStore;
 
   DISALLOW_COPY_AND_ASSIGN(HashmapKVTest);
 };
