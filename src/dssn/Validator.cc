@@ -18,6 +18,7 @@ Validator::start() {
     // Henry: may need to use TBB to pin the threads to specific cores LATER
     std::thread( [=] { serialize(); });
     std::thread( [=] { validateDistributedTxs(0); });
+    localTxQueue.start();
 }
 
 bool
@@ -302,9 +303,9 @@ Validator::serialize() {
 
         // process all commit-intents on local transaction queue
         TxEntry* txEntry;
-       while (localTxQueue.try_pop(txEntry)) {
+        while (localTxQueue.try_pop(txEntry)) {
         	if (activeTxSet.blocks(txEntry)) {
-        		localTxQueue.push(txEntry); // re-enqueued as this tx may be unblocked later
+        		localTxQueue.repush(txEntry); // re-enqueued as this tx may be unblocked later
         	} else {
         		/* There is no need to update activeTXs because this tx is validated
         		 * and concluded shortly. If the conclude() does through a queue and another

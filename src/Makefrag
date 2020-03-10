@@ -87,6 +87,7 @@ SHARED_SRCFILES := \
 		   src/dssn/ClusterTimeService.cc \
 		   src/dssn/HashmapKVStore.cc \
 		   src/dssn/KVStore.cc \
+		   src/dssn/WaitQueue.cc \
 		   src/IndexKey.cc \
 		   src/IndexletManager.cc \
 		   src/IndexLookup.cc \

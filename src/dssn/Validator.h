@@ -28,6 +28,7 @@ typedef RAMCloud::KeyLength KeyLength;
  */
 class Validator {
     PROTECTED:
+
     WaitQueue localTxQueue;
     ActiveTxSet activeTxSet;
     BlockedTxSet blockedTxSet;
