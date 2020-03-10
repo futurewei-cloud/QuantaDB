@@ -8,7 +8,6 @@
 
 #include <boost/lockfree/spsc_queue.hpp>
 #include <boost/lockfree/queue.hpp>
-#include <atomic>
 #include "TxEntry.h"
 
 namespace DSSN {
@@ -20,7 +19,7 @@ namespace DSSN {
  * the commit-intent RPC handlers and the serializer as a re-queue-er.
  * It provides dequeue interface for the serializer.
  *
- * We want to optimize serializer performance.
+ * The purpose is to optimize serializer performance.
  * TBB concurrent queue and boost::lockfree::queue were tried and had similar performance.
  * For now, we have settled for boost single-producer-single-consumer queue as it has shown
  * 3x performance improvement. Therefore, we use boost spsc queue for interfacing
@@ -29,29 +28,36 @@ namespace DSSN {
  * The class embeds a queueing thread that inspects a boost (mpmc) queue and the second spsc qeueue.
  * The former is for multiple commit-intent (CI) RPC handlers to enqueue.
  * The latter is for the serializer to re-queue.
- * The thread then transfers CIs from those queues into the first spsc queue
+ * The thread then transfers CIs from those queues into the first spsc queue.
  *
  */
 class WaitQueue {
-	PRIVATE:
-	boost::lockfree::spsc_queue<TxEntry*, boost::lockfree::capacity<1000000>> queue;
-	//boost::lockfree::queue<TxEntry*> queue{1000000};
+    PROTECTED:
+
+	boost::lockfree::queue<TxEntry*> inQueue{10000};
+	boost::lockfree::spsc_queue<TxEntry*, boost::lockfree::capacity<1000000>> outQueue;
+	boost::lockfree::spsc_queue<TxEntry*, boost::lockfree::capacity<10000>> recycleQueue;
+
+	void schedule(bool isUnderTest);
 
     PUBLIC:
 	//for dequeueing by the consumer
     bool try_pop(TxEntry *&txEntry) {
-    	return queue.pop(txEntry);
+    	return outQueue.pop(txEntry);
     }
 
     //for enqueueing by producers
     bool push(TxEntry *txEntry) {
-    	return queue.push(txEntry);
+    	return inQueue.push(txEntry);
     }
 
     //for high-performance re-queueing by the consumer
     bool repush(TxEntry *txEntry) {
-    	return true; //FIXME
+    	return recycleQueue.push(txEntry);
     }
+
+    //start thread
+    void start();
 }; // end WaitQueue class
 
 } // end namespace DSSN
