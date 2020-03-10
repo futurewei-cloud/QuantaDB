@@ -47,12 +47,12 @@ bool HashmapKVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *value
 KVLayout * HashmapKVStore::fetch(KLayout& k)
 {
     const Element * elem;
-    char key[k.keyLength + 1];
+    //char key[k.keyLength + 1];
 
     // XXX: could save this cpu cycles, if k.key.get() is null terminated
-    strncpy(key, (char *)k.key.get(), k.keyLength); key[k.keyLength] = 0;
+    // strncpy(key, (char *)k.key.get(), k.keyLength); key[k.keyLength] = 0;
 
-    elem_pointer<Element> lptr = my_hashtable->get(key);
+    elem_pointer<Element> lptr = my_hashtable->get((char*)k.key.get());
     if ((elem = lptr.ptr_) != NULL) {
         return elem->kv;
     }
