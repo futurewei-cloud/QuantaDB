@@ -27,6 +27,7 @@ DPDK_SRCFILES :=
 endif
 
 TESTS_SRCFILES := \
+		  src/dssn/HashmapKVStoreTest.cc \
 		  src/dssn/ClusterTimeServiceTest.cc \
 		  src/dssn/SequencerTest.cc \
 		  src/dssn/ValidatorTest.cc \

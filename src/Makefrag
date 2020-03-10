@@ -85,6 +85,7 @@ SHARED_SRCFILES := \
 		   src/dssn/Validator.cc \
 		   src/dssn/Sequencer.cc \
 		   src/dssn/ClusterTimeService.cc \
+		   src/dssn/HashmapKVStore.cc \
 		   src/dssn/KVStore.cc \
 		   src/dssn/WaitQueue.cc \
 		   src/IndexKey.cc \

@@ -52,7 +52,7 @@ ZOOKEEPER_LIB :=
 ZOOKEEPER_DIR :=
 endif
 
-BASECFLAGS := -g
+BASECFLAGS := -g -faligned-new
 ifeq ($(DEBUG),yes)
 ifeq ($(DEBUG_OPT),yes)
 OPTFLAG := -O0
@@ -139,6 +139,8 @@ INCLUDES := -I$(TOP)/src \
             -I$(GTEST_DIR)/include \
             -I/usr/local/openonload-201405/src/include \
 	    -I$(TOP)/src/dssn/ \
+	    -I$(TOP)/pmemhash/internal \
+	    -I$(TOP)/pmemhash/utils \
 	    -I$(TOP)/hot/third-party/tbb/include/ \
 	    -I$(TOP)/hot/libs/hot/rowex/include/ \
 	    -I$(TOP)/hot/libs/hot/commons/include/ \
