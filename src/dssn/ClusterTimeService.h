@@ -4,6 +4,7 @@
 #pragma once
 
 #include <sys/types.h>
+#include <atomic>
 #include <stdint.h>
 
 namespace DSSN {
