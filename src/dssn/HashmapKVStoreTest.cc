@@ -66,6 +66,16 @@ TEST_F(HashmapKVTest, putNewBench) {
     stop = __rdtsc();
     GTEST_COUT << "HashmapKVTest fetch: "
     << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
+
+    start = __rdtsc();
+    for(int idx = 0; idx < loop; idx++) {
+        snprintf((char *)kv.k.key.get(), keySize - 1, "HashmapKVTest-key-%04d", idx);
+        KVLayout * ret = NULL;
+        EXPECT_EQ(ret, (KVLayout*)NULL);
+    }
+    stop = __rdtsc();
+    GTEST_COUT << "HashmapKVTest empty loop: "
+    << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
 }
 
 TEST_F(HashmapKVTest, put) {
