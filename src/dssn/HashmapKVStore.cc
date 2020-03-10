@@ -37,7 +37,8 @@ bool HashmapKV::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, 
 	kv->meta.sStampPrev = pi;
 	kv->meta.cStamp = kv->meta.pStamp = cts;
 	kv->meta.sStamp = 0xffffffffffffffff;
-	delete kv->v.valuePtr;
+    if (kv->v.valuePtr)
+	    delete kv->v.valuePtr;
 	kv->v.valueLength = valueLength;
 	kv->v.valuePtr = valuePtr;
 	return true;

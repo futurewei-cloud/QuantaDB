@@ -27,13 +27,16 @@ struct VLayout {
 		uint8_t *valuePtr;
 		uint64_t offsetToValue; //assume 64-bit system, matching pointer size
 	};
+    VLayout() {
+        valuePtr = NULL;
+    }
 };
 
 struct KLayout {
 	uint32_t keyLength = 0;
 	boost::scoped_array<uint8_t> key;
 	KLayout() {}
-	explicit KLayout(uint32_t keySize) : keyLength(keySize), key(new uint8_t[keySize]) {}
+	explicit KLayout(uint32_t keySize) : keyLength(keySize), key(new uint8_t[keySize+1]) { bzero(key.get(), keySize+1);}
 };
 
 struct KVLayout {

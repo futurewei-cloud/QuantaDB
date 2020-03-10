@@ -58,19 +58,7 @@ class ClusterTimeService {
     uint32_t node_id;		// 
     uint32_t last_tsc;      //
     uint64_t last_usec;     // usec of the last gettimeofday() call
+    std::atomic<uint32_t>   ctr;
 }; // ClusterTimeService
-
-// ClusterTimeClient
-class ClusterTimeClient {
-    public:
-    ClusterTimeClient();
-    uint64_t getClusterTime();   	        // return a cluster unique logical time stamp
-    uint64_t getClusterTime(uint32_t delta_nanosec); // return a cluster unique time stamp that is local clock + delta
-    uint64_t getLocalTime();    	        // return a local system clock time stamp
-    uint64_t Cluster2Local(uint64_t);       // Convert a cluster time stamp to local clock time stamp
-
-    private:
-    // ClusterTimeService clock_svr;           // For testing purpose, we embedded a svr before RPC is ready.
-}; // end ClusterTimeClient
 
 } // end namespace DSSN

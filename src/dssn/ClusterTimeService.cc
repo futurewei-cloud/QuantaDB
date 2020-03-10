@@ -103,7 +103,7 @@ using namespace RAMCloud;
 ClusterTimeService::ClusterTimeService()
 {
     char ifname[64], ipaddr[64];
-    int ret, i1, i2, i3, i4;
+    uint32_t ret, i1, i2, i3, i4;
 
     ret = getifname(ifname, sizeof(ifname)); assert(ret == 0);
     ret = getipaddr(ifname, ipaddr, sizeof(ipaddr)); assert(ret == 0);
@@ -111,31 +111,29 @@ ClusterTimeService::ClusterTimeService()
 
     node_id = i4; 
     last_usec = getusec();
-    last_tsc  = __rdtsc();
+    ctr  = 0;
 }
 
 // return a cluster unique logical time stamp
 uint64_t ClusterTimeService::getClusterTime()
 {
     uint64_t usec = getusec();
-    if (usec != last_usec) {
+    if (usec > last_usec) {
         last_usec = usec;
-        last_tsc = __rdtsc();
-        return (usec << 20) | node_id;
+        ctr = 0;
     }
-    return (((last_usec << 10) + Cycles::toNanoseconds(__rdtsc() - last_tsc)) << 10) | node_id;
+    return (last_usec << 20) + (ctr++ << 10) + node_id;
 }
 
 // return a cluster unique time stamp + delta
 uint64_t ClusterTimeService::getClusterTime(uint32_t delta/* nsec*/)
 {
     uint64_t usec = getusec();
-    if (usec != last_usec) {
+    if (usec > last_usec) {
         last_usec = usec;
-        last_tsc = __rdtsc();
-        return (((last_usec << 10) + delta) << 10) | node_id;
+        ctr = 0;
     }
-    return (((last_usec << 10) + Cycles::toNanoseconds(__rdtsc() - last_tsc) + delta) << 10) | node_id;
+    return (last_usec << 20) + ((ctr++ + delta) << 10) + node_id;
 }
 
 // return a local system clock time stamp
@@ -144,10 +142,9 @@ uint64_t ClusterTimeService::getLocalTime()
     uint64_t usec = getusec();
     if (usec != last_usec) {
         last_usec = usec;
-        last_tsc = __rdtsc();
-        return (usec << 20);
+        ctr = 0;
     }
-    return (last_usec << 10) + Cycles::toNanoseconds(__rdtsc() - last_tsc);
+    return (last_usec << 10) + ctr++;
 }
 
 // Convert a cluster time stamp to local clock time stamp

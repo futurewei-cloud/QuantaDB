@@ -24,51 +24,65 @@ class ClusterTimeServiceTest : public ::testing::Test {
 
 TEST_F(ClusterTimeServiceTest, getClusterTime) {
     GTEST_COUT << "ClusterTimeServiceTest" << std::endl;
-    uint64_t t1 = clock.getClusterTime();
-    uint64_t t2 = clock.getClusterTime();
-    uint64_t t3 = clock.getClusterTime();
-    uint64_t t4 = clock.getClusterTime();
-    EXPECT_GT(t2, t1);
-    EXPECT_GT(t3, t2);
-    EXPECT_GT(t4, t3);
+    for(int ii = 0; ii < 1000; ii++) {
+        uint64_t t1 = clock.getClusterTime();
+        uint64_t t2 = clock.getClusterTime();
+        uint64_t t3 = clock.getClusterTime();
+        uint64_t t4 = clock.getClusterTime();
+        EXPECT_GT(t2, t1);
+        EXPECT_GT(t3, t2);
+        EXPECT_GT(t4, t3);
+    }
+}
+
+TEST_F(ClusterTimeServiceTest, getLocalTime) {
+    for(int ii = 0; ii < 1000; ii++) {
+        uint64_t t1 = clock.getLocalTime();
+        uint64_t t2 = clock.getLocalTime();
+        uint64_t t3 = clock.getLocalTime();
+        uint64_t t4 = clock.getLocalTime();
+        EXPECT_GT(t2, t1);
+        EXPECT_GT(t3, t2);
+        EXPECT_GT(t4, t3);
+    }
 }
 
 TEST_F(ClusterTimeServiceTest, benchGenClusterTime) {
     int loop = 1024*1024;
     uint64_t start, stop;
     //
-    start = Cycles::rdtscp();
+    start = Cycles::rdtsc();
     for (int i = 0; i < loop; i++) {
         clock.getClusterTime();
     }
-    stop = Cycles::rdtscp();
+    stop = Cycles::rdtsc();
     GTEST_COUT << "getClusterTime: "
     << Cycles::toNanoseconds(stop - start)/(1024*1024) << " nano sec per call " << std::endl;
 
     //
-    start = Cycles::rdtscp();
+    start = Cycles::rdtsc();
     for (int i = 0; i < loop; i++) {
         clock.getClusterTime(1000);
     }
-    stop = Cycles::rdtscp();
+    stop = Cycles::rdtsc();
     GTEST_COUT << "getClusterTime(delta): "
     << Cycles::toNanoseconds(stop - start)/(1024*1024) << " nano sec per call " << std::endl;
 
     //
-    start = Cycles::rdtscp();
+    start = Cycles::rdtsc();
     for (int i = 0; i < loop; i++) {
         clock.getLocalTime();
     }
-    stop = Cycles::rdtscp();
+    stop = Cycles::rdtsc();
     GTEST_COUT << "getLocalTime: "
     << Cycles::toNanoseconds(stop - start)/(1024*1024) << " nano sec per call " << std::endl;
 
     //
-    start = Cycles::rdtscp();
+    start = Cycles::rdtsc();
     for (int i = 0; i < loop; i++) {
         clock.Cluster2Local(start);
     }
-    stop = Cycles::rdtscp();
+    stop = Cycles::rdtsc();
     GTEST_COUT << "Cluster2Local: "
     << Cycles::toNanoseconds(stop - start)/(1024*1024) << " nano sec per call " << std::endl;
 

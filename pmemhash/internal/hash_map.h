@@ -179,6 +179,7 @@ public:
         buckets_[bucket].ptr_[l_slot] = ptr; //new index
         buckets_[bucket].sig_.sig8_[l_slot] = signature(key);
         ret.slot_ = l_slot;
+        ret.ptr_ = ptr;
 
         return ret;
     }
