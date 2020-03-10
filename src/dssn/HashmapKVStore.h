@@ -20,20 +20,30 @@ namespace DSSN {
 #define MAX_KEYLEN  127
 
 class Element {
-    char key[MAX_KEYLEN + 1];
-    KVLayout * kv;
+public:
+    Element(KVLayout *kvp)
+    {
+        kv = kvp;
+        assert(kv->k.keyLength <= MAX_KEYLEN);
+        strncpy(key, (const char *)kv->k.key.get(), kv->k.keyLength);
+        key[kv->k.keyLength] = 0;
+    }  
 
     Element(KVLayout &ikv)
     {
         kv = &ikv;
         assert(kv->k.keyLength <= MAX_KEYLEN);
-        strncpy(key, (const char *)kv->k.key.get(), MAX_KEYLEN);
+        strncpy(key, (const char *)kv->k.key.get(), kv->k.keyLength);
+        key[kv->k.keyLength] = 0;
     }  
 
     ~Element()
     {
         // delete kv;
     }
+    KVLayout * kv;
+    char key[MAX_KEYLEN + 1]; // XXX: could save this space, if k.key.get() is null terminated
+private:
 };
 
 class HashmapKV : public KVStore
@@ -50,10 +60,11 @@ public:
         delete my_hashtable;
 	}
     KVLayout* preput(KVLayout &kvIn);
-    bool put(KVLayout& kv);
+    bool putNew(KVLayout *kv, uint64_t cts, uint64_t pi);
+    bool put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength);
+    KVLayout * fetch(KLayout& k);
     bool getMeta(KLayout& k, DSSNMeta &meta);
-    bool updateMeta(KLayout& k, DSSNMeta &meta);
-    bool maximizeMetaEta(KLayout& k, uint64_t eta);
+    bool maximizeMetaEta(KVLayout *kv, uint64_t eta);
     bool getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength);
     bool getValue(KLayout& k, KVLayout *&kv);
     bool remove(KLayout& k, DSSNMeta &meta);
