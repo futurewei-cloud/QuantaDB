@@ -24,16 +24,6 @@ void print_header(int bucket)
     printf("\n");
 }
 
-void print_ptr(int bucket)
-{
-    hash_bucket<Element> &bin = my_hashtable.buckets_[bucket];
-    for (int i=0; i<4; i++) {
-        const Element *e = bin.ptr_[i];
-        if (e)
-            printf("\tpos:%i, key:%lu, value:%li\n", i, e->key, e->value);
-    }
-}
-
 int main(void)
 {
     Element elem_1(2049, 101);
@@ -79,7 +69,7 @@ int main(void)
         uint8_t sig = my_hashtable.signature(elem->key);
         printf("put key:%lu sig:%i bucket:%i slot:%i value:%li\n", elem->key, sig, elem_ret.bucket_, elem_ret.slot_, elem->value);
         print_header(elem_ret.bucket_);
-        print_ptr(elem_ret.bucket_);
+ 
         for (int j = 1; j <= i; j+=4096) {
             uint64_t key = j;
             elem_ret = my_hashtable.get(key);
