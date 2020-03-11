@@ -123,11 +123,9 @@ RamCloud::RamCloud(Context* context, const char* locator,
 RamCloud::~RamCloud()
 {
     delete clientLeaseAgent;
-
+    delete transactionManager;
     delete rpcTracker;
     delete realClientContext;
-
-    delete transactionManager;
 }
 
 /**
