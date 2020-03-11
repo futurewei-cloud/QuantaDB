@@ -24,17 +24,19 @@ public:
     Element(KVLayout *kvp)
     {
         kv = kvp;
-        assert(kv->k.keyLength <= MAX_KEYLEN);
-        strncpy(key, (const char *)kv->k.key.get(), kv->k.keyLength);
-        key[kv->k.keyLength] = 0;
+        key = (char *)kv->k.key.get();
+        // assert(kv->k.keyLength <= MAX_KEYLEN);
+        // strncpy(key, (const char *)kv->k.key.get(), kv->k.keyLength);
+        // key[kv->k.keyLength] = 0;
     }  
 
     Element(KVLayout &ikv)
     {
         kv = &ikv;
-        assert(kv->k.keyLength <= MAX_KEYLEN);
-        strncpy(key, (const char *)kv->k.key.get(), kv->k.keyLength);
-        key[kv->k.keyLength] = 0;
+        key = (char *)kv->k.key.get();
+        // assert(kv->k.keyLength <= MAX_KEYLEN);
+        // strncpy(key, (const char *)kv->k.key.get(), kv->k.keyLength);
+        // key[kv->k.keyLength] = 0;
     }  
 
     ~Element()
@@ -42,7 +44,7 @@ public:
         // delete kv;
     }
     KVLayout * kv;
-    char key[MAX_KEYLEN + 1]; // XXX: could save this space, if k.key.get() is null terminated
+    char *key; // char key[MAX_KEYLEN + 1];
 private:
 };
 
