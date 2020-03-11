@@ -9,17 +9,6 @@
 
 namespace DSSN {
 
-
-TxEntry::TxEntry() {
-    this->pi = std::numeric_limits<uint64_t>::max();
-    this->eta = 0;
-    this->txState = TX_PENDING;
-    this->commitIntentState = TX_CI_UNQUEUED;
-    this->cts = 0;
-	this->writeSetSize = writeSetSize;
-	this->readSetSize = readSetSize;
-}
-
 TxEntry::TxEntry(uint32_t readSetSize, uint32_t writeSetSize) {
 	this->pi = std::numeric_limits<uint64_t>::max();
 	this->eta = 0;
@@ -28,6 +17,7 @@ TxEntry::TxEntry(uint32_t readSetSize, uint32_t writeSetSize) {
 	this->cts = 0;
 	this->writeSetSize = writeSetSize;
 	this->readSetSize = readSetSize;
+	this->readSetIndex = this->writeSetIndex = 0;
 	this->writeSet.reset(new KVLayout *[writeSetSize]);
 	this->writeSetHash.reset(new uint64_t[writeSetSize]);
 	this->writeSetInStore.reset(new KVLayout *[writeSetSize]);

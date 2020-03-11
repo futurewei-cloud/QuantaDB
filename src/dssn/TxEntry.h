@@ -56,6 +56,10 @@ class TxEntry {
     boost::scoped_array<KVLayout *> writeSetInStore;
     boost::scoped_array<KVLayout *> readSetInStore;
 
+    //Handy index to resume active filter check
+    uint32_t writeSetIndex;
+    uint32_t readSetIndex;
+
     /* Henry: possibly put parameterized Bloom Filters here.
     BloomFilter writeSetFilter;
     BloomFilter readSetFilter;
@@ -108,7 +112,6 @@ class TxEntry {
         TX_CONFLICT = 5
     };
 
-    TxEntry();
     TxEntry(uint32_t readSetSize, uint32_t writeSetSize);
     ~TxEntry();
     inline uint64_t getCTS() { return cts; }
@@ -125,6 +128,8 @@ class TxEntry {
     inline auto& getReadSetHash() { return readSetHash; }
     inline auto& getWriteSetInStore() { return writeSetInStore; }
     inline auto& getReadSetInStore() { return readSetInStore; }
+    inline auto& getWriteSetIndex() { return writeSetIndex; }
+    inline auto& getReadSetIndex() { return readSetIndex; }
     inline void setCTS(uint64_t val) { cts = val; }
     inline void setPi(uint64_t val) { pi = val; }
     inline void setEta(uint64_t val) { eta = val; }
