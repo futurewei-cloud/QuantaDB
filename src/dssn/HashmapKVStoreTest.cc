@@ -50,12 +50,21 @@ TEST_F(HashmapKVTest, putNewBench) {
     start = __rdtsc();
     for(int idx = 0; idx < loop; idx++) {
         snprintf((char *)kv.k.key.get(), keySize - 1, "HashmapKVTest-key-%04d", idx);
+        KVLayout * ret = NULL;
+        EXPECT_EQ(ret, (KVLayout*)NULL);
+    }
+    stop = __rdtsc();
+    uint32_t overhead = Cycles::toNanoseconds(stop - start)/loop;
+    //
+    start = __rdtsc();
+    for(int idx = 0; idx < loop; idx++) {
+        snprintf((char *)kv.k.key.get(), keySize - 1, "HashmapKVTest-key-%04d", idx);
         bool ret = KVStore.putNew(&kv, 0, 0); 
         EXPECT_EQ(ret, true);
     }
     stop = __rdtsc();
-    GTEST_COUT << "HashmapKVTest putNew: "
-    << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
+    uint32_t nsec_per = Cycles::toNanoseconds(stop - start)/loop - overhead;
+    GTEST_COUT << "HashmapKVTest putNew: " << nsec_per << " nano sec per call " << std::endl;
 
     start = __rdtsc();
     for(int idx = 0; idx < loop; idx++) {
@@ -64,8 +73,8 @@ TEST_F(HashmapKVTest, putNewBench) {
         EXPECT_NE(ret, (KVLayout*)NULL);
     }
     stop = __rdtsc();
-    GTEST_COUT << "HashmapKVTest fetch: "
-    << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
+    nsec_per = Cycles::toNanoseconds(stop - start)/loop - overhead;
+    GTEST_COUT << "HashmapKVTest fetch: " << nsec_per << " nano sec per call " << std::endl;
 }
 
 TEST_F(HashmapKVTest, put) {

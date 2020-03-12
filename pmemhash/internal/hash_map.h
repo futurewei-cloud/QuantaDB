@@ -214,11 +214,11 @@ public:
         return elem_pointer<Elem>(0, 0, NULL);
     }
 
-//private:
     int bucketize(const K & key) { return Hash{}(key) % bucket_count_; }
     uint8_t signature(const K & key) { return (Hash{}(key) / bucket_count_) & 0xFF; }
     int find_empty(uint32_t valid) { return __builtin_ffs(~valid) - 1; }
 
+private:
     uint32_t bucket_count_;
     hash_bucket<Elem> *buckets_;
     std::vector<int> victim_;
