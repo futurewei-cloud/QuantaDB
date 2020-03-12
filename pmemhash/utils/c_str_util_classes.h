@@ -15,6 +15,6 @@ struct hash_c_str {
 struct equal_to_c_str {
 	bool operator()(const char *k1, const char *k2)
 	{
-		return (strcmp(k1, k2) == 0);
+		return (k1 == k2) || (strcmp(k1, k2) == 0);
 	}
 };
