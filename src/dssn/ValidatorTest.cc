@@ -284,7 +284,7 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     uint64_t start, stop;
 
-    fillTxEntry(size, 10);
+    fillTxEntry(size, 11);
 
     GTEST_COUT << "WriteSet size " << txEntry[0]->getWriteSetSize() << std::endl;
     GTEST_COUT << "ReadSet size " << txEntry[0]->getReadSetSize() << std::endl;

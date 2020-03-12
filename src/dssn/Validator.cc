@@ -104,8 +104,22 @@ Validator::write(KLayout& k, uint64_t &vPrevEta) {
 }
 
 bool
-Validator::read(KLayout& k, KVLayout *&kv) {
-	return kvStore.getValue(k, kv);
+Validator::read(KLayout& k, KVLayout *&kv, uint8_t *&valuePtr) {
+	//This read can happen concurrently while conclude() is
+	//modifying the KVLayout instance.
+	//Use cStamp, a volatile variable, to detect whether there has been a change
+	//Does that work!?!?!?
+	while (kvStore.getValue(k, kv)) {
+		uint64_t cts = kv->meta.cStamp;
+		uint32_t length = kv->v.valueLength;
+		valuePtr = new uint8_t[length];
+		std::memcpy(valuePtr, kv->v.valuePtr, length);
+		if (kv->meta.cStamp == cts) {
+			return true;
+		}
+		delete valuePtr;
+	}
+	return false;
 }
 
 

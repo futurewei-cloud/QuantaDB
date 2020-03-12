@@ -34,9 +34,9 @@ KVStore::fetch(KLayout& k) {
 
 bool
 KVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi) {
+	kv->meta.cStamp = kv->meta.pStamp = cts; //cStamp is a volatile, signalling var; do it first
 	kv->meta.pStampPrev = 0;
 	kv->meta.sStampPrev = pi;
-	kv->meta.cStamp = kv->meta.pStamp = cts;
 	kv->meta.sStamp = 0xffffffffffffffff;
 	idx::contenthelpers::OptionalValue<DSSN::KVLayout*> ret = ((HotKVType *)hotKVStore)->upsert(kv);
 	if (!ret.mIsValid)
@@ -46,9 +46,9 @@ KVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi) {
 
 bool
 KVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength) {
+	kv->meta.cStamp = kv->meta.pStamp = cts;
 	kv->meta.pStampPrev = kv->meta.pStamp;
 	kv->meta.sStampPrev = pi;
-	kv->meta.cStamp = kv->meta.pStamp = cts;
 	kv->meta.sStamp = 0xffffffffffffffff;
 	delete kv->v.valuePtr;
 	kv->v.valueLength = valueLength;
@@ -112,7 +112,7 @@ KVStore::remove(KLayout& k, DSSNMeta &meta) {
 	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
 	if (ret.mIsValid) {
 		KVLayout* kv = ret.mValue;
-		kv->isTombStone = true;
+		kv->isTombstone = true;
 		kv->meta = meta;
 		return true;
 	}

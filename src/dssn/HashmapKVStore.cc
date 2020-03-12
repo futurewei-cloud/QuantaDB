@@ -22,9 +22,9 @@ KVLayout* HashmapKVStore::preput(KVLayout &kvIn)
 
 bool HashmapKVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
 {
+	kv->meta.cStamp = kv->meta.pStamp = cts; //cStamp is a volatile, signaling var; do it first
 	kv->meta.pStampPrev = 0;
 	kv->meta.sStampPrev = pi;
-	kv->meta.cStamp = kv->meta.pStamp = cts;
 	kv->meta.sStamp = 0xffffffffffffffff;
     Element * elem = new Element(kv);
     elem_pointer<Element> lptr = my_hashtable->put(elem->key, elem);
@@ -33,9 +33,9 @@ bool HashmapKVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
 
 bool HashmapKVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength)
 {
+	kv->meta.cStamp = kv->meta.pStamp = cts; //cStamp is a volatile, signaling var; do it first
 	kv->meta.pStampPrev = kv->meta.pStamp;
 	kv->meta.sStampPrev = pi;
-	kv->meta.cStamp = kv->meta.pStamp = cts;
 	kv->meta.sStamp = 0xffffffffffffffff;
     if (kv->v.valuePtr)
 	    delete kv->v.valuePtr;
@@ -97,7 +97,7 @@ bool HashmapKVStore::remove(KLayout& k, DSSNMeta &meta)
 {
     KVLayout * kv = fetch(k);
     if (kv) {
-		kv->isTombStone = true;
+		kv->isTombstone = true;
 		kv->meta = meta;
 		return true;
 	}

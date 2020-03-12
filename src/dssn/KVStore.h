@@ -13,7 +13,7 @@ struct DSSNMeta {
 	uint64_t sStamp; //pi
 	uint64_t pStampPrev; //eta of prev version
 	uint64_t sStampPrev; //pi of prev version
-	uint64_t cStamp; //creation time (or CTS)
+	volatile uint64_t cStamp; //creation time (or CTS)
 	DSSNMeta() {
 		cStamp = 0;
 		pStampPrev = pStamp = 0;
@@ -43,7 +43,7 @@ struct KVLayout {
 	VLayout v;
 	KLayout k;
 	DSSNMeta meta;
-	bool isTombStone = false;
+	bool isTombstone = false;
 
 	explicit KVLayout(uint32_t keySize) : k(keySize) {}
 	uint8_t* getKey() { return k.key.get(); }

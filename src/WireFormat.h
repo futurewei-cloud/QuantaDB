@@ -131,10 +131,10 @@ enum Opcode {
     TX_REQUEST_ABORT            = 78,
     TX_HINT_FAILED              = 79,
     ECHO                        = 80,
-    DSSN_TXN_READ               = 81,
-    DSSN_TXN_COMMIT             = 82,
-    DSSN_TXN_SEND_SSN           = 83,
-    DSSN_TXN_REQUEST_SSN        = 84,
+    DSSN_MULTI_OP               = 81,
+    DSSN_COMMIT                 = 82,
+    DSSN_SEND_SSN_ASYNC         = 83,
+    DSSN_REQUEST_SSN_ASYNC      = 84,
     ILLEGAL_RPC_TYPE            = 85, // 1 + the highest legitimate Opcode
 };
 
@@ -565,6 +565,177 @@ struct DropTabletOwnership {
     } __attribute__((packed));
     struct Response {
         ResponseCommon common;
+    } __attribute__((packed));
+};
+
+struct DSSNCommit {
+    static const Opcode opcode = DSSN_COMMIT;
+    static const ServiceType service = DSSN_SERVICE;
+
+    struct Request {
+        RequestCommon common;
+        uint64_t cts;
+        uint64_t eta;
+        uint64_t pi;
+        uint32_t shardCount; // Number of Part structures following
+        uint32_t readSetCount; // Number of Part structures following
+        uint32_t writeSetCount; // Number of Part structures following
+
+        struct ShardPart {
+        	uint64_t shardId;
+        } __attribute__((packed));
+
+        struct ReadPart {
+            uint64_t tableId;
+            uint16_t keyLength;
+
+            // In buffer: The actual key for this part
+            // follows immediately after this.
+            ReadPart(uint64_t tableId, uint16_t keyLength)
+                : tableId(tableId),
+                  keyLength(keyLength)
+            {
+            }
+        } __attribute__((packed));
+
+        struct WritePart {
+            uint64_t tableId;
+            bool isTombstone;
+            uint32_t length;        // length of keysAndValue
+
+            // In buffer: KeysAndValue follow immediately after this
+            WritePart(uint64_t tableId, bool isTombstone, uint32_t length)
+                : tableId(tableId)
+            	, isTombstone(isTombstone)
+                , length(length)
+            {
+            }
+        } __attribute__((packed));
+    } __attribute__((packed));
+    struct Response {
+        // RpcResponseCommon contains a status field. But it is used for
+        // indicating communication status
+        // isCommitted indicates the commit-intent decision
+        ResponseCommon common;
+        bool isCommitted;
+    } __attribute__((packed));
+};
+
+struct DSSNMultiOp {
+    static const Opcode opcode = DSSN_MULTI_OP;
+    static const ServiceType service = DSSN_SERVICE;
+
+    /// Type of Multi Operation
+    /// Note: Make sure INVALID is always last.
+    enum OpType { READ, REMOVE, WRITE, INVALID };
+
+    struct Request {
+        RequestCommon common;
+        uint32_t count; // Number of Part structures following this.
+        OpType type;
+
+        struct ReadPart {
+            uint64_t tableId;
+            uint16_t keyLength;
+            RejectRules rejectRules;
+
+            // In buffer: The actual key for this part
+            // follows immediately after this.
+            ReadPart(uint64_t tableId, uint16_t keyLength,
+                    RejectRules rejectRules)
+                : tableId(tableId),
+                  keyLength(keyLength),
+                  rejectRules(rejectRules)
+            {
+            }
+        } __attribute__((packed));
+
+        struct RemovePart {
+            uint64_t tableId;
+            uint16_t keyLength;
+            RejectRules rejectRules;
+
+            // In buffer: The actual key for this part
+            // follows immediately after this.
+            RemovePart(uint64_t tableId, uint16_t keyLength,
+                       RejectRules rejectRules)
+                : tableId(tableId)
+                , keyLength(keyLength)
+                , rejectRules(rejectRules)
+            {
+            }
+        } __attribute__((packed));
+
+        struct WritePart {
+            uint64_t tableId;
+            uint32_t length;        // length of keysAndValue
+            RejectRules rejectRules;
+
+            // In buffer: KeysAndValue follow immediately after this
+            WritePart(uint64_t tableId, uint32_t length,
+                        RejectRules rejectRules)
+                : tableId(tableId)
+                , length(length)
+                , rejectRules(rejectRules)
+            {
+            }
+        } __attribute__((packed));
+    } __attribute__((packed));
+    struct Response {
+        // RpcResponseCommon contains a status field. But it is not used in
+        // multiRead since there is a separate status for each object returned.
+        // Included here to fulfill requirements in common code.
+        ResponseCommon common;
+        uint32_t count; // Number of Part structures following this.
+
+        struct ReadPart {
+            // In buffer: Status/Part and object data go here. Object data are
+            // a variable number of bytes (depending on data size.)
+
+            // Each Response::Part contains the minimum object metadata we need
+            // returned, followed by the object data itself.
+
+            /// Status of the request
+            Status status;
+
+            /// Version of the object.
+            uint64_t version;
+
+            /// SSN tx data
+            uint64_t max_eta;
+            uint64_t min_pi;
+
+            /// Length of the object data following this struct.
+            uint32_t length;
+        } __attribute__((packed));
+
+        struct RemovePart {
+            // Each Response::Part contains the Status for the newly written
+            // object removed and the version.
+
+            /// Status of the remove operation.
+            Status status;
+
+            /// Version of the object that was removed, if it existed.
+            uint64_t version;
+
+            /// SSN tx data
+            uint64_t max_eta;
+        } __attribute__((packed));
+
+        struct WritePart {
+            // Each Response::Part contains the Status for the newly written
+            ///object returned and the version.
+
+            /// Status of the write operation.
+            Status status;
+
+            /// Version of the written object.
+            uint64_t version;
+
+            /// SSN tx data
+            uint64_t max_eta;
+        } __attribute__((packed));
     } __attribute__((packed));
 };
 

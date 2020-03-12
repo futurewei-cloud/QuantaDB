@@ -13,6 +13,7 @@
 #include "TxEntry.h"
 #include "WaitQueue.h"
 #include "KVStore.h"
+#include "HashmapKVStore.h"
 
 namespace DSSN {
 typedef RAMCloud::Object Object;
@@ -36,7 +37,8 @@ class Validator {
     uint64_t lastCTS = 0;
     bool isUnderTest = false;
     //LATER DependencyMatrix blockedTxSet;
-    KVStore kvStore;
+    //KVStore kvStore;
+    HashmapKVStore kvStore;
 
     // all SSN data maintenance operations
     bool updateTxEtaPi(TxEntry& txEntry);
@@ -44,8 +46,9 @@ class Validator {
     bool updateKVWriteSet(TxEntry& txEntry);
 
     // used for read/write by coordinator
-    // validator does not track pre-CI tx data, so return SSN data to coordinator
-    bool read(KLayout& k, KVLayout *&kv);
+    /// upon successful return, memory is allocated and pointed to by valuePtr
+    /// the caller should free the memory
+    bool read(KLayout& k, KVLayout *&kv, uint8_t *&valuePtr);
     bool write(KLayout& k, uint64_t &vPrevEta);
 
     // serialization of commit-intent validation
