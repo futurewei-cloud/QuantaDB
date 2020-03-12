@@ -22,10 +22,10 @@ KVLayout* HashmapKVStore::preput(KVLayout &kvIn)
 
 bool HashmapKVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
 {
-	kv->meta.cStamp = kv->meta.pStamp = cts; //cStamp is a volatile, signaling var; do it first
-	kv->meta.pStampPrev = 0;
-	kv->meta.sStampPrev = pi;
-	kv->meta.sStamp = 0xffffffffffffffff;
+	kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
+	kv->getMeta().pStampPrev = 0;
+	kv->getMeta().sStampPrev = pi;
+	kv->getMeta().sStamp = 0xffffffffffffffff;
     Element * elem = new Element(kv);
     elem_pointer<Element> lptr = my_hashtable->put(elem->key, elem);
     return lptr.ptr_ != NULL;
@@ -33,10 +33,10 @@ bool HashmapKVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
 
 bool HashmapKVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength)
 {
-	kv->meta.cStamp = kv->meta.pStamp = cts; //cStamp is a volatile, signaling var; do it first
-	kv->meta.pStampPrev = kv->meta.pStamp;
-	kv->meta.sStampPrev = pi;
-	kv->meta.sStamp = 0xffffffffffffffff;
+	kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
+	kv->getMeta().pStampPrev = kv->getMeta().pStamp;
+	kv->getMeta().sStampPrev = pi;
+	kv->getMeta().sStamp = 0xffffffffffffffff;
     if (kv->v.valuePtr)
 	    delete kv->v.valuePtr;
 	kv->v.valueLength = valueLength;
@@ -82,14 +82,14 @@ bool HashmapKVStore::getMeta(KLayout& k, DSSNMeta &meta)
 {
     KVLayout * kv = fetch(k);
     if (kv) {
-	    meta = kv->meta;
+	    meta = kv->getMeta();
 		return true;
 	}
 	return false;
 }
 
 bool HashmapKVStore::maximizeMetaEta(KVLayout *kv, uint64_t eta) {
-	kv->meta.pStamp = std::max(eta, kv->meta.pStamp);;
+	kv->getMeta().pStamp = std::max(eta, kv->getMeta().pStamp);;
 	return true;
 }
 
@@ -97,8 +97,8 @@ bool HashmapKVStore::remove(KLayout& k, DSSNMeta &meta)
 {
     KVLayout * kv = fetch(k);
     if (kv) {
-		kv->isTombstone = true;
-		kv->meta = meta;
+		kv->isTombstone() = true;
+		kv->getMeta() = meta;
 		return true;
 	}
 	return false;

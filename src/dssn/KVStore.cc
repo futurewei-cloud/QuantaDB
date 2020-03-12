@@ -34,10 +34,10 @@ KVStore::fetch(KLayout& k) {
 
 bool
 KVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi) {
-	kv->meta.cStamp = kv->meta.pStamp = cts; //cStamp is a volatile, signalling var; do it first
-	kv->meta.pStampPrev = 0;
-	kv->meta.sStampPrev = pi;
-	kv->meta.sStamp = 0xffffffffffffffff;
+	kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
+	kv->getMeta().pStampPrev = 0;
+	kv->getMeta().sStampPrev = pi;
+	kv->getMeta().sStamp = 0xffffffffffffffff;
 	idx::contenthelpers::OptionalValue<DSSN::KVLayout*> ret = ((HotKVType *)hotKVStore)->upsert(kv);
 	if (!ret.mIsValid)
 		return false;
@@ -46,10 +46,10 @@ KVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi) {
 
 bool
 KVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength) {
-	kv->meta.cStamp = kv->meta.pStamp = cts;
-	kv->meta.pStampPrev = kv->meta.pStamp;
-	kv->meta.sStampPrev = pi;
-	kv->meta.sStamp = 0xffffffffffffffff;
+	kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
+	kv->getMeta().pStampPrev = kv->getMeta().pStamp;
+	kv->getMeta().sStampPrev = pi;
+	kv->getMeta().sStamp = 0xffffffffffffffff;
 	delete kv->v.valuePtr;
 	kv->v.valueLength = valueLength;
 	kv->v.valuePtr = valuePtr;
@@ -92,7 +92,7 @@ KVStore::getMeta(KLayout& k, DSSNMeta &meta)
 	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
 	if (ret.mIsValid) {
 		KVLayout* kv = ret.mValue;
-		meta = kv->meta;
+		meta = kv->getMeta();
 		return true;
 	}
 	return false;
@@ -100,7 +100,7 @@ KVStore::getMeta(KLayout& k, DSSNMeta &meta)
 
 bool
 KVStore::maximizeMetaEta(KVLayout *kv, uint64_t eta) {
-	kv->meta.pStamp = std::max(eta, kv->meta.pStamp);;
+	kv->getMeta().pStamp = std::max(eta, kv->getMeta().pStamp);;
 	return true;
 }
 
@@ -112,8 +112,8 @@ KVStore::remove(KLayout& k, DSSNMeta &meta) {
 	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
 	if (ret.mIsValid) {
 		KVLayout* kv = ret.mValue;
-		kv->isTombstone = true;
-		kv->meta = meta;
+		kv->isTombstone() = true;
+		kv->getMeta() = meta;
 		return true;
 	}
 	return false;

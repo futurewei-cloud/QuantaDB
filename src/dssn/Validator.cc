@@ -41,7 +41,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
     	KVLayout *kv = kvStore.fetch(readSet[i]->k);
     	if (kv) {
-    		txEntry.setPi(std::min(txEntry.getPi(), kv->meta.sStamp));
+    		txEntry.setPi(std::min(txEntry.getPi(), kv->getMeta().sStamp));
     		if (txEntry.isExclusionViolated()) {
     			return false;
     		}
@@ -54,7 +54,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
     for (uint32_t i = 0; i < txEntry.getWriteSetSize(); i++) {
     	KVLayout *kv = kvStore.fetch(writeSet[i]->k);
     	if (kv) {
-    		txEntry.setEta(std::max(txEntry.getEta(), kv->meta.pStamp));
+    		txEntry.setEta(std::max(txEntry.getEta(), kv->getMeta().pStamp));
     		if (txEntry.isExclusionViolated()) {
     			return false;
     		}
@@ -110,11 +110,12 @@ Validator::read(KLayout& k, KVLayout *&kv, uint8_t *&valuePtr) {
 	//Use cStamp, a volatile variable, to detect whether there has been a change
 	//Does that work!?!?!?
 	while (kvStore.getValue(k, kv)) {
-		uint64_t cts = kv->meta.cStamp;
+		uint64_t cts = kv->getMeta().cStamp;
+		uint8_t *oldValuePtr = kv->v.valuePtr;
 		uint32_t length = kv->v.valueLength;
 		valuePtr = new uint8_t[length];
-		std::memcpy(valuePtr, kv->v.valuePtr, length);
-		if (kv->meta.cStamp == cts) {
+		std::memcpy(valuePtr, oldValuePtr, length);
+		if (kv->getMeta().cStamp == cts && oldValuePtr == kv->v.valuePtr) {
 			return true;
 		}
 		delete valuePtr;

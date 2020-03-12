@@ -13,7 +13,7 @@ struct DSSNMeta {
 	uint64_t sStamp; //pi
 	uint64_t pStampPrev; //eta of prev version
 	uint64_t sStampPrev; //pi of prev version
-	volatile uint64_t cStamp; //creation time (or CTS)
+	uint64_t cStamp; //creation time (or CTS)
 	DSSNMeta() {
 		cStamp = 0;
 		pStampPrev = pStamp = 0;
@@ -27,6 +27,8 @@ struct VLayout {
 		uint8_t *valuePtr;
 		uint64_t offsetToValue; //assume 64-bit system, matching pointer size
 	};
+	DSSNMeta meta;
+	bool isTombstone = false;
     VLayout() {
         valuePtr = NULL;
     }
@@ -42,12 +44,13 @@ struct KLayout {
 struct KVLayout {
 	VLayout v;
 	KLayout k;
-	DSSNMeta meta;
-	bool isTombstone = false;
 
-	explicit KVLayout(uint32_t keySize) : k(keySize) {}
-	uint8_t* getKey() { return k.key.get(); }
-	uint32_t getKeyLength() {return k.keyLength; }
+	explicit KVLayout(uint32_t keySize) : k(keySize) { }
+	inline uint8_t* getKey() { return k.key.get(); }
+	inline uint32_t getKeyLength() {return k.keyLength; }
+	inline DSSNMeta& getMeta() { return v.meta; }
+	inline VLayout* getVLayout() { return &v; }
+	inline bool& isTombstone() { return v.isTombstone; }
 };
 
 //The helper structure to extract key from the stored key value
