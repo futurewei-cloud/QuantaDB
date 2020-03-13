@@ -505,7 +505,7 @@ class Driver {
         int serverSpan;
     };
 
-    explicit Driver(RamCloud* ramcloud, uint32_t numWarehouse, int serverSpan);
+    explicit Driver(RamCloud* ramcloud, uint32_t numWarehouse, int serverSpan, bool isMaster=true);
     Driver(RamCloud* ramcloud, TpccContext& c);
 
     void initBenchmark();

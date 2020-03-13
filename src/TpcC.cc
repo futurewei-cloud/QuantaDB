@@ -24,15 +24,18 @@ namespace RAMCloud { namespace TPCC {
 
 uint64_t tableId[100];
 
-Driver::Driver(RamCloud* ramcloud, uint32_t numWarehouse, int serverSpan)
+Driver::Driver(RamCloud* ramcloud, uint32_t numWarehouse, int serverSpan, bool isMaster)
     : ramcloud(ramcloud)
     , context(numWarehouse, serverSpan)
 {
     for (uint32_t W_ID = 1; W_ID <= context.numWarehouse; ++W_ID) {
         char tname[20];
         snprintf(tname, 20, "Warehouse%d", W_ID);
-        tableId[W_ID] = ramcloud->createTable(tname, context.serverSpan);
-        tableId[W_ID] = ramcloud->getTableId(tname);
+	if (isMaster) {
+	    // Only client master will create the table
+	    tableId[W_ID] = ramcloud->createTable(tname, context.serverSpan);
+	}
+	tableId[W_ID] = ramcloud->getTableId(tname);
     }
 }
 
