@@ -46,9 +46,7 @@ class Validator {
     bool updateKVWriteSet(TxEntry& txEntry);
 
     // used for read/write by coordinator
-    /// upon successful return, memory is allocated and pointed to by valuePtr
-    /// the caller should free the memory
-    bool read(KLayout& k, KVLayout *&kv, uint8_t *&valuePtr);
+    bool read(KLayout& k, KVLayout *&kv);
     bool write(KLayout& k, uint64_t &vPrevEta);
 
     // serialization of commit-intent validation

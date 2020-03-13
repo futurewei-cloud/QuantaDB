@@ -101,24 +101,22 @@ Validator::write(KLayout& k, uint64_t &vPrevEta) {
 	kvStore.getMeta(k, meta);
 	vPrevEta = meta.pStampPrev;
 	return true;
+
+	KVLayout *kv;
+	bool found = kvStore.getValue(k, kv);
+	if (found && !kv->isTombstone()) {
+		return true;
+	}
+	return false;
 }
 
 bool
-Validator::read(KLayout& k, KVLayout *&kv, uint8_t *&valuePtr) {
-	//This read can happen concurrently while conclude() is
+Validator::read(KLayout& k, KVLayout *&kv) {
+	//FIXME: This read can happen concurrently while conclude() is
 	//modifying the KVLayout instance.
-	//Use cStamp, a volatile variable, to detect whether there has been a change
-	//Does that work!?!?!?
-	while (kvStore.getValue(k, kv)) {
-		uint64_t cts = kv->getMeta().cStamp;
-		uint8_t *oldValuePtr = kv->v.valuePtr;
-		uint32_t length = kv->v.valueLength;
-		valuePtr = new uint8_t[length];
-		std::memcpy(valuePtr, oldValuePtr, length);
-		if (kv->getMeta().cStamp == cts && oldValuePtr == kv->v.valuePtr) {
-			return true;
-		}
-		delete valuePtr;
+	bool found = kvStore.getValue(k, kv);
+	if (found && !kv->isTombstone()) {
+		return true;
 	}
 	return false;
 }

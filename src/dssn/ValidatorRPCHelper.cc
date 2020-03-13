@@ -30,23 +30,23 @@ ValidatorRPCHelper::rejectOperation(const RejectRules* rejectRules, uint64_t ver
 
 Status
 ValidatorRPCHelper::readObject(uint64_t tableId, Key& key, Buffer* outBuffer,
-        RejectRules* rejectRules, uint64_t* outVersion,
-        bool valueOnly)
+        RejectRules* rejectRules, uint64_t* outVersion, uint64_t& cStamp, uint64_t& sStamp)
 {
     Buffer buffer;
-    uint64_t version = 0;
+    uint64_t version = 1; //fixed for now. it is supposed to be retrieved from KV store
 
     KLayout k(key.keyLength + sizeof(tableId)); //make room composite key in KVStore
     std::memcpy(k.key.get(), &tableId, sizeof(tableId));
     std::memcpy(k.key.get() + sizeof(tableId), key.key, key.keyLength);
     KVLayout *kv;
-    uint8_t *valuePtr;
-    bool found = validator.read(k, kv, *&valuePtr);
+    bool found = validator.read(k, kv);
     if (!found)
         return RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
 
-    //bool found = lookup(lock, key, type, buffer, &version, &reference);
-    //get the buffer right with kv and valuePtr
+    uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout()->valueLength));
+    std::memcpy(p, kv->getVLayout()->valuePtr, kv->getVLayout()->valueLength);
+    cStamp = kv->getMeta().cStamp;
+    sStamp = kv->getMeta().sStamp;
 
     if (outVersion != NULL)
         *outVersion = version;
@@ -58,15 +58,46 @@ ValidatorRPCHelper::readObject(uint64_t tableId, Key& key, Buffer* outBuffer,
     }
 
     Object object(buffer);
-    if (valueOnly) {
-        object.appendValueToBuffer(outBuffer);
-    } else {
-        object.appendKeysAndValueToBuffer(*outBuffer);
-    }
-    uint32_t valueLength = object.getValueLength();
+    object.appendValueToBuffer(outBuffer);
 
     return RAMCloud::STATUS_OK;
 }
+
+Status
+ValidatorRPCHelper::writeObject(Object& newObject, RejectRules* rejectRules,
+                uint64_t* outVersion, Buffer* removedObjBuffer, uint64_t& pStampPrev)
+{
+    uint16_t keyLength = 0;
+    const void *keyString = newObject.getKey(0, &keyLength);
+
+    uint64_t currentVersion = VERSION_NONEXISTENT;
+
+    uint64_t tableId = newObject.getTableId();
+    KLayout k(keyLength + sizeof(tableId)); //make room composite key in KVStore
+    std::memcpy(k.key.get(), &tableId, sizeof(tableId));
+    std::memcpy(k.key.get() + sizeof(tableId), keyString, keyLength);
+    KVLayout *kv;
+    bool found = validator.read(k, kv);
+    if (found) {
+    	currentVersion = kv->getMeta().cStamp;
+    	pStampPrev = kv->getMeta().pStampPrev;
+    }
+
+    if (rejectRules != NULL) {
+        Status status = rejectOperation(rejectRules, currentVersion);
+        if (status != RAMCloud::STATUS_OK) {
+            if (outVersion != NULL)
+                *outVersion = currentVersion;
+            return status;
+        }
+    }
+
+    if (outVersion != NULL)
+        *outVersion = currentVersion;
+
+    return RAMCloud::STATUS_OK;
+}
+
 
 } // end ValidatorRPCHandler class
 
