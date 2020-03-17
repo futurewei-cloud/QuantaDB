@@ -523,7 +523,7 @@ class Driver {
     void createTables();
     void createTable(uint32_t W_ID);
     void write(uint64_t tid, Row& r);
-    void read(Row* row);
+    bool read(Row* row);
     MultiWriteObject* multiWrite(uint64_t tid, Row& r);
 
     void addItem(uint32_t I_ID, uint32_t W_ID);
