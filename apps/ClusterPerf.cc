@@ -5932,7 +5932,7 @@ tpcc()
 	for (int t = 0; t < 5; ++t) {
 	    RAMCLOUD_LOG(NOTICE, "[%d]   %6d     |    %2.2f    |     %7.2f",
 			 t,
-			 txDone[t] + txAbort[t],
+			 (txDone[t] + txAbort[t]) / period,
 			 static_cast<double>(100 * txDone[t]) / (txDone[t] + txAbort[t]),
 			 txTotalLatency[t] / txDone[t]);
 	    allTxDone += txDone[t];
@@ -5943,13 +5943,14 @@ tpcc()
 	RAMCLOUD_LOG(NOTICE, "======== Total TPCC Transaction Rate =========");
 	RAMCLOUD_LOG(NOTICE, "tx_rate     committed(%%)   latency");
 	RAMCLOUD_LOG(NOTICE, "  %6d     |    %2.2f       |   %7.2f   ",
-		     allTxDone + allTxAbort,
+		     (allTxDone + allTxAbort) / period,
 		     static_cast<double>(100 * allTxDone) / (allTxDone + allTxAbort),
 		     allLatencyTotal/allTxDone);
 
 	allNewOrderTxDone += txDone[4];
 	allNewOrderLatencyTotal += txTotalLatency[4];
-
+	printf("clients   throughput    latency    ReadRate   worker   cleaner  compactor  cleaner  dispatch  netOut    netIn    backupWrite  backup\n");
+	printf("        (NewOrder/sec)   (us)      (ops/s)     cores     cores   free %%    free %%   utiliz. (MB/s)    (MB/s)   (MB/s)       utiliz.\n");
         printf("%5d  %8d      %8.3f ",
                 //numServers,
                 numClients-1,
