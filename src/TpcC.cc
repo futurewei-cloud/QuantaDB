@@ -515,8 +515,9 @@ readRow(Transaction* t, Row* row)
     bool objectExist;
     t->read(row->tid(), row->pKey(), row->pKeyLength(), &buf,
 	    &objectExist);
-    row->parseBuffer(buf);
-
+    if (objectExist) {
+        row->parseBuffer(buf);
+    }
     return objectExist;
 }
 
@@ -534,8 +535,9 @@ readRows(Transaction* t, std::vector<Row*>& rows)
     }
     for (size_t i = 0; i < rows.size(); ++i) {
         ops[i]->wait(&objectExist);
-        rows[i]->parseBuffer(bufs[i]);
-	if (!objectExist) {
+	if (objectExist) {
+	    rows[i]->parseBuffer(bufs[i]);
+	} else {
 	    result = false;
 	}
     }
