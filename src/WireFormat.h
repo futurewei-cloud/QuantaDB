@@ -171,6 +171,12 @@ struct ClientLease {
                                 /// provided by the coordinator.
 } __attribute__((packed));
 
+struct DSSNTxMeta {
+    uint64_t cts;
+    uint64_t eta;
+    uint64_t pi;
+} __attribute__((packed));
+
 /**
  * Each RPC request starts with this structure.
  */
@@ -567,7 +573,7 @@ struct DropTabletOwnership {
         ResponseCommon common;
     } __attribute__((packed));
 };
-
+#if 0
 struct DSSNCommit {
     static const Opcode opcode = DSSN_COMMIT;
     static const ServiceType service = DSSN_SERVICE;
@@ -620,124 +626,7 @@ struct DSSNCommit {
         bool isCommitted;
     } __attribute__((packed));
 };
-
-struct DSSNMultiOp {
-    static const Opcode opcode = DSSN_MULTI_OP;
-    static const ServiceType service = DSSN_SERVICE;
-
-    /// Type of Multi Operation
-    /// Note: Make sure INVALID is always last.
-    enum OpType { READ, REMOVE, WRITE, INVALID };
-
-    struct Request {
-        RequestCommon common;
-        uint32_t count; // Number of Part structures following this.
-        OpType type;
-
-        struct ReadPart {
-            uint64_t tableId;
-            uint16_t keyLength;
-            RejectRules rejectRules;
-
-            // In buffer: The actual key for this part
-            // follows immediately after this.
-            ReadPart(uint64_t tableId, uint16_t keyLength,
-                    RejectRules rejectRules)
-                : tableId(tableId),
-                  keyLength(keyLength),
-                  rejectRules(rejectRules)
-            {
-            }
-        } __attribute__((packed));
-
-        struct RemovePart {
-            uint64_t tableId;
-            uint16_t keyLength;
-            RejectRules rejectRules;
-
-            // In buffer: The actual key for this part
-            // follows immediately after this.
-            RemovePart(uint64_t tableId, uint16_t keyLength,
-                       RejectRules rejectRules)
-                : tableId(tableId)
-                , keyLength(keyLength)
-                , rejectRules(rejectRules)
-            {
-            }
-        } __attribute__((packed));
-
-        struct WritePart {
-            uint64_t tableId;
-            uint32_t length;        // length of keysAndValue
-            RejectRules rejectRules;
-
-            // In buffer: KeysAndValue follow immediately after this
-            WritePart(uint64_t tableId, uint32_t length,
-                        RejectRules rejectRules)
-                : tableId(tableId)
-                , length(length)
-                , rejectRules(rejectRules)
-            {
-            }
-        } __attribute__((packed));
-    } __attribute__((packed));
-    struct Response {
-        // RpcResponseCommon contains a status field. But it is not used in
-        // multiRead since there is a separate status for each object returned.
-        // Included here to fulfill requirements in common code.
-        ResponseCommon common;
-        uint32_t count; // Number of Part structures following this.
-
-        struct ReadPart {
-            // In buffer: Status/Part and object data go here. Object data are
-            // a variable number of bytes (depending on data size.)
-
-            // Each Response::Part contains the minimum object metadata we need
-            // returned, followed by the object data itself.
-
-            /// Status of the request
-            Status status;
-
-            /// Version of the object.
-            uint64_t version;
-
-            /// SSN tx data
-            uint64_t max_eta;
-            uint64_t min_pi;
-
-            /// Length of the object data following this struct.
-            uint32_t length;
-        } __attribute__((packed));
-
-        struct RemovePart {
-            // Each Response::Part contains the Status for the newly written
-            // object removed and the version.
-
-            /// Status of the remove operation.
-            Status status;
-
-            /// Version of the object that was removed, if it existed.
-            uint64_t version;
-
-            /// SSN tx data
-            uint64_t max_eta;
-        } __attribute__((packed));
-
-        struct WritePart {
-            // Each Response::Part contains the Status for the newly written
-            ///object returned and the version.
-
-            /// Status of the write operation.
-            Status status;
-
-            /// Version of the written object.
-            uint64_t version;
-
-            /// SSN tx data
-            uint64_t max_eta;
-        } __attribute__((packed));
-    } __attribute__((packed));
-};
+#endif
 
 struct Echo {
     static const Opcode opcode = ECHO;
@@ -1326,6 +1215,10 @@ struct MultiOp {
             /// Version of the object.
             uint64_t version;
 
+            /// SSN tx data
+            uint64_t max_eta;
+            uint64_t min_pi;
+
             /// Length of the object data following this struct.
             uint32_t length;
         } __attribute__((packed));
@@ -1352,6 +1245,11 @@ struct MultiOp {
             uint64_t version;
         } __attribute__((packed));
     } __attribute__((packed));
+};
+
+struct MultiOpDSSN : MultiOp {
+    static const Opcode opcode = MULTI_OP;
+    static const ServiceType service = DSSN_SERVICE;
 };
 
 struct Notification {
@@ -1443,10 +1341,18 @@ struct Read {
     struct Response {
         ResponseCommon common;
         uint64_t version;
+        /// SSN tx data
+        uint64_t max_eta;
+        uint64_t min_pi;
         uint32_t length;              // Length of the object's value in bytes.
                                       // The actual bytes of the object follow
                                       // immediately after this header.
     } __attribute__((packed));
+};
+
+struct ReadDSSN : Read {
+    static const Opcode opcode = READ;
+    static const ServiceType service = DSSN_SERVICE;
 };
 
 struct ReadKeysAndValue {
@@ -1463,11 +1369,20 @@ struct ReadKeysAndValue {
     struct Response {
         ResponseCommon common;
         uint64_t version;
+        /// SSN tx data
+        uint64_t max_eta;
+        uint64_t min_pi;
         uint32_t length;              // Length of the object's keys and value
                                       // as defined in Object.h in bytes.
                                       // The actual bytes of the object follow
                                       // immediately after this header.
     } __attribute__((packed));
+};
+
+
+struct ReadKeysAndValueDSSN : ReadKeysAndValue {
+    static const Opcode opcode = READ_KEYS_AND_VALUE;
+    static const ServiceType service = DSSN_SERVICE;
 };
 
 struct ReassignTabletOwnership {
@@ -1610,6 +1525,10 @@ struct Remove {
     } __attribute__((packed));
 };
 
+struct RemoveDSSN: Remove {
+    static const Opcode opcode = REMOVE;
+    static const ServiceType service = DSSN_SERVICE;
+};
 /**
  * Used by a master to ask an index server to remove an index entry
  * for the data this master is removing (or has removed in the past).
@@ -1825,6 +1744,11 @@ struct TakeTabletOwnership {
     } __attribute__((packed));
 };
 
+struct TakeTabletOwnershipDSSN : TakeTabletOwnership {
+    static const Opcode opcode = TAKE_TABLET_OWNERSHIP;
+    static const ServiceType service = DSSN_SERVICE;
+};
+
 struct TakeIndexletOwnership {
     static const Opcode opcode = TAKE_INDEXLET_OWNERSHIP;
     static const ServiceType service = MASTER_SERVICE;
@@ -1846,6 +1770,10 @@ struct TakeIndexletOwnership {
     } __attribute__((packed));
 };
 
+struct TakeIndexletOwnershipDSSN : TakeIndexletOwnership {
+    static const Opcode opcode = TAKE_INDEXLET_OWNERSHIP;
+    static const ServiceType service = MASTER_SERVICE;
+};
 /**
  * Represents a single participating object in a transaction.
  */
@@ -1934,9 +1862,12 @@ struct TxPrepare {
 
     struct Request {
         RequestCommon common;
-        ClientLease lease;          // Lease information for the requested
+        union {
+            ClientLease lease;      // Lease information for the requested
                                     // transaction.  To ensure prepare requests
                                     // are linearizable.
+	    DSSNTxMeta meta;
+	};
         uint64_t clientTxId;        // Client provided transaction identifier
                                     // which uniquely identifies transaction
                                     // among transactions from the same client.
@@ -2024,6 +1955,11 @@ struct TxPrepare {
         ResponseCommon common;
         Vote vote;
     } __attribute__((packed));
+};
+
+struct TxCommitDSSN : TxPrepare {
+    static const Opcode opcode = Opcode::TX_PREPARE;
+    static const ServiceType service = MASTER_SERVICE;
 };
 
 struct TxRequestAbort {

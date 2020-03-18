@@ -33,7 +33,8 @@ serviceTypeSymbol(ServiceType type) {
         case BACKUP_SERVICE:        return "BACKUP_SERVICE";
         case COORDINATOR_SERVICE:   return "COORDINATOR_SERVICE";
         case ADMIN_SERVICE:         return "ADMIN_SERVICE";
-        default:                    return "INVALID_SERVICE";
+        case DSSN_SERVICE:          return "DSSN_SERVICE";
+	default:                    return "INVALID_SERVICE";
     }
 }
 
@@ -122,6 +123,10 @@ opcodeSymbol(uint32_t opcode)
         case TX_REQUEST_ABORT:             return "TX_REQUEST_ABORT";
         case TX_HINT_FAILED:               return "TX_HINT_FAILED";
         case ECHO:                         return "ECHO";
+        case DSSN_MULTI_OP:                return "DSSN_MULTI_OP";
+        case DSSN_COMMIT:                  return "DSSN_COMMIT";
+        case DSSN_SEND_SSN_ASYNC:          return "DSSN_SEND_SSN_ASYNC";
+        case DSSN_REQUEST_SSN_ASYNC:       return "DSSN_REQUEST_SSN_ASYNC";
         case ILLEGAL_RPC_TYPE:             return "ILLEGAL_RPC_TYPE";
     }
 
