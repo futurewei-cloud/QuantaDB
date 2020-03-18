@@ -5685,22 +5685,17 @@ tpcc_oneClient(double runSeconds, TPCC::Driver* driver, bool latencyTest = false
 	        //RAMCLOUD_LOG(NOTICE, "Status");
                 latency = driver->txOrderStatus(W_ID, &outcome);
                 txType = 1;
-            }
-#if 0
-	    else if (randNum < 51) {
+            } else if (randNum < 51) {
 	        RAMCLOUD_LOG(NOTICE, "Delivery");
                 for (uint32_t D_ID = 1; D_ID <= 10; D_ID++) {
                     latency += driver->txDelivery(W_ID, D_ID, &outcome);
                 }
                 txType = 2;
-            }
-	    else if (randNum < 55) {
+            } else if (randNum < 55) {
 	        RAMCLOUD_LOG(NOTICE, "Stocck");
                 latency = driver->txStockLevel(W_ID, 1U /*fixed D_ID*/, &outcome);
                 txType = 3;
-            }
-#endif
-	    else {
+            } else {
 	        // RAMCLOUD_LOG(NOTICE, "NewOrder");
                 latency = driver->txNewOrder(W_ID, &outcome);
                 txType = 4;
@@ -5893,6 +5888,9 @@ tpcc()
 	RAMCLOUD_LOG(NOTICE, "Collect result from Clients");
         int allNewOrderTxDone = 0;
         double allNewOrderLatencyTotal = 0;
+	int txDone[5] = { 0 };
+	int txAbort[5] = { 0 };
+	double txTotalLatency[5] = { 0 };
         for (int i = 1; i < numClients; ++i) {
             Buffer buf;
             try {
@@ -5918,11 +5916,41 @@ tpcc()
                     stat->txPerformedCount[t],
                     static_cast<double>(100 * stat->txPerformedCount[t]) / sum,
                     stat->txAbortCount[t]);
+		txDone[t] += stat->txPerformedCount[t];
+		txAbort[t] += stat->txAbortCount[t];
+		txTotalLatency[t] += stat->cumulativeLatency[t];
             }
-	    allNewOrderTxDone += stat->txPerformedCount[4];
-	    allNewOrderLatencyTotal += stat->cumulativeLatency[4];
+	    //allNewOrderTxDone += stat->txPerformedCount[4];
+	    //allNewOrderLatencyTotal += stat->cumulativeLatency[4];
         }
 
+	RAMCLOUD_LOG(NOTICE, "======== Total TPCC Transaction Rate (By Category) =========");
+	RAMCLOUD_LOG(NOTICE, "type    tx_rate   committed(%%)   latency");
+	int allTxDone = 0;
+	int allTxAbort = 0;
+	double allLatencyTotal = 0;
+	for (int t = 0; t < 5; ++t) {
+	    RAMCLOUD_LOG(NOTICE, "[%d]   %6d     |    %2.2f    |     %7.2f",
+			 t,
+			 (txDone[t] + txAbort[t]) / period,
+			 static_cast<double>(100 * txDone[t]) / (txDone[t] + txAbort[t]),
+			 txTotalLatency[t] / txDone[t]);
+	    allTxDone += txDone[t];
+	    allTxAbort += txAbort[t];
+	    allLatencyTotal += txTotalLatency[t];
+	}
+
+	RAMCLOUD_LOG(NOTICE, "======== Total TPCC Transaction Rate =========");
+	RAMCLOUD_LOG(NOTICE, "tx_rate     committed(%%)   latency");
+	RAMCLOUD_LOG(NOTICE, "  %6d     |    %2.2f       |   %7.2f   ",
+		     (allTxDone + allTxAbort) / period,
+		     static_cast<double>(100 * allTxDone) / (allTxDone + allTxAbort),
+		     allLatencyTotal/allTxDone);
+
+	allNewOrderTxDone += txDone[4];
+	allNewOrderLatencyTotal += txTotalLatency[4];
+	printf("clients   throughput    latency    ReadRate   worker   cleaner  compactor  cleaner  dispatch  netOut    netIn    backupWrite  backup\n");
+	printf("        (NewOrder/sec)   (us)      (ops/s)     cores     cores   free %%    free %%   utiliz. (MB/s)    (MB/s)   (MB/s)       utiliz.\n");
         printf("%5d  %8d      %8.3f ",
                 //numServers,
                 numClients-1,

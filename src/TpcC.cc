@@ -468,12 +468,17 @@ Driver::write(uint64_t tid, Row& r)
     ramcloud->write(tid, r.pKey(), r.pKeyLength(), r.value(), r.valueLength());
 }
 
-void
+bool
 Driver::read(Row* row)
 {
     Buffer buf;
-    ramcloud->read(row->tid(), row->pKey(), row->pKeyLength(), &buf);
-    row->parseBuffer(buf);
+    bool objectExist;
+    ramcloud->read(row->tid(), row->pKey(), row->pKeyLength(), &buf, NULL,
+		   NULL, &objectExist);
+    if (objectExist) {
+        row->parseBuffer(buf);
+    }
+    return objectExist;
 }
 
 MultiWriteObject*
@@ -503,18 +508,25 @@ readRows(Transaction* t, Row** rows, int numRows)
     }
 } */
 
-static void
+static bool
 readRow(Transaction* t, Row* row)
 {
     Buffer buf;
-    t->read(row->tid(), row->pKey(), row->pKeyLength(), &buf);
-    row->parseBuffer(buf);
+    bool objectExist;
+    t->read(row->tid(), row->pKey(), row->pKeyLength(), &buf,
+	    &objectExist);
+    if (objectExist) {
+        row->parseBuffer(buf);
+    }
+    return objectExist;
 }
 
-static void
+static bool
 readRows(Transaction* t, std::vector<Row*>& rows)
 {
     Buffer bufs[rows.size()];
+    bool objectExist;
+    bool result = true;
     Tub<Transaction::ReadOp> ops[rows.size()];
     for (size_t i = 0; i < rows.size(); ++i) {
         ops[i].construct(t, rows[i]->tid(),
@@ -522,9 +534,15 @@ readRows(Transaction* t, std::vector<Row*>& rows)
                          &bufs[i], true);
     }
     for (size_t i = 0; i < rows.size(); ++i) {
-        ops[i]->wait();
-        rows[i]->parseBuffer(bufs[i]);
+        ops[i]->wait(&objectExist);
+	if (objectExist) {
+	    rows[i]->parseBuffer(bufs[i]);
+	} else {
+	    result = false;
+	}
     }
+
+    return result;
 }
 
 /*
@@ -655,9 +673,12 @@ Driver::txNewOrder(uint32_t W_ID, bool* outcome, InputNewOrder* in)
     }
     //TODO: Try-catch not found exception.
     //readRowsMulti(&t, readList);
-    readRows(&t, readList);
+    *outcome = readRows(&t, readList);
     //readRowsSync(&t, readList);
-
+    if (!*outcome) {
+        //read failed
+        return 0;
+    }
     // Writes
     uint32_t O_ID = d.data.D_NEXT_O_ID++;
     writeRow(&t, &d);
@@ -769,6 +790,7 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
     // Input Data Generation
     ///////////////////////////
     Tub<InputPayment> realInput;
+    bool isObjectExist = false;
     if (!in) {
         realInput.construct();
         realInput->generate(W_ID, context.numWarehouse);
@@ -795,7 +817,11 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
 
     if (byLastName) {
         t.read(tableId[W_ID], &nameKey, static_cast<uint16_t>(sizeof(nameKey)),
-               &buf_cid);
+               &buf_cid, &isObjectExist);
+	if (!isObjectExist) {
+	    *outcome = false;
+	    return 0;
+	}
         numCustomer = *(buf_cid.getStart<uint32_t>());
         buf_idx += sizeof32(numCustomer);
         if (numCustomer == 0) {
@@ -820,7 +846,11 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
     Customer c(C_ID, C_D_ID, C_W_ID);
     readList.push_back(&c);
 
-    readRows(&t, readList);
+    *outcome = readRows(&t, readList);
+
+    if (!*outcome) {
+        return 0;
+    }
 
     ///////////////////////////
     // Process: Write.
@@ -896,6 +926,7 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
     // Input Data Generation
     ///////////////////////////
     Tub<InputOrderStatus> realInput;
+    bool isObjectExist = false;
     if (!in) {
         realInput.construct();
         realInput->generate();
@@ -918,7 +949,11 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
     uint32_t buf_idx = 0;
     if (byLastName) {
         t.read(tableId[W_ID], &nameKey, static_cast<uint16_t>(sizeof(nameKey)),
-               &buf_cid);
+               &buf_cid, &isObjectExist);
+	if (!isObjectExist) {
+	    *outcome = false;
+	    return 0;
+	}
         numCustomer = *(buf_cid.getStart<uint32_t>());
         buf_idx += sizeof32(numCustomer);
         if (numCustomer == 0) {
@@ -938,13 +973,21 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
     readList.push_back(&c);
 
     Buffer buf_oid;
-    t.read(tableId[W_ID], c.pKey(), c.lastOidKeyLength(), &buf_oid);
+    t.read(tableId[W_ID], c.pKey(), c.lastOidKeyLength(), &buf_oid,
+	   &isObjectExist);
+    if (!isObjectExist) {
+        *outcome = false;
+	return 0;
+    }
     uint32_t O_ID = *(buf_oid.getStart<uint32_t>());
 
     Order o(O_ID, D_ID, W_ID);
     readList.push_back(&o);
 
-    readRows(&t, readList);
+    *outcome = readRows(&t, readList);
+    if (!*outcome) {
+        return 0;
+    }
     readList.clear();
 
     Tub<OrderLine> ols[15];
@@ -952,8 +995,10 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
         ols[i].construct(O_ID, D_ID, W_ID, i);
         readList.push_back(ols[i].get());
     }
-    readRows(&t, readList);
-
+    *outcome = readRows(&t, readList);
+    if (!*outcome) {
+        return 0;
+    }
     *outcome = t.commit();
     uint64_t elapsed = Cycles::rdtsc() - startCycles;
     return Cycles::toSeconds(elapsed) *1e06;
@@ -979,8 +1024,10 @@ Driver::txDelivery(uint32_t W_ID, uint32_t D_ID, bool* outcome, InputDelivery *i
     Transaction t(ramcloud);
 
     District d(D_ID, W_ID);
-    readRow(&t, &d);
-
+    *outcome = readRow(&t, &d);
+    if (!*outcome) {
+        return 0;
+    }
     uint32_t O_ID = d.data.lowestToDeliverOid;
     if (O_ID >= d.data.D_NEXT_O_ID) { //No new order.
         *outcome = true;
@@ -994,7 +1041,10 @@ Driver::txDelivery(uint32_t W_ID, uint32_t D_ID, bool* outcome, InputDelivery *i
     t.remove(no.tid(), no.pKey(), no.pKeyLength());
 
     Order o(O_ID, D_ID, W_ID);
-    readRow(&t, &o);
+    *outcome = readRow(&t, &o);
+    if (!*outcome) {
+        return 0;
+    }
     o.data.O_CARRIER_ID = in->O_CARRIER_ID;
     writeRow(&t, &o);
 
@@ -1008,7 +1058,10 @@ Driver::txDelivery(uint32_t W_ID, uint32_t D_ID, bool* outcome, InputDelivery *i
         ols[i].construct(O_ID, D_ID, W_ID, i);
         readList.push_back(ols[i].get());
     }
-    readRows(&t, readList);
+    *outcome = readRows(&t, readList);
+    if (!*outcome) {
+        return 0;
+    }
 
     double sum = 0;
     for (uint8_t i = 0; i < o.data.O_OL_CNT; ++i) {
@@ -1045,18 +1098,26 @@ Driver::txStockLevel(uint32_t W_ID, uint32_t D_ID, bool* outcome, InputStockLeve
     uint64_t startCycles = Cycles::rdtsc();
 
     District d(D_ID, W_ID);
-    read(&d);
+    *outcome = read(&d);
+    if (!*outcome) {
+        return 0;
+    }
 
     std::set<uint32_t> iids;
     for (uint32_t O_ID = d.data.D_NEXT_O_ID - 1;
          O_ID >= d.data.D_NEXT_O_ID - 20;
          --O_ID) {
         Order o(O_ID, D_ID, W_ID);
-        read(&o);
-
+        *outcome = read(&o);
+	if (!*outcome) {
+	    return 0;
+	}
         for (uint8_t i = 0; i < o.data.O_OL_CNT; ++i) {
             OrderLine ol(O_ID, D_ID, W_ID, i);
-            read(&ol);
+            *outcome = read(&ol);
+	    if (!*outcome) {
+	        return 0;
+	    }
             iids.insert(ol.data.OL_I_ID);
         }
     }
@@ -1066,7 +1127,10 @@ Driver::txStockLevel(uint32_t W_ID, uint32_t D_ID, bool* outcome, InputStockLeve
             it != iids.end();
             ++it) {
         Stock s(*it, W_ID);
-        read(&s);
+        *outcome = read(&s);
+	if (!*outcome) {
+	    return 0;
+	}
         if (s.data.S_QUANTITY < in->threshold) {
             lowStock.push_back(*it);
         }
