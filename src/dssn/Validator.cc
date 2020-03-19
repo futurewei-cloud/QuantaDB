@@ -344,7 +344,7 @@ Validator::conclude(TxEntry& txEntry) {
      * log the commit result of a local tx.
      * log the commit/abort result of a distributed tx as its CI has been logged
      */
-    if (txEntry.getShardSet().size() > 1
+    if (txEntry.getPeerSet().size() > 1
             || txEntry.getTxState() == TxEntry::TX_COMMIT) {
         //WAL and persist value LATER
 

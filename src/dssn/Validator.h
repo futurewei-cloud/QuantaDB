@@ -7,18 +7,15 @@
 #define VALIDATOR_H
 
 #include "Common.h"
-#include "Object.h"
 #include "ActiveTxSet.h"
 #include "BlockedTxSet.h"
 #include "TxEntry.h"
 #include "WaitQueue.h"
 #include "KVStore.h"
 #include "HashmapKVStore.h"
+#include "PeerInfo.h"
 
 namespace DSSN {
-typedef RAMCloud::Object Object;
-typedef RAMCloud::KeyLength KeyLength;
-
 
 /**
  * Supposedly one Validator instance per storage node, to handle DSSN validation.
@@ -33,6 +30,7 @@ class Validator {
     WaitQueue localTxQueue;
     ActiveTxSet activeTxSet;
     BlockedTxSet blockedTxSet;
+    PeerInfo peerInfo;
     uint64_t alertThreshold = 1000; //LATER
     uint64_t lastCTS = 0;
     bool isUnderTest = false;
