@@ -32,6 +32,7 @@ class CoordinatorService;
 class CoordinatorSession;
 class Dispatch;
 class DispatchExec;
+class DSSNService;
 class ExternalStorage;
 class Logger;
 class MasterRecoveryManager;
@@ -173,7 +174,15 @@ class Context {
         return reinterpret_cast<MasterService*>(
                 services[WireFormat::MASTER_SERVICE]);
     }
-
+    /**
+     * Returns the DSSNService associated with this context, if there is one,
+     * or NULL if there is none.
+     */
+    DSSNService*
+    getDSSNService() {
+        return reinterpret_cast<DSSNService*>(
+                services[WireFormat::DSSN_SERVICE]);
+    }
   PRIVATE:
     void destroy();
     DISALLOW_COPY_AND_ASSIGN(Context);

@@ -20,6 +20,7 @@
 #include "BackupService.h"
 #include "CoordinatorClient.h"
 #include "CoordinatorSession.h"
+#include "DSSNService.h"
 #include "FailureDetector.h"
 #include "MasterService.h"
 #include "ServerConfig.h"
@@ -96,7 +97,11 @@ class Server {
      * See config.services.
      */
     Tub<MasterService> master;
-
+    /**
+     * The DSSNService running on this Server, if requested, else empty.
+     * See config.services.
+     */
+    Tub<DSSN::DSSNService> dssnMaster;
     /**
      * The BackupService running on this Server, if requested, else empty.
      * See config.services.
