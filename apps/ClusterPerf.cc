@@ -209,6 +209,14 @@ struct TimeDist {
 // Forward declarations:
 extern void readThroughputMaster(int numObjects, int size, uint16_t keyLength);
 
+enum ClientState {
+    CS_NONE,
+    CS_WAIT,
+    CS_READY,
+    CS_RUN,
+    CS_DONE
+};
+
 //----------------------------------------------------------------------
 // Utility functions used by the test functions
 //----------------------------------------------------------------------
@@ -2091,6 +2099,7 @@ getCommand(char* buffer, uint32_t size, bool remove = true)
         catch (TableDoesntExistException& e) {
         }
         catch (ObjectDoesntExistException& e) {
+	    return buffer;
         }
         Cycles::sleep(10000);
     }
@@ -2200,6 +2209,7 @@ sendCommand(const char* command, const char* state, int firstSlave,
                     downCast<uint16_t>(key.length()), command);
         }
     }
+    Cycles::sleep(2*1000000);
     if (state != NULL) {
         for (int i = 0; i < numSlaves; i++) {
             waitSlave(firstSlave+i, state);
@@ -5668,20 +5678,25 @@ tpcc_oneClient(double runSeconds, TPCC::Driver* driver, bool latencyTest = false
         int txType;
         try {
             if (randNum < 43) {
+	        //RAMCLOUD_LOG(NOTICE, "Payment");
                 latency = driver->txPayment(W_ID, &outcome);
                 txType = 0;
             } else if (randNum < 47) {
+	        //RAMCLOUD_LOG(NOTICE, "Status");
                 latency = driver->txOrderStatus(W_ID, &outcome);
                 txType = 1;
             } else if (randNum < 51) {
+	        RAMCLOUD_LOG(NOTICE, "Delivery");
                 for (uint32_t D_ID = 1; D_ID <= 10; D_ID++) {
                     latency += driver->txDelivery(W_ID, D_ID, &outcome);
                 }
                 txType = 2;
             } else if (randNum < 55) {
+	        RAMCLOUD_LOG(NOTICE, "Stocck");
                 latency = driver->txStockLevel(W_ID, 1U /*fixed D_ID*/, &outcome);
                 txType = 3;
             } else {
+	        // RAMCLOUD_LOG(NOTICE, "NewOrder");
                 latency = driver->txNewOrder(W_ID, &outcome);
                 txType = 4;
             }
@@ -5799,12 +5814,12 @@ void printPerfStats(PerfStats& startStats, PerfStats& finishStats) {
             startStats.logSyncCycles) / elapsedCycles;
 
     printf("   %8.2f   %8.3f %8.3f %8.1f  %8.1f  %8.3f "
-            "%8.2f  %8.2f  %8.2f  %8.2f  %8.2f  %8.2f  %3ld  %8.2f  %8.2f  %8.2f\n",
+            "%8.2f  %8.2f  %8.2f  %8.2f  %8.2f  %8.2f  %8.2f  %8.2f  %8.2f  %8.2f\n",
             readRate/1e03, utilization, cleanerUtilization,
             compactorFreePct, cleanerFreePct, dispatchUtilization,
             netOutRate/1e06, netInRate/1e06,
             backupReceiveTotal, backupWriteTotal, backupWriteRate, backupUtilization,
-            memoryUtilization, logBytesRate, replicationRpcRate, logSyncCycles);
+	    memoryUtilization, logBytesRate, replicationRpcRate, logSyncCycles);
 }
 
 // This benchmark measures total throughput of a single server (in objects
@@ -5819,14 +5834,20 @@ tpcc()
     // 10 warehouse per machine?
     if (clientIndex == 0) {
         // This is the master client.
-        TPCC::Driver driver(cluster, numWarehouses, 1);
+        int numTlbNodes = (numWarehouses > numServers) ? numServers : numWarehouses;
+	RAMCLOUD_LOG(NOTICE, "TPCC test parameters (numServers = %d, numTlbNodes=%d, numWarehouses=%d, numClient=%d, txSpan=%d)",
+		     numServers, numTlbNodes, numWarehouses, numClients, txSpan);
+        //Tell slave clients to wait while the DB is being populated.
+        sendCommand("wait", "wait", 1, numClients-1);
+	// The TPCC Driver constructor create table per Warehouse at offset 1
+        TPCC::Driver driver(cluster, numWarehouses, txSpan);
 
+	//Prepopulate the Database
+	driver.initBenchmark();
+
+	//Tell clients to go initialize the table.
+	sendCommand("init", "ready", 1, numClients-1);
         uint64_t startInitCycles = Cycles::rdtsc();
-        Cycles::sleep(15 * 1000000);
-        for (int slave = 1; slave < numClients; ++slave) {
-            waitSlave(slave, "ready", 60.0);
-        }
-
         uint64_t initElapsed = Cycles::rdtsc() - startInitCycles;
         RAMCLOUD_LOG(NOTICE, "TPCC benchmark initialization completed in %lfms.",
                  Cycles::toSeconds(initElapsed) *1e03);
@@ -5835,37 +5856,41 @@ tpcc()
         int period = 30;
         sendCommand("run", "running", 1, numClients-1);
 
-        PerfStats startStats[numServers];
-        PerfStats finishStats[numServers];
+        PerfStats startStats[numTlbNodes];
+        PerfStats finishStats[numTlbNodes];
         Buffer statsBuffer;
 
         RAMCLOUD_LOG(NOTICE, "Started Clients");
 
-        for (int i = 0; i < numServers; ++i) {
-            cluster->objectServerControl(TPCC::tableId[i+1], "abc", 3,
+        for (int i = 1; i < numTlbNodes; ++i) {
+            cluster->objectServerControl(TPCC::tableId[i], "not-used", 3,
                     WireFormat::ControlOp::GET_PERF_STATS, NULL, 0,
                     &statsBuffer);
             startStats[i] = *statsBuffer.getStart<PerfStats>();
         }
-
+        RAMCLOUD_LOG(NOTICE, "Collect start stats");
         Cycles::sleep(period * 1000000);
-
-        for (int i = 0; i < numServers; ++i) {
-            cluster->objectServerControl(TPCC::tableId[i + 1], "abc", 3,
+	RAMCLOUD_LOG(NOTICE, "Collect end stats");
+        for (int i = 1; i < numTlbNodes; ++i) {
+            cluster->objectServerControl(TPCC::tableId[i], "not-used", 3,
                     WireFormat::ControlOp::GET_PERF_STATS, NULL, 0,
                     &statsBuffer);
             finishStats[i] = *statsBuffer.getStart<PerfStats>();
         }
 
+	RAMCLOUD_LOG(NOTICE, "Stop Clients");
         try {
             sendCommand("done", "done", 1, numClients-1);
         } catch (Exception& e) {
             RAMCLOUD_LOG(ERROR, "%s", e.what());
         }
-        Cycles::sleep(10 * 1000000);
 
+	RAMCLOUD_LOG(NOTICE, "Collect result from Clients");
         int allNewOrderTxDone = 0;
         double allNewOrderLatencyTotal = 0;
+	int txDone[5] = { 0 };
+	int txAbort[5] = { 0 };
+	double txTotalLatency[5] = { 0 };
         for (int i = 1; i < numClients; ++i) {
             Buffer buf;
             try {
@@ -5873,6 +5898,7 @@ tpcc()
             } catch (std::exception& e) {
                 printf("Exception thrown while fetching client %d stat.\n", i);
                 RAMCLOUD_LOG(ERROR, "While fetching client stat. %s", e.what());
+		continue;
             }
             TPCC::TpccStat* stat = buf.getStart<TPCC::TpccStat>();
 
@@ -5890,18 +5916,47 @@ tpcc()
                     stat->txPerformedCount[t],
                     static_cast<double>(100 * stat->txPerformedCount[t]) / sum,
                     stat->txAbortCount[t]);
+		txDone[t] += stat->txPerformedCount[t];
+		txAbort[t] += stat->txAbortCount[t];
+		txTotalLatency[t] += stat->cumulativeLatency[t];
             }
-
-            allNewOrderTxDone += stat->txPerformedCount[4];
-            allNewOrderLatencyTotal += stat->cumulativeLatency[4];
+	    //allNewOrderTxDone += stat->txPerformedCount[4];
+	    //allNewOrderLatencyTotal += stat->cumulativeLatency[4];
         }
 
+	RAMCLOUD_LOG(NOTICE, "======== Total TPCC Transaction Rate (By Category) =========");
+	RAMCLOUD_LOG(NOTICE, "type    tx_rate   committed(%%)   latency");
+	int allTxDone = 0;
+	int allTxAbort = 0;
+	double allLatencyTotal = 0;
+	for (int t = 0; t < 5; ++t) {
+	    RAMCLOUD_LOG(NOTICE, "[%d]   %6d     |    %2.2f    |     %7.2f",
+			 t,
+			 (txDone[t] + txAbort[t]) / period,
+			 static_cast<double>(100 * txDone[t]) / (txDone[t] + txAbort[t]),
+			 txTotalLatency[t] / txDone[t]);
+	    allTxDone += txDone[t];
+	    allTxAbort += txAbort[t];
+	    allLatencyTotal += txTotalLatency[t];
+	}
+
+	RAMCLOUD_LOG(NOTICE, "======== Total TPCC Transaction Rate =========");
+	RAMCLOUD_LOG(NOTICE, "tx_rate     committed(%%)   latency");
+	RAMCLOUD_LOG(NOTICE, "  %6d     |    %2.2f       |   %7.2f   ",
+		     (allTxDone + allTxAbort) / period,
+		     static_cast<double>(100 * allTxDone) / (allTxDone + allTxAbort),
+		     allLatencyTotal/allTxDone);
+
+	allNewOrderTxDone += txDone[4];
+	allNewOrderLatencyTotal += txTotalLatency[4];
+	printf("clients   throughput    latency    ReadRate   worker   cleaner  compactor  cleaner  dispatch  netOut    netIn    backupWrite  backup\n");
+	printf("        (NewOrder/sec)   (us)      (ops/s)     cores     cores   free %%    free %%   utiliz. (MB/s)    (MB/s)   (MB/s)       utiliz.\n");
         printf("%5d  %8d      %8.3f ",
                 //numServers,
                 numClients-1,
                 allNewOrderTxDone / period,
                 allNewOrderLatencyTotal / allNewOrderTxDone);
-        for (int i = 0; i < numServers; ++i) {
+        for (int i = 0; i < numTlbNodes; ++i) {
             if (i > 0) {
                 printf("                              ");
             }
@@ -5910,27 +5965,43 @@ tpcc()
 
     } else {
         // Slaves execute the following code, which creates load by
-        // issuing individual reads.
-        bool running = false;
-
+        // issuing individual TPCC transaction.
+        int state = CS_NONE;
         uint64_t startTime;
         TPCC::TpccStat tpccCumStat;
-
-        TPCC::Driver driver(cluster, numWarehouses, 1);
-        uint32_t W_ID = clientIndex % (numWarehouses) + 1;
-        driver.initBenchmark(W_ID);
-        setSlaveState("ready");
-
+        TPCC::Driver* driver = NULL;
+	//Give master client a head start
+	Cycles::sleep(1 * 1000000);
+	
         while (true) {
             char command[20];
             //if (running) {
                 // Write out some statistics for debugging.
             //}
             getCommand(command, sizeof(command), false);
-            if (strcmp(command, "run") == 0) {
-                if (!running) {
+	    //RAMCLOUD_LOG(NOTICE, "Got command: %s", command);
+	    if (strcmp(command, "wait") == 0) {
+	        //Waiting for initialization
+	        if(state == CS_NONE) {
+		  setSlaveState("wait");
+		  state = CS_WAIT;
+		}
+		Cycles::sleep(1 * 1000000);
+	    }
+	    else if (strcmp(command, "init") == 0) {
+	        if (state == CS_WAIT) {
+		    //Initializing
+		    bool isMaster = false;
+		    driver = new TPCC::Driver(cluster, numWarehouses, txSpan, isMaster);
+		    setSlaveState("ready");
+		    state = CS_READY;
+		}
+		Cycles::sleep(1 * 1000000);
+	    }
+            else if (strcmp(command, "run") == 0) {
+                if (state == CS_READY) {
                     setSlaveState("running");
-                    running = true;
+                    state=CS_RUN;
                     RAMCLOUD_LOG(NOTICE,
                             "Starting TPC-C benchmark");
                 }
@@ -5938,7 +6009,7 @@ tpcc()
                 // Perform reads for a second (then check to see
                 // if the experiment is over).
                 startTime = Cycles::rdtsc();
-                TPCC::TpccStat tpccStat = tpcc_oneClient(0.5, &driver);
+                TPCC::TpccStat tpccStat = tpcc_oneClient(0.5, driver);
                 tpccCumStat += tpccStat;
 
                 double totalTime = Cycles::toSeconds(Cycles::rdtsc()
@@ -5951,10 +6022,10 @@ tpcc()
                             tpccCumStat.cumulativeLatency[4] / tpccCumStat.txPerformedCount[4]);
 
             } else if (strcmp(command, "done") == 0) {
-                //Save result to data table.
+	        //Client Master told slave to end, Save result to data table.
+	        cluster->write(dataTable, &clientIndex, sizeof(clientIndex),
+			       &tpccCumStat, sizeof(tpccCumStat));
                 setSlaveState("done");
-                cluster->write(dataTable, &clientIndex, sizeof(clientIndex),
-                              &tpccCumStat, sizeof(tpccCumStat));
                 RAMCLOUD_LOG(NOTICE, "Ending TPC-C benchmark");
                 return;
             } else {
@@ -7831,7 +7902,7 @@ TestInfo tests[] = {
 };
 
 int
-main(int argc, char *argv[])
+main(int argc, char *argv[]) {
 try
 {
     Logger::installCrashBacktraceHandlers();
@@ -7926,50 +7997,17 @@ try
 
     RamCloud r(&optionParser.options);
     context = r.clientContext;
-    /*  TODO: remove
-    =======
-    po::positional_options_description desc2;
-    desc2.add("testName", -1);
-    po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).
-            options(desc).positional(desc2).run(), vm);
-    po::notify(vm);
-    if (logFile.size() != 0) {
-        // Redirect both stdout and stderr to the log file.
-        FILE* f = fopen(logFile.c_str(), "w");
-        if (f == NULL) {
-            RAMCLOUD_LOG(ERROR, "couldn't open log file '%s': %s",
-                    logFile.c_str(), strerror(errno));
-            exit(1);
-        }
-        stdout = stderr = f;
-        Logger::get().setLogFile(fileno(f));
-    }
-    Logger::get().setLogLevels(logLevel);
-    if (vm.count("help")) {
-        std::cout << desc << '\n';
-        exit(0);
-    }
-    if (coordinatorLocator.empty()) {
-        RAMCLOUD_LOG(ERROR, "missing required option --coordinator");
-        exit(1);
-    }
-
-    Context realContext;
-    context = &realContext;
-    RamCloud r(&realContext, coordinatorLocator.c_str());
->>>>>>> 7c0d289e... TPC-C benchmark implementation for RIFL paper:src/ClusterPerf.cc
-    */
     
     cluster = &r;
-    Cycles::sleep(5*1000000);
-//    if (clientIndex == 0)
-    cluster->createTable("data");
-//    Cycles::sleep(2*1000000);
+
+    if (clientIndex == 0) {
+        //Only master client create the database table
+        cluster->createTable("data");
+	cluster->createTable("control");
+    }
+    //Give a chance for the tables to be created
+    Cycles::sleep(1*1000000);
     dataTable = cluster->getTableId("data");
-//    if (clientIndex == 0)
-    cluster->createTable("control");
-//    Cycles::sleep(2*1000000);
     controlTable = cluster->getTableId("control");
 
     if (testNames.size() == 0) {
@@ -8003,12 +8041,15 @@ try
     }
 
     TimeTrace::printToLog();
-}
-catch (std::exception& e) {
+ } catch (std::exception& e) {
     RAMCLOUD_LOG(ERROR, "%s", e.what());
     Logger::get().sync();
     exit(1);
+ }
+ RAMCLOUD_LOG(NOTICE, "exiting...");
+ return 0;
 }
+
 
 #if __GNUC__ && (__GNUC__ >= 7)
 #pragma GCC diagnostic pop
