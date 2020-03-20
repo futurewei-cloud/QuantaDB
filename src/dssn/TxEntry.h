@@ -39,7 +39,8 @@ class TxEntry {
     uint32_t commitIntentState;
 
     //Set of IDs of participant shards, excluding self
-    std::vector<uint64_t> shardSet;
+    std::set<uint64_t> peerSet; // Fixme: changed to scoped_array?
+    std::set<uint64_t> peerSeenSet;
 
     //write set and read set under validation
     uint32_t writeSetSize;
@@ -119,7 +120,8 @@ class TxEntry {
     inline uint64_t getPi() { return pi; }
     inline uint32_t getTxState() { return txState; }
     inline uint32_t getTxCIState() { return commitIntentState; }
-    inline auto& getShardSet() { return shardSet; }
+    inline auto& getPeerSet() { return peerSet; }
+    void insertPeerSeenSet(uint64_t peerId) { peerSeenSet.insert(peerId); }
     inline auto& getWriteSet() { return writeSet; }
     inline auto& getReadSet() { return readSet; }
     inline auto getWriteSetSize() { return writeSetSize; }

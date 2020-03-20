@@ -88,6 +88,7 @@ SHARED_SRCFILES := \
 		   src/dssn/HashmapKVStore.cc \
 		   src/dssn/KVStore.cc \
 		   src/dssn/WaitQueue.cc \
+		   src/dssn/PeerInfo.cc \
 		   src/dssn/DSSNService.cc \
 		   src/IndexKey.cc \
 		   src/IndexletManager.cc \

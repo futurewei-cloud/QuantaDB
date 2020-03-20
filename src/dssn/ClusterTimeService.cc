@@ -103,11 +103,14 @@ using namespace RAMCloud;
 ClusterTimeService::ClusterTimeService()
 {
     char ifname[64], ipaddr[64];
-    uint32_t ret, i1, i2, i3, i4;
+    uint32_t i1, i2, i3, i4;
 
-    ret = getifname(ifname, sizeof(ifname)); assert(ret == 0);
-    ret = getipaddr(ifname, ipaddr, sizeof(ipaddr)); assert(ret == 0);
-    ret = sscanf(ipaddr, "%d.%d.%d.%d", &i1, &i2, &i3, &i4); assert(ret == 4);
+    if ((getifname(ifname, sizeof(ifname)) != 0) ||
+        (getipaddr(ifname, ipaddr, sizeof(ipaddr)) != 0) ||
+        (sscanf(ipaddr, "%d.%d.%d.%d", &i1, &i2, &i3, &i4) != 4)) {
+        printf("Fatal Error: can not get default IP addr\n");
+        *(int *)0 = 0;  // panic
+    }
 
     node_id = i4; 
     last_usec = getusec();
