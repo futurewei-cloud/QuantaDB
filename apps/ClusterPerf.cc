@@ -7999,6 +7999,7 @@ try
     context = r.clientContext;
     
     cluster = &r;
+    srand(clientIndex);
 
     if (clientIndex == 0) {
         //Only master client create the database table
