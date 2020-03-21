@@ -62,5 +62,5 @@ class WaitQueue {
 
 } // end namespace DSSN
 
-#endif  /* ACTIVE_TX_SET_H */
+#endif  /* WAIT_QUEUE_H */
 

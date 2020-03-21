@@ -27,6 +27,8 @@ class CountBloomFilter {
     CountBloomFilter& operator=(const CountBloomFilter&);
 
     PUBLIC:
+	CountBloomFilter();
+
     // false if the key is failed to be added due to overflow
     bool add(const T *key, uint32_t size);
 

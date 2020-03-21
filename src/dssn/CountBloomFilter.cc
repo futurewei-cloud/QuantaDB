@@ -9,6 +9,10 @@
 
 namespace DSSN {
 
+CountBloomFilter::CountBloomFilter() {
+	clear();
+}
+
 bool
 CountBloomFilter::clear() {
     for (uint32_t i = 0; i < BFSize; i++) {

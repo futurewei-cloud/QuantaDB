@@ -14,6 +14,8 @@
 #include "KVStore.h"
 #include "HashmapKVStore.h"
 #include "PeerInfo.h"
+#include "ConcludeQueue.h"
+#include <boost/lockfree/queue.hpp>
 
 namespace DSSN {
 
@@ -31,6 +33,7 @@ class Validator {
     ActiveTxSet activeTxSet;
     BlockedTxSet blockedTxSet;
     PeerInfo peerInfo;
+	ConcludeQueue concludeQueue;
     uint64_t alertThreshold = 1000; //LATER
     uint64_t lastCTS = 0;
     bool isUnderTest = false;
@@ -42,10 +45,6 @@ class Validator {
     bool updateTxEtaPi(TxEntry& txEntry);
     bool updateKVReadSetEta(TxEntry& txEntry);
     bool updateKVWriteSet(TxEntry& txEntry);
-
-    // used for read/write by coordinator
-    bool read(KLayout& k, KVLayout *&kv);
-    bool write(KLayout& k, uint64_t &vPrevEta);
 
     // serialization of commit-intent validation
     void serialize();
@@ -62,6 +61,12 @@ class Validator {
     PUBLIC:
     // start threads and work
     void start();
+
+    // used for read/write by coordinator
+    bool read(KLayout& k, KVLayout *&kv);
+    bool write(KLayout& k, uint64_t &vPrevEta);
+    bool updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
+    bool insertConcludeQueue(TxEntry *txEntry);
 }; // end Validator class
 
 } // end namespace DSSN

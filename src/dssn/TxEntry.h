@@ -38,8 +38,9 @@ class TxEntry {
     uint32_t txState;
     uint32_t commitIntentState;
 
-    //Set of IDs of participant shards, excluding self
-    std::set<uint64_t> peerSet; // Fixme: changed to scoped_array?
+    //Set of IDs of participant shards excluding self
+    //use std::set for sake of equality check
+    std::set<uint64_t> peerSet;
     std::set<uint64_t> peerSeenSet;
 
     //write set and read set under validation
@@ -65,7 +66,6 @@ class TxEntry {
     BloomFilter writeSetFilter;
     BloomFilter readSetFilter;
     Henry: possibly needs these
-    std::vector<PeerInfo> peerInfoSet;
     uint64_t id; //transaction globally unique ID
     uint64_t readSnapshotTimestamp; //0 - not a read-only tx, max - most recent, [1, max) - specific snapshot
      */
@@ -120,8 +120,11 @@ class TxEntry {
     inline uint64_t getPi() { return pi; }
     inline uint32_t getTxState() { return txState; }
     inline uint32_t getTxCIState() { return commitIntentState; }
+    inline void insertPeerSet(uint64_t peerId) { peerSet.insert(peerId); }
     inline auto& getPeerSet() { return peerSet; }
-    void insertPeerSeenSet(uint64_t peerId) { peerSeenSet.insert(peerId); }
+    inline void insertPeerSeenSet(uint64_t peerId) { peerSeenSet.insert(peerId); }
+    inline auto& getPeerSeenSet() { return peerSeenSet; }
+    inline bool isAllPeerSeen() { return peerSeenSet == peerSet; }
     inline auto& getWriteSet() { return writeSet; }
     inline auto& getReadSet() { return readSet; }
     inline auto getWriteSetSize() { return writeSetSize; }
