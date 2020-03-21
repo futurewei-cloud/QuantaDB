@@ -328,7 +328,7 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 		EXPECT_NE(txEntry[ent]->getPeerSet(), txEntry[ent]->getPeerSeenSet());
 	}
 
-	for (int ent = 0; ent < 5; ent++) {
+	for (int ent = 1; ent < 4; ent++) {
 		for (uint64_t peer = 0; peer < 2; peer++) {
 			EXPECT_EQ(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
 			helper.updatePeerInfo(txEntry[ent]->getCTS(), peer, 0, 0xfffffff);
@@ -337,9 +337,9 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 	}
 	EXPECT_EQ((uint32_t)5, validator.peerInfo.size());
 	validator.peerInfo.sweep();
-	EXPECT_EQ((uint32_t)0, validator.peerInfo.size());
+	EXPECT_EQ((uint32_t)2, validator.peerInfo.size());
 
-	EXPECT_EQ((uint32_t)5, validator.concludeQueue.count);
+	EXPECT_EQ((uint32_t)3, validator.concludeQueue.count);
 	validator.serialize();
 	EXPECT_EQ((uint32_t)0, validator.concludeQueue.count);
 

@@ -38,6 +38,7 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&
 	it = peerInfo.find(cts);
 	if (it != peerInfo.end()) {
 		txEntry = it->second;
+		std::lock_guard<std::mutex> lock(txEntry->getMutex());
 		txEntry->setEta(std::max(txEntry->getEta(), eta));
 		txEntry->setPi(std::min(txEntry->getPi(), pi));
 		txEntry->insertPeerSeenSet(peerId);

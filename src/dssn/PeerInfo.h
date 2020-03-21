@@ -29,8 +29,12 @@ typedef uint64_t CTS;
  * without further triggering message exchange.
  *
  * Considering all those concurrency concerns, we would use TBB concurrent_unordered_map
- * which supports concurrent insert and iteration. However, a concurrent erase would disrupt
+ * which supports concurrent insert, find, and iteration. However, a concurrent erase would disrupt
  * the iteration, so we would have to use that thread to erase completed entries while scanning.
+ *
+ * Compared to TBB concurrent_hash_map, our choice would perform better as the frequent
+ * inserts and finds are lock-free while using finer per TxEntry locking to protect concurrent value
+ * modification.
  *
  */
 class PeerInfo {
