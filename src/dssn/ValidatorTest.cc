@@ -5,6 +5,7 @@
 #include "TestUtil.h"
 #include "MockCluster.h"
 #include "LeaseCommon.h"
+#include "ValidatorRPCHelper.h"
 #include "Validator.h"
 #include "Tub.h"
 #include "MultiWrite.h"
@@ -38,11 +39,12 @@ class ValidatorTest : public ::testing::Test {
 
     DISALLOW_COPY_AND_ASSIGN(ValidatorTest);
 
-    void fillTxEntry(int noEntries, int noKeys = 1, int keySize = 32) {
+    void fillTxEntry(int noEntries, int noKeys = 1, int noOfPeers = 0) {
+    	uint32_t keySize = 32;
         for (int i = 0; i < noEntries; i++) {
         	uint32_t rr = 0, ww = 0;
         	txEntry[i] = new TxEntry(4 * noKeys / 5, (noKeys + 4) / 5);
-        	txEntry[i]->setCTS(i+1);
+        	txEntry[i]->setCTS((i+1) * 10);
         	for (int j = 0; j < noKeys; j++) {
                 KVLayout kv(keySize);
                 snprintf((char *)kv.k.key.get(), keySize, "%dhajfk78uj3kjciu3jj9jij39u9j93j", j);
@@ -54,6 +56,11 @@ class ValidatorTest : public ::testing::Test {
         			txEntry[i]->insertWriteSet(kvOut, rr++);
         		else
         			txEntry[i]->insertReadSet(kvOut, ww++);
+        	}
+
+        	for (int peerId = 0; peerId < noOfPeers; peerId++) {
+        		//cross-shard transaction
+        		txEntry[i]->insertPeerSet(peerId);
         	}
         }
     }
@@ -284,12 +291,12 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     uint64_t start, stop;
 
-    fillTxEntry(size, 11);
+    fillTxEntry(size, 20);
 
     GTEST_COUT << "WriteSet size " << txEntry[0]->getWriteSetSize() << std::endl;
     GTEST_COUT << "ReadSet size " << txEntry[0]->getReadSetSize() << std::endl;
 
-    //time serializa()
+    //time serialize()
     for (int i = 0; i < size; i++) {
     	validator.localTxQueue.push(txEntry[i]);
     }
@@ -304,6 +311,39 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     printTxEntryCommits(size);
 
     freeTxEntry(size);
+}
+
+TEST_F(ValidatorTest, BATPeerInfo) {
+	ValidatorRPCHelper helper(validator);
+
+	fillTxEntry(5, 10, 2); //2 peers
+
+    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
+	validator.serialize();
+	EXPECT_EQ(TxEntry::TX_PENDING, txEntry[0]->getTxState());
+
+	for (int ent = 0; ent < 5; ent++) {
+		validator.peerInfo.add(txEntry[ent]);
+
+		EXPECT_NE(txEntry[ent]->getPeerSet(), txEntry[ent]->getPeerSeenSet());
+	}
+
+	for (int ent = 1; ent < 4; ent++) {
+		for (uint64_t peer = 0; peer < 2; peer++) {
+			EXPECT_EQ(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
+			helper.updatePeerInfo(txEntry[ent]->getCTS(), peer, 0, 0xfffffff);
+		}
+		EXPECT_NE(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
+	}
+	EXPECT_EQ((uint32_t)5, validator.peerInfo.size());
+	validator.peerInfo.sweep();
+	EXPECT_EQ((uint32_t)2, validator.peerInfo.size());
+
+	EXPECT_EQ((uint32_t)3, validator.concludeQueue.count);
+	validator.serialize();
+	EXPECT_EQ((uint32_t)0, validator.concludeQueue.count);
+
+	freeTxEntry(5);
 }
 
 }  // namespace RAMCloud

@@ -24,6 +24,10 @@ TxEntry::TxEntry(uint32_t readSetSize, uint32_t writeSetSize) {
 	this->readSet.reset(new KVLayout *[readSetSize]);
 	this->readSetHash.reset(new uint64_t[readSetSize]);
 	this->readSetInStore.reset(new KVLayout *[readSetSize]);
+	for (uint32_t i = 0; i < writeSetSize; i++)
+		this->writeSetInStore[i] = NULL;
+	for (uint32_t i = 0; i < readSetSize; i++)
+		this->readSetInStore[i] = NULL;
 }
 
 

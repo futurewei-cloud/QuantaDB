@@ -121,6 +121,16 @@ Validator::read(KLayout& k, KVLayout *&kv) {
 	return false;
 }
 
+bool
+Validator::updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry) {
+	return peerInfo.update(cts, peerId, eta, pi, txEntry);
+}
+
+bool
+Validator::insertConcludeQueue(TxEntry *txEntry) {
+	return concludeQueue.push(txEntry);
+}
+
 
 bool
 Validator::validateLocalTx(TxEntry& txEntry) {
@@ -335,27 +345,31 @@ Validator::serialize() {
         	}
         	hasEvent = true;
         }
+
+        while (concludeQueue.try_pop(txEntry)) {
+        	if (lastCTS < txEntry->getCTS())
+        		lastCTS = txEntry->getCTS();
+        	conclude(*txEntry);
+        	hasEvent = true;
+        }
     } //end while(true)
 }
 
 bool
 Validator::conclude(TxEntry& txEntry) {
     /*
-     * log the commit result of a local tx.
-     * log the commit/abort result of a distributed tx as its CI has been logged
+     * log the commit result of a local tx.?
+     * log the commit/abort result of a distributed tx as its CI has been logged?
      */
+
+	//record results and meta data
     if (txEntry.getPeerSet().size() > 1
             || txEntry.getTxState() == TxEntry::TX_COMMIT) {
-        //WAL and persist value LATER
-
         // update in-mem tuple store
         if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
             updateKVReadSetEta(txEntry);
             updateKVWriteSet(txEntry);
         }
-
-        //reply to commit intent client
-        //LATER
     }
     return true;
 }

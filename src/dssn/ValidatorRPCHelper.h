@@ -3,8 +3,8 @@
  * All rights are reserved.
  */
 
-#ifndef VALIDATOR_RPC_HANDLER_H
-#define VALIDATOR_RPC_HANDLER_H
+#ifndef VALIDATOR_RPC_HELPER_H
+#define VALIDATOR_RPC_HELPER_H
 
 #include "Object.h"
 #include "Buffer.h"
@@ -32,10 +32,10 @@ class ValidatorRPCHelper {
     Validator& validator;
 
     Status
-    ValidatorRPCHelper::rejectOperation(const RejectRules* rejectRules, uint64_t version);
+    rejectOperation(const RejectRules* rejectRules, uint64_t version);
 
     PUBLIC:
-	ValidatorRPCHelper(Validator &validator) { this->validator = validator; }
+	ValidatorRPCHelper(Validator &validator) : validator(validator) {}
 
 	/**
 	 * Read an object.
@@ -96,9 +96,13 @@ class ValidatorRPCHelper {
 	writeObject(Object& newObject, RejectRules* rejectRules,
 	                uint64_t* outVersion, Buffer* removedObjBuffer,
 	                uint64_t& pStampPrev);
+
+
+	Status
+	updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi); //Fixme: change arguments
 }; // end ValidatorRPCHandler class
 
 } // end namespace DSSN
 
-#endif  /* VALIDATOR_RPC_HANDLER_H */
+#endif  /* VALIDATOR_RPC_HELPER_H */
 

@@ -90,6 +90,7 @@ SHARED_SRCFILES := \
 		   src/dssn/WaitQueue.cc \
 		   src/dssn/PeerInfo.cc \
 		   src/dssn/DSSNService.cc \
+		   src/dssn/ValidatorRPCHelper.cc \
 		   src/IndexKey.cc \
 		   src/IndexletManager.cc \
 		   src/IndexLookup.cc \

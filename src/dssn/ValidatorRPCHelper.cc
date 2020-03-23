@@ -35,9 +35,9 @@ ValidatorRPCHelper::readObject(uint64_t tableId, Key& key, Buffer* outBuffer,
     Buffer buffer;
     uint64_t version = 1; //fixed for now. it is supposed to be retrieved from KV store
 
-    KLayout k(key.keyLength + sizeof(tableId)); //make room composite key in KVStore
+    KLayout k(key.getStringKeyLength() + sizeof(tableId)); //make room composite key in KVStore
     std::memcpy(k.key.get(), &tableId, sizeof(tableId));
-    std::memcpy(k.key.get() + sizeof(tableId), key.key, key.keyLength);
+    std::memcpy(k.key.get() + sizeof(tableId), key.getStringKey(), key.getStringKeyLength());
     KVLayout *kv;
     bool found = validator.read(k, kv);
     if (!found)
@@ -98,6 +98,27 @@ ValidatorRPCHelper::writeObject(Object& newObject, RejectRules* rejectRules,
     return RAMCloud::STATUS_OK;
 }
 
+Status
+ValidatorRPCHelper::updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi) {
+	TxEntry *txEntry = NULL;
+	if (validator.updatePeerInfo(cts, peerId, eta, pi, txEntry)) {
+		if (txEntry->isExclusionViolated())
+			txEntry->setTxState(TxEntry::TX_ABORT);
+		else if (txEntry->isAllPeerSeen() && !txEntry->isExclusionViolated())
+			txEntry->setTxState(TxEntry::TX_COMMIT);
+		else
+			return RAMCloud::STATUS_OK; //inconclusive yet
 
-} // end ValidatorRPCHandler class
+		//Fixme: should WAL here so that peers requesting info of this txEntry
+		// can be serviced by PeerInfo-referenced txEntry or WAL.
+		validator.insertConcludeQueue(txEntry);
+		txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED); //allow this to be swept
+
+        //reply to commit intent client
+	}
+	return RAMCloud::STATUS_OK;
+}
+
+
+} // end ValidatorRPCHelper class
 
