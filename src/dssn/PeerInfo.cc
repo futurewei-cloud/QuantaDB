@@ -4,6 +4,7 @@
  */
 
 
+#include <algorithm>
 #include "PeerInfo.h"
 
 namespace DSSN {
