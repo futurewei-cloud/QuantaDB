@@ -18,6 +18,8 @@ Validator::start() {
     // Henry: may need to use TBB to pin the threads to specific cores LATER
     std::thread( [=] { serialize(); });
     std::thread( [=] { validateDistributedTxs(0); });
+    std::thread( [=] { sweep(); });
+    std::thread( [=] { scheduleDistributedTxs(); });
     localTxQueue.start();
 }
 
@@ -246,6 +248,16 @@ Validator::validateDistributedTxs(int worker) {
 }
 
 void
+Validator::scheduleDistributedTxs() {
+	TxEntry *txEntry;
+    while (true) {
+    	if ((txEntry = (TxEntry *)reorderQueue.try_pop(clock.getLocalTime()))) {
+    		while (!blockedTxSet.add(txEntry));
+    	}
+    }
+}
+
+void
 Validator::serialize() {
     /*
      * This loop handles the DSSN serialization window critical section
@@ -346,6 +358,15 @@ Validator::serialize() {
         	hasEvent = true;
         }
 
+        while ((txEntry = blockedTxSet.findReadyTx())) {
+        	if (activeTxSet.add(txEntry)) {
+        		txEntry->setTxCIState(TxEntry::TX_CI_TRANSIENT);
+        		blockedTxSet.remove(txEntry);
+        		hasEvent = true;
+        	} else
+        		break;
+        }
+
         while (concludeQueue.try_pop(txEntry)) {
         	if (lastCTS < txEntry->getCTS())
         		lastCTS = txEntry->getCTS();
@@ -373,5 +394,11 @@ Validator::conclude(TxEntry& txEntry) {
     }
     return true;
 }
+
+void
+Validator::sweep() {
+	peerInfo.sweep();
+}
+
 } // end Validator class
 

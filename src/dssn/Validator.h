@@ -16,6 +16,8 @@
 #include "PeerInfo.h"
 #include "ConcludeQueue.h"
 #include <boost/lockfree/queue.hpp>
+#include "SkipList.h"
+#include "ClusterTimeService.h"
 
 namespace DSSN {
 
@@ -37,6 +39,8 @@ class Validator {
     uint64_t alertThreshold = 1000; //LATER
     uint64_t lastCTS = 0;
     bool isUnderTest = false;
+    SkipList reorderQueue;
+    ClusterTimeService clock;
     //LATER DependencyMatrix blockedTxSet;
     //KVStore kvStore;
     HashmapKVStore kvStore;
@@ -46,17 +50,26 @@ class Validator {
     bool updateKVReadSetEta(TxEntry& txEntry);
     bool updateKVWriteSet(TxEntry& txEntry);
 
+    // schedule SSN validation on distributed transactions
+    /// move due CIs from reorderQueue into blockedTxSet
+    void scheduleDistributedTxs();
+
     // serialization of commit-intent validation
     void serialize();
 
     // perform SSN validation on distributed transactions
+    /// help cross-shard CIs in activeTxSet to exchange SSN info with peers
     void validateDistributedTxs(int worker);
 
     // perform SSN validation on a local transaction
     bool validateLocalTx(TxEntry& txEntry);
 
     // handle validation commit/abort conclusion
+    /// move committed data into backing store and update meta data
     bool conclude(TxEntry& txEntry);
+
+    // handle garbage collection
+    void sweep();
 
     PUBLIC:
     // start threads and work

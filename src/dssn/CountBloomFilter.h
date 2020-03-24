@@ -43,7 +43,7 @@ class CountBloomFilter {
     // for performance, the key is assumed to have been added
     bool remove(uint64_t hash);
 
-    bool contains(uint64_t hash);
+    bool shouldNotAdd(uint64_t hash);
 
     bool clear();
 

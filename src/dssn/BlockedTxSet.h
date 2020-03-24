@@ -11,9 +11,24 @@
 
 namespace DSSN {
 
+/*
+ * The class contains some due cross-shard CIs that are blocked by activeTxSet.
+ *
+ * It is implemented as a circular array of dependency bits, where a set dependency bit
+ * represents that the current tx has dependency on another tx, indicated by the bit position,
+ * ahead of itself in the circular array. The bitmap representation enables a quick uint64_t
+ * check on dependency on all transactions ahead.
+ *
+ * The circular array is maintained by a head and a tail. add() to the tail and remove() from head.
+ *
+ * It has space for add() when the head has not caught up with the tail and when the last
+ * the tx to be added would not have non-zero dependency bits while there is at least one
+ * already added tx that has no non-zero dependency bits.
+ *
+ */
 class BlockedTxSet {
     PUBLIC:
-    // false if the key is failed to be added due to overflow
+    // return true if the CI is added successfully
     bool add(TxEntry *txEntry) {return true;}
 
     // for performance, the key is assumed to have been added

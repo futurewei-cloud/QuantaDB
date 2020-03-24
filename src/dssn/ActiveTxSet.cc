@@ -47,25 +47,25 @@ ActiveTxSet::remove(TxEntry *txEntry) {
 bool
 ActiveTxSet::blocks(TxEntry *txEntry) {
     for (uint32_t i = txEntry->getReadSetIndex(); i < txEntry->getReadSetSize(); i++) {
-        if (cbf.contains(txEntry->getReadSetHash()[i])) {
+        if (cbf.shouldNotAdd(txEntry->getReadSetHash()[i])) {
             txEntry->getReadSetIndex() = i;
             return true;
         }
     }
     for (uint32_t i = 0; i < txEntry->getReadSetIndex(); i++) {
-        if (cbf.contains(txEntry->getReadSetHash()[i])) {
+        if (cbf.shouldNotAdd(txEntry->getReadSetHash()[i])) {
             txEntry->getReadSetIndex() = i;
             return true;
         }
     }
     for (uint32_t i = txEntry->getWriteSetIndex(); i < txEntry->getWriteSetSize(); i++) {
-        if (cbf.contains(txEntry->getWriteSetHash()[i])) {
+        if (cbf.shouldNotAdd(txEntry->getWriteSetHash()[i])) {
             txEntry->getWriteSetIndex() = i;
             return true;
         }
     }
     for (uint32_t i = 0; i < txEntry->getWriteSetIndex(); i++) {
-        if (cbf.contains(txEntry->getWriteSetHash()[i])) {
+        if (cbf.shouldNotAdd(txEntry->getWriteSetHash()[i])) {
             txEntry->getWriteSetIndex() = i;
             return true;
         }

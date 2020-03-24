@@ -23,13 +23,14 @@ CountBloomFilter::clear() {
 
 bool
 CountBloomFilter::add(uint64_t hash) {
-     uint64_t idx1 = (hash >> 32) % BFSize, idx2 = (hash & 0xffffffff) % BFSize;
-     if (counters[idx1] < 255 && counters[idx2] < 255) {
-         counters[idx1]++;
-         counters[idx2]++;
-         return true;
-     }
-     return false;
+	//overflow protection here is not necessary if the caller uses shoudlNotAdd() properly
+	uint64_t idx1 = (hash >> 32) % BFSize, idx2 = (hash & 0xffffffff) % BFSize;
+	if (counters[idx1] < 255 && counters[idx2] < 255) {
+		counters[idx1]++;
+		counters[idx2]++;
+		return true;
+	}
+	return false;
 }
 
 bool
@@ -45,10 +46,13 @@ CountBloomFilter::remove(uint64_t hash) {
 }
 
 bool
-CountBloomFilter::contains(uint64_t hash) {
+CountBloomFilter::shouldNotAdd(uint64_t hash) {
     uint64_t idx1 = (hash >> 32) % BFSize, idx2 = (hash & 0xffffffff) % BFSize;
-     // assume that the key has actually been added
-     return (counters[idx1] > 0 && counters[idx2] > 0);
+    // Return true on any one of the two conditions
+    /// the first: the key is in the BF
+    /// the second: if the key is added to the BF, a BF counter will overflow
+    /// The second condition ensures add() to return true
+    return ((counters[idx1] > 0 && counters[idx2] > 0) || counters[idx1] == 255 || counters[idx2] == 255);
 }
 
 } // end CountBloomFilter class
