@@ -17,6 +17,7 @@ class SkiplistTest : public ::testing::Test {
   #define LOOP    1024*1024
   uint64_t loop = LOOP;
   char *buf[LOOP];
+  uint32_t randkey[LOOP];
 
   SkiplistTest()
   {
@@ -25,6 +26,11 @@ class SkiplistTest : public ::testing::Test {
         buf[i] = (char *)malloc(32);
         assert(buf[i]);
         sprintf(buf[i], "%ld", i);
+    }
+
+    //
+    for(uint64_t idx = 0; idx < loop; idx++) {
+        randkey[idx] = std::rand()%LOOP;
     }
   };
 
@@ -52,10 +58,20 @@ TEST_F(SkiplistTest, unit_test) {
     EXPECT_EQ(ret, nullptr);
 
     s.insert(10, buf[10]);
+    s.insert(11, buf[11]);
     ret = s.get(10);
     EXPECT_EQ(ret, buf[10]);
-    s.remove(10);
-    ret = s.get(10);
+    ret = s.get(11);
+    EXPECT_EQ(ret, buf[11]);
+
+    ret = s.popif(2);
+    EXPECT_EQ(ret, nullptr);
+
+    ret = s.popif(10); 
+    EXPECT_EQ(ret, buf[10]);
+
+    s.remove(11);
+    ret = s.get(11);
     EXPECT_EQ(ret, nullptr);
 
     loop = 1024;
@@ -105,18 +121,50 @@ TEST_F(SkiplistTest, benchGetCTS) {
 
     GTEST_COUT << "Skiplist entry=" << loop << " maxL=" << s.maxLevel << " prob=" << s.probability << std::endl;
 
-    // 1. insert()
+    // random insert()
+    start = Cycles::rdtscp();
+    for (uint64_t i = 0; i < loop; ++i){
+        s.insert(randkey[i], buf[randkey[i]]);
+    }
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "Skiplist random insert to empty list:"
+    << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
+
+    // drain the list
+    for (uint64_t i = 0; i < loop; ++i){
+        s.pop();
+    }
+    void * ret = s.pop();
+    EXPECT_EQ(ret, nullptr);
+
+    // Seq insert()
     start = Cycles::rdtscp();
     for (uint64_t i = 0; i < loop; ++i){
         s.insert(i, buf[i]);
     }
     stop = Cycles::rdtscp();
-    GTEST_COUT << "Skiplist insert:"
+    GTEST_COUT << "Skiplist sequencial insert to empty list:"
     << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
 
-    fflush(stdout);
+    // random insert()
+    start = Cycles::rdtscp();
+    for (uint64_t i = 0; i < loop; ++i){
+        s.insert(randkey[i], buf[randkey[i]]);
+    }
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "Skiplist random insert to full list:"
+    << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
 
-    // 2. get(key)
+    // Seq insert()
+    start = Cycles::rdtscp();
+    for (uint64_t i = 0; i < loop; ++i){
+        s.insert(i, buf[i]);
+    }
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "Skiplist sequencial insert to full list:"
+    << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
+
+    // get(key)
     start = Cycles::rdtscp();
     for (uint64_t i = 0; i < loop; ++i){
         s.get(i);
@@ -124,9 +172,8 @@ TEST_F(SkiplistTest, benchGetCTS) {
     stop = Cycles::rdtscp();
     GTEST_COUT << "Skiplist get(key):"
     << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
-    fflush(stdout);
 
-    // 3. get()
+    // get()
     start = Cycles::rdtscp();
     for (uint64_t i = 0; i < loop; ++i){
         s.get();
@@ -134,9 +181,8 @@ TEST_F(SkiplistTest, benchGetCTS) {
     stop = Cycles::rdtscp();
     GTEST_COUT << "Skiplist get():"
     << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
-    fflush(stdout);
 
-    // 4. pop()
+    // pop()
     start = Cycles::rdtscp();
     for (uint64_t i = 0; i < loop; ++i){
         s.pop();
@@ -144,7 +190,6 @@ TEST_F(SkiplistTest, benchGetCTS) {
     stop = Cycles::rdtscp();
     GTEST_COUT << "Skiplist pop():"
     << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
-    fflush(stdout);
 
 }
 
