@@ -7,7 +7,8 @@
 #include <cmath>
 #include <cstring>
 #include <assert.h>
-#define MAX_LEVEL 6
+
+#define MAX_LEVEL 16
 
 using namespace std;
 
@@ -20,7 +21,7 @@ struct SkipNode
 {
     uint64_t key;
     void * value;
-    SkipNode *forw[MAX_LEVEL];
+    SkipNode *forw[MAX_LEVEL+1];
 
     SkipNode(uint64_t k, void *v) : key(k), value(v)
     {
@@ -35,8 +36,9 @@ class SkipList {
   public:
     SkipNode *head;
     int level;
-    SkipList() : level(0) 
+    SkipList(float p = 0.5) : level(0)
     {
+        probability = p;
         head = new SkipNode(0, (void *)const_cast<char *>("head"));
     }
 
@@ -67,7 +69,8 @@ class SkipList {
         return (n)? const_cast<void *>(n->value) : NULL;
     }
 
-    inline void * pop() {
+    inline void * pop()
+    {
         void * val = NULL;
         if (head->forw[0]) { 
             val = head->forw[0]->value;
@@ -76,22 +79,28 @@ class SkipList {
         return val;
     }
 
+    uint32_t maxLevel = MAX_LEVEL;
+    float probability;
+
   private:
 
-    inline int random_level() { return std::rand() % MAX_LEVEL; }
+    inline int random_level()
+    {
+        int v = 1;
+
+        while ((((double)std::rand() / RAND_MAX)) < probability && 
+           std::abs(v) < MAX_LEVEL) {
+            v += 1;
+        }
+        return std::abs(v);
+        //return std::rand() % MAX_LEVEL;
+    }
 
     SkipNode * find(uint64_t key); 
 
 	int volatile lock;	// CAS spin lock
-    inline void spin_lock()
-    {
-        while (!__sync_bool_compare_and_swap (&lock, 0, 1));
-    }
-    inline void spin_unlock()
-    {
-        assert(lock == 1);
-        while (!__sync_bool_compare_and_swap (&lock, 1, 0));
-    } 
+    inline void spin_lock() { while (!__sync_bool_compare_and_swap (&lock, 0, 1)); }
+    inline void spin_unlock() { assert(lock == 1); while (!__sync_bool_compare_and_swap (&lock, 1, 0)); }
 };
 
 /*
@@ -103,7 +112,7 @@ void SkipList::insert(uint64_t key, void *value)
     SkipNode *update[MAX_LEVEL + 1];
     memset(update, 0, sizeof(SkipNode*) * (MAX_LEVEL + 1));
 
-    for (int i = level;i >= 0;i--) 
+    for (int i = level; i >= 0; i--)
     {
         while (x->forw[i] != NULL && x->forw[i]->key < key) 
         {
@@ -148,7 +157,7 @@ void SkipList::remove(uint64_t key)
     SkipNode *update[MAX_LEVEL + 1];
     memset (update, 0, sizeof(SkipNode*) * (MAX_LEVEL + 1));
 
-    for (int i = level;i >= 0;i--) 
+    for (int i = level; i >= 0; i--)
     {
         while (x->forw[i] != NULL && x->forw[i]->key < key)
         {
@@ -205,7 +214,7 @@ SkipNode * SkipList::find(uint64_t key)
 {
     SkipNode *x = head;
 
-    for (int i = level;i >= 0;i--) 
+    for (int i = level; i >= 0; i--)
     {
         while (x->forw[i] != NULL && x->forw[i]->key < key)
         {

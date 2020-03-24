@@ -14,22 +14,52 @@ using namespace DSSN;
 
 class SkiplistTest : public ::testing::Test {
   public:
-  SkiplistTest() {};
-  ~SkiplistTest() {};
+  #define LOOP    1024*1024
+  uint64_t loop = LOOP;
+  char *buf[LOOP];
+
+  SkiplistTest()
+  {
+    // setup buf[]
+    for (uint64_t i = 0; i < loop; ++i){
+        buf[i] = (char *)malloc(32);
+        assert(buf[i]);
+        sprintf(buf[i], "%ld", i);
+    }
+  };
+
+  ~SkiplistTest()
+  {
+    for (uint64_t i = 0; i < loop; ++i){
+        free(buf[i]);
+    }
+  };
 
   SkipList s;
+
+  SkipList *sp = new SkipList(0.2);
 
   DISALLOW_COPY_AND_ASSIGN(SkiplistTest);
 };
 
-TEST_F(SkiplistTest, unit_test) {
-    uint64_t loop = 1024;
-    char buf[loop][32];
 
-    // 0. measure overhead
-    for (uint64_t i = 0; i < loop; ++i){
-        sprintf(buf[i], "%ld", i);
-    }
+TEST_F(SkiplistTest, unit_test) {
+    void * ret;
+
+    ret = s.get();
+    EXPECT_EQ(ret, nullptr);
+    ret = s.get(10);
+    EXPECT_EQ(ret, nullptr);
+
+    s.insert(10, buf[10]);
+    ret = s.get(10);
+    EXPECT_EQ(ret, buf[10]);
+    s.remove(10);
+    ret = s.get(10);
+    EXPECT_EQ(ret, nullptr);
+
+    loop = 1024;
+
     //
     // 1. insert()
     for (uint64_t i = 0; i < loop; ++i){
@@ -66,18 +96,15 @@ TEST_F(SkiplistTest, unit_test) {
     for (uint64_t i = 0; i < loop; ++i){
         s.pop();
     }
+
+    GTEST_COUT << "SkipList unit test done" << std::endl;
 }
 
 TEST_F(SkiplistTest, benchGetCTS) {
-    uint64_t loop = 100;
     uint64_t start, stop;
-    char buf[loop][32];
 
-    // 0. measure overhead
-    for (uint64_t i = 0; i < loop; ++i){
-        sprintf(buf[i], "%ld", i);
-    }
-    //
+    GTEST_COUT << "Skiplist entry=" << loop << " maxL=" << s.maxLevel << " prob=" << s.probability << std::endl;
+
     // 1. insert()
     start = Cycles::rdtscp();
     for (uint64_t i = 0; i < loop; ++i){
@@ -87,6 +114,8 @@ TEST_F(SkiplistTest, benchGetCTS) {
     GTEST_COUT << "Skiplist insert:"
     << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
 
+    fflush(stdout);
+
     // 2. get(key)
     start = Cycles::rdtscp();
     for (uint64_t i = 0; i < loop; ++i){
@@ -95,6 +124,7 @@ TEST_F(SkiplistTest, benchGetCTS) {
     stop = Cycles::rdtscp();
     GTEST_COUT << "Skiplist get(key):"
     << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
+    fflush(stdout);
 
     // 3. get()
     start = Cycles::rdtscp();
@@ -104,6 +134,7 @@ TEST_F(SkiplistTest, benchGetCTS) {
     stop = Cycles::rdtscp();
     GTEST_COUT << "Skiplist get():"
     << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
+    fflush(stdout);
 
     // 4. pop()
     start = Cycles::rdtscp();
@@ -113,9 +144,8 @@ TEST_F(SkiplistTest, benchGetCTS) {
     stop = Cycles::rdtscp();
     GTEST_COUT << "Skiplist pop():"
     << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
+    fflush(stdout);
 
-
-    GTEST_COUT << "Skiplist done" << std::endl;
 }
 
 }  // namespace RAMCloud
