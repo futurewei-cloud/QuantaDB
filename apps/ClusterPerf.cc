@@ -5686,13 +5686,13 @@ tpcc_oneClient(double runSeconds, TPCC::Driver* driver, bool latencyTest = false
                 latency = driver->txOrderStatus(W_ID, &outcome);
                 txType = 1;
             } else if (randNum < 51) {
-	        RAMCLOUD_LOG(NOTICE, "Delivery");
+	        //RAMCLOUD_LOG(NOTICE, "Delivery");
                 for (uint32_t D_ID = 1; D_ID <= 10; D_ID++) {
                     latency += driver->txDelivery(W_ID, D_ID, &outcome);
                 }
                 txType = 2;
             } else if (randNum < 55) {
-	        RAMCLOUD_LOG(NOTICE, "Stocck");
+	        //RAMCLOUD_LOG(NOTICE, "Stock");
                 latency = driver->txStockLevel(W_ID, 1U /*fixed D_ID*/, &outcome);
                 txType = 3;
             } else {
