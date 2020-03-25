@@ -606,9 +606,9 @@ def run(
 
 # When disjunct=True, disjuncts Coordinator and Clients on Server nodes.
     if disjunct:
-        if num_servers + num_clients + 1 > len(getHosts()):
-            raise Exception('num_servers (%d)+num_clients (%d)+1(coord) exceeds the available hosts (%d)'
-                            % (num_servers, num_clients, len(getHosts())))
+        if num_servers + 2 > len(getHosts()):
+            raise Exception('num_servers (%d)+ 1 (client) +1(coord) exceeds the available hosts (%d)'
+                            % (num_servers, len(getHosts())))
     else:
         if num_servers > len(getHosts()):
             raise Exception('num_servers (%d) exceeds the available hosts (%d)'
