@@ -1,6 +1,7 @@
 /*
  * C++ Program to Implement Skip List 
  */
+#pragma once
 
 #include <iostream>
 #include <cstdlib>
