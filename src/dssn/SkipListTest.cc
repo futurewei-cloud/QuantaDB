@@ -64,12 +64,6 @@ TEST_F(SkiplistTest, unit_test) {
     ret = s.get(11);
     EXPECT_EQ(ret, buf[11]);
 
-    ret = s.popif(2);
-    EXPECT_EQ(ret, nullptr);
-
-    ret = s.popif(10); 
-    EXPECT_EQ(ret, buf[10]);
-
     s.remove(11);
     ret = s.get(11);
     EXPECT_EQ(ret, nullptr);
