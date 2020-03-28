@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstring>
 #include <assert.h>
+#include <atomic>
 
 #define MAX_LEVEL 16
 
@@ -41,6 +42,8 @@ class SkipList {
     {
         probability = p;
         head = new SkipNode(0, (void *)const_cast<char *>("head"));
+        ctr = 0;
+        lock = 0;
     }
 
     ~SkipList() 
@@ -78,16 +81,14 @@ class SkipList {
         std::cout <<"=======\n";
     }
 
-    inline bool contains(uint64_t key) 
-    {
-        return find(key) != NULL;
-    }
+    inline bool contains(uint64_t key) { return find(key) != NULL; }
 
     /*
      * Insert Element in Skip List
      */
     void insert(uint64_t key, void *value) 
     {
+        spin_lock();
         SkipNode *x = head;	
         SkipNode *update[MAX_LEVEL + 1];
         memset(update, 0, sizeof(SkipNode*) * (MAX_LEVEL + 1));
@@ -117,6 +118,7 @@ class SkipList {
 
             // x = new SkipNode(lvl, key, value);
             x = new SkipNode(key, value);
+            ctr++;
 
             for (int i = 0;i <= lvl;i++) 
             {
@@ -126,6 +128,7 @@ class SkipList {
         } else {
             x->value = value;
         }
+        spin_unlock();
     }
 
     /*
@@ -133,6 +136,7 @@ class SkipList {
      */
     void remove(uint64_t key) 
     {
+        spin_lock();
         SkipNode *x = head;	
         SkipNode *update[MAX_LEVEL + 1];
         memset (update, 0, sizeof(SkipNode*) * (MAX_LEVEL + 1));
@@ -159,11 +163,13 @@ class SkipList {
             }
 
             delete x;
+            ctr--;
             while (level > 0 && head->forw[level] == NULL) 
             {
                 level--;
             }
         }
+        spin_unlock();
     }
 
     inline void * get() { return (head->forw[0])?  head->forw[0]->value : NULL; }
@@ -194,8 +200,18 @@ class SkipList {
         return val;
     }
 
+    inline uint64_t firstkey()  { return (head->forw[0])?  head->forw[0]->key : head->key; }
+
+    inline uint64_t lastkey()
+    {
+        SkipNode *tmp = head;
+        while (tmp->forw[0]) tmp = tmp->forw[0];
+        return tmp->key;
+    }
+    
     uint32_t maxLevel = MAX_LEVEL;
     float probability;
+    atomic<uint32_t> ctr;
 
   private:
 
