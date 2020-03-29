@@ -43,7 +43,7 @@ class SkipList {
         probability = p;
         head = new SkipNode(0, (void *)const_cast<char *>("head"));
         ctr = 0;
-        lock = 0;
+        lock_ = 0;
     }
 
     ~SkipList() 
@@ -88,7 +88,7 @@ class SkipList {
      */
     void insert(uint64_t key, void *value) 
     {
-        spin_lock();
+        lock();
         SkipNode *x = head;	
         SkipNode *update[MAX_LEVEL + 1];
         memset(update, 0, sizeof(SkipNode*) * (MAX_LEVEL + 1));
@@ -128,7 +128,7 @@ class SkipList {
         } else {
             x->value = value;
         }
-        spin_unlock();
+        unlock();
     }
 
     /*
@@ -136,7 +136,7 @@ class SkipList {
      */
     void remove(uint64_t key) 
     {
-        spin_lock();
+        lock();
         SkipNode *x = head;	
         SkipNode *update[MAX_LEVEL + 1];
         memset (update, 0, sizeof(SkipNode*) * (MAX_LEVEL + 1));
@@ -169,7 +169,7 @@ class SkipList {
                 level--;
             }
         }
-        spin_unlock();
+        unlock();
     }
 
     inline void * get() { return (head->forw[0])?  head->forw[0]->value : NULL; }
@@ -246,9 +246,9 @@ class SkipList {
         return (x != NULL && x->key == key)? x : NULL;
     }
 
-	int volatile lock;	// CAS spin lock
-    inline void spin_lock() { while (!__sync_bool_compare_and_swap (&lock, 0, 1)); }
-    inline void spin_unlock() { assert(lock == 1); while (!__sync_bool_compare_and_swap (&lock, 1, 0)); }
+	int volatile lock_;	// CAS spin lock
+    inline void lock() { while (!__sync_bool_compare_and_swap (&lock_, 0, 1)) sched_yield(); }
+    inline void unlock() { assert(lock_ == 1); while (!__sync_bool_compare_and_swap (&lock_, 1, 0)); }
 };
 
 } // DSSN
