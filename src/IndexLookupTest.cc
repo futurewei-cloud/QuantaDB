@@ -94,7 +94,8 @@ class IndexLookupTest : public ::testing::Test {
 
         ServerConfig config = ServerConfig::forTesting();
         config.services = {WireFormat::MASTER_SERVICE,
-                           WireFormat::ADMIN_SERVICE};
+			   WireFormat::ADMIN_SERVICE,
+                           WireFormat::DSSN_SERVICE};
         config.localLocator = "mock:host=master1";
         cluster.addServer(config);
 

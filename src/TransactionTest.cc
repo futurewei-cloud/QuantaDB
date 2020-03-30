@@ -54,7 +54,8 @@ class TransactionTest : public ::testing::Test {
 
         ServerConfig config = ServerConfig::forTesting();
         config.services = {WireFormat::MASTER_SERVICE,
-                           WireFormat::ADMIN_SERVICE};
+			   WireFormat::ADMIN_SERVICE,
+                           WireFormat::DSSN_SERVICE};
         config.localLocator = "mock:host=master1";
         config.maxObjectKeySize = 512;
         config.maxObjectDataSize = 1024;
@@ -62,11 +63,13 @@ class TransactionTest : public ::testing::Test {
         config.segletSize = 128*1024;
         cluster.addServer(config);
         config.services = {WireFormat::MASTER_SERVICE,
-                           WireFormat::ADMIN_SERVICE};
+			   WireFormat::ADMIN_SERVICE,
+                           WireFormat::DSSN_SERVICE};
         config.localLocator = "mock:host=master2";
         cluster.addServer(config);
         config.services = {WireFormat::MASTER_SERVICE,
-                           WireFormat::ADMIN_SERVICE};
+			   WireFormat::ADMIN_SERVICE,
+                           WireFormat::DSSN_SERVICE};
         config.localLocator = "mock:host=master3";
         cluster.addServer(config);
         ramcloud.construct(&context, "mock:host=coordinator");

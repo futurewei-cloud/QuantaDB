@@ -449,7 +449,11 @@ MultiOp::PartRpc::PartRpc(RamCloud* ramcloud,
     , ramcloud(ramcloud)
     , session(session)
     , requests()
+#ifdef DSSNTX
+    , reqHdr(allocHeader<WireFormat::MultiOpDSSN>())
+#else
     , reqHdr(allocHeader<WireFormat::MultiOp>())
+#endif
 {
     reqHdr->type = type;
     reqHdr->count = 0;

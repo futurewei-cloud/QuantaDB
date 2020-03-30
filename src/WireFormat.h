@@ -1835,6 +1835,11 @@ struct TxDecision {
     } __attribute__((packed));
 };
 
+struct TxDecisionDSSN : TxDecision  { //TODO: remove, dssn doesn't need this
+    static const Opcode opcode = Opcode::TX_DECISION;
+    static const ServiceType service = DSSN_SERVICE;
+};
+
 struct TxPrepare {
     static const Opcode opcode = Opcode::TX_PREPARE;
     static const ServiceType service = MASTER_SERVICE;
@@ -1958,8 +1963,8 @@ struct TxPrepare {
 };
 
 struct TxCommitDSSN : TxPrepare {
-    static const Opcode opcode = Opcode::TX_PREPARE;
-    static const ServiceType service = MASTER_SERVICE;
+    static const Opcode opcode = Opcode::TX_PREPARE; //TODO: replace the type
+    static const ServiceType service = DSSN_SERVICE;
 };
 
 struct TxRequestAbort {
@@ -2065,6 +2070,10 @@ struct Write {
     } __attribute__((packed));
 };
 
+struct WriteDSSN : Write {
+    static const Opcode opcode = WRITE;
+    static const ServiceType service = DSSN_SERVICE;
+};
 // DON'T DEFINE NEW RPC TYPES HERE!! Put them in alphabetical order above.
 
 Status getStatus(Buffer* buffer);

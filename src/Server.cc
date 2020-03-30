@@ -146,6 +146,13 @@ Server::createAndRegisterServices()
         serverList = new ServerList(context);
     }
 
+    if (config.services.has(WireFormat::DSSN_SERVICE)) {
+        LOG(NOTICE, "Master is using %u backups", config.master.numReplicas);
+        dssnMaster.construct(context,
+			     static_cast<ServerList*>(context->serverList),
+			     &config);
+    }
+
     if (config.services.has(WireFormat::MASTER_SERVICE)) {
         LOG(NOTICE, "Master is using %u backups", config.master.numReplicas);
         master.construct(context, &config);

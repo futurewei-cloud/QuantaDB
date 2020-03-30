@@ -220,7 +220,7 @@ class MasterService : public Service {
                 uint64_t firstKeyHash,
                 uint64_t lastKeyHash,
                 ServerId receiver);
-  PRIVATE:
+ PUBLIC: //TODO: replace it back to PRIVATE
     void migrateTablet(const WireFormat::MigrateTablet::Request* reqHdr,
                 WireFormat::MigrateTablet::Response* respHdr,
                 Rpc* rpc);

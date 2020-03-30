@@ -32,12 +32,19 @@ class DSSNService : public Service {
    void remove(const WireFormat::RemoveDSSN::Request* reqHdr,
 	       WireFormat::RemoveDSSN::Response* respHdr,
 	       Rpc* rpc);
+   void write(const WireFormat::WriteDSSN::Request* reqHdr,
+	      WireFormat::WriteDSSN::Response* respHdr,
+	      Rpc* rpc);
    void takeTabletOwnership(const WireFormat::TakeTabletOwnershipDSSN::Request* reqHdr,
 			    WireFormat::TakeTabletOwnershipDSSN::Response* respHdr,
 			    Rpc* rpc);
    void txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 		 WireFormat::TxCommitDSSN::Response* respHdr,
 		 Rpc* rpc);
+   void txDecision(  //TODO: remove
+		   const WireFormat::TxDecisionDSSN::Request* reqHdr,
+		   WireFormat::TxDecisionDSSN::Response* respHdr,
+		   Rpc* rpc);
    Context* context;
    ServerList* serverList;
    const ServerConfig* serverConfig;
