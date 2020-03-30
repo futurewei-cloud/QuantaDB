@@ -36,10 +36,10 @@ ActiveTxSet::add(TxEntry *txEntry) {
 bool
 ActiveTxSet::remove(TxEntry *txEntry) {
     for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
-        cbf.remove(txEntry->getReadSetHash()[i]);
+        assert(cbf.remove(txEntry->getReadSetHash()[i]));
     }
     for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
-        cbf.remove(txEntry->getWriteSetHash()[i]);
+        assert(cbf.remove(txEntry->getWriteSetHash()[i]));
     }
     return true;
 }

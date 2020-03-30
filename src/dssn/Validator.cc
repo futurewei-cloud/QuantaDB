@@ -250,8 +250,11 @@ Validator::validateDistributedTxs(int worker) {
 void
 Validator::scheduleDistributedTxs() {
 	TxEntry *txEntry;
+	uint64_t lastCTS = 0;
     while (true) {
     	if ((txEntry = (TxEntry *)reorderQueue.try_pop(clock.getLocalTime()))) {
+    		if (txEntry->getCTS() < lastCTS)
+    			continue; //ignore this CI that is past a processed CI
     		while (!blockedTxSet.add(txEntry));
     	}
     }
@@ -358,13 +361,10 @@ Validator::serialize() {
         	hasEvent = true;
         }
 
-        while ((txEntry = blockedTxSet.findReadyTx())) {
-        	if (activeTxSet.add(txEntry)) {
-        		txEntry->setTxCIState(TxEntry::TX_CI_TRANSIENT);
-        		blockedTxSet.remove(txEntry);
-        		hasEvent = true;
-        	} else
-        		break;
+        while ((txEntry = blockedTxSet.findReadyTx(activeTxSet))) {
+        	assert(activeTxSet.add(txEntry));
+        	txEntry->setTxCIState(TxEntry::TX_CI_TRANSIENT);
+        	hasEvent = true;
         }
 
         while (concludeQueue.try_pop(txEntry)) {
@@ -384,15 +384,15 @@ Validator::conclude(TxEntry& txEntry) {
      */
 
 	//record results and meta data
-    if (txEntry.getPeerSet().size() > 1
-            || txEntry.getTxState() == TxEntry::TX_COMMIT) {
-        // update in-mem tuple store
-        if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
-            updateKVReadSetEta(txEntry);
-            updateKVWriteSet(txEntry);
-        }
-    }
-    return true;
+	if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
+		updateKVReadSetEta(txEntry);
+		updateKVWriteSet(txEntry);
+	}
+
+	if (txEntry.getPeerSet().size() >= 1)
+		activeTxSet.remove(&txEntry);
+
+	return true;
 }
 
 void
