@@ -23,6 +23,18 @@ class DSSNService : public Service {
    void multiOp(const WireFormat::MultiOpDSSN::Request* reqHdr,
                 WireFormat::MultiOpDSSN::Response* respHdr,
                 Rpc* rpc);
+   void multiIncrement(const WireFormat::MultiOp::Request* reqHdr,
+                WireFormat::MultiOp::Response* respHdr,
+                Rpc* rpc);
+   void multiRead(const WireFormat::MultiOp::Request* reqHdr,
+                WireFormat::MultiOp::Response* respHdr,
+                Rpc* rpc);
+   void multiRemove(const WireFormat::MultiOp::Request* reqHdr,
+                WireFormat::MultiOp::Response* respHdr,
+                Rpc* rpc);
+   void multiWrite(const WireFormat::MultiOp::Request* reqHdr,
+                WireFormat::MultiOp::Response* respHdr,
+                Rpc* rpc);
    void read(const WireFormat::ReadDSSN::Request* reqHdr,
 	     WireFormat::ReadDSSN::Response* respHdr,
 	     Rpc* rpc);

@@ -90,10 +90,64 @@ DSSNService::multiOp(const WireFormat::MultiOpDSSN::Request* reqHdr,
 		     Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
-    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
-    s->multiOp(reqHdr, respHdr, rpc);
+    switch (reqHdr->type) {
+        case WireFormat::MultiOp::OpType::INCREMENT:
+            multiIncrement(reqHdr, respHdr, rpc);
+            break;
+        case WireFormat::MultiOp::OpType::READ:
+            multiRead(reqHdr, respHdr, rpc);
+            break;
+        case WireFormat::MultiOp::OpType::REMOVE:
+            multiRemove(reqHdr, respHdr, rpc);
+            break;
+        case WireFormat::MultiOp::OpType::WRITE:
+            multiWrite(reqHdr, respHdr, rpc);
+            break;
+        default:
+            LOG(ERROR, "Unimplemented multiOp (type = %u) received!",
+                    (uint32_t) reqHdr->type);
+            prepareErrorResponse(rpc->replyPayload,
+                    STATUS_UNIMPLEMENTED_REQUEST);
+            break;
+    }
 }
 
+void
+DSSNService::multiIncrement(const WireFormat::MultiOp::Request* reqHdr,
+			    WireFormat::MultiOp::Response* respHdr,
+			    Rpc* rpc)
+{
+    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
+    s->multiIncrement(reqHdr, respHdr, rpc);
+}
+
+void
+DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
+		       WireFormat::MultiOp::Response* respHdr,
+		       Rpc* rpc)
+{
+    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
+    s->multiRead(reqHdr, respHdr, rpc);
+}
+
+void
+DSSNService::multiRemove(const WireFormat::MultiOp::Request* reqHdr,
+			 WireFormat::MultiOp::Response* respHdr,
+			 Rpc* rpc)
+{
+    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
+    s->multiRemove(reqHdr, respHdr, rpc);
+}
+
+void
+DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
+			WireFormat::MultiOp::Response* respHdr,
+			Rpc* rpc)
+{
+    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
+    s->multiWrite(reqHdr, respHdr, rpc);
+}
+  
 void
 DSSNService::remove(const WireFormat::RemoveDSSN::Request* reqHdr,
 		    WireFormat::RemoveDSSN::Response* respHdr,
