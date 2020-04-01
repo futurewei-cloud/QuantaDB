@@ -35,7 +35,7 @@ class ValidatorRPCHelper {
     rejectOperation(const RejectRules* rejectRules, uint64_t version);
 
     PUBLIC:
-	ValidatorRPCHelper(Validator &validator) : validator(validator) {}
+	ValidatorRPCHelper(Validator &_validator) : validator(_validator) {}
 
 	/**
 	 * Read an object.

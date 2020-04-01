@@ -43,7 +43,7 @@ class Validator {
     ClusterTimeService clock;
     //LATER DependencyMatrix blockedTxSet;
     //KVStore kvStore;
-    HashmapKVStore kvStore;
+    HashmapKVStore &kvStore;
 
     // all SSN data maintenance operations
     bool updateTxEtaPi(TxEntry& txEntry);
@@ -72,7 +72,7 @@ class Validator {
     void sweep();
 
     PUBLIC:
-	Validator();
+	Validator(HashmapKVStore &kvStore);
 
     // start threads and work
     void start();

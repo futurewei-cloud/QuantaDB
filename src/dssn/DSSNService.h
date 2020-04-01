@@ -9,6 +9,7 @@
 #include "Service.h"
 #include "ServerConfig.h"
 #include "ServerList.h"
+#include "Validator.h"
 
 namespace DSSN {
 using namespace RAMCloud;
@@ -61,6 +62,9 @@ class DSSNService : public Service {
    ServerList* serverList;
    const ServerConfig* serverConfig;
    DISALLOW_COPY_AND_ASSIGN(DSSNService);
+
+   HashmapKVStore kvStore;
+   Validator validator;
 };
 
 

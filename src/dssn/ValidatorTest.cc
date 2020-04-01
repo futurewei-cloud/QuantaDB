@@ -25,6 +25,7 @@ class ValidatorTest : public ::testing::Test {
     Context context;
     MockCluster cluster;
     ClusterClock clusterClock;
+    HashmapKVStore kvStore;
     DSSN::Validator validator;
     TxEntry *txEntry[1000000];
     uint8_t dataBlob[512];
@@ -35,6 +36,7 @@ class ValidatorTest : public ::testing::Test {
         , context()
         , cluster(&context)
         , clusterClock()
+		, validator(kvStore)
 		, helper(validator)
     {
     }

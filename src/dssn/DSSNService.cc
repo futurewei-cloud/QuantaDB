@@ -14,6 +14,7 @@ DSSNService::DSSNService(Context* context, ServerList* serverList,
     : context(context)
     , serverList(serverList)
     , serverConfig(serverConfig)
+	, validator(kvStore)
 {
     context->services[WireFormat::DSSN_SERVICE] = this;
 }
