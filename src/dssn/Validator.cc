@@ -13,8 +13,13 @@ namespace DSSN {
 const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
 const uint64_t minTimeStamp = 0;
 
+Validator::Validator() {
+}
+
 void
 Validator::start() {
+	localTxCTSBase = clock.getLocalTime();
+
     // Henry: may need to use TBB to pin the threads to specific cores LATER
     std::thread( [=] { serialize(); });
     std::thread( [=] { validateDistributedTxs(0); });
@@ -250,14 +255,14 @@ Validator::validateDistributedTxs(int worker) {
 void
 Validator::scheduleDistributedTxs() {
 	TxEntry *txEntry;
-	uint64_t lastCTS = 0;
-    while (true) {
+    do {
     	if ((txEntry = (TxEntry *)reorderQueue.try_pop(clock.getLocalTime()))) {
-    		if (txEntry->getCTS() < lastCTS)
+    		if (txEntry->getCTS() < localTxCTSBase)
     			continue; //ignore this CI that is past a processed CI
     		while (!blockedTxSet.add(txEntry));
+    		localTxCTSBase = txEntry->getCTS();
     	}
-    }
+    } while (!isUnderTest);
 }
 
 void
@@ -268,76 +273,6 @@ Validator::serialize() {
 	bool hasEvent = true;
     while (!isUnderTest || hasEvent) {
     	hasEvent = false;
-
-        // process due commit-intents on cross-shard transaction queue
-
-
-    	/*
-    	 * Henry: To dequeue from the skip list could lower performance of this critical section.
-    	 * I propose we use a thread before this serializer thread to move the scheduled
-    	 * CIs from the skip list to a boost spsc queue. The serializer dequeues CIs
-    	 * from the spsc queue. Now whether this spsc queue is tied to the DM
-    	 * or using a different spsc queue that only contains blocked CIs to tie to DM
-    	 * is something to consider.
-    	 */
-
-        
-        /* Scheme B3
-        TXEntry *txEntry;
-        // FIXME: do we need to wait for empty execution slot here?
-        
-        if (txEntry = blockedTxSet.findReadyTx()) {
-            activeTxSet[worker].add(txEntry);
-            blockedTxSet.remove(txEntry);
-            continue;
-        }
-
-        //FIXME consider changing this to add itr one at a time.
-        for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = reorderQueue.begin(); itr != reorderQueue.end(); ++itr) {
-            txEntry = itr;
-            if (txEntry->getCTS() > currentTime() ) {
-                break;
-            } else if (blockfactor = blockedTxSet.blocks(txEntry)) {
-                blockedTxSet.add(txEntry, blockfactor);
-            } else if (blockfactor = activeTxSet.blocks(txEntry)) {
-                blockedTxSet.add(txEntry, blockfactor);
-            } else {
-                activeTxSet[worker].add(txEntry);
-                // FIXME: Log the Commit Intent 
-            }
-        }
-        */
-
-        /*
-        for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = reorderQueue.begin(); itr != reorderQueue.end(); ++itr) {
-            TXEntry *txEntry = itr;
-            if (txEntry->getCTS() > currentTime()) {
-                break; //no need to look further in the sorted queue
-            } else if (txEntry->getTxCIState() == TXEntry::TX_CI_QUEUED) {
-                //check dependency on earlier transactions
-                if (activeTxSet.depends(txEntry)) {
-                    if (txEntry->getTxCIState() == TXEntry::TX_CI_QUEUED) {
-                        txEntry->setTxCIState(TXEntry::TX_CI_WAITING);
-                        blockedTxSet.add(txEntry);
-                    }
-                    continue;
-                }
-                if (blockedTxSet.depends(txEntry)) {
-                    continue;
-                }
-
-                //schedule for validation as there is no dependency
-                if (activeTxSet.add(txEntry)) {
-                    txEntry->setTxCIState(TXEntry::TX_CI_TRANSIENT);
-                    lastCTS = txEntry->getCTS();
-
-                    //remove from blocked tx set if needed
-                    if (blockedTxSet.contains(txEntry)
-                        blockedTxSet.remove(txEntry);
-                }
-            }
-        }
-        */
 
         // process all commit-intents on local transaction queue
         TxEntry* txEntry;
@@ -351,8 +286,8 @@ Validator::serialize() {
         		 */
 
         		// As local transactions can be validated in any order, we can set the CTS.
-        		// Use lastCTS+1 as CTS. That has very little impact on cross-shard txs.
-        		txEntry->setCTS(++lastCTS);
+        		// Use the last largest cross-shard CTS as base. That has very little impact on cross-shard txs.
+        		txEntry->setCTS(++localTxCTSBase);
 
         		validateLocalTx(*txEntry);
 
@@ -361,6 +296,7 @@ Validator::serialize() {
         	hasEvent = true;
         }
 
+        // process due commit-intents on cross-shard transaction queue
         while ((txEntry = blockedTxSet.findReadyTx(activeTxSet))) {
         	assert(activeTxSet.add(txEntry));
         	txEntry->setTxCIState(TxEntry::TX_CI_TRANSIENT);
@@ -368,8 +304,6 @@ Validator::serialize() {
         }
 
         while (concludeQueue.try_pop(txEntry)) {
-        	if (lastCTS < txEntry->getCTS())
-        		lastCTS = txEntry->getCTS();
         	conclude(*txEntry);
         	hasEvent = true;
         }

@@ -37,7 +37,7 @@ class Validator {
     PeerInfo peerInfo;
 	ConcludeQueue concludeQueue;
     uint64_t alertThreshold = 1000; //LATER
-    uint64_t lastCTS = 0;
+    std::atomic<uint64_t> localTxCTSBase;
     bool isUnderTest = false;
     SkipList reorderQueue;
     ClusterTimeService clock;
@@ -72,6 +72,8 @@ class Validator {
     void sweep();
 
     PUBLIC:
+	Validator();
+
     // start threads and work
     void start();
 

@@ -193,7 +193,7 @@ class SkipList {
     inline void * try_pop(uint64_t key)
     {
         void * val = NULL;
-        if (head->forw[0] && (key <= head->forw[0]->key)) {
+        if (head->forw[0] && (key >= head->forw[0]->key)) {
             val = head->forw[0]->value;
             remove(head->forw[0]->key);
         }

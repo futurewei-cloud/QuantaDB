@@ -64,10 +64,9 @@ BlockedTxSet::add(TxEntry *txEntry) {
 	///because that could be available spot for insertion soon
 	if (waist == head && waist != tail) {
 		do {
-			uint32_t newWaist = (waist + 1) % SIZE;
-			if (txs[newWaist] != NULL && !dependsOnEarlier(newWaist))
+			if (dependsOnEarlier(waist) && !dependsOnEarlier((waist + 1) % SIZE))
 				break;
-			waist = newWaist;
+			waist = (waist + 1) % SIZE;
 		} while (tail != waist);
 	}
 

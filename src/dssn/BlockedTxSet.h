@@ -63,6 +63,8 @@ class BlockedTxSet {
     /// checks ready CI between head and tail, internally managing head
     TxEntry* findReadyTx(ActiveTxSet &activeTxSet);
 
+    uint32_t capacity() { return (tail >= head ? tail - head : tail + SIZE - head); }
+
     BlockedTxSet();
 
 }; 

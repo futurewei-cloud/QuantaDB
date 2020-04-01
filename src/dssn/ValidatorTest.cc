@@ -28,18 +28,22 @@ class ValidatorTest : public ::testing::Test {
     DSSN::Validator validator;
     TxEntry *txEntry[1000000];
     uint8_t dataBlob[512];
+	ValidatorRPCHelper helper;
 
     ValidatorTest()
         : logEnabler()
         , context()
         , cluster(&context)
         , clusterClock()
+		, helper(validator)
     {
     }
 
     DISALLOW_COPY_AND_ASSIGN(ValidatorTest);
 
     void fillTxEntry(int noEntries, int noKeys = 1, int noOfPeers = 0) {
+    	//prepare batches of 10 CIs of the same keys
+    	uint32_t batchSize = 10;
     	uint32_t keySize = 32;
         for (int i = 0; i < noEntries; i++) {
         	uint32_t rr = 0, ww = 0;
@@ -47,7 +51,8 @@ class ValidatorTest : public ::testing::Test {
         	txEntry[i]->setCTS((i+1) * 10);
         	for (int j = 0; j < noKeys; j++) {
                 KVLayout kv(keySize);
-                snprintf((char *)kv.k.key.get(), keySize, "%dhajfk78uj3kjciu3jj9jij39u9j93j", j);
+                snprintf((char *)kv.k.key.get(),
+                		keySize, "%d$%d0123456789abcdef0123456789abcdef", i % batchSize, j);
                 kv.k.keyLength = keySize;
                 kv.v.valuePtr = (uint8_t *)dataBlob;
                 kv.v.valueLength = sizeof(dataBlob);
@@ -63,6 +68,14 @@ class ValidatorTest : public ::testing::Test {
         		txEntry[i]->insertPeerSet(peerId);
         	}
         }
+    }
+
+    void fillTxEntryPeers(TxEntry *txEntry) {
+    	validator.peerInfo.add(txEntry);
+    	for (uint64_t peerId = 0; peerId <= txEntry->getPeerSet().size(); peerId++) {
+    		helper.updatePeerInfo(txEntry->getCTS(), peerId, 0, 0xfffffff);
+    	}
+
     }
 
     void freeTxEntry(int noEntries) {
@@ -96,7 +109,7 @@ class ValidatorTest : public ::testing::Test {
     	GTEST_COUT << "Total commits: " << count << std::endl;
     }
 };
-
+/*
 TEST_F(ValidatorTest, BATKVStorePutGet) {
 	fillTxEntry(1);
 
@@ -314,11 +327,12 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
 }
 
 TEST_F(ValidatorTest, BATPeerInfo) {
-	ValidatorRPCHelper helper(validator);
 
-	fillTxEntry(5, 10, 2); //2 peers
+	fillTxEntry(5, 10, 2); //5 txs of 10 keys and 2 peers
 
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
+
+    //start cross-validation but leave it unfinished
 	validator.serialize();
 	EXPECT_EQ(TxEntry::TX_PENDING, txEntry[0]->getTxState());
 
@@ -339,11 +353,37 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 	validator.peerInfo.sweep();
 	EXPECT_EQ((uint32_t)2, validator.peerInfo.size());
 
-	EXPECT_EQ((uint32_t)3, validator.concludeQueue.count);
-	validator.serialize();
-	EXPECT_EQ((uint32_t)0, validator.concludeQueue.count);
-
 	freeTxEntry(5);
+}*/
+
+TEST_F(ValidatorTest, BATValidateDistribTx) {
+    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
+
+	fillTxEntry(35, 20, 2); //35 txs of 20 keys and 2 peers
+
+	//add to reorder queue with bad order to test proper reordering
+	for (int ent = 34; ent >= 0; ent--) {
+		validator.reorderQueue.insert(txEntry[ent]->getCTS(), txEntry[ent]);
+	}
+
+	//schedule 20 txs
+	for (int i = 0; i < 20; i++) {
+		validator.scheduleDistributedTxs();
+	}
+	EXPECT_EQ(20, (int)validator.blockedTxSet.capacity());
+
+	//start cross validation without finishing
+	validator.serialize();
+	EXPECT_EQ(20, (int)validator.blockedTxSet.capacity());
+
+	//finish validation for 5 txs
+	for (int ent = 0; ent < 5; ent++)
+		fillTxEntryPeers(txEntry[ent]);
+	validator.serialize();
+	validator.scheduleDistributedTxs();
+	EXPECT_EQ(16, (int)validator.blockedTxSet.capacity());
+
+	freeTxEntry(35);
 }
 
 }  // namespace RAMCloud

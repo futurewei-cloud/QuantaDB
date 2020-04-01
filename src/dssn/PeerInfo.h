@@ -42,12 +42,16 @@ class PeerInfo {
     tbb::concurrent_unordered_map<CTS, TxEntry *> peerInfo;
 
     PUBLIC:
+	//add a tx for tracking peer info
     bool add(TxEntry* txEntry);
 
+    //free txs which have been enqueued into conclusion queue
     bool sweep();
 
+    //update peer info of a tx identified by cts and return the txEntry
     bool update(CTS cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
 
+    //current capacity
     uint32_t size();
 
 }; // end PeerInfo class
