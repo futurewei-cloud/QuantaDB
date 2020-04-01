@@ -21,6 +21,9 @@ SANITIZER ?= none
 VALGRIND ?= no
 ONLOAD_DIR ?= /usr/local/openonload-201405
 
+#set to yes to enable DSSN style of transaction
+DSSNTX ?= no
+
 ## Create a separate build directory for each git branch and for each arch
 OBJSUFFIX := $(shell git symbolic-ref -q HEAD | \
 	       sed -e s,refs/heads/,.,)
@@ -74,6 +77,11 @@ LDFLAGS += -fuse-ld=gold
 else ifeq ($(LINKER),bfd)
 LDFLAGS += -fuse-ld=bfd
 endif
+
+ifeq ($(DSSNTX), yes)
+COMFLAGS += -DDSSNTX
+endif
+
 # Google sanitizers are not compatible with each other, so only apply one at a
 # time.
 ifeq ($(SANITIZER),address)

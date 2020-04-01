@@ -172,7 +172,6 @@ struct ClientLease {
 } __attribute__((packed));
 
 struct DSSNTxMeta {
-    uint64_t cts;
     uint64_t eta;
     uint64_t pi;
 } __attribute__((packed));
@@ -1216,8 +1215,7 @@ struct MultiOp {
             uint64_t version;
 
             /// SSN tx data
-            uint64_t max_eta;
-            uint64_t min_pi;
+	    DSSNTxMeta meta;
 
             /// Length of the object data following this struct.
             uint32_t length;
@@ -1342,8 +1340,7 @@ struct Read {
         ResponseCommon common;
         uint64_t version;
         /// SSN tx data
-        uint64_t max_eta;
-        uint64_t min_pi;
+        DSSNTxMeta meta;
         uint32_t length;              // Length of the object's value in bytes.
                                       // The actual bytes of the object follow
                                       // immediately after this header.
@@ -1370,8 +1367,7 @@ struct ReadKeysAndValue {
         ResponseCommon common;
         uint64_t version;
         /// SSN tx data
-        uint64_t max_eta;
-        uint64_t min_pi;
+        DSSNTxMeta meta;
         uint32_t length;              // Length of the object's keys and value
                                       // as defined in Object.h in bytes.
                                       // The actual bytes of the object follow
@@ -1835,6 +1831,11 @@ struct TxDecision {
     } __attribute__((packed));
 };
 
+struct TxDecisionDSSN : TxDecision  { //TODO: remove, dssn doesn't need this
+    static const Opcode opcode = Opcode::TX_DECISION;
+    static const ServiceType service = DSSN_SERVICE;
+};
+
 struct TxPrepare {
     static const Opcode opcode = Opcode::TX_PREPARE;
     static const ServiceType service = MASTER_SERVICE;
@@ -1862,6 +1863,7 @@ struct TxPrepare {
 
     struct Request {
         RequestCommon common;
+        uint64_t dssnCTS;
         union {
             ClientLease lease;      // Lease information for the requested
                                     // transaction.  To ensure prepare requests
@@ -1958,8 +1960,8 @@ struct TxPrepare {
 };
 
 struct TxCommitDSSN : TxPrepare {
-    static const Opcode opcode = Opcode::TX_PREPARE;
-    static const ServiceType service = MASTER_SERVICE;
+    static const Opcode opcode = Opcode::TX_PREPARE; //TODO: replace the type
+    static const ServiceType service = DSSN_SERVICE;
 };
 
 struct TxRequestAbort {
@@ -2065,6 +2067,10 @@ struct Write {
     } __attribute__((packed));
 };
 
+struct WriteDSSN : Write {
+    static const Opcode opcode = WRITE;
+    static const ServiceType service = DSSN_SERVICE;
+};
 // DON'T DEFINE NEW RPC TYPES HERE!! Put them in alphabetical order above.
 
 Status getStatus(Buffer* buffer);

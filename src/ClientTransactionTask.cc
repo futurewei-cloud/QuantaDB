@@ -570,7 +570,11 @@ ClientTransactionTask::DecisionRpc::DecisionRpc(RamCloud* ramcloud,
                                   session,
                                   task,
                                   sizeof(WireFormat::TxDecision::Response))
+#ifdef DSSNTX
+    , reqHdr(allocHeader<WireFormat::TxDecisionDSSN>())
+#else
     , reqHdr(allocHeader<WireFormat::TxDecision>())
+#endif
 {
     reqHdr->decision = task->decision;
     reqHdr->leaseId = task->lease.leaseId;
@@ -667,7 +671,11 @@ ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
                                   session,
                                   task,
                                   sizeof(WireFormat::TxDecision::Response))
+#ifdef DSSNTX
+    , reqHdr(allocHeader<WireFormat::TxCommitDSSN>())
+#else
     , reqHdr(allocHeader<WireFormat::TxPrepare>())
+#endif
 {
     reqHdr->lease = task->lease;
     reqHdr->clientTxId = task->txId;

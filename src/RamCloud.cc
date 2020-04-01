@@ -2080,7 +2080,11 @@ ReadRpc::ReadRpc(RamCloud* ramcloud, uint64_t tableId,
             sizeof(WireFormat::Read::Response), value)
 {
     value->reset();
+#ifdef DSSNTX
+    WireFormat::Read::Request* reqHdr(allocHeader<WireFormat::ReadDSSN>());
+#else
     WireFormat::Read::Request* reqHdr(allocHeader<WireFormat::Read>());
+#endif
     reqHdr->tableId = tableId;
     reqHdr->keyLength = keyLength;
     reqHdr->rejectRules = rejectRules ? *rejectRules : defaultRejectRules;
@@ -3008,7 +3012,11 @@ WriteRpc::WriteRpc(RamCloud* ramcloud, uint64_t tableId,
     : LinearizableObjectRpcWrapper(ramcloud, true, tableId, key,
             keyLength, sizeof(WireFormat::Write::Response))
 {
+#ifdef DSSNTX
+    WireFormat::Write::Request* reqHdr(allocHeader<WireFormat::WriteDSSN>());
+#else
     WireFormat::Write::Request* reqHdr(allocHeader<WireFormat::Write>());
+#endif
     reqHdr->tableId = tableId;
 
     uint32_t totalLength = 0;
@@ -3070,7 +3078,11 @@ WriteRpc::WriteRpc(RamCloud* ramcloud, uint64_t tableId,
             keyList[0].key, keyList[0].keyLength,
             sizeof(WireFormat::Write::Response))
 {
+#ifdef DSSNTX
+    WireFormat::Write::Request* reqHdr(allocHeader<WireFormat::WriteDSSN>());
+#else
     WireFormat::Write::Request* reqHdr(allocHeader<WireFormat::Write>());
+#endif
     reqHdr->tableId = tableId;
 
     uint32_t totalLength = 0;
