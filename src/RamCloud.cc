@@ -2103,7 +2103,8 @@ ReadRpc::ReadRpc(RamCloud* ramcloud, uint64_t tableId,
  *      indicating the existence of the object is returned here.
  */
 void
-ReadRpc::wait(uint64_t* version, bool* objectExists)
+ReadRpc::wait(uint64_t* version, bool* objectExists,
+	      WireFormat::DSSNTxMeta* meta)
 {
     if (objectExists != NULL)
         *objectExists = true;
@@ -2113,6 +2114,8 @@ ReadRpc::wait(uint64_t* version, bool* objectExists)
             getResponseHeader<WireFormat::Read>());
     if (version != NULL)
         *version = respHdr->version;
+    if (meta != NULL)
+        *meta = respHdr->meta;
 
     if (respHdr->common.status != STATUS_OK) {
         if (objectExists != NULL &&
@@ -2181,7 +2184,7 @@ ReadKeysAndValueRpc::ReadKeysAndValueRpc(RamCloud* ramcloud, uint64_t tableId,
  *      indicating the existence of the object is returned here.
  */
 void
-ReadKeysAndValueRpc::wait(uint64_t* version, bool* objectExists)
+ReadKeysAndValueRpc::wait(uint64_t* version, bool* objectExists, WireFormat::DSSNTxMeta* meta)
 {
     if (objectExists != NULL)
         *objectExists = true;
@@ -2191,7 +2194,8 @@ ReadKeysAndValueRpc::wait(uint64_t* version, bool* objectExists)
             getResponseHeader<WireFormat::ReadKeysAndValue>());
     if (version != NULL)
         *version = respHdr->version;
-
+    if (meta != NULL)
+        *meta = respHdr->meta;
     if (respHdr->common.status != STATUS_OK) {
         if (objectExists != NULL &&
                 respHdr->common.status == STATUS_OBJECT_DOESNT_EXIST) {

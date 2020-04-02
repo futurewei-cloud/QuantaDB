@@ -121,6 +121,7 @@ MultiRead::readResponse(MultiOpObject* request,
         response->copy(*respOffset, part->length, data);
         req->version = part->version;
         *respOffset += part->length;
+	req->meta = part->meta;
     }
 
     return false;

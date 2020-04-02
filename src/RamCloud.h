@@ -742,18 +742,25 @@ struct MultiReadObject : public MultiOpObject {
      */
     uint64_t version;
 
+    /**
+     * SSN Meta data
+     */
+    WireFormat::DSSNTxMeta meta;
+
     MultiReadObject(uint64_t tableId, const void* key, uint16_t keyLength,
             Tub<ObjectBuffer>* value, const RejectRules* rejectRules = NULL)
         : MultiOpObject(tableId, key, keyLength)
         , value(value)
         , rejectRules(rejectRules)
         , version()
-    {}
+        , meta({0,0})
+      {}
 
     MultiReadObject()
         : value()
         , rejectRules()
         , version()
+        , meta({0,0})
     {}
 
     MultiReadObject(const MultiReadObject& other)
@@ -761,6 +768,7 @@ struct MultiReadObject : public MultiOpObject {
         , value(other.value)
         , rejectRules(other.rejectRules)
         , version(other.version)
+        , meta(other.meta)
     {}
 
     MultiReadObject& operator=(const MultiReadObject& other) {
@@ -768,6 +776,7 @@ struct MultiReadObject : public MultiOpObject {
         value = other.value;
         rejectRules = other.rejectRules;
         version = other.version;
+	meta = other.meta;
         return *this;
     }
 };
@@ -965,7 +974,8 @@ class ReadRpc : public ObjectRpcWrapper {
             uint16_t keyLength, Buffer* value,
             const RejectRules* rejectRules = NULL);
     ~ReadRpc() {}
-    void wait(uint64_t* version = NULL, bool* objectExists = NULL);
+    void wait(uint64_t* version = NULL, bool* objectExists = NULL,
+	      WireFormat::DSSNTxMeta* meta = NULL);
 
   PRIVATE:
     DISALLOW_COPY_AND_ASSIGN(ReadRpc);
@@ -982,7 +992,8 @@ class ReadKeysAndValueRpc : public ObjectRpcWrapper {
             uint16_t keyLength, ObjectBuffer* value,
             const RejectRules* rejectRules = NULL);
     ~ReadKeysAndValueRpc() {}
-    void wait(uint64_t* version = NULL, bool* objectExists = NULL);
+    void wait(uint64_t* version = NULL, bool* objectExists = NULL,
+	      WireFormat::DSSNTxMeta* meta = NULL);
 
   PRIVATE:
     DISALLOW_COPY_AND_ASSIGN(ReadKeysAndValueRpc);

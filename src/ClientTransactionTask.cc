@@ -463,7 +463,7 @@ ClientTransactionTask::sendPrepareRpc()
             rpcSession =
                     ramcloud->clientContext->objectFinder->lookup(key->tableId,
                                                                   key->keyHash);
-            prepareRpcs.emplace_back(ramcloud, rpcSession, this);
+            prepareRpcs.emplace_back(ramcloud, rpcSession, this, entry);
             nextRpc = &prepareRpcs.back();
         }
 
@@ -666,7 +666,9 @@ ClientTransactionTask::DecisionRpc::markOpsForRetry()
  *      Pointer to the transaction task that issued this request.
  */
 ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
-        Transport::SessionRef session, ClientTransactionTask* task)
+					      Transport::SessionRef session,
+					      ClientTransactionTask* task,
+					      CacheEntry* entry)
     : ClientTransactionRpcWrapper(ramcloud,
                                   session,
                                   task,
@@ -677,12 +679,19 @@ ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
     , reqHdr(allocHeader<WireFormat::TxPrepare>())
 #endif
 {
-    reqHdr->lease = task->lease;
     reqHdr->clientTxId = task->txId;
     reqHdr->ackId = ramcloud->rpcTracker->ackId();
     reqHdr->participantCount = task->participantCount;
     reqHdr->opCount = 0;
     request.appendExternal(&task->participantList);
+#ifdef DSSNTX
+    if (entry) {
+        reqHdr->meta = entry->meta;
+    }
+#else
+    reqHdr->lease = task->lease;
+#endif
+    //TODO: fill the cts
 }
 
 /**
