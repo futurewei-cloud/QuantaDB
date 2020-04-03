@@ -133,6 +133,17 @@ ClientTransactionTask::performTask()
             processPrepareRpcResults();
             if (prepareRpcs.empty() && nextCacheEntry == commitCache.end()) {
                 switch (decision) {
+#ifdef DSSNTX
+		   case WireFormat::TxDecision::UNDECIDED:
+		        //For DSSN, it doesn't support this mode
+		        RAMCLOUD_LOG(ERROR, "Validator returns undecided decision");
+			assert(1);
+			break;
+                    case WireFormat::TxDecision::ABORT:
+                        // fall through to declare the
+                        // transaction DONE.
+                        FALLS_THROUGH_TO
+#else
                     case WireFormat::TxDecision::UNDECIDED:
                         // Decide to commit.
                         decision = WireFormat::TxDecision::COMMIT;
@@ -150,6 +161,7 @@ ClientTransactionTask::performTask()
                         // else NO break; fall through to declare the
                         // transaction DONE.
                         FALLS_THROUGH_TO
+#endif
                     case WireFormat::TxDecision::COMMIT:
                         // Prepare must have returned COMMITTED or was READ-ONLY
                         // so the transaction is now done.
