@@ -349,6 +349,7 @@ Transaction::ReadOp::wait(bool* objectExists)
     }
 
     ClientTransactionTask* task = transaction->taskPtr.get();
+    WireFormat::DSSNTxMeta meta = {0,0};
 
     Key keyObj(tableId, keyBuf, 0, keyLength);
     ClientTransactionTask::CacheEntry* entry = task->findCacheEntry(keyObj);
@@ -366,7 +367,7 @@ Transaction::ReadOp::wait(bool* objectExists)
             // If no entry exists in cache an rpc must have been issued.
             assert(singleRequest->readRpc);
 
-            singleRequest->readRpc->wait(&version, &objectFound);
+            singleRequest->readRpc->wait(&version, &objectFound, &meta);
             if (objectFound)
                 data = buf->getValue(&dataLength);
         } else {
@@ -382,6 +383,7 @@ Transaction::ReadOp::wait(bool* objectExists)
             switch (batchedRequest->request.status) {
                 case STATUS_OK:
                     version = batchedRequest->request.version;
+		    meta = batchedRequest->request.meta;
                     data = buf->getValue(&dataLength);
                     break;
                 case STATUS_OBJECT_DOESNT_EXIST:
@@ -404,6 +406,7 @@ Transaction::ReadOp::wait(bool* objectExists)
             entry->rejectRules.doesntExist = true;
             entry->rejectRules.givenVersion = version;
             entry->rejectRules.versionNeGiven = true;
+	    entry->meta = meta;
         } else {
             // Object did not exists at the time of the read so remember to
             // reject (abort) the transaction if it does exist.
