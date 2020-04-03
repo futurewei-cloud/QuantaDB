@@ -368,24 +368,70 @@ TEST_F(ValidatorTest, BATValidateDistribTx) {
 		validator.reorderQueue.insert(txEntry[ent]->getCTS(), txEntry[ent]);
 	}
 
-	//schedule 20 txs
-	for (int i = 0; i < 20; i++) {
+	//schedule 25 txs
+	for (int i = 0; i < 25; i++) {
 		validator.scheduleDistributedTxs();
 	}
-	EXPECT_EQ(20, (int)validator.blockedTxSet.capacity());
+	EXPECT_EQ(25, (int)validator.blockedTxSet.size());
+	EXPECT_EQ(25, (int)validator.blockedTxSet.count());
 
 	//start cross validation without finishing
-	validator.serialize();
-	EXPECT_EQ(20, (int)validator.blockedTxSet.capacity());
+	validator.serialize(); //expect first 10 removed but waist has not advanced yet
+	EXPECT_EQ(24, (int)validator.blockedTxSet.size());
+	EXPECT_EQ(15, (int)validator.blockedTxSet.count());
+
+	validator.scheduleDistributedTxs(); //add 1 and would advance waist
+	validator.serialize(); //would advance head
+	//EXPECT_EQ(16, (int)validator.blockedTxSet.capacity());
 
 	//finish validation for 5 txs
 	for (int ent = 0; ent < 5; ent++)
-		fillTxEntryPeers(txEntry[ent]);
+		fillTxEntryPeers(txEntry[ent]); //note: this will cause assertion if those 5 have not been added to activeTxSet
+	validator.scheduleDistributedTxs(); //add 1
+	validator.serialize(); //expect 5 more removed
+	EXPECT_EQ(12, (int)validator.blockedTxSet.size());
+
+	validator.scheduleDistributedTxs(); //add 1
 	validator.serialize();
-	validator.scheduleDistributedTxs();
-	EXPECT_EQ(16, (int)validator.blockedTxSet.capacity());
+	EXPECT_EQ(13, (int)validator.blockedTxSet.size());
+
+	fillTxEntryPeers(txEntry[7]); //finish 7th
+	validator.serialize(); //expect 17th removed
+	fillTxEntryPeers(txEntry[17]); //finish 17th
+	validator.serialize(); //expect 27th removed
+	validator.scheduleDistributedTxs(); //insert 1 at 27th place
+	EXPECT_EQ(13, (int)validator.blockedTxSet.size());
 
 	freeTxEntry(35);
+}
+
+TEST_F(ValidatorTest, BATFindReadyTxPerf) {
+    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
+
+    //int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
+    int size = 10000;
+    uint64_t start, stop;
+
+    fillTxEntry(size, 2);
+
+    //time all operations
+    start = Cycles::rdtscp();
+    for (int i = 0; i < size; i++) {
+    	validator.blockedTxSet.add(txEntry[i]);
+    }
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "blockedTxSet.add (" << validator.blockedTxSet.size() << "): Total cycles " << (stop - start) << std::endl;
+    GTEST_COUT << "Sec per add: " << (Cycles::toSeconds(stop - start) / validator.blockedTxSet.size())  << std::endl;
+
+    validator.serialize(); //remove all overhead of successful scheduling
+
+    start = Cycles::rdtscp();
+    validator.blockedTxSet.findReadyTx(validator.activeTxSet);
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "findReadTx (" << validator.blockedTxSet.size() << "): Total cycles " << (stop - start) << std::endl;
+    GTEST_COUT << "Sec per try: " << (Cycles::toSeconds(stop - start))  << std::endl;
+
+	freeTxEntry(size);
 }
 
 }  // namespace RAMCloud

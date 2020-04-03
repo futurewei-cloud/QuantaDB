@@ -12,7 +12,7 @@
 
 namespace DSSN {
 
-const uint32_t SIZE = 1024;
+const uint32_t SIZE = 65536;
 
 /*
  * The class contains some due cross-shard CIs that are blocked by activeTxSet.
@@ -43,6 +43,7 @@ class BlockedTxSet {
 	//summary dependency, showing tx R independent of all earlier txs queued
 	uint64_t summaryDependBits[SIZE / 64];
 
+	//array of commit-intents, NULL meaning empty slot
 	TxEntry* txs[SIZE];
 
 	//indexes of the above arrays
@@ -50,7 +51,15 @@ class BlockedTxSet {
 	uint32_t waist;
 	uint32_t tail;
 
-	inline bool isKeySetOverlapped(TxEntry *tx1, TxEntry *tx2);
+	//for performance optimization
+	uint64_t activeTxSetSignature = -1;
+	uint64_t blockedTxSetSignature = -1;
+	uint64_t addedTxCount = 0;
+	uint64_t removedTxCount = 0;
+
+	inline bool isKeySetOverlapped(boost::scoped_array<uint64_t> &set1, uint32_t size1,
+			boost::scoped_array<uint64_t> &set2, uint32_t size2);
+	inline bool isTxKeySetOverlapped(TxEntry *tx1, TxEntry *tx2);
 	inline bool dependsOnEarlier(uint32_t idx) { return summaryDependBits[idx / 64] & (1 << (idx % 64)); }
 	inline void removeDependency(uint32_t idx);
 
@@ -63,7 +72,9 @@ class BlockedTxSet {
     /// checks ready CI between head and tail, internally managing head
     TxEntry* findReadyTx(ActiveTxSet &activeTxSet);
 
-    uint32_t capacity() { return (tail >= head ? tail - head : tail + SIZE - head); }
+    uint32_t size() { return (tail >= head ? tail - head : tail + SIZE - head); }
+
+    uint32_t count() { return (addedTxCount - removedTxCount); }
 
     BlockedTxSet();
 

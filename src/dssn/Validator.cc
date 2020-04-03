@@ -79,7 +79,7 @@ Validator::updateKVReadSetEta(TxEntry &txEntry) {
 		if (readSet[i]) {
 			kvStore.maximizeMetaEta(readSet[i], txEntry.getCTS());
 		} else {
-			//put a tombstoned entry in KVStore???
+			//Fixme: put a tombstoned entry in KVStore???
 			//or leave it blank???
 		}
 	}
@@ -326,6 +326,7 @@ Validator::conclude(TxEntry& txEntry) {
 	if (txEntry.getPeerSet().size() >= 1)
 		activeTxSet.remove(&txEntry);
 
+	txEntry.setTxCIState(TxEntry::TX_CI_FINISHED);
 	return true;
 }
 

@@ -22,6 +22,8 @@ namespace DSSN {
 class ActiveTxSet {
     PROTECTED:
     CountBloomFilter cbf;
+    uint64_t removedTxCount = 0;
+    uint64_t addedTxCount = 0;
 
     PUBLIC:
     // false if the key is failed to be added due to overflow
@@ -31,6 +33,8 @@ class ActiveTxSet {
     bool remove(TxEntry *txEntry);
 
     bool blocks(TxEntry *txEntry);
+
+    inline uint64_t getRemovedTxCount() { return removedTxCount; }
 
     ActiveTxSet() { cbf.clear(); }
 
