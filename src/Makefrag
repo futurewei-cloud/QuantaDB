@@ -92,6 +92,7 @@ SHARED_SRCFILES := \
 		   src/dssn/DSSNService.cc \
 		   src/dssn/ValidatorRPCHelper.cc \
 		   src/dssn/BlockedTxSet.cc \
+		   src/dssn/DistributedTxSet.cc \
 		   src/IndexKey.cc \
 		   src/IndexletManager.cc \
 		   src/IndexLookup.cc \
