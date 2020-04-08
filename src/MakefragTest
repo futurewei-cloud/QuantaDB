@@ -26,6 +26,8 @@ else
 DPDK_SRCFILES :=
 endif
 
+ifeq ($(DSSNTX),yes)
+#DSSN specific test files
 TESTS_SRCFILES := \
 		  src/dssn/SkipListTest.cc \
 		  src/dssn/HashmapTest.cc \
@@ -33,7 +35,14 @@ TESTS_SRCFILES := \
 		  src/dssn/ClusterTimeServiceTest.cc \
 		  src/dssn/SequencerTest.cc \
 		  src/dssn/ValidatorTest.cc \
-		  src/btreeRamCloud/BtreeTest.cc \
+		  src/MockCluster.cc \
+		  src/MockTransport.cc \
+		  src/TestRunner.cc \
+		  src/TestUtil.cc
+else
+#RamCloud Test files
+TESTS_SRCFILES := \
+	          src/btreeRamCloud/BtreeTest.cc \
 		  src/AbstractLogTest.cc \
 		  src/AbstractServerListTest.cc \
 		  src/AdminServiceTest.cc \
@@ -204,6 +213,7 @@ TESTS_SRCFILES := \
 		  $(SOLARFLARE_SRCFILES) \
 		  $(DPDK_SRCFILES) \
 		  $(OBJDIR)/ProtoBufTest.pb.cc
+endif
 
 TESTS_OBJFILES := $(TESTS_SRCFILES)
 TESTS_OBJFILES := $(patsubst src/%.cc, $(OBJDIR)/%.o, $(TESTS_OBJFILES))
