@@ -271,14 +271,16 @@ main(int argc, char *argv[])
 
         if (masterOnly) {
             config.services = {WireFormat::MASTER_SERVICE,
-                               WireFormat::ADMIN_SERVICE};
+                               WireFormat::ADMIN_SERVICE,
+			       WireFormat::DSSN_SERVICE};
         } else if (backupOnly) {
             config.services = {WireFormat::BACKUP_SERVICE,
                                WireFormat::ADMIN_SERVICE};
         } else {
             config.services = {WireFormat::MASTER_SERVICE,
                                WireFormat::BACKUP_SERVICE,
-                               WireFormat::ADMIN_SERVICE};
+                               WireFormat::ADMIN_SERVICE,
+	                       WireFormat::DSSN_SERVICE};
         }
 
         const string localLocator = optionParser.options.getLocalLocator();
