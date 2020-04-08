@@ -1219,6 +1219,64 @@ GetTableIdRpc::wait()
     return respHdr->tableId;
 }
 
+void
+RamCloud::notify(const WireFormat::Opcode type, const void* message,
+		 const uint32_t length, Transport::SessionRef* endpoint,
+		 const char* serviceLocator)
+{
+    NotificationRpc* rpc = NULL;
+    if (endpoint != NULL) {
+        rpc = new NotificationRpc(this, *endpoint, type, message, length);
+    } else if (serviceLocator != NULL) {
+        rpc = new NotificationRpc(this, serviceLocator, type, message, length);
+    } else {
+        assert(!"Service endpoint is required");
+    }
+    rpc->wait();
+    delete rpc;
+}
+NotificationRpc::NotificationRpc(RamCloud* ramcloud, const char* serviceLocator,
+				 const WireFormat::Opcode type,
+				 const void* message,
+				 const uint32_t length)
+    : RpcWrapper(0, NULL, false)
+    , ramcloud(ramcloud)
+{
+    try {
+        session = ramcloud->clientContext->transportManager->getSession(
+                serviceLocator);
+    } catch (const TransportException& e) {
+        session = FailSession::get();
+    }
+
+    WireFormat::Notification::Request* reqHdr(allocHeader<WireFormat::Notification>(type));
+    reqHdr->length = length;
+    request.appendExternal(message, length);
+    send();
+}
+
+NotificationRpc::NotificationRpc(RamCloud* ramcloud,
+				 const Transport::SessionRef s,
+				 const WireFormat::Opcode type,
+				 const void* message,
+				 const uint32_t length)
+    : RpcWrapper(0, NULL, false)
+    , ramcloud(ramcloud)
+{
+    WireFormat::Notification::Request* reqHdr(allocHeader<WireFormat::Notification>(type));
+    reqHdr->length = length;
+    request.appendExternal(message, length);
+    session = s;
+    send();
+}
+
+
+void
+NotificationRpc::wait()
+{
+    waitInternal(ramcloud->clientContext->dispatch);
+}
+
 /**
  * Atomically increment the value of an object whose contents are an
  * IEEE754 double precision 8-byte floating point value.  If the object does
@@ -2164,8 +2222,13 @@ ReadKeysAndValueRpc::ReadKeysAndValueRpc(RamCloud* ramcloud, uint64_t tableId,
             sizeof(WireFormat::ReadKeysAndValue::Response), value)
 {
     value->reset();
+#ifdef DSSNTX
+    WireFormat::ReadKeysAndValue::Request* reqHdr(allocHeader<
+                            WireFormat::ReadKeysAndValueDSSN>());
+#else
     WireFormat::ReadKeysAndValue::Request* reqHdr(allocHeader<
                             WireFormat::ReadKeysAndValue>());
+#endif
     reqHdr->tableId = tableId;
     reqHdr->keyLength = keyLength;
     reqHdr->rejectRules = rejectRules ? *rejectRules : defaultRejectRules;

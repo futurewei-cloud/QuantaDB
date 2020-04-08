@@ -815,7 +815,9 @@ void
 TcpTransport::TcpSession::sendRequest(Buffer* request, Buffer* response,
         RpcNotifier* notifier)
 {
-    response->reset();
+    if (notifier->requiredRsp()) {
+        response->reset();
+    }
     if (fd == -1) {
         notifier->failed();
         return;

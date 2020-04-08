@@ -57,7 +57,7 @@ class RamCloud;
 class RpcWrapper : public Transport::RpcNotifier {
   public:
     explicit RpcWrapper(uint32_t responseHeaderLength,
-            Buffer* response = NULL);
+			Buffer* response = NULL, bool isRspRequired = true);
     virtual ~RpcWrapper();
 
     void cancel();
@@ -110,6 +110,25 @@ class RpcWrapper : public Transport::RpcNotifier {
                 "must pass targetId to allocHeader");
         memset(reqHdr, 0, sizeof(*reqHdr));
         reqHdr->common.opcode = RpcType::opcode;
+        reqHdr->common.service = RpcType::service;
+        return reqHdr;
+    }
+
+    template <typename RpcType>
+    typename RpcType::Request*
+    allocHeader(WireFormat::Opcode type)
+    {
+        assert(request.size() == 0);
+        typename RpcType::Request* reqHdr =
+                request.emplaceAppend<typename RpcType::Request>();
+        // Don't allow this method to be used for RPCs that use
+        // RequestCommonWithId as the header; use the other form
+        // with targetId instead.
+        static_assert(sizeof(reqHdr->common) ==
+                sizeof(WireFormat::RequestCommon),
+                "must pass targetId to allocHeader");
+        memset(reqHdr, 0, sizeof(*reqHdr));
+        reqHdr->common.opcode = type;
         reqHdr->common.service = RpcType::service;
         return reqHdr;
     }

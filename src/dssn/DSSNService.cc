@@ -72,8 +72,38 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
 		  Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
-    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
-    s->read(reqHdr, respHdr, rpc);
+
+    uint32_t reqOffset = sizeof32(*reqHdr);
+    const void* stringKey = rpc->requestPayload->getRange(
+            reqOffset, reqHdr->keyLength);
+
+    if (stringKey == NULL) {
+        respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+        rpc->sendReply();
+        return;
+    }
+
+    uint64_t tableId = reqHdr->tableId;
+    KLayout k(reqHdr->keyLength + sizeof(tableId)); //make room composite key in KVStore
+    std::memcpy(k.key.get(), &tableId, sizeof(tableId));
+    std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
+
+    KVLayout *kv = kvStore->fetch(k);
+    if (!kv) {
+        respHdr->common.status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
+        return;
+    }
+
+    Buffer buffer;
+    uint32_t initialLength = rpc->replyPayload->size();
+
+    uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout()->valueLength));
+    std::memcpy(p, kv->getVLayout()->valuePtr, kv->getVLayout()->valueLength);
+
+    Object object(tableId, 0, 0, buffer);
+    object.appendValueToBuffer(rpc->replyPayload);
+
+    respHdr->length = rpc->replyPayload->size() - initialLength;
 }
 
 void
@@ -82,8 +112,38 @@ DSSNService::readKeysAndValue(const WireFormat::ReadKeysAndValueDSSN::Request* r
 			      Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
-    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
-    s->readKeysAndValue(reqHdr, respHdr, rpc);
+
+    uint32_t reqOffset = sizeof32(*reqHdr);
+    const void* stringKey = rpc->requestPayload->getRange(
+            reqOffset, reqHdr->keyLength);
+
+    if (stringKey == NULL) {
+        respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+        rpc->sendReply();
+        return;
+    }
+
+    uint64_t tableId = reqHdr->tableId;
+    KLayout k(reqHdr->keyLength + sizeof(tableId)); //make room composite key in KVStore
+    std::memcpy(k.key.get(), &tableId, sizeof(tableId));
+    std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
+
+    KVLayout *kv = kvStore->fetch(k);
+    if (!kv) {
+        respHdr->common.status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
+        return;
+    }
+
+    Buffer buffer;
+    uint32_t initialLength = rpc->replyPayload->size();
+
+    uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout()->valueLength));
+    std::memcpy(p, kv->getVLayout()->valuePtr, kv->getVLayout()->valueLength);
+
+    Object object(tableId, 0, 0, buffer);
+    object.appendKeysAndValueToBuffer(*(rpc->replyPayload));
+
+    respHdr->length = rpc->replyPayload->size() - initialLength;
 }
 
 void
@@ -166,8 +226,35 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
 		  Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
-    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
-    s->write(reqHdr, respHdr, rpc);
+
+    // A temporary object that has an invalid version and timestamp
+    // is created here to make sure the object format does not leak
+    // outside the object class.
+    Object object(reqHdr->tableId, 0, 0, *(rpc->requestPayload),
+            sizeof32(*reqHdr));
+
+    KeyLength pKeyLen;
+    const void* pKey = object.getKey(0, &pKeyLen);
+    const void* pVal = object.getKeysAndValue();
+    uint32_t pValLen = object.getKeysAndValueLength();
+
+    uint64_t tableId = object.getTableId();
+    KVLayout pkv(pKeyLen + sizeof(tableId)); //make room composite key in KVStore
+    std::memcpy(pkv.getKey(), &tableId, sizeof(tableId));
+    std::memcpy(pkv.getKey() + sizeof(tableId), pKey, pKeyLen);
+    pkv.v.valueLength = pValLen;
+    pkv.v.valuePtr = (uint8_t*)const_cast<void*>(pVal);
+
+    KVLayout *kv = kvStore->fetch(pkv.k);
+
+    if (kv == NULL) {
+        KVLayout *nkv = kvStore->preput(pkv);
+        kvStore->putNew(nkv, 0, 0xffffffffffffffff);
+    } else {
+        void * pval = new char[pValLen];
+        std::memcpy(pval, pVal, pValLen);
+        kvStore->put(kv, 0, 0xffffffffffffffff, (uint8_t*)pval, pValLen);
+    }
 }
   
 void
