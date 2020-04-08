@@ -8,9 +8,6 @@
 
 namespace DSSN {
 
-DistributedTxSet::DistributedTxSet() {
-}
-
 template <class T>
 bool
 DistributedTxSet::dependsOnEarlierTxs(T &cbf, TxEntry *txEntry, uint32_t &count) {
@@ -98,26 +95,21 @@ bool
 DistributedTxSet::add(TxEntry *txEntry) {
 	uint32_t count;
 	if (dependsOnEarlierTxs(hotDependCBF, txEntry, count)) {
-		if (count >= hotDependCBF.countLimit())
-			return false;
-		return addToHotTxs(txEntry);
+		return (count >= hotDependCBF.countLimit() ? false : addToHotTxs(txEntry));
 	}
 
 	if (dependsOnEarlierTxs(coldDependCBF, txEntry, count)) {
-		if (count >= hotThreshold)
-			return addToHotTxs(txEntry);
-		if (count >= coldDependCBF.countLimit())
-			return false;
-		return addToColdTxs(txEntry);
+		if (count >= hotThreshold) {
+			return (count >= hotDependCBF.countLimit() ? false : addToHotTxs(txEntry));
+		}
+		return (count >= coldDependCBF.countLimit() ? false : addToColdTxs(txEntry));
 	}
 
 	if (dependsOnEarlierTxs(independentCBF, txEntry, count)) {
-		if (count >= independentCBF.countLimit())
-			return false;
-		return addToColdTxs(txEntry);
+		return (count >= coldDependCBF.countLimit() ? false : addToColdTxs(txEntry));
 	}
 
-	return addToIndependentTxs(txEntry);
+	return (count >= independentCBF.countLimit() ? false : addToIndependentTxs(txEntry));
 }
 
 TxEntry*

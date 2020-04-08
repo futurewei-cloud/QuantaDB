@@ -18,6 +18,7 @@
 #include <boost/lockfree/queue.hpp>
 #include "SkipList.h"
 #include "ClusterTimeService.h"
+#include "DistributedTxSet.h"
 
 namespace DSSN {
 
@@ -31,7 +32,8 @@ namespace DSSN {
 class Validator {
     PROTECTED:
 
-    WaitQueue localTxQueue;
+    WaitQueue localTxQueue; //Fixme: change to WaitList
+    DistributedTxSet distributedTxSet;
     ActiveTxSet activeTxSet;
     BlockedTxSet blockedTxSet;
     PeerInfo peerInfo;

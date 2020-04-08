@@ -86,6 +86,7 @@ class WaitList {
     			break;
     		head = (head + 1) % size;
     	}
+    	removedTxCount++;
     	return true;
     }
 

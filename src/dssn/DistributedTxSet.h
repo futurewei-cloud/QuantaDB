@@ -9,7 +9,6 @@
 
 #include "TxEntry.h"
 #include "ActiveTxSet.h"
-#include <boost/lockfree/spsc_queue.hpp>
 #include "CountBloomFilter.h"
 #include "WaitList.h"
 
@@ -79,9 +78,11 @@ class DistributedTxSet {
     // return the CI that is not blocked by active tx set nor by any earlier CIs
     TxEntry* findReadyTx(ActiveTxSet &activeTxSet);
 
-    uint32_t count() { return (addedTxCount - removedTxCount); } //Fixeme
-
-    DistributedTxSet();
+    // for debugging
+    uint32_t count() { return (addedTxCount - removedTxCount); }
+    uint32_t independentQueueCount() { return independentQueue.count(); }
+    uint32_t coldQueueCount() { return coldDependQueue.count(); }
+    uint32_t hotQueueCount() { return hotDependQueue.count(); }
 
 }; 
 

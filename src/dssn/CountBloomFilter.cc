@@ -42,7 +42,7 @@ bool
 CountBloomFilter<T>::add(uint64_t hash) {
 	//overflow protection here is not necessary if the caller uses shoudlNotAdd() properly
 	uint64_t idx1 = (hash >> 32) % size, idx2 = (hash & 0xffffffff) % size;
-	if (counters[idx1] < 255 && counters[idx2] < 255) {
+	if (counters[idx1] < depth && counters[idx2] < depth) {
 		counters[idx1]++;
 		counters[idx2]++;
 		return true;

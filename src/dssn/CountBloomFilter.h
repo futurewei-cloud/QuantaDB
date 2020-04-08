@@ -23,8 +23,8 @@ class CountBloomFilter {
     PROTECTED:
     std::atomic<T> *counters;
     CountBloomFilter& operator=(const CountBloomFilter&);
-    uint32_t size = 65536; //number of counters
-    uint32_t depth = 255; //max counter value allowed
+    uint32_t size{65536}; //number of counters
+    uint32_t depth{255}; //max counter value allowed
 
     PUBLIC:
 	CountBloomFilter();
@@ -32,22 +32,22 @@ class CountBloomFilter {
 	~CountBloomFilter();
 
     // false if the key is failed to be added due to overflow
-    inline bool add(uint64_t hash);
+    bool add(uint64_t hash);
 
     // for performance, the key is assumed to have been added
-    inline bool remove(uint64_t hash);
+    bool remove(uint64_t hash);
 
     // test whether ok to add
-    inline bool shouldNotAdd(uint64_t hash);
+    bool shouldNotAdd(uint64_t hash);
 
     // return the maximum of the bucket counts when there is a hit; otherwise, 0
-    inline uint64_t hitCount(uint64_t hash);
+    uint64_t hitCount(uint64_t hash);
 
-    inline uint32_t countLimit() { return this->depth; }
+    uint32_t countLimit() { return this->depth; }
 
-    inline bool clear();
+    bool clear();
 
-    inline void createIndexesFromKey(const uint8_t *key, uint32_t size, uint64_t *idx1, uint64_t *idx2);
+    void createIndexesFromKey(const uint8_t *key, uint32_t size, uint64_t *idx1, uint64_t *idx2);
 
 }; // end CountBloomFilter class
 

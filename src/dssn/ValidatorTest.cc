@@ -358,7 +358,47 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 	freeTxEntry(5);
 }*/
 
-TEST_F(ValidatorTest, BATValidateDistribTx) {
+
+TEST_F(ValidatorTest, BATDistributedTxSetPerf) {
+    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
+
+    int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
+    uint64_t start, stop;
+
+    fillTxEntry(size, 20);
+
+    //time all operations
+    start = Cycles::rdtscp();
+    for (int i = 0; i < size; i++) {
+    	validator.distributedTxSet.add(txEntry[i]);
+    }
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "distributedTxSet.add (" << size << ") [" <<  validator.distributedTxSet.count()
+    		<< "ok]:  Total cycles " << (stop - start) << std::endl;
+    GTEST_COUT << "Sec per add: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
+
+    EXPECT_EQ(10, (int)validator.distributedTxSet.independentQueueCount());
+    EXPECT_EQ(validator.distributedTxSet.count(),
+    		validator.distributedTxSet.independentQueueCount() +
+			validator.distributedTxSet.coldQueueCount() +
+			validator.distributedTxSet.hotQueueCount());
+
+    GTEST_COUT << "independ: " << validator.distributedTxSet.independentQueueCount()
+    		<< "; cold: " << validator.distributedTxSet.coldQueueCount()
+			<< "; hot: " << validator.distributedTxSet.hotQueueCount()
+			<< std::endl;
+
+    start = Cycles::rdtscp();
+    validator.distributedTxSet.findReadyTx(validator.activeTxSet);
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "findReadyTx (" << validator.distributedTxSet.count() << "): Total cycles " << (stop - start) << std::endl;
+    GTEST_COUT << "Sec per try: " << (Cycles::toSeconds(stop - start) / validator.distributedTxSet.count())  << std::endl;
+
+	freeTxEntry(size);
+}
+
+/*
+TEST_F(ValidatorTest, BATDependencyMatrix) {
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
 
 	fillTxEntry(35, 20, 2); //35 txs of 20 keys and 2 peers
@@ -405,7 +445,7 @@ TEST_F(ValidatorTest, BATValidateDistribTx) {
 	freeTxEntry(35);
 }
 
-TEST_F(ValidatorTest, BATFindReadyTxPerf) {
+TEST_F(ValidatorTest, BATDependencyMatrixPerf) {
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
 
     //int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
@@ -432,6 +472,6 @@ TEST_F(ValidatorTest, BATFindReadyTxPerf) {
     GTEST_COUT << "Sec per try: " << (Cycles::toSeconds(stop - start))  << std::endl;
 
 	freeTxEntry(size);
-}
+}*/
 
 }  // namespace RAMCloud
