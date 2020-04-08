@@ -63,8 +63,8 @@ class DSSNService : public Service {
    const ServerConfig* serverConfig;
    DISALLOW_COPY_AND_ASSIGN(DSSNService);
 
-   HashmapKVStore kvStore;
-   Validator validator;
+   HashmapKVStore* kvStore;
+   Validator* validator;
 };
 
 

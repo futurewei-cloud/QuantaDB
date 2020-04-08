@@ -12,6 +12,7 @@ bool
 ActiveTxSet::add(TxEntry *txEntry) {
     for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
         bool success = cbf.add(txEntry->getReadSetHash()[i]);
+        assert(success);
         if (!success) {
             // undo effects
             for (int j = i - 1; j >= 0; j--) {
@@ -22,14 +23,19 @@ ActiveTxSet::add(TxEntry *txEntry) {
     }
     for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
         bool success = cbf.add(txEntry->getWriteSetHash()[i]);
+        assert(success);
         if (!success) {
             // undo effects
             for (int j = i - 1; j >= 0; j--) {
                 cbf.remove(txEntry->getWriteSetHash()[j]);
             }
+            for (uint32_t j = 0; j < txEntry->getReadSetSize(); j++) {
+                cbf.remove(txEntry->getReadSetHash()[j]);
+            }
             return false;
         }
     }
+    addedTxCount++;
     return true;
 }
 
@@ -41,6 +47,7 @@ ActiveTxSet::remove(TxEntry *txEntry) {
     for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
         assert(cbf.remove(txEntry->getWriteSetHash()[i]));
     }
+    removedTxCount++;
     return true;
 }
 

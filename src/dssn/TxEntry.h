@@ -95,7 +95,10 @@ class TxEntry {
         TX_CI_INPROGRESS = 5,
 
         /* Transaction commit-intent is scheduled, and its local SSN eta and pi are finalized */
-        TX_CI_CONCLUDED = 6
+        TX_CI_CONCLUDED = 6,
+
+		/* Transaction commit-intent is finished, and txEntry can be purged */
+		TX_CI_FINISHED = 7,
     };
 
     enum {

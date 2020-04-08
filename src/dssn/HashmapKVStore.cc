@@ -25,7 +25,7 @@ bool HashmapKVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
 	kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
 	kv->getMeta().pStampPrev = 0;
 	kv->getMeta().sStampPrev = pi;
-	kv->getMeta().sStamp = 0xffffffffffffffff;
+	kv->getMeta().sStamp = cts; //Fixme: tx pi or tx cts? the SSN paper is vague about this
     Element * elem = new Element(kv);
     elem_pointer<Element> lptr = my_hashtable->put(elem->key, elem);
     return lptr.ptr_ != NULL;
@@ -36,7 +36,7 @@ bool HashmapKVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *value
 	kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
 	kv->getMeta().pStampPrev = kv->getMeta().pStamp;
 	kv->getMeta().sStampPrev = pi;
-	kv->getMeta().sStamp = 0xffffffffffffffff;
+	kv->getMeta().sStamp = cts; //Fixme: tx pi or tx cts? the SSN paper is vague about this
     if (kv->v.valuePtr)
 	    delete kv->v.valuePtr;
 	kv->v.valueLength = valueLength;

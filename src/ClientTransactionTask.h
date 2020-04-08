@@ -22,6 +22,7 @@
 
 #include "Dispatch.h"
 #include "RamCloud.h"
+#include "WireFormat.h"
 
 namespace RAMCloud {
 
@@ -48,6 +49,8 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
         /// Conditions upon which the transaction operation associated with
         /// this object should abort.
         RejectRules rejectRules;
+        /// DSSN specific Meta data
+        WireFormat::DSSNTxMeta meta;
 
         /// The rpcId to uniquely identify this operation.
         uint64_t rpcId;
@@ -60,6 +63,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
             : type(CacheEntry::INVALID)
             , objectBuf()
             , rejectRules({0, 0, 0, 0, 0})
+	    , meta({0,0})
             , rpcId(0)
             , state(PENDING)
         {}
@@ -225,7 +229,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
     class PrepareRpc : public ClientTransactionRpcWrapper {
       PUBLIC:
         PrepareRpc(RamCloud* ramcloud, Transport::SessionRef session,
-                ClientTransactionTask* task);
+		   ClientTransactionTask* task, CacheEntry* entry = NULL);
         ~PrepareRpc() {}
         bool appendOp(CommitCacheMap::iterator opEntry);
         WireFormat::TxPrepare::Vote wait();

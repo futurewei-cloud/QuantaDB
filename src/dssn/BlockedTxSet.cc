@@ -15,16 +15,12 @@ BlockedTxSet::BlockedTxSet() {
 	std::memset(txs, 0, sizeof(txs));
 }
 
-bool
-BlockedTxSet::isKeySetOverlapped(TxEntry *tx1, TxEntry *tx2) {
-	// comparing exact key values would be more precise, but it is more efficient comparing they hash values
-	/// assume hash values are already sorted (presumably during the tx entry instantiation)
-
-	auto &set1 = tx1->getReadSetHash();
-	auto &set2 = tx2->getReadSetHash();
+inline bool
+BlockedTxSet::isKeySetOverlapped(boost::scoped_array<uint64_t> &set1, uint32_t size1,
+		boost::scoped_array<uint64_t> &set2, uint32_t size2) {
 	uint32_t i, j;
 	i = j = 0;
-	while (i < tx1->getReadSetSize() && j < tx2->getReadSetSize()) {
+	while (i < size1 && j < size2) {
 		if (set1[i] == set2[j])
 			return true;
 		if (set1[i] < set2[j])
@@ -32,17 +28,23 @@ BlockedTxSet::isKeySetOverlapped(TxEntry *tx1, TxEntry *tx2) {
 		else
 			j++;
 	}
-	auto &wset1 = tx1->getWriteSetHash();
-	auto &wset2 = tx2->getWriteSetHash();
-	i = j = 0;
-	while (i < tx1->getWriteSetSize() && j < tx2->getWriteSetSize()) {
-		if (wset1[i] == wset2[j])
-			return true;
-		if (wset1[i] < wset2[j])
-			i++;
-		else
-			j++;
-	}
+	return false;
+}
+
+inline bool
+BlockedTxSet::isTxKeySetOverlapped(TxEntry *tx1, TxEntry *tx2) {
+	// DSSN dependency check: read-write, write-write, and write-read dependencies
+	/// comparing exact key values would be more precise,
+	/// but it is more efficient comparing their hash values
+	/// assume hash values are already sorted (presumably during the tx entry instantiation)
+
+	if (isKeySetOverlapped(tx1->getReadSetHash(), tx1->getReadSetSize(),
+			tx2->getWriteSetHash(), tx2->getWriteSetSize())
+			|| isKeySetOverlapped(tx1->getWriteSetHash(), tx1->getWriteSetSize(),
+					tx2->getWriteSetHash(), tx2->getWriteSetSize())
+					|| isKeySetOverlapped(tx1->getWriteSetHash(), tx1->getWriteSetSize(),
+							tx2->getReadSetHash(), tx2->getReadSetSize()))
+		return true;
 	return false;
 }
 
@@ -71,14 +73,11 @@ BlockedTxSet::add(TxEntry *txEntry) {
 	}
 
 	//determine whether current tx depends on previous txs
-	/*for (uint32_t i = 0; i < SIZE / 64; i++)
-		detailDependBits[tail][i] = 0;
-	summaryDependBits[tail / 64] &= ~(1 << (tail % 64));*/
 	for (uint32_t j = head; j != tail; j = (j + 1) % SIZE) {
 		if (txs[j] == NULL)
 			continue; //skip invalid/removed tx
 		//when the slot is empty, detailDependBits and summaryDependBits should have been initialized
-		if (isKeySetOverlapped(txEntry, txs[j])) {
+		if (isTxKeySetOverlapped(txEntry, txs[j])) {
 			detailDependBits[tail][j / 64] |= (1 << (j % 64));
 			summaryDependBits[tail / 64] |= (1 << (tail % 64));
 		}
@@ -89,16 +88,17 @@ BlockedTxSet::add(TxEntry *txEntry) {
 		for (uint32_t idx = waist; idx != tail; idx = (idx + 1) % SIZE) {
 			if (txs[idx] == NULL) {
 				txs[idx] = txEntry;
+				addedTxCount++;
 				return true;
 			}
 		}
 	}
 
-
 	if ((tail + 1) % SIZE == head)
 		return false; //because there is no room
 
 	txs[tail] = txEntry;
+	addedTxCount++;
 	tail = (tail + 1) % SIZE;
     return true;
 }
@@ -129,22 +129,32 @@ BlockedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 		} while (head != waist);
 	}
 
+	//skip scanning if there is no change that matters
+	if (activeTxSet.getRemovedTxCount() == activeTxSetSignature
+			&& (addedTxCount + removedTxCount) == blockedTxSetSignature)
+		return NULL;
+	blockedTxSetSignature = addedTxCount + removedTxCount;
+	activeTxSetSignature = activeTxSet.getRemovedTxCount(); //must be placed before blocks(..) check
+
 	//tail could be changed by another thread, but a retracted tail would have no effect here
 	//as those txs associated with the retraction must have been removed
 	uint32_t tail = this->tail; //tail could be changed by another thread
 	if (head == tail) //empty
 		return NULL;
 	uint32_t idx = head;
+	TxEntry *txEntry;
 	do {
-		TxEntry *txEntry = txs[idx];
+		txEntry = txs[idx];
 		if (txEntry && !dependsOnEarlier(idx) && !activeTxSet.blocks(txEntry)) {
 			txs[idx] = 0; //indicate that current tx is removed
 			removeDependency(idx); //update the later txs not to depend on the current tx
+			removedTxCount++;
 			return txEntry;
 		}
 		idx = (idx + 1) % SIZE;
 	} while (idx != tail);
-    return NULL;
+
+	return NULL;
 }
 
 } // end BlockedTxSet class

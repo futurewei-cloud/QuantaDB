@@ -133,6 +133,17 @@ ClientTransactionTask::performTask()
             processPrepareRpcResults();
             if (prepareRpcs.empty() && nextCacheEntry == commitCache.end()) {
                 switch (decision) {
+#ifdef DSSNTX
+		   case WireFormat::TxDecision::UNDECIDED:
+		        //For DSSN, it doesn't support this mode
+		        RAMCLOUD_LOG(ERROR, "Validator returns undecided decision");
+			assert(1);
+			break;
+                    case WireFormat::TxDecision::ABORT:
+                        // fall through to declare the
+                        // transaction DONE.
+                        FALLS_THROUGH_TO
+#else
                     case WireFormat::TxDecision::UNDECIDED:
                         // Decide to commit.
                         decision = WireFormat::TxDecision::COMMIT;
@@ -150,6 +161,7 @@ ClientTransactionTask::performTask()
                         // else NO break; fall through to declare the
                         // transaction DONE.
                         FALLS_THROUGH_TO
+#endif
                     case WireFormat::TxDecision::COMMIT:
                         // Prepare must have returned COMMITTED or was READ-ONLY
                         // so the transaction is now done.
@@ -463,7 +475,7 @@ ClientTransactionTask::sendPrepareRpc()
             rpcSession =
                     ramcloud->clientContext->objectFinder->lookup(key->tableId,
                                                                   key->keyHash);
-            prepareRpcs.emplace_back(ramcloud, rpcSession, this);
+            prepareRpcs.emplace_back(ramcloud, rpcSession, this, entry);
             nextRpc = &prepareRpcs.back();
         }
 
@@ -666,7 +678,9 @@ ClientTransactionTask::DecisionRpc::markOpsForRetry()
  *      Pointer to the transaction task that issued this request.
  */
 ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
-        Transport::SessionRef session, ClientTransactionTask* task)
+					      Transport::SessionRef session,
+					      ClientTransactionTask* task,
+					      CacheEntry* entry)
     : ClientTransactionRpcWrapper(ramcloud,
                                   session,
                                   task,
@@ -677,12 +691,19 @@ ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
     , reqHdr(allocHeader<WireFormat::TxPrepare>())
 #endif
 {
-    reqHdr->lease = task->lease;
     reqHdr->clientTxId = task->txId;
     reqHdr->ackId = ramcloud->rpcTracker->ackId();
     reqHdr->participantCount = task->participantCount;
     reqHdr->opCount = 0;
     request.appendExternal(&task->participantList);
+#ifdef DSSNTX
+    if (entry) {
+        reqHdr->meta = entry->meta;
+    }
+#else
+    reqHdr->lease = task->lease;
+#endif
+    //TODO: fill the cts
 }
 
 /**
