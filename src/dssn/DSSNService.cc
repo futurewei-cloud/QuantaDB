@@ -88,7 +88,7 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
     std::memcpy(k.key.get(), &tableId, sizeof(tableId));
     std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
 
-    KVLayout *kv = kvStore.fetch(k);
+    KVLayout *kv = kvStore->fetch(k);
     if (!kv) {
         respHdr->common.status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
         return;
@@ -128,7 +128,7 @@ DSSNService::readKeysAndValue(const WireFormat::ReadKeysAndValueDSSN::Request* r
     std::memcpy(k.key.get(), &tableId, sizeof(tableId));
     std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
 
-    KVLayout *kv = kvStore.fetch(k);
+    KVLayout *kv = kvStore->fetch(k);
     if (!kv) {
         respHdr->common.status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
         return;
@@ -245,15 +245,15 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     pkv.v.valueLength = pValLen;
     pkv.v.valuePtr = (uint8_t*)const_cast<void*>(pVal);
 
-    KVLayout *kv = kvStore.fetch(pkv.k);
+    KVLayout *kv = kvStore->fetch(pkv.k);
 
     if (kv == NULL) {
-        KVLayout *nkv = kvStore.preput(pkv);
-        kvStore.putNew(nkv, 0, 0xffffffffffffffff);
+        KVLayout *nkv = kvStore->preput(pkv);
+        kvStore->putNew(nkv, 0, 0xffffffffffffffff);
     } else {
         void * pval = new char[pValLen];
         std::memcpy(pval, pVal, pValLen);
-        kvStore.put(kv, 0, 0xffffffffffffffff, (uint8_t*)pval, pValLen);
+        kvStore->put(kv, 0, 0xffffffffffffffff, (uint8_t*)pval, pValLen);
     }
 }
   
