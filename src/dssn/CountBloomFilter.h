@@ -10,9 +10,6 @@
 
 namespace DSSN {
 
-typedef uint8_t T;
-const uint32_t BFSize = 65536;
-
 /**
  * Counting Bloom Filter
  *
@@ -21,33 +18,36 @@ const uint32_t BFSize = 65536;
  * It supports single incrementer and multi decrementers.
  *
  */
+template <class T>
 class CountBloomFilter {
     PROTECTED:
-    std::atomic<uint8_t> counters[BFSize];
+    std::atomic<T> *counters;
     CountBloomFilter& operator=(const CountBloomFilter&);
+    uint32_t size = 65536; //number of counters
+    uint32_t depth = 255; //max counter value allowed
 
     PUBLIC:
 	CountBloomFilter();
+	CountBloomFilter(uint32_t size, uint32_t depth);
+	~CountBloomFilter();
 
     // false if the key is failed to be added due to overflow
-    bool add(const T *key, uint32_t size);
+    inline bool add(uint64_t hash);
 
     // for performance, the key is assumed to have been added
-    bool remove(const T *key, uint32_t size);
+    inline bool remove(uint64_t hash);
 
-    bool contains(const T *key, uint32_t size);
+    // test whether ok to add
+    inline bool shouldNotAdd(uint64_t hash);
 
-    // false if the key is failed to be added due to overflow
-    bool add(uint64_t hash);
+    // return the maximum of the bucket counts when there is a hit; otherwise, 0
+    inline uint64_t hitCount(uint64_t hash);
 
-    // for performance, the key is assumed to have been added
-    bool remove(uint64_t hash);
+    inline uint32_t countLimit() { return this->depth; }
 
-    bool shouldNotAdd(uint64_t hash);
+    inline bool clear();
 
-    bool clear();
-
-    void createIndexesFromKey(const T *key, uint32_t size, uint64_t *idx1, uint64_t *idx2);
+    inline void createIndexesFromKey(const uint8_t *key, uint32_t size, uint64_t *idx1, uint64_t *idx2);
 
 }; // end CountBloomFilter class
 

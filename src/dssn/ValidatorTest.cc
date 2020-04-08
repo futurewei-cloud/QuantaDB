@@ -382,7 +382,7 @@ TEST_F(ValidatorTest, BATValidateDistribTx) {
 
 	validator.scheduleDistributedTxs(); //add 1 and would advance waist
 	validator.serialize(); //would advance head
-	//EXPECT_EQ(16, (int)validator.blockedTxSet.capacity());
+	EXPECT_EQ(16, (int)validator.blockedTxSet.size());
 
 	//finish validation for 5 txs
 	for (int ent = 0; ent < 5; ent++)
@@ -409,7 +409,7 @@ TEST_F(ValidatorTest, BATFindReadyTxPerf) {
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
 
     //int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
-    int size = 10000;
+    int size = 64;
     uint64_t start, stop;
 
     fillTxEntry(size, 2);
@@ -428,7 +428,7 @@ TEST_F(ValidatorTest, BATFindReadyTxPerf) {
     start = Cycles::rdtscp();
     validator.blockedTxSet.findReadyTx(validator.activeTxSet);
     stop = Cycles::rdtscp();
-    GTEST_COUT << "findReadTx (" << validator.blockedTxSet.size() << "): Total cycles " << (stop - start) << std::endl;
+    GTEST_COUT << "findReadyTx (" << validator.blockedTxSet.size() << "): Total cycles " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per try: " << (Cycles::toSeconds(stop - start))  << std::endl;
 
 	freeTxEntry(size);

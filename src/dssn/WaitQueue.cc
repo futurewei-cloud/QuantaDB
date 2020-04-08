@@ -18,10 +18,10 @@ void
 WaitQueue::schedule(bool isUnderTest) {
     TxEntry* txEntry;
 	do {
-		while (inQueue.pop(*&txEntry)) {
+		while (inQueue.pop(txEntry)) {
 			while (!outQueue.push(txEntry));
 		}
-		if (recycleQueue.pop(*&txEntry))
+		if (recycleQueue.pop(txEntry))
 			while (!outQueue.push(txEntry));
 	} while (!isUnderTest);
 };

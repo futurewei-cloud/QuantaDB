@@ -17,6 +17,8 @@ PeerInfo::add(TxEntry *txEntry) {
 
 bool
 PeerInfo::sweep() {
+	//sweep concluded peerInfo entry
+	///further reference to the swept tx should be using CTS into the tx log
 	TxEntry *prev = NULL;
 	std::for_each(peerInfo.begin(), peerInfo.end(), [&] (const std::pair<CTS, TxEntry *>& pr) {
 		TxEntry *txEntry = pr.second;

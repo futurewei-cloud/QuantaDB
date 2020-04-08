@@ -21,7 +21,7 @@ namespace DSSN {
  */
 class ActiveTxSet {
     PROTECTED:
-    CountBloomFilter cbf;
+    CountBloomFilter<uint8_t> cbf;
     uint64_t removedTxCount = 0;
     uint64_t addedTxCount = 0;
 
@@ -36,7 +36,7 @@ class ActiveTxSet {
 
     inline uint64_t getRemovedTxCount() { return removedTxCount; }
 
-    ActiveTxSet() { cbf.clear(); }
+    ActiveTxSet() {}
 
 }; // end ActiveTxSet class
 

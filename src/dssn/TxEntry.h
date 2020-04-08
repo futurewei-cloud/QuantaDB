@@ -159,6 +159,12 @@ class TxEntry {
 
 }; // end TXEntry class
 
+class TxComparator {
+	bool operator()(TxEntry *firstTx, TxEntry *secondTx) const {
+		return firstTx->getCTS() < secondTx->getCTS();
+	}
+};
+
 } // end namespace DSSN
 
 #endif  /* TX_ENTRY_H */
