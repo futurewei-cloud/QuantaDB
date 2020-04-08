@@ -557,7 +557,9 @@ void
 InfRcTransport::InfRcSession::sendRequest(Buffer* request,
         Buffer* response, RpcNotifier* notifier)
 {
-    response->reset();
+    if (notifier->requiredRsp())
+        response->reset();
+
     InfRcTransport *t = transport;
     if (qp == NULL) {
         notifier->failed();

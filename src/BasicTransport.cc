@@ -710,7 +710,9 @@ BasicTransport::Session::sendRequest(Buffer* request, Buffer* response,
                     request->size(), MAX_RPC_LEN));
     }
 
-    response->reset();
+    if (notifier->requiredRsp()) {
+        response->reset();
+    }
     ClientRpc *clientRpc = t->clientRpcPool.construct(this,
             t->nextClientSequenceNumber, request, response, notifier);
     clientRpc->request.transmitLimit = std::min(t->roundTripBytes, length);
