@@ -122,6 +122,10 @@ class RamCloud {
     void multiRead(MultiReadObject* requests[], uint32_t numRequests);
     void multiRemove(MultiRemoveObject* requests[], uint32_t numRequests);
     void multiWrite(MultiWriteObject* requests[], uint32_t numRequests);
+    void notify(const WireFormat::Opcode type, const void* message,
+		const uint32_t length,
+		Transport::SessionRef* endpoint = NULL,
+		const char* serviceLocator = NULL);
     void objectServerControl(uint64_t tableId, const void* key,
             uint16_t keyLength, WireFormat::ControlOp controlOp,
             const void* inputData = NULL, uint32_t inputLength = 0,
@@ -962,6 +966,22 @@ struct MultiWriteObject : public MultiOpObject {
         version = other.version;
         return *this;
     }
+};
+
+class NotificationRpc : public RpcWrapper {
+  public:
+    NotificationRpc(RamCloud* ramcloud, const char* serviceLocator,
+		    const WireFormat::Opcode type, const void* message,
+		    const uint32_t length);
+    NotificationRpc(RamCloud* ramcloud, const Transport::SessionRef session,
+		    const WireFormat::Opcode type, const void* message,
+		    const uint32_t length);
+    /// \copydoc RpcWrapper::docForWait
+    void wait();
+
+  PRIVATE:
+    RamCloud* ramcloud;
+    DISALLOW_COPY_AND_ASSIGN(NotificationRpc);
 };
 
 /**

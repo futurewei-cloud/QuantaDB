@@ -36,9 +36,11 @@ namespace RAMCloud {
  *      Optional client-supplied buffer to use for the RPC's response;
  *      if NULL then we use a built-in buffer. Any existing contents
  *      of this buffer will be cleared automatically by the transport.
+ * \param isRspRequired
+ *      Optional indicates if this RPC requires a response.
  */
-RpcWrapper::RpcWrapper(uint32_t responseHeaderLength, Buffer* response)
-    : RpcNotifier(true)
+RpcWrapper::RpcWrapper(uint32_t responseHeaderLength, Buffer* response, bool isRspRequired)
+    : RpcNotifier(isRspRequired)
     , request()
     , response(response)
     , defaultResponse()
@@ -48,7 +50,7 @@ RpcWrapper::RpcWrapper(uint32_t responseHeaderLength, Buffer* response)
     , responseHeaderLength(responseHeaderLength)
     , responseHeader(NULL)
 {
-    if (response == NULL) {
+    if (response == NULL && isRspRequired) {
         defaultResponse.construct();
         this->response = defaultResponse.get();
     }
@@ -159,6 +161,10 @@ RpcWrapper::isReady() {
     }
 
     if (copyOfState == FINISHED) {
+        if (!isRspRequired) {
+	    //This RPC doesn't require response.
+	    return true;
+	}
         // Retrieve the status value from the response and handle the
         // normal case of success as quickly as possible.  Note: check to
         // make sure the server has returned enough bytes for the header length
