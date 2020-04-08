@@ -2222,8 +2222,13 @@ ReadKeysAndValueRpc::ReadKeysAndValueRpc(RamCloud* ramcloud, uint64_t tableId,
             sizeof(WireFormat::ReadKeysAndValue::Response), value)
 {
     value->reset();
+#ifdef DSSNTX
+    WireFormat::ReadKeysAndValue::Request* reqHdr(allocHeader<
+                            WireFormat::ReadKeysAndValueDSSN>());
+#else
     WireFormat::ReadKeysAndValue::Request* reqHdr(allocHeader<
                             WireFormat::ReadKeysAndValue>());
+#endif
     reqHdr->tableId = tableId;
     reqHdr->keyLength = keyLength;
     reqHdr->rejectRules = rejectRules ? *rejectRules : defaultRejectRules;
