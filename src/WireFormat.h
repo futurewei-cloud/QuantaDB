@@ -131,7 +131,7 @@ enum Opcode {
     TX_REQUEST_ABORT            = 78,
     TX_HINT_FAILED              = 79,
     ECHO                        = 80,
-    DSSN_MULTI_OP               = 81,
+    DSSN_NOTIFY_TEST            = 81,
     DSSN_COMMIT                 = 82,
     DSSN_SEND_SSN_ASYNC         = 83,
     DSSN_REQUEST_SSN_ASYNC      = 84,

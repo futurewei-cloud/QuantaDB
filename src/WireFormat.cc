@@ -123,7 +123,7 @@ opcodeSymbol(uint32_t opcode)
         case TX_REQUEST_ABORT:             return "TX_REQUEST_ABORT";
         case TX_HINT_FAILED:               return "TX_HINT_FAILED";
         case ECHO:                         return "ECHO";
-        case DSSN_MULTI_OP:                return "DSSN_MULTI_OP";
+        case DSSN_NOTIFY_TEST:             return "DSSN_NOTIFY_TEST";
         case DSSN_COMMIT:                  return "DSSN_COMMIT";
         case DSSN_SEND_SSN_ASYNC:          return "DSSN_SEND_SSN_ASYNC";
         case DSSN_REQUEST_SSN_ASYNC:       return "DSSN_REQUEST_SSN_ASYNC";
