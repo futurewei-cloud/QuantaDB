@@ -34,7 +34,7 @@ struct alignas(32) hash_bucket
         __m256i sig256_;
     } sig_;
     struct bucket_header hdr_;
-    const Elem* ptr_[BUCKET_SIZE];
+    Elem* ptr_[BUCKET_SIZE];
 };
 
 template <typename Elem>
@@ -43,16 +43,16 @@ class elem_pointer
 public:
     uint32_t bucket_;
     uint8_t slot_;
-    const Elem* ptr_;
+    Elem* ptr_;
 
     elem_pointer() { bucket_ = 0; slot_ = 0; ptr_ = NULL; }
 
-    elem_pointer(uint32_t b, uint8_t s, const Elem* p) { 
+    elem_pointer(uint32_t b, uint8_t s, Elem* p) { 
         bucket_ = b; slot_ = s; ptr_ = p;
     }
 };
 
-template <typename Elem, typename K, typename V, typename Hash, typename Eq>
+template <typename Elem, typename K, typename V, typename Hash>
 class hash_table
 {
 public:
@@ -82,7 +82,7 @@ public:
         return find_or_prepare_insert(key);
     }
 
-    elem_pointer<Elem> put(const K & key, const Elem *ptr) {
+    elem_pointer<Elem> put(const K & key, Elem *ptr) {
         bool ret;
         elem_pointer<Elem> l_hint = find_or_prepare_insert(key);
         if (l_hint.ptr_ == NULL) {
@@ -109,17 +109,17 @@ public:
     // Returns true if the insert succeeds (false if an element with the 
     // specific key is already present) Only one operation should succeed
     // if multiple threads are inserting the same key at the same time.
-    bool insert(const K &key, const Elem *ptr) { return true; }
+    bool insert(const K &key, Elem *ptr) { return true; }
 
     // Return false if there is no value stored at the specified key,
     // otherwise this function atomically update the stored value to new
-    bool update(const K &key, const Elem *ptr) { return true; }
+    bool update(const K &key, Elem *ptr) { return true; }
 
     // update the current value, if one is present, also return false
     // Otherwise, the element is inserted as a new element, return true.
-    bool insert_or_update(const K &key, const Elem *ptr) { return true; }
+    bool insert_or_update(const K &key, Elem *ptr) { return true; }
 
-    bool update_internal(const K & key, const Elem *ptr, elem_pointer<Elem> hint) {
+    bool update_internal(const K & key, Elem *ptr, elem_pointer<Elem> hint) {
 
 
         // find the bucket.
@@ -138,7 +138,7 @@ public:
         return false;
     }
 
-    elem_pointer<Elem> insert_internal(const K & key, const Elem *ptr, elem_pointer<Elem> hint) {
+    elem_pointer<Elem> insert_internal(const K & key, Elem *ptr, elem_pointer<Elem> hint) {
 
         elem_pointer<Elem> ret;
         bool successful;
@@ -204,8 +204,10 @@ public:
         do {
             l_slot = __builtin_ffs(valid_matching_sig);
             if (l_slot == 0) break;
-            const Elem *l_ptr = l_bucket.ptr_[l_slot-1];
-            if (Eq{}(l_ptr->key, key)) {
+            Elem *l_ptr = l_bucket.ptr_[l_slot-1];
+
+            //FIXME: make this getKey to be in a KeyExtractor
+            if (l_ptr->getKey() == key) {
                 return elem_pointer<Elem>(bucket, l_slot-1, l_ptr);
             }
             valid_matching_sig &= ~(1ULL << (l_slot-1));
