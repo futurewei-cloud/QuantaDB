@@ -479,7 +479,7 @@ TEST_F(RamCloudTest, read) {
     Buffer value;
     uint64_t version, versionValue;
     ramcloud->readKeysAndValue(tableId1, "0", 1, &keysAndValue, NULL, &version);
-    // EXPECT_EQ(1U, version); // XXX disable until DSSN supports versioning
+    EXPECT_EQ(1U, version);
     EXPECT_EQ("abcdef", string(reinterpret_cast<const char*>(
                         keysAndValue.getValue()), 6));
     EXPECT_EQ("0", string(reinterpret_cast<const char*>(
@@ -699,9 +699,9 @@ TEST_F(RamCloudTest, setRuntimeOption) {
 TEST_F(RamCloudTest, write) {
     uint64_t version;
     ramcloud->write(tableId1, "0", 1, "abcdef", 6, NULL, &version);
-    // EXPECT_EQ(1U, version); // XXX disable until DSSN supports versioning
+    EXPECT_EQ(1U, version);
     ramcloud->write(tableId1, "0", 1, "xyzzy", 5, NULL, &version);
-    // EXPECT_EQ(2U, version); // XXX disable until DSSN supports versioning
+    EXPECT_EQ(2U, version);
 
     // Checks rpcId was assigned for the linearizable write RPC
     // and acknowledged by this client.
