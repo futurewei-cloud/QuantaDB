@@ -43,8 +43,8 @@ ValidatorRPCHelper::readObject(uint64_t tableId, Key& key, Buffer* outBuffer,
     if (!found)
         return RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
 
-    uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout()->valueLength));
-    std::memcpy(p, kv->getVLayout()->valuePtr, kv->getVLayout()->valueLength);
+    uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout().valueLength));
+    std::memcpy(p, kv->getVLayout().valuePtr, kv->getVLayout().valueLength);
     cStamp = kv->getMeta().cStamp;
     sStamp = kv->getMeta().sStamp;
 

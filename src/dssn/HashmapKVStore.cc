@@ -10,53 +10,47 @@
 
 namespace DSSN {
 
+void *clhash_random;
+bool HashmapKVStore::hash_inited = 0;
+
 KVLayout* HashmapKVStore::preput(KVLayout &kvIn)
 {
-	KVLayout* kvOut = new KVLayout(kvIn.k.keyLength);
-	std::memcpy((void *)kvOut->k.key.get(), (void *)kvIn.k.key.get(), kvOut->k.keyLength);
-	kvOut->v.valueLength = kvIn.v.valueLength;
-	kvOut->v.valuePtr = new uint8_t[kvIn.v.valueLength];
-	std::memcpy((void *)kvOut->v.valuePtr, (void *)kvIn.v.valuePtr, kvIn.v.valueLength);
-	return kvOut;
+    KVLayout* kvOut = new KVLayout(kvIn.k.keyLength);
+    std::memcpy((void *)kvOut->k.key.get(), (void *)kvIn.k.key.get(), kvOut->k.keyLength);
+    kvOut->v.valueLength = kvIn.v.valueLength;
+    kvOut->v.valuePtr = new uint8_t[kvIn.v.valueLength];
+    std::memcpy((void *)kvOut->v.valuePtr, (void *)kvIn.v.valuePtr, kvIn.v.valueLength);
+    return kvOut;
 }
 
 bool HashmapKVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
 {
-	kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
-	kv->getMeta().pStampPrev = 0;
-	kv->getMeta().sStampPrev = pi;
-	kv->getMeta().sStamp = cts; //Fixme: tx pi or tx cts? the SSN paper is vague about this
-    Element * elem = new Element(kv);
-    elem_pointer<Element> lptr = my_hashtable->put(elem->key, elem);
+    kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
+    kv->getMeta().pStampPrev = 0;
+    kv->getMeta().sStampPrev = pi;
+    kv->getMeta().sStamp = cts; //Fixme: tx pi or tx cts? the SSN paper is vague about this
+    elem_pointer<KVLayout> lptr = my_hashtable->put(kv->getKey(), kv);
     return lptr.ptr_ != NULL;
 }
 
 bool HashmapKVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength)
 {
-	kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
-	kv->getMeta().pStampPrev = kv->getMeta().pStamp;
-	kv->getMeta().sStampPrev = pi;
-	kv->getMeta().sStamp = cts; //Fixme: tx pi or tx cts? the SSN paper is vague about this
+    kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
+    kv->getMeta().pStampPrev = kv->getMeta().pStamp;
+    kv->getMeta().sStampPrev = pi;
+    kv->getMeta().sStamp = cts; //Fixme: tx pi or tx cts? the SSN paper is vague about this
     if (kv->v.valuePtr)
-	    delete kv->v.valuePtr;
-	kv->v.valueLength = valueLength;
-	kv->v.valuePtr = valuePtr;
-	return true;
+        delete kv->v.valuePtr;
+    kv->v.valueLength = valueLength;
+    kv->v.valuePtr = valuePtr;
+    return true;
 }
 
 KVLayout * HashmapKVStore::fetch(KLayout& k)
 {
-    const Element * elem;
-    //char key[k.keyLength + 1];
 
-    // XXX: could save this cpu cycles, if k.key.get() is null terminated
-    // strncpy(key, (char *)k.key.get(), k.keyLength); key[k.keyLength] = 0;
-
-    elem_pointer<Element> lptr = my_hashtable->get((char*)k.key.get());
-    if ((elem = lptr.ptr_) != NULL) {
-        return elem->kv;
-    }
-    return NULL;
+    elem_pointer<KVLayout> lptr = my_hashtable->get(k);
+    return lptr.ptr_;
 }
 
 bool HashmapKVStore::getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength)

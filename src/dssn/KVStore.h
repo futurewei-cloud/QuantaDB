@@ -37,19 +37,23 @@ struct VLayout {
 struct KLayout {
 	uint32_t keyLength = 0;
 	boost::scoped_array<uint8_t> key;
+
+        friend bool operator==(const KLayout &lhs, const KLayout &rhs);
 	KLayout() {}
 	explicit KLayout(uint32_t keySize) : keyLength(keySize), key(new uint8_t[keySize+1]) { bzero(key.get(), keySize+1);}
 };
+
+bool operator == (const KLayout &lhs, const KLayout &rhs);
 
 struct KVLayout {
 	VLayout v;
 	KLayout k;
 
+
 	explicit KVLayout(uint32_t keySize) : k(keySize) { }
-	inline uint8_t* getKey() { return k.key.get(); }
-	inline uint32_t getKeyLength() {return k.keyLength; }
 	inline DSSNMeta& getMeta() { return v.meta; }
-	inline VLayout* getVLayout() { return &v; }
+	inline KLayout& getKey() { return k; }
+	inline VLayout& getVLayout() { return v; }
 	inline bool& isTombstone() { return v.isTombstone; }
 };
 

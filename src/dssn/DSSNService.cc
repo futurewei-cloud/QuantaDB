@@ -100,8 +100,8 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
     Buffer buffer;
     uint32_t initialLength = rpc->replyPayload->size();
 
-    uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout()->valueLength));
-    std::memcpy(p, kv->getVLayout()->valuePtr, kv->getVLayout()->valueLength);
+    uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout().valueLength));
+    std::memcpy(p, kv->getVLayout().valuePtr, kv->getVLayout().valueLength);
 
     Object object(tableId, 0, 0, buffer);
     object.appendValueToBuffer(rpc->replyPayload);
@@ -140,8 +140,8 @@ DSSNService::readKeysAndValue(const WireFormat::ReadKeysAndValueDSSN::Request* r
     Buffer buffer;
     uint32_t initialLength = rpc->replyPayload->size();
 
-    uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout()->valueLength));
-    std::memcpy(p, kv->getVLayout()->valuePtr, kv->getVLayout()->valueLength);
+    uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout().valueLength));
+    std::memcpy(p, kv->getVLayout().valuePtr, kv->getVLayout().valueLength);
 
     Object object(tableId, 0, 0, buffer);
     object.appendKeysAndValueToBuffer(*(rpc->replyPayload));
@@ -243,8 +243,8 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
 
     uint64_t tableId = object.getTableId();
     KVLayout pkv(pKeyLen + sizeof(tableId)); //make room composite key in KVStore
-    std::memcpy(pkv.getKey(), &tableId, sizeof(tableId));
-    std::memcpy(pkv.getKey() + sizeof(tableId), pKey, pKeyLen);
+    std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
+    std::memcpy(pkv.getKey().key.get() + sizeof(tableId), pKey, pKeyLen);
     pkv.v.valueLength = pValLen;
     pkv.v.valuePtr = (uint8_t*)const_cast<void*>(pVal);
 
