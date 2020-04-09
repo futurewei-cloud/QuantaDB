@@ -6,6 +6,12 @@
 namespace DSSN
 {
 using HotKVType = hot::rowex::HOTRowex<DSSN::KVLayout*, HOTKeyExtractor>;
+
+bool operator == (const KLayout &lhs, const KLayout &rhs)
+{
+    return (lhs.keyLength == rhs.keyLength && memcmp(lhs.key.get(), rhs.key.get(), lhs.keyLength));
+}
+
 KVStore::KVStore() {
 	hotKVStore = new HotKVType();
 	assert(hotKVStore);

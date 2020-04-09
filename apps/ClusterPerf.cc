@@ -4966,6 +4966,52 @@ multiWrite_oneMaster()
 
 }
 
+// Generate a series of notify RPCs and measure their queueing latency.
+void
+notify_workload()
+{
+    // Get all servers available in the cluster.
+    vector<Transport::SessionRef> sessions;
+    using ServerMap = std::map<uint64_t, std::pair<string, ServiceMask>>;
+    ServerMap servers;
+    getServerList(&servers);
+    ServerMap::iterator it;
+    uint64_t start, end, duration;
+    uint64_t numMsg = 1000;
+
+    for (it = servers.begin(); it != servers.end(); it++) {
+        if (it->second.second.has(WireFormat::DSSN_SERVICE)) {
+	    sessions.push_back(context->transportManager->getSession(it->second.first));
+        }
+    }
+
+    LOG(NOTICE, "%lu servers available", sessions.size());
+    if (sessions.size() == 0) {
+        LOG(ERROR, "Couldn't find DSSN service");
+	return;
+    }
+
+    // Allocate and register memory for the request messages to enable
+    // zero-copy TX if possible.
+    const string message(100, 'x');
+    context->transportManager->registerMemory(
+            const_cast<char*>(message.data()), message.length());
+
+    start = Cycles::rdtsc();
+    if (clientIndex == 0) {
+        for (uint i = 0; i < numMsg; i++) {
+	    cluster->notify(WireFormat::DSSN_NOTIFY_TEST, const_cast<char*>(message.data()),
+			    message.length(), &sessions[0]);
+	}
+    }
+    end = Cycles::rdtsc();
+    duration = end - start;
+
+    printf("Average notification queueing delay: %.2f\n", (double)Cycles::toMicroseconds(duration)/numMsg);
+    fflush(stdout);
+
+}
+
 static
 bool
 timedCommit(Transaction& t, uint64_t *elapsed, uint64_t *cummulativeElapsed)
@@ -7859,6 +7905,7 @@ TestInfo tests[] = {
     {"broadcast", broadcast},
     {"echo_basic", echo_basic},
     {"echo_workload", echo_workload},
+    {"notify_workload", notify_workload},
     {"indexBasic", indexBasic},
     {"indexRange", indexRange},
     {"indexMultiple", indexMultiple},

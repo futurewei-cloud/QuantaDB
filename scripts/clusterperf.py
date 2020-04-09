@@ -925,6 +925,7 @@ simple_tests = [
     Test("basic", basic),
     Test("broadcast", broadcast),
     Test("echo_basic", echo),
+    Test("notify_workload", default),
     Test("multiRead_colocation", default),
     Test("netBandwidth", netBandwidth),
     Test("readAllToAll", readAllToAll),
@@ -1139,6 +1140,7 @@ if __name__ == '__main__':
                 # Provide a default set of tests to run (the most useful ones).
                 args = ["basic",
                         "echo_basic",
+                        "notify_workload",
                         "multiRead_oneMaster",
                         "multiRead_oneObjectPerMaster",
                         "multiReadThroughput",

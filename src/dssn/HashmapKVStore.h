@@ -7,61 +7,41 @@
 #include <queue>
 #include <errno.h>
 #include <time.h>
+#include "clhash.h"
 #include "hash_map.h"
-#include "c_str_util_classes.h"
 #include "KVStore.h"
 
-#define	HASH_TABLE_TEMPLATE		Element, char *, uint64_t, hash_c_str, equal_to_c_str
 #define	ROUND_DOWN(n,p)			(n & ~(p-1))
 #define	ROUND_UP(n,p)			((n + p - 1) & ~(p - 1))
 
 namespace DSSN {
 
-#define MAX_KEYLEN  127
+extern void *clhash_random;
 
-class Element {
-public:
-    Element(KVLayout *kvp)
-    {
-        kv = kvp;
-        key = (char *)kv->k.key.get();
-        // assert(kv->k.keyLength <= MAX_KEYLEN);
-        // strncpy(key, (const char *)kv->k.key.get(), kv->k.keyLength);
-        // key[kv->k.keyLength] = 0;
-    }  
-
-    Element(KVLayout &ikv)
-    {
-        kv = &ikv;
-        key = (char *)kv->k.key.get();
-        // assert(kv->k.keyLength <= MAX_KEYLEN);
-        // strncpy(key, (const char *)kv->k.key.get(), kv->k.keyLength);
-        // key[kv->k.keyLength] = 0;
-    }  
-
-    ~Element()
-    {
-        // delete kv;
-    }
-    KVLayout * kv;
-    char *key; // char key[MAX_KEYLEN + 1];
-private:
+struct HashKLayout{
+    uint32_t operator()(const KLayout &k) { return clhash(clhash_random, (const char*)k.key.get(), k.keyLength); }
 };
+
+#define MAX_KEYLEN  127
 
 class HashmapKVStore : public KVStore
 {
 public:
-	HashmapKVStore(uint32_t nbucket = 1024)
-	{
-		bucket_count = nbucket;
-		my_hashtable = new hash_table<HASH_TABLE_TEMPLATE>(bucket_count);
+    HashmapKVStore(uint32_t nbucket = 1024)
+    {
+        bucket_count = nbucket;
+        my_hashtable = new hash_table<KVLayout, KLayout, VLayout, HashKLayout>(bucket_count);
         my_hashtable->set_no_lossy();
-	}
+        if (!hash_inited) {
+            clhash_random =  get_random_key_for_clhash(uint64_t(0x23a23cf5033c3c81),uint64_t(0xb3816f6a2c68e530));
+            hash_inited = true;
+        }
+    }
 
-	~HashmapKVStore()
-	{
+    ~HashmapKVStore()
+    {
         delete my_hashtable;
-	}
+    }
     KVLayout* preput(KVLayout &kvIn);
     bool putNew(KVLayout *kv, uint64_t cts, uint64_t pi);
     bool put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength);
@@ -73,8 +53,9 @@ public:
     bool remove(KLayout& k, DSSNMeta &meta);
 
 private:
-	hash_table<HASH_TABLE_TEMPLATE> * my_hashtable;
-	uint32_t            bucket_count;
+    hash_table<KVLayout, KLayout, VLayout, HashKLayout> * my_hashtable;
+    uint32_t            bucket_count;
+    static bool hash_inited;
 };
 
 } // DSSN

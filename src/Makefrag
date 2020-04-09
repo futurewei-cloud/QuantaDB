@@ -86,6 +86,7 @@ SHARED_SRCFILES := \
 		   src/dssn/Sequencer.cc \
 		   src/dssn/ClusterTimeService.cc \
 		   src/dssn/HashmapKVStore.cc \
+		   src/dssn/clhash.cc \
 		   src/dssn/KVStore.cc \
 		   src/dssn/WaitQueue.cc \
 		   src/dssn/PeerInfo.cc \
