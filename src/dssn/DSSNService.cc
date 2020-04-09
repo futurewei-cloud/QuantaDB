@@ -17,12 +17,16 @@ DSSNService::DSSNService(Context* context, ServerList* serverList,
 {
     kvStore = new HashmapKVStore();
     validator = new Validator(*kvStore);
+    tabletManager = new TabletManager();
     context->services[WireFormat::DSSN_SERVICE] = this;
 }
 
 DSSNService::~DSSNService()
 {
     context->services[WireFormat::DSSN_SERVICE] = NULL;
+    delete kvStore;
+    delete validator;
+    delete tabletManager;
 }
 
 void
@@ -237,8 +241,23 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     const void* pKey = object.getKey(0, &pKeyLen);
     const void* pVal = object.getKeysAndValue();
     uint32_t pValLen = object.getKeysAndValueLength();
-
     uint64_t tableId = object.getTableId();
+
+    Key key(tableId, pKey, pKeyLen);
+    // If the tablet doesn't exist in the NORMAL state, we must plead ignorance.
+    TabletManager::Tablet tablet;
+    if (!tabletManager->getTablet(key, &tablet)) {
+        respHdr->common.status = RAMCloud::STATUS_UNKNOWN_TABLET;
+        return;
+    }
+    if (tablet.state != TabletManager::NORMAL) {
+        if (tablet.state == TabletManager::LOCKED_FOR_MIGRATION)
+            throw RetryException(HERE, 1000, 2000,
+                    "Tablet is currently locked for migration!");
+        respHdr->common.status = RAMCloud::STATUS_UNKNOWN_TABLET;
+        return;
+    }
+
     KVLayout pkv(pKeyLen + sizeof(tableId)); //make room composite key in KVStore
     std::memcpy(pkv.getKey(), &tableId, sizeof(tableId));
     std::memcpy(pkv.getKey() + sizeof(tableId), pKey, pKeyLen);
@@ -263,8 +282,11 @@ DSSNService::takeTabletOwnership(const WireFormat::TakeTabletOwnershipDSSN::Requ
 				 Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
-    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
-    s->takeTabletOwnership(reqHdr, respHdr, rpc);
+
+    bool added = tabletManager->addTablet(reqHdr->tableId,
+            reqHdr->firstKeyHash, reqHdr->lastKeyHash,
+            TabletManager::NORMAL);
+    assert (added);
 }
 
 void

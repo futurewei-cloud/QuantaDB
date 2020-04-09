@@ -950,8 +950,13 @@ TakeTabletOwnershipRpc::TakeTabletOwnershipRpc(
     : ServerIdRpcWrapper(context, serverId,
             sizeof(WireFormat::TakeTabletOwnership::Response))
 {
+#ifdef DSSNTX
+    WireFormat::TakeTabletOwnership::Request* reqHdr(
+            allocHeader<WireFormat::TakeTabletOwnershipDSSN>(serverId));
+#else
     WireFormat::TakeTabletOwnership::Request* reqHdr(
             allocHeader<WireFormat::TakeTabletOwnership>(serverId));
+#endif
     reqHdr->tableId = tableId;
     reqHdr->firstKeyHash = firstKeyHash;
     reqHdr->lastKeyHash = lastKeyHash;

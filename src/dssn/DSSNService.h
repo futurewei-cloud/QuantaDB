@@ -10,6 +10,7 @@
 #include "ServerConfig.h"
 #include "ServerList.h"
 #include "Validator.h"
+#include "TabletManager.h"
 
 namespace DSSN {
 using namespace RAMCloud;
@@ -65,6 +66,7 @@ class DSSNService : public Service {
 
    HashmapKVStore* kvStore;
    Validator* validator;
+   TabletManager *tabletManager;
 };
 
 
