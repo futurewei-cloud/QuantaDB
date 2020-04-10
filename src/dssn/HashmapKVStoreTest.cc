@@ -26,7 +26,7 @@ TEST_F(HashmapKVTest, preput) {
     GTEST_COUT << "HashmapKVTest" << std::endl;
     int keySize = 32;
     KVLayout kvIn(keySize), *kvOut;
-    snprintf((char *)kvIn.getKey(), keySize, "HashmapKVTest-kvIn-key1");
+    snprintf((char *)kvIn.getKey().key.get(), keySize, "HashmapKVTest-kvIn-key1");
     kvOut = KVStore.preput(kvIn);
     delete kvOut;
 }
@@ -80,7 +80,7 @@ TEST_F(HashmapKVTest, putNewBench) {
 TEST_F(HashmapKVTest, put) {
     int keySize = 32;
     KVLayout kvIn(keySize);
-    snprintf((char *)kvIn.getKey(), keySize, "HashmapKVTest-kvIn-key1");
+    snprintf((char *)kvIn.getKey().key.get(), keySize, "HashmapKVTest-kvIn-key1");
     int vallen = 256;
     uint8_t * val = (uint8_t *)malloc(256); 
     bool ret = KVStore.put(&kvIn, 0, 0, val, vallen);
@@ -90,7 +90,7 @@ TEST_F(HashmapKVTest, put) {
 TEST_F(HashmapKVTest, fetch) {
     int keySize = 32;
     KVLayout kvIn(keySize), *kvOut;
-    snprintf((char *)kvIn.getKey(), keySize, "HashmapKVTest-kvIn-key1");
+    snprintf((char *)kvIn.getKey().key.get(), keySize, "HashmapKVTest-kvIn-key1");
 
     kvOut = KVStore.fetch(kvIn.k);
     EXPECT_EQ(kvOut, (KVLayout*)0);
