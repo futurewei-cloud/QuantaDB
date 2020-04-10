@@ -22,6 +22,7 @@ class Element {
     {
         // delete kv;
     }
+    char *getKey() {return key;}
     void * v;
     char key[64];
   private:
