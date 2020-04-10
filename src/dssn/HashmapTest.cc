@@ -7,7 +7,7 @@
 #include "c_str_util_classes.h"
 #include "Cycles.h"
 
-#define	HASH_TABLE_TEMPLATE		Element, char *, uint64_t, hash_c_str, equal_to_c_str
+#define	HASH_TABLE_TEMPLATE		Element, char *, uint64_t, hash_c_str
 #define GTEST_COUT  std::cerr << "[ INFO ] "
 
 namespace RAMCloud {
