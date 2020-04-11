@@ -33,8 +33,10 @@ TEST_F(HashmapKVTest, preput) {
 
 TEST_F(HashmapKVTest, putNew) {
     int keySize = 32;
+    const char *key = "HashmapKVTest-key-1";
     KVLayout kv(keySize);
-    snprintf((char *)kv.k.key.get(), keySize - 1, "HashmapKVTest-key-1");
+    kv.k.keyLength = strlen(key);
+    memcpy((char *)kv.k.key.get(), key, kv.k.keyLength);
     bool ret = KVStore.putNew(&kv, 0, 0); 
     EXPECT_EQ(ret, true);
     ret = KVStore.putNew(&kv, 0, 0);
