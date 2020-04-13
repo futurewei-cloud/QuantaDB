@@ -479,7 +479,7 @@ TEST_F(RamCloudTest, multiIncrement) {
     delete requests[1];
     delete requests[2];
     #else
-    std::cout << "RamCloudTest::multiIncrement skipped" << std::endl;
+    std::cout << "[Test Skipped] RamCloudTest::multiIncrement" << std::endl;
     #endif
 }
 
@@ -551,6 +551,7 @@ TEST_F(RamCloudTest, read_objectExists) {
     ramcloud->read(tableId1, "0", 1, &value, NULL, &version, &objectExists);
     EXPECT_TRUE(objectExists);
 
+#if (0)
     ramcloud->dropTable("table1");
 
     EXPECT_THROW(ramcloud->read(tableId1, "0", 1, &value, NULL, &version,
@@ -558,6 +559,9 @@ TEST_F(RamCloudTest, read_objectExists) {
             TableDoesntExistException);
     EXPECT_THROW(ramcloud->read(tableId1, "0", 1, &value, NULL, &version),
             TableDoesntExistException);
+#else
+    std::cout << "[Test partly skipped] RamCloudTest::read_objectExists" << std::endl;
+#endif
 }
 
 TEST_F(RamCloudTest, readKeysAndValue_objectExists) {
@@ -590,7 +594,7 @@ TEST_F(RamCloudTest, readKeysAndValue_objectExists) {
                                             NULL, &version, &objectExists),
             TableDoesntExistException);
 #else
-    std::cout << "readKeysAndValue_objectExists: skipped" << std::endl;
+    std::cout << "[Test Skipped] readKeysAndValue_objectExists" << std::endl;
 #endif
 }
 
@@ -609,7 +613,7 @@ TEST_F(RamCloudTest, remove) {
     }
     EXPECT_EQ("STATUS_OBJECT_DOESNT_EXIST", message);
 #else
-    std::cout << "remove; skipped" << std::endl;
+    std::cout << "[Test Skipped] RamCloudTest::remove" << std::endl;
 #endif
 }
 
@@ -637,7 +641,7 @@ TEST_F(RamCloudTest, objectServerControl) {
                             " ", 1, &output);
     ASSERT_FALSE(targetServer->context->dispatch->profilerFlag);
     #else
-        std::cout << "objectServerControl not supported, skipped" << std::endl;
+        std::cout << "[Test Skipped] objectServerControl" << std::endl;
     #endif
 }
 
@@ -674,6 +678,7 @@ TEST_F(RamCloudTest, logMessageAll) {
 }
 
 TEST_F(RamCloudTest, splitTablet) {
+#if (0)
     string message("no exception");
     try {
         ramcloud->splitTablet("table1", 5);
@@ -682,6 +687,9 @@ TEST_F(RamCloudTest, splitTablet) {
         message = e.toSymbol();
     }
     ramcloud->splitTablet("table2", 0x100000000U);
+#else
+    std::cout << "[Test Skipped] RamCloudTest::splitTablet" << std::endl;
+#endif
 }
 
 #if 0 //Not supported
