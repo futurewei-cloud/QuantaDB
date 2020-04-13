@@ -32,16 +32,15 @@ namespace DSSN {
 class Validator {
     PROTECTED:
 
-    WaitQueue localTxQueue; //Fixme: change to WaitList
+    WaitList localTxQueue{1000001};
+    SkipList reorderQueue;
     DistributedTxSet distributedTxSet;
     ActiveTxSet activeTxSet;
-    BlockedTxSet blockedTxSet;
     PeerInfo peerInfo;
 	ConcludeQueue concludeQueue;
     uint64_t alertThreshold = 1000; //LATER
     std::atomic<uint64_t> localTxCTSBase;
     bool isUnderTest = false;
-    SkipList reorderQueue;
     ClusterTimeService clock;
     //LATER DependencyMatrix blockedTxSet;
     //KVStore kvStore;
@@ -75,6 +74,7 @@ class Validator {
 
     PUBLIC:
 	Validator(HashmapKVStore &kvStore);
+	~Validator();
 
     // start threads and work
     void start();

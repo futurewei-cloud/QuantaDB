@@ -111,7 +111,8 @@ class ValidatorTest : public ::testing::Test {
     	GTEST_COUT << "Total commits: " << count << std::endl;
     }
 };
-/*
+
+#if 1
 TEST_F(ValidatorTest, BATKVStorePutGet) {
 	fillTxEntry(1);
 
@@ -173,8 +174,9 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
     KLayout k(txEntry[0]->getWriteSet()[0]->k.keyLength);
     std::memcpy(k.key.get(), txEntry[0]->getWriteSet()[0]->k.key.get(), k.keyLength);
 
-    validator.localTxQueue.push(txEntry[0]);
-    validator.localTxQueue.schedule(true);
+    //validator.localTxQueue.push(txEntry[0]);
+    //validator.localTxQueue.schedule(true);
+    validator.localTxQueue.add(txEntry[0]);
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
     EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
@@ -186,8 +188,9 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
 
     fillTxEntry(1, 4); //one write key, three read keys
 
-    validator.localTxQueue.push(txEntry[0]);
-    validator.localTxQueue.schedule(true);
+    //validator.localTxQueue.push(txEntry[0]);
+    //validator.localTxQueue.schedule(true);
+    validator.localTxQueue.add(txEntry[0]);
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
     EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
@@ -213,9 +216,9 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf) {
     count = 0;
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
-    	if (validator.localTxQueue.push(txEntry[i])) count++;
+    	if (validator.localTxQueue.add(txEntry[i])) count++;
     }
-    validator.localTxQueue.schedule(true);
+    //validator.localTxQueue.schedule(true);
     stop = Cycles::rdtscp();
     GTEST_COUT << "localTxQueue.push(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
@@ -226,7 +229,7 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf) {
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
     	TxEntry *tmp;
-    	if (validator.localTxQueue.try_pop(tmp)) count++;
+    	if (validator.localTxQueue.pop(tmp)) count++;
     }
     stop = Cycles::rdtscp();
     GTEST_COUT << "localTxQueue.try_pop(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
@@ -279,15 +282,15 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf2) {
 
     //time all operations
     for (int i = 0; i < size; i++) {
-    	validator.localTxQueue.push(txEntry[i]);
+    	validator.localTxQueue.add(txEntry[i]);
     }
-    validator.localTxQueue.schedule(true);
+    //validator.localTxQueue.schedule(true);
 
     //uint64_t lastCTS = 1234;
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
     	TxEntry *tmp;
-    	validator.localTxQueue.try_pop(tmp);
+    	validator.localTxQueue.pop(tmp);
     	validator.activeTxSet.blocks(tmp);
     	//tmp->setCTS(++lastCTS);
     	validator.validateLocalTx(*tmp);
@@ -313,9 +316,9 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
 
     //time serialize()
     for (int i = 0; i < size; i++) {
-    	validator.localTxQueue.push(txEntry[i]);
+    	validator.localTxQueue.add(txEntry[i]);
     }
-    validator.localTxQueue.schedule(true);
+    //validator.localTxQueue.schedule(true);
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     start = Cycles::rdtscp();
     validator.serialize();
@@ -356,43 +359,65 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 	EXPECT_EQ((uint32_t)2, validator.peerInfo.size());
 
 	freeTxEntry(5);
-}*/
-
+}
+#endif //
 
 TEST_F(ValidatorTest, BATDistributedTxSetPerf) {
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
 
-    int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
+    //int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
+    int size = 500000;
     uint64_t start, stop;
 
     fillTxEntry(size, 20);
 
     //time all operations
+    int threshold = 100;
+    validator.distributedTxSet.setHotThreshold(threshold);
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
     	validator.distributedTxSet.add(txEntry[i]);
     }
     stop = Cycles::rdtscp();
     GTEST_COUT << "distributedTxSet.add (" << size << ") [" <<  validator.distributedTxSet.count()
-    		<< "ok]:  Total cycles " << (stop - start) << std::endl;
+    		<< " ok]:  Total cycles " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per add: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
-
-    EXPECT_EQ(10, (int)validator.distributedTxSet.independentQueueCount());
-    EXPECT_EQ(validator.distributedTxSet.count(),
-    		validator.distributedTxSet.independentQueueCount() +
-			validator.distributedTxSet.coldQueueCount() +
-			validator.distributedTxSet.hotQueueCount());
 
     GTEST_COUT << "independ: " << validator.distributedTxSet.independentQueueCount()
     		<< "; cold: " << validator.distributedTxSet.coldQueueCount()
 			<< "; hot: " << validator.distributedTxSet.hotQueueCount()
 			<< std::endl;
 
-    start = Cycles::rdtscp();
-    validator.distributedTxSet.findReadyTx(validator.activeTxSet);
-    stop = Cycles::rdtscp();
-    GTEST_COUT << "findReadyTx (" << validator.distributedTxSet.count() << "): Total cycles " << (stop - start) << std::endl;
-    GTEST_COUT << "Sec per try: " << (Cycles::toSeconds(stop - start) / validator.distributedTxSet.count())  << std::endl;
+    EXPECT_EQ(10, (int)validator.distributedTxSet.independentQueueCount());
+    EXPECT_EQ(threshold * 10, (int)validator.distributedTxSet.coldQueueCount());
+    EXPECT_EQ(500000 - 10 - threshold * 10, (int)validator.distributedTxSet.hotQueueCount());
+    EXPECT_EQ(validator.distributedTxSet.count(),
+    		validator.distributedTxSet.independentQueueCount() +
+			validator.distributedTxSet.coldQueueCount() +
+			validator.distributedTxSet.hotQueueCount());
+
+    TxEntry *txEntry;
+    uint64_t total = 0;
+    uint64_t lastCTS = 0;
+    uint32_t count = 0;
+	start = Cycles::rdtscp();
+    for (int i = 0; i < size; i++) {
+    	txEntry = validator.distributedTxSet.findReadyTx(validator.activeTxSet);
+    	if (txEntry) {
+    		EXPECT_LT(lastCTS, txEntry->getCTS());
+    		lastCTS = txEntry->getCTS();
+    		count++;
+    		//validator.activeTxSet.add(txEntry);
+    		//validator.activeTxSet.remove(txEntry);
+    	}
+    }
+	stop = Cycles::rdtscp();
+	total += stop - start;
+
+	EXPECT_EQ(0, (int)validator.distributedTxSet.count());
+
+    GTEST_COUT << "findReadyTx (" << size << "[" << count << " ok]): Total cycles " << total << std::endl;
+    GTEST_COUT << "Sec per try: " << (Cycles::toSeconds(total) / size)  << std::endl;
 
 	freeTxEntry(size);
 }

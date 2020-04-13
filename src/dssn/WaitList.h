@@ -90,6 +90,13 @@ class WaitList {
     	return true;
     }
 
+    bool pop(TxEntry *&txEntry) {
+    	uint64_t it;
+    	if ((txEntry = findFirst(it)))
+    		return remove(it);
+    	return false;
+    }
+
     // for optimization, as a test for useless iteration
     bool hasNoActivity() {
     	if (activitySignature == (addedTxCount + removedTxCount))

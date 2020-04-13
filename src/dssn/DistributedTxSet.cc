@@ -27,27 +27,40 @@ DistributedTxSet::dependsOnEarlierTxs(T &cbf, TxEntry *txEntry, uint32_t &count)
 
 template <class T>
 bool
+DistributedTxSet::dependsOnEarlierTxs(T &cbf, TxEntry *txEntry) {
+	for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
+		if (cbf.shouldNotAdd(txEntry->getReadSetHash()[i]))
+			return true;
+	}
+	for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
+		if (cbf.shouldNotAdd(txEntry->getWriteSetHash()[i]))
+			return true;
+	}
+	return false;
+}
+
+template <class T>
+bool
 DistributedTxSet::addToCBF(T &cbf, TxEntry *txEntry) {
+    for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
+        bool success = cbf.add(txEntry->getWriteSetHash()[i]);
+        if (!success) {
+            // undo effects
+            for (int j = i - 1; j >= 0; j--) {
+            	assert(cbf.remove(txEntry->getWriteSetHash()[j]));
+            }
+            return false;
+        }
+    }
     for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
         bool success = cbf.add(txEntry->getReadSetHash()[i]);
         if (!success) {
             // undo effects
             for (int j = i - 1; j >= 0; j--) {
-            	cbf.remove(txEntry->getReadSetHash()[j]);
+            	assert(cbf.remove(txEntry->getReadSetHash()[j]));
             }
-            return false;
-        }
-    }
-    for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
-        bool success = cbf.add(txEntry->getWriteSetHash()[i]);
-        assert(success);
-        if (!success) {
-            // undo effects
-            for (int j = i - 1; j >= 0; j--) {
-            	cbf.remove(txEntry->getWriteSetHash()[j]);
-            }
-            for (uint32_t j = 0; j < txEntry->getReadSetSize(); j++) {
-            	cbf.remove(txEntry->getReadSetHash()[j]);
+            for (uint32_t j = 0; j < txEntry->getWriteSetSize(); j++) {
+            	assert(cbf.remove(txEntry->getWriteSetHash()[j]));
             }
             return false;
         }
@@ -64,7 +77,7 @@ DistributedTxSet::addToHotTxs(TxEntry *txEntry) {
     	addedTxCount++;
     	return true;
     }
-	return false;
+	return false; //limited by CBF depth
 }
 
 bool
@@ -76,7 +89,7 @@ DistributedTxSet::addToColdTxs(TxEntry *txEntry) {
     	addedTxCount++;
     	return true;
     }
-	return false;
+	return addToHotTxs(txEntry); //limited by CBF depth, move it to hot queue
 }
 
 bool
@@ -88,28 +101,28 @@ DistributedTxSet::addToIndependentTxs(TxEntry *txEntry) {
     	addedTxCount++;
     	return true;
     }
-	return false;
+	return addToColdTxs(txEntry); //limited by CBF depth, move it to cold queue
 }
 
 bool
 DistributedTxSet::add(TxEntry *txEntry) {
 	uint32_t count;
-	if (dependsOnEarlierTxs(hotDependCBF, txEntry, count)) {
-		return (count >= hotDependCBF.countLimit() ? false : addToHotTxs(txEntry));
+	if (dependsOnEarlierTxs(hotDependCBF, txEntry)) {
+		return addToHotTxs(txEntry);
 	}
 
 	if (dependsOnEarlierTxs(coldDependCBF, txEntry, count)) {
 		if (count >= hotThreshold) {
-			return (count >= hotDependCBF.countLimit() ? false : addToHotTxs(txEntry));
+			return addToHotTxs(txEntry);
 		}
 		return (count >= coldDependCBF.countLimit() ? false : addToColdTxs(txEntry));
 	}
 
-	if (dependsOnEarlierTxs(independentCBF, txEntry, count)) {
-		return (count >= coldDependCBF.countLimit() ? false : addToColdTxs(txEntry));
+	if (dependsOnEarlierTxs(independentCBF, txEntry)) {
+		return addToColdTxs(txEntry);
 	}
 
-	return (count >= independentCBF.countLimit() ? false : addToIndependentTxs(txEntry));
+	return addToIndependentTxs(txEntry);
 }
 
 TxEntry*
@@ -120,38 +133,36 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 		return NULL;
 	activitySignature = addedTxCount + removedTxCount + activeTxSet.getRemovedTxCount();
 
-	TxEntry* txEntry;
-	uint64_t it;
-
-	txEntry = hotDependQueue.findFirst(it);
-	if (txEntry
-			&& txEntry->getCTS() < lastColdDependCTS
-			&& txEntry->getCTS() < lastIndependentCTS
-			&& !activeTxSet.blocks(txEntry)) {
-		hotDependQueue.remove(it);
+	uint64_t itHot, itCold, itIndepend;
+	TxEntry *txHot = hotDependQueue.findFirst(itHot);
+	TxEntry *txCold = coldDependQueue.findFirst(itCold);
+	TxEntry *txIndepend = independentQueue.findFirst(itIndepend);
+	if (txHot
+			&& (!txCold || txHot->getCTS() < txCold->getCTS())
+			&& (!txIndepend || txHot->getCTS() < txIndepend->getCTS())
+			&& !activeTxSet.blocks(txHot)) {
+		hotDependQueue.remove(itHot);
 		removedTxCount++;
-		return txEntry;
+		return txHot;
 	}
 
-	txEntry = coldDependQueue.findFirst(it);
-	if (txEntry
-			&& txEntry->getCTS() < lastIndependentCTS
-			&& !activeTxSet.blocks(txEntry)) {
-		lastColdDependCTS = txEntry->getCTS();
-		coldDependQueue.remove(it);
+	if (txCold
+			&& (!txIndepend || txCold->getCTS() < txIndepend->getCTS())
+			&& !activeTxSet.blocks(txCold)) {
+		coldDependQueue.remove(itCold);
 		removedTxCount++;
-		return txEntry;
+		return txCold;
 	}
 
-	txEntry = independentQueue.findFirst(it);
-	do {
-		if (txEntry && !activeTxSet.blocks(txEntry)) {
-			lastIndependentCTS = txEntry->getCTS();
-			independentQueue.remove(it);
-			removedTxCount++;
-			return txEntry;
-		}
-	} while ((txEntry = independentQueue.findNext(it)));
+	if (txIndepend) {
+		do {
+			if (!activeTxSet.blocks(txIndepend)) {
+				independentQueue.remove(itIndepend);
+				removedTxCount++;
+				return txIndepend;
+			}
+		} while ((txIndepend = independentQueue.findNext(itIndepend)));
+	}
 
 	return NULL;
 }

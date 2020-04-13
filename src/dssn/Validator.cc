@@ -16,6 +16,9 @@ const uint64_t minTimeStamp = 0;
 Validator::Validator(HashmapKVStore &_kvStore) : kvStore(_kvStore) {
 }
 
+Validator::~Validator() {
+}
+
 void
 Validator::start() {
 	localTxCTSBase = clock.getLocalTime();
@@ -25,7 +28,7 @@ Validator::start() {
     std::thread( [=] { validateDistributedTxs(0); });
     std::thread( [=] { sweep(); });
     std::thread( [=] { scheduleDistributedTxs(); });
-    localTxQueue.start();
+    //localTxQueue.start();
 }
 
 bool
@@ -259,7 +262,7 @@ Validator::scheduleDistributedTxs() {
     	if ((txEntry = (TxEntry *)reorderQueue.try_pop(clock.getLocalTime()))) {
     		if (txEntry->getCTS() < localTxCTSBase)
     			continue; //ignore this CI that is past a processed CI
-    		while (!blockedTxSet.add(txEntry));
+    		while (!distributedTxSet.add(txEntry));
     		localTxCTSBase = txEntry->getCTS();
     	}
     } while (!isUnderTest);
@@ -276,10 +279,10 @@ Validator::serialize() {
 
         // process all commit-intents on local transaction queue
         TxEntry* txEntry;
-        while (localTxQueue.try_pop(txEntry)) {
-        	if (activeTxSet.blocks(txEntry)) {
-        		localTxQueue.repush(txEntry); // re-enqueued as this tx may be unblocked later
-        	} else {
+        uint64_t it;
+        txEntry = localTxQueue.findFirst(it);
+        while (txEntry) {
+        	if (!activeTxSet.blocks(txEntry)) {
         		/* There is no need to update activeTXs because this tx is validated
         		 * and concluded shortly. If the conclude() does through a queue and another
         		 * task, then we should add tx to active tx set here.
@@ -291,13 +294,16 @@ Validator::serialize() {
 
         		validateLocalTx(*txEntry);
 
-        		conclude(*txEntry);
+        		if (conclude(*txEntry)) {
+            		localTxQueue.remove(it);
+        		}
         	}
         	hasEvent = true;
+        	txEntry = localTxQueue.findNext(it);
         }
 
         // process due commit-intents on cross-shard transaction queue
-        while ((txEntry = blockedTxSet.findReadyTx(activeTxSet))) {
+        while ((txEntry = distributedTxSet.findReadyTx(activeTxSet))) {
         	assert(activeTxSet.add(txEntry));
         	txEntry->setTxCIState(TxEntry::TX_CI_TRANSIENT);
         	hasEvent = true;

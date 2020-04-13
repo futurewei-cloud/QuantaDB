@@ -34,7 +34,11 @@ class ActiveTxSet {
 
     bool blocks(TxEntry *txEntry);
 
-    inline uint64_t getRemovedTxCount() { return removedTxCount; }
+    // for testing
+    uint64_t getRemovedTxCount() { return removedTxCount; }
+
+    // for testing
+    bool clear() { return cbf.clear(); }
 
     ActiveTxSet() {}
 

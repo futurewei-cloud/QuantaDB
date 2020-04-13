@@ -53,10 +53,7 @@ class DistributedTxSet {
 
 	CountBloomFilter<uint8_t> independentCBF = CountBloomFilter<uint8_t>((1 << 18), 255);
 	CountBloomFilter<uint8_t> coldDependCBF = CountBloomFilter<uint8_t>((1 << 15), 255);
-	CountBloomFilter<uint32_t> hotDependCBF = CountBloomFilter<uint32_t>((1 << 10), 100000);
-
-	uint64_t lastColdDependCTS = 0;
-	uint64_t lastIndependentCTS = 0;
+	CountBloomFilter<uint32_t> hotDependCBF = CountBloomFilter<uint32_t>((1 << 10), 0xffffffff);
 
 	uint32_t hotThreshold = 255;
 
@@ -66,6 +63,7 @@ class DistributedTxSet {
 	uint64_t removedTxCount = 0;
 
 	template <class T> inline bool dependsOnEarlierTxs(T &cbf, TxEntry *txEntry, uint32_t &count);
+	template <class T> inline bool dependsOnEarlierTxs(T &cbf, TxEntry *txEntry);
 	template <class T> inline bool addToCBF(T &cbf, TxEntry *txEntry);
 	inline bool addToHotTxs(TxEntry *txEntry);
 	inline bool addToColdTxs(TxEntry *txEntry);
@@ -77,6 +75,9 @@ class DistributedTxSet {
 
     // return the CI that is not blocked by active tx set nor by any earlier CIs
     TxEntry* findReadyTx(ActiveTxSet &activeTxSet);
+
+    // control when consdering cold tx to be hot
+    void setHotThreshold(uint32_t t) { hotThreshold = t; }
 
     // for debugging
     uint32_t count() { return (addedTxCount - removedTxCount); }

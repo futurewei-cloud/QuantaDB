@@ -79,7 +79,7 @@ uint64_t
 CountBloomFilter<T>::hitCount(uint64_t hash) {
     uint64_t idx1 = (hash >> 32) % size, idx2 = (hash & 0xffffffff) % size;
     if (counters[idx1] > 0 && counters[idx2] > 0)
-    	return (std::max((uint64_t)counters[idx1], (uint64_t)counters[idx2]));
+    	return (std::min((uint64_t)counters[idx1], (uint64_t)counters[idx2]));
     return 0;
 }
 
