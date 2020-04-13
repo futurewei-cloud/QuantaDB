@@ -560,12 +560,11 @@ TEST_F(RamCloudTest, read_objectExists) {
     EXPECT_THROW(ramcloud->read(tableId1, "0", 1, &value, NULL, &version),
             TableDoesntExistException);
 #else
-    std::cout << "[Test partly skipped] RamCloudTest::read_objectExists" << std::endl;
+    std::cout << "[Test Partial skipped] RamCloudTest::read_objectExists" << std::endl;
 #endif
 }
 
 TEST_F(RamCloudTest, readKeysAndValue_objectExists) {
-#if (0)
     ObjectBuffer keysAndValue;
     uint64_t version;
     bool objectExists = true;
@@ -585,6 +584,7 @@ TEST_F(RamCloudTest, readKeysAndValue_objectExists) {
                                &objectExists);
     EXPECT_TRUE(objectExists);
 
+#if (0)
     ramcloud->dropTable("table1");
 
     EXPECT_THROW(ramcloud->readKeysAndValue(tableId1, "0", 1, &keysAndValue,
@@ -594,7 +594,7 @@ TEST_F(RamCloudTest, readKeysAndValue_objectExists) {
                                             NULL, &version, &objectExists),
             TableDoesntExistException);
 #else
-    std::cout << "[Test Skipped] readKeysAndValue_objectExists" << std::endl;
+    std::cout << "[Test Partial Skipped] readKeysAndValue_objectExists" << std::endl;
 #endif
 }
 
