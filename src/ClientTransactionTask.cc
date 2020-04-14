@@ -700,10 +700,10 @@ ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
     if (entry) {
         reqHdr->meta = entry->meta;
     }
+    reqHdr->dssnCTS = ramcloud->getCTS();
 #else
     reqHdr->lease = task->lease;
 #endif
-    //TODO: fill the cts
 }
 
 /**

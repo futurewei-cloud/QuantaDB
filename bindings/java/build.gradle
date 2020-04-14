@@ -23,6 +23,7 @@ model {
             }
             ramcloud {
                 headers.srcDirs("$ramcloudDir/$ramcloudSrc",
+				"$ramcloudDir/$ramcloudSrc/dssn",
                                 "$ramcloudDir/$ramcloudBin")
                 binaries.withType(SharedLibraryBinary) {
                     sharedLibraryFile = file(
@@ -31,6 +32,7 @@ model {
             }
             ramcloudtest {
                 headers.srcDirs("$ramcloudDir/$ramcloudSrc",
+				"$ramcloudDir/$ramcloudSrc/dssn",
                                 "$ramcloudDir/$ramcloudBin")
                 binaries.withType(SharedLibraryBinary) {
                     sharedLibraryFile = file(

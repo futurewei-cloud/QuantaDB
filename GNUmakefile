@@ -457,6 +457,8 @@ INSTALL_INCLUDES := \
     src/CoordinatorClient.h \
     src/CoordinatorRpcWrapper.h \
     src/Crc32C.h \
+    src/dssn/ClusterTimeService.h \
+    src/dssn/Sequencer.h \
     src/Exception.h \
     src/Fence.h \
     src/Key.h \

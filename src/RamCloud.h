@@ -23,6 +23,7 @@
 #include "ObjectRpcWrapper.h"
 #include "OptionParser.h"
 #include "ServerMetrics.h"
+#include "Sequencer.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
@@ -170,6 +171,9 @@ class RamCloud {
             uint64_t* version = NULL, bool async = false);
 
     void poll();
+    uint64_t getCTS() {
+        return sequencer.getCTS();
+    }
     explicit RamCloud(CommandLineOptions* options);
     explicit RamCloud(Context* context);
     explicit RamCloud(const char* serviceLocator,
@@ -190,6 +194,12 @@ class RamCloud {
      * memory, and must be freed (NULL means not allocated yet).
      */
     Context* realClientContext;
+
+    /**
+     * DSSN Sequencer.
+     * It is used to assign the commit transaction timestamp (CTS)
+     */
+    DSSN::Sequencer sequencer;
 
   public:
     /**
