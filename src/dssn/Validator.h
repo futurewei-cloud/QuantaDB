@@ -10,7 +10,6 @@
 #include "ActiveTxSet.h"
 #include "BlockedTxSet.h"
 #include "TxEntry.h"
-#include "WaitQueue.h"
 #include "KVStore.h"
 #include "HashmapKVStore.h"
 #include "PeerInfo.h"
