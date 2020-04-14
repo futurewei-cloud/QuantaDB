@@ -28,7 +28,6 @@ Validator::start() {
     std::thread( [=] { validateDistributedTxs(0); });
     std::thread( [=] { sweep(); });
     std::thread( [=] { scheduleDistributedTxs(); });
-    //localTxQueue.start();
 }
 
 bool
