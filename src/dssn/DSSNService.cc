@@ -96,7 +96,7 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
     std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
 
     KVLayout *kv = kvStore->fetch(k);
-    if (!kv) {
+    if (!kv || kv->getVLayout().isTombstone) {
         respHdr->common.status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
         return;
     }
@@ -110,6 +110,8 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
     Object object(tableId, 0, 0, buffer);
     object.appendValueToBuffer(rpc->replyPayload);
 
+    respHdr->meta.eta = kv->getVLayout().meta.pStamp; // eta
+    respHdr->meta.pi  = kv->getVLayout().meta.sStamp; // pi
     respHdr->length = rpc->replyPayload->size() - initialLength;
 }
 
@@ -150,6 +152,8 @@ DSSNService::readKeysAndValue(const WireFormat::ReadKeysAndValueDSSN::Request* r
     Object object(tableId, 0, 0, buffer);
     object.appendKeysAndValueToBuffer(*(rpc->replyPayload));
 
+    respHdr->meta.eta = kv->getVLayout().meta.pStamp; // eta
+    respHdr->meta.pi  = kv->getVLayout().meta.sStamp; // pi
     respHdr->length = rpc->replyPayload->size() - initialLength;
 }
 
@@ -223,8 +227,30 @@ DSSNService::remove(const WireFormat::RemoveDSSN::Request* reqHdr,
 		    Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
-    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
-    s->remove(reqHdr, respHdr, rpc);
+
+    assert(reqHdr->rpcId > 0);
+
+    const void* stringKey = rpc->requestPayload->getRange(
+            sizeof32(*reqHdr), reqHdr->keyLength);
+
+    if (stringKey == NULL) {
+        respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+        rpc->sendReply();
+        return;
+    }
+
+    uint64_t tableId = reqHdr->tableId;
+    KLayout k(reqHdr->keyLength + sizeof(tableId)); //make room composite key in KVStore
+    std::memcpy(k.key.get(), &tableId, sizeof(tableId));
+    std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
+    Key key(reqHdr->tableId, stringKey, reqHdr->keyLength);
+
+    KVLayout *kv = kvStore->fetch(k);
+    if (!kv) {
+        return; // nothing to be removed
+    }
+
+    kv->getVLayout().isTombstone = true;
 }
 
 void

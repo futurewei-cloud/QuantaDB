@@ -18,8 +18,7 @@ namespace DSSN {
 class ConcludeQueue {
     PROTECTED:
 	boost::lockfree::queue<TxEntry*> inQueue{10000};
-	//std::atomic<uint32_t> count;
-	uint32_t count;
+	std::atomic<uint32_t> count{0};
 
     PUBLIC:
 	ConcludeQueue() { count = 0; }

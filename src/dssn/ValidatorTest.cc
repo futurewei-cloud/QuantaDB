@@ -174,8 +174,6 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
     KLayout k(txEntry[0]->getWriteSet()[0]->k.keyLength);
     std::memcpy(k.key.get(), txEntry[0]->getWriteSet()[0]->k.key.get(), k.keyLength);
 
-    //validator.localTxQueue.push(txEntry[0]);
-    //validator.localTxQueue.schedule(true);
     validator.localTxQueue.add(txEntry[0]);
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
@@ -188,8 +186,6 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
 
     fillTxEntry(1, 4); //one write key, three read keys
 
-    //validator.localTxQueue.push(txEntry[0]);
-    //validator.localTxQueue.schedule(true);
     validator.localTxQueue.add(txEntry[0]);
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
@@ -220,7 +216,7 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf) {
     }
     //validator.localTxQueue.schedule(true);
     stop = Cycles::rdtscp();
-    GTEST_COUT << "localTxQueue.push(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
+    GTEST_COUT << "localTxQueue.add(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
     EXPECT_EQ(size, count);
 
@@ -232,7 +228,7 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf) {
     	if (validator.localTxQueue.pop(tmp)) count++;
     }
     stop = Cycles::rdtscp();
-    GTEST_COUT << "localTxQueue.try_pop(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
+    GTEST_COUT << "localTxQueue.pop(): Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
     EXPECT_EQ(size, count);
 
@@ -362,6 +358,36 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 }
 #endif //
 
+TEST_F(ValidatorTest, BATValidateDistributedTxs) {
+    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
+
+    int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
+    size = 20;
+
+    fillTxEntry(size, 20, 3); //3 participants
+
+    //time all operations
+    int threshold = 100;
+    validator.distributedTxSet.setHotThreshold(threshold);
+    for (int i = 0; i < size; i++) {
+    	validator.distributedTxSet.add(txEntry[i]);
+    }
+
+    EXPECT_EQ(size, (int)validator.distributedTxSet.count());
+
+    for (int i = 0; i < size; i += 10) {
+    	validator.serialize();
+    	for (int j = 0; j < 10; j++) {
+    		if (i + j  < size)
+    			fillTxEntryPeers(txEntry[i + j]);
+    	}
+    }
+
+	EXPECT_EQ(0, (int)validator.distributedTxSet.count());
+
+	freeTxEntry(size);
+}
+
 TEST_F(ValidatorTest, BATDistributedTxSetPerf) {
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
 
@@ -369,7 +395,7 @@ TEST_F(ValidatorTest, BATDistributedTxSetPerf) {
     int size = 500000;
     uint64_t start, stop;
 
-    fillTxEntry(size, 20);
+    fillTxEntry(size, 20, 2);
 
     //time all operations
     int threshold = 100;
@@ -407,8 +433,6 @@ TEST_F(ValidatorTest, BATDistributedTxSetPerf) {
     		EXPECT_LT(lastCTS, txEntry->getCTS());
     		lastCTS = txEntry->getCTS();
     		count++;
-    		//validator.activeTxSet.add(txEntry);
-    		//validator.activeTxSet.remove(txEntry);
     	}
     }
 	stop = Cycles::rdtscp();
