@@ -324,8 +324,9 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 		      Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
-    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
-    s->txPrepare(reqHdr, respHdr, rpc);
+    respHdr->common.status = STATUS_OK;
+    respHdr->vote = WireFormat::TxPrepare::COMMITTED;
+    rpc->sendReply();
 }
 
 void
