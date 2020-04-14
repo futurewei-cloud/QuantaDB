@@ -466,7 +466,9 @@ TEST_F(RamCloudTest, indexServerControl) {
 }
 
 TEST_F(RamCloudTest, multiIncrement) {
-    #if (0)
+    #ifdef  DSSNTX
+    std::cout << "[Test Skipped] RamCloudTest::multiIncrement" << std::endl;
+    #else
     MultiIncrementObject *requests[3];
     requests[0] = new MultiIncrementObject(tableId1, "0", 1, 42, 0.0, NULL);
     requests[1] = new MultiIncrementObject(tableId1, "1", 1, 0, -42.0, NULL);
@@ -478,8 +480,6 @@ TEST_F(RamCloudTest, multiIncrement) {
     delete requests[0];
     delete requests[1];
     delete requests[2];
-    #else
-    std::cout << "[Test Skipped] RamCloudTest::multiIncrement" << std::endl;
     #endif
 }
 
@@ -551,7 +551,7 @@ TEST_F(RamCloudTest, read_objectExists) {
     ramcloud->read(tableId1, "0", 1, &value, NULL, &version, &objectExists);
     EXPECT_TRUE(objectExists);
 
-#if (0)
+#ifndef DSSNTX
     ramcloud->dropTable("table1");
 
     EXPECT_THROW(ramcloud->read(tableId1, "0", 1, &value, NULL, &version,
@@ -584,7 +584,7 @@ TEST_F(RamCloudTest, readKeysAndValue_objectExists) {
                                &objectExists);
     EXPECT_TRUE(objectExists);
 
-#if (0)
+#ifndef DSSNTX
     ramcloud->dropTable("table1");
 
     EXPECT_THROW(ramcloud->readKeysAndValue(tableId1, "0", 1, &keysAndValue,
@@ -599,7 +599,6 @@ TEST_F(RamCloudTest, readKeysAndValue_objectExists) {
 }
 
 TEST_F(RamCloudTest, remove) {
-#if (0)
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
     uint64_t version;
     ramcloud->remove(tableId1, "0", 1, NULL, &version);
@@ -612,13 +611,10 @@ TEST_F(RamCloudTest, remove) {
         message = e.toSymbol();
     }
     EXPECT_EQ("STATUS_OBJECT_DOESNT_EXIST", message);
-#else
-    std::cout << "[Test Skipped] RamCloudTest::remove" << std::endl;
-#endif
 }
 
 TEST_F(RamCloudTest, objectServerControl) {
-    #if (0)
+    #ifndef DSSNTX
     ramcloud->write(tableId1, "0", 1, "zfzfzf", 6);
     string serverLocator = ramcloud->clientContext->objectFinder->lookupTablet(
                              tableId1, Key::getHash(tableId1, "0", 1))->
@@ -678,7 +674,7 @@ TEST_F(RamCloudTest, logMessageAll) {
 }
 
 TEST_F(RamCloudTest, splitTablet) {
-#if (0)
+#ifndef DSSNTX
     string message("no exception");
     try {
         ramcloud->splitTablet("table1", 5);

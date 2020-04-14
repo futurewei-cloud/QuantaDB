@@ -2330,7 +2330,11 @@ RemoveRpc::RemoveRpc(RamCloud* ramcloud, uint64_t tableId,
     : LinearizableObjectRpcWrapper(ramcloud, true, tableId, key, keyLength,
             sizeof(WireFormat::Remove::Response))
 {
+#ifdef DSSNTX
+    WireFormat::Remove::Request* reqHdr(allocHeader<WireFormat::RemoveDSSN>());
+#else
     WireFormat::Remove::Request* reqHdr(allocHeader<WireFormat::Remove>());
+#endif
     reqHdr->tableId = tableId;
     reqHdr->keyLength = keyLength;
     reqHdr->rejectRules = rejectRules ? *rejectRules : defaultRejectRules;
