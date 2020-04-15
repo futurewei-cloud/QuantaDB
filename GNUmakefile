@@ -22,7 +22,7 @@ VALGRIND ?= no
 ONLOAD_DIR ?= /usr/local/openonload-201405
 
 #set to yes to enable DSSN style of transaction
-DSSNTX ?= no
+DSSNTX ?= yes
 
 ## Create a separate build directory for each git branch and for each arch
 OBJSUFFIX := $(shell git symbolic-ref -q HEAD | \
