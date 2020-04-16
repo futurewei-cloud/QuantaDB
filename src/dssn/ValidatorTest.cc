@@ -114,61 +114,62 @@ class ValidatorTest : public ::testing::Test {
 
 #if 1
 TEST_F(ValidatorTest, BATKVStorePutGet) {
-	fillTxEntry(1);
+    fillTxEntry(1);
 
-	for (uint32_t i = 0; i < txEntry[0]->getWriteSetSize(); i++) {
-		uint8_t *valuePtr = 0;
-		uint32_t valueLength;
-		validator.kvStore.getValue(txEntry[0]->getWriteSet()[i]->k, valuePtr, valueLength);
-		EXPECT_EQ(0, valuePtr);
-		EXPECT_EQ(0, (int)valueLength);
-		validator.kvStore.putNew(txEntry[0]->getWriteSet()[i], 0, 0);
-		validator.kvStore.getValue(txEntry[0]->getWriteSet()[i]->k, valuePtr, valueLength);
-	    EXPECT_NE(dataBlob, valuePtr);
-	    EXPECT_EQ(sizeof(dataBlob), valueLength);
-	    EXPECT_EQ(0, std::memcmp(dataBlob, valuePtr, valueLength));
-	}
+    KVLayout *kv;
+    for (uint32_t i = 0; i < txEntry[0]->getWriteSetSize(); i++) {
+        kv = validator.kvStore.fetch(txEntry[0]->getWriteSet()[i]->k);
+        ASSERT_TRUE(NULL==kv);
+        //EXPECT_EQ(0, kv->v.valuePtr);
+        //EXPECT_EQ(0, (int)kv->v.valueLength);
 
-	freeTxEntry(1);
+        validator.kvStore.putNew(txEntry[0]->getWriteSet()[i], 0, 0);
+        kv = validator.kvStore.fetch(txEntry[0]->getWriteSet()[i]->k);
+        ASSERT_TRUE(NULL!=kv);
+        EXPECT_NE(dataBlob, kv->v.valuePtr);
+        EXPECT_EQ(sizeof(dataBlob), kv->v.valueLength);
+        EXPECT_EQ(0, std::memcmp(dataBlob, kv->v.valuePtr, kv->v.valueLength));
+    }
+
+    freeTxEntry(1);
 }
 
 TEST_F(ValidatorTest, BATKVStorePutPerf) {
     uint64_t start, stop;
 
-	fillTxEntry(1,1000000);
+    fillTxEntry(1,1000000);
 
     uint32_t size = txEntry[0]->getWriteSetSize();
     auto& writeSet = txEntry[0]->getWriteSet();
     start = Cycles::rdtscp();
-	for (uint32_t i = 0; i < size; i++) {
-		validator.kvStore.putNew(writeSet[i], 0, 0);
-	}
+    for (uint32_t i = 0; i < size; i++) {
+        validator.kvStore.putNew(writeSet[i], 0, 0);
+    }
     stop = Cycles::rdtscp();
     GTEST_COUT << "write (" << size << " keys): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per write: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
     //printTxEntry(1);
 
-	freeTxEntry(1);
+    freeTxEntry(1);
 }
 
 TEST_F(ValidatorTest, BATKVStorePutGetMulti) {
-	fillTxEntry(5, 10);
-	for (uint32_t i = 0; i < txEntry[0]->getWriteSetSize(); i++) {
-		validator.kvStore.putNew(txEntry[0]->getWriteSet()[i], 0, 0);
-		uint8_t *valuePtr = 0;
-		uint32_t valueLength;
-		validator.kvStore.getValue(txEntry[0]->getWriteSet()[i]->k, valuePtr, valueLength);
-	    EXPECT_EQ(sizeof(dataBlob), valueLength);
-	    EXPECT_EQ(0, std::memcmp(dataBlob, valuePtr, valueLength));
-	}
-	freeTxEntry(5);
+    fillTxEntry(5, 10);
+    KVLayout *kv;
+    for (uint32_t i = 0; i < txEntry[0]->getWriteSetSize(); i++) {
+        validator.kvStore.putNew(txEntry[0]->getWriteSet()[i], 0, 0);
+        kv = validator.kvStore.fetch(txEntry[0]->getWriteSet()[i]->k);
+        ASSERT_TRUE(NULL!=kv);
+        EXPECT_EQ(sizeof(dataBlob), kv->v.valueLength);
+        EXPECT_EQ(0, std::memcmp(dataBlob, kv->v.valuePtr, kv->v.valueLength));
+    }
+    freeTxEntry(5);
 }
 
 TEST_F(ValidatorTest, BATValidateLocalTx) {
-	// this tests the correctness of local tx validation
+    // this tests the correctness of local tx validation
 
-	uint8_t *valuePtr = 0;
-	uint32_t valueLength;
+    KVLayout *kv;
 
     fillTxEntry(1);
     KLayout k(txEntry[0]->getWriteSet()[0]->k.keyLength);
@@ -178,9 +179,10 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
     EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
-	validator.kvStore.getValue(k, valuePtr, valueLength);
-    EXPECT_EQ(sizeof(dataBlob), valueLength);
-    EXPECT_EQ(0, std::memcmp(dataBlob, valuePtr, valueLength));
+    kv = validator.kvStore.fetch(k);
+    ASSERT_TRUE(NULL!=kv);
+    EXPECT_EQ(sizeof(dataBlob), kv->v.valueLength);
+    EXPECT_EQ(0, std::memcmp(dataBlob, kv->v.valuePtr, kv->v.valueLength));
 
     freeTxEntry(1);
 
@@ -190,9 +192,10 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
     validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
     EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
-	validator.kvStore.getValue(k, valuePtr, valueLength);
-    EXPECT_EQ(sizeof(dataBlob), valueLength);
-    EXPECT_EQ(0, std::memcmp(dataBlob, valuePtr, valueLength));
+    kv = validator.kvStore.fetch(k);
+    ASSERT_TRUE(NULL!=kv);
+    EXPECT_EQ(sizeof(dataBlob), kv->v.valueLength);
+    EXPECT_EQ(0, std::memcmp(dataBlob, kv->v.valuePtr, kv->v.valueLength));
 
     freeTxEntry(1);
 }

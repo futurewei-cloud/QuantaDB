@@ -105,29 +105,23 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
 }
 
 bool
-Validator::write(KLayout& k, uint64_t &vPrevEta) {
-	DSSNMeta meta;
-	kvStore.getMeta(k, meta);
-	vPrevEta = meta.pStampPrev;
-	return true;
-
-	KVLayout *kv;
-	bool found = kvStore.getValue(k, kv);
-	if (found && !kv->isTombstone()) {
-		return true;
-	}
-	return false;
+Validator::write(KLayout& k, uint64_t &vPrevPStamp) {
+    DSSNMeta meta;
+    KVLayout *kv = kvStore.fetch(k);
+    if (kv) {
+        meta = kv->meta();
+        vPrevPStamp = meta.pStampPrev;
+        return true;
+    }
+    return false;
 }
 
 bool
 Validator::read(KLayout& k, KVLayout *&kv) {
 	//FIXME: This read can happen concurrently while conclude() is
 	//modifying the KVLayout instance.
-	bool found = kvStore.getValue(k, kv);
-	if (found && !kv->isTombstone()) {
-		return true;
-	}
-	return false;
+        kv = kvStore.fetch(k);
+        return (kv!=NULL && !kv->isTombstone());
 }
 
 bool

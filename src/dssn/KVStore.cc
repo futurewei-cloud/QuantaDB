@@ -63,6 +63,7 @@ KVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_
 }
 
 // Obsoleted, reason in the header file
+/*
 bool
 KVStore::getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength) {
 
@@ -103,7 +104,7 @@ KVStore::getMeta(KLayout& k, DSSNMeta &meta)
 	}
 	return false;
 }
-
+*/
 
 /*
 bool
