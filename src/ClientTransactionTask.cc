@@ -32,6 +32,7 @@ namespace RAMCloud {
  */
 ClientTransactionTask::ClientTransactionTask(RamCloud* ramcloud)
     : ramcloud(ramcloud)
+    , mMeta({DSSN_MD_INITIAL,DSSN_MD_INFINITY,DSSN_MD_INITIAL})
     , readOnly(true)
     , participantCount(0)
     , participantList()
@@ -697,10 +698,8 @@ ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
     reqHdr->opCount = 0;
     request.appendExternal(&task->participantList);
 #ifdef DSSNTX
-    if (entry) {
-        reqHdr->meta = entry->meta;
-    }
-    reqHdr->dssnCTS = ramcloud->getCTS();
+    reqHdr->meta = task->mMeta;
+    reqHdr->meta.cstamp = ramcloud->getCTS();
 #else
     reqHdr->lease = task->lease;
 #endif
@@ -811,6 +810,32 @@ ClientTransactionTask::PrepareRpc::markOpsForRetry()
         entry->state = CacheEntry::PENDING;
     }
     task->nextCacheEntry = task->commitCache.begin();
+}
+
+bool
+ClientTransactionTask::isTxValid()
+{
+    bool result = true;
+
+#ifdef DSSNTX
+    if (mMeta.pi > mMeta.eta) {
+        return result;
+    }
+    //Invalid transaction
+    state = DONE;
+    decision = WireFormat::TxDecision::ABORT;
+    result = false;
+#endif
+
+    return result;
+}
+
+void
+ClientTransactionTask::updateSSNReadMeta(WireFormat::DSSNTxMeta& v)
+{
+    if (v.cstamp > mMeta.eta) {
+        mMeta.eta = v.cstamp;
+    }
 }
 
 } // namespace RAMCloud

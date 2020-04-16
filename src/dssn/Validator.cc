@@ -49,7 +49,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
     	KVLayout *kv = kvStore.fetch(readSet[i]->k);
     	if (kv) {
-    		txEntry.setPi(std::min(txEntry.getPi(), kv->getMeta().sStamp));
+    		txEntry.setPi(std::min(txEntry.getPi(), kv->meta().sStamp));
     		if (txEntry.isExclusionViolated()) {
     			return false;
     		}
@@ -62,7 +62,7 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
     for (uint32_t i = 0; i < txEntry.getWriteSetSize(); i++) {
     	KVLayout *kv = kvStore.fetch(writeSet[i]->k);
     	if (kv) {
-    		txEntry.setEta(std::max(txEntry.getEta(), kv->getMeta().pStamp));
+    		txEntry.setEta(std::max(txEntry.getEta(), kv->meta().pStamp));
     		if (txEntry.isExclusionViolated()) {
     			return false;
     		}
@@ -78,7 +78,7 @@ Validator::updateKVReadSetEta(TxEntry &txEntry) {
 	auto &readSet = txEntry.getReadSetInStore();
 	for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
 		if (readSet[i]) {
-			kvStore.maximizeMetaEta(readSet[i], txEntry.getCTS());
+	                readSet[i]->meta().pStamp = std::max(txEntry.getCTS(), readSet[i]->meta().pStamp);;
 		} else {
 			//Fixme: put a tombstoned entry in KVStore???
 			//or leave it blank???
@@ -104,29 +104,23 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
 }
 
 bool
-Validator::write(KLayout& k, uint64_t &vPrevEta) {
-	DSSNMeta meta;
-	kvStore.getMeta(k, meta);
-	vPrevEta = meta.pStampPrev;
-	return true;
-
-	KVLayout *kv;
-	bool found = kvStore.getValue(k, kv);
-	if (found && !kv->isTombstone()) {
-		return true;
-	}
-	return false;
+Validator::write(KLayout& k, uint64_t &vPrevPStamp) {
+    DSSNMeta meta;
+    KVLayout *kv = kvStore.fetch(k);
+    if (kv) {
+        meta = kv->meta();
+        vPrevPStamp = meta.pStampPrev;
+        return true;
+    }
+    return false;
 }
 
 bool
 Validator::read(KLayout& k, KVLayout *&kv) {
 	//FIXME: This read can happen concurrently while conclude() is
 	//modifying the KVLayout instance.
-	bool found = kvStore.getValue(k, kv);
-	if (found && !kv->isTombstone()) {
-		return true;
-	}
-	return false;
+        kv = kvStore.fetch(k);
+        return (kv!=NULL && !kv->isTombstone());
 }
 
 bool
