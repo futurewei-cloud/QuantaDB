@@ -15,9 +15,9 @@
 #include <string>
 #define GTEST_COUT  std::cerr << "[ INFO ] "
 
-namespace RAMCloud {
+namespace DSSN {
 
-using namespace DSSN;
+using namespace RAMCloud;
 
 class ValidatorTest : public ::testing::Test {
   public:
