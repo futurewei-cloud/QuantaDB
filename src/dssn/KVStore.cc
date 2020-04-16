@@ -40,10 +40,10 @@ KVStore::fetch(KLayout& k) {
 
 bool
 KVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi) {
-	kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
-	kv->getMeta().pStampPrev = 0;
-	kv->getMeta().sStampPrev = pi;
-	kv->getMeta().sStamp = 0xffffffffffffffff;
+	kv->meta().cStamp = kv->meta().pStamp = cts;
+	kv->meta().pStampPrev = 0;
+	kv->meta().sStampPrev = pi;
+	kv->meta().sStamp = 0xffffffffffffffff;
 	idx::contenthelpers::OptionalValue<DSSN::KVLayout*> ret = ((HotKVType *)hotKVStore)->upsert(kv);
 	if (!ret.mIsValid)
 		return false;
@@ -52,31 +52,30 @@ KVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi) {
 
 bool
 KVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength) {
-	kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
-	kv->getMeta().pStampPrev = kv->getMeta().pStamp;
-	kv->getMeta().sStampPrev = pi;
-	kv->getMeta().sStamp = 0xffffffffffffffff;
+	kv->meta().cStamp = kv->meta().pStamp = cts;
+	kv->meta().pStampPrev = kv->meta().pStamp;
+	kv->meta().sStampPrev = pi;
+	kv->meta().sStamp = 0xffffffffffffffff;
 	delete kv->v.valuePtr;
 	kv->v.valueLength = valueLength;
 	kv->v.valuePtr = valuePtr;
 	return true;
 }
 
+// Obsoleted, reason in the header file
 bool
 KVStore::getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength) {
 
-	HotKVType::KeyType key = (char *)k.key.get();
-	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
-	if (ret.mIsValid) {
-		KVLayout* kv = ret.mValue;
-		valuePtr = kv->v.valuePtr;
-		valueLength = kv->v.valueLength;
-		return true;
-	}
-	valueLength = 0;
-	return false;
+        KVLayout *kv;
+        if (getValue(k, kv)) {
+            valuePtr = kv->v.valuePtr;
+            valueLength = kv->v.valueLength;
+            return true;
+        }
+        return false;
 }
 
+//Obsoleted, reason in the header file
 bool
 KVStore::getValue(KLayout& k, KVLayout *&kv) {
 
@@ -91,6 +90,7 @@ KVStore::getValue(KLayout& k, KVLayout *&kv) {
 }
 
 
+//Obsoleted, reason in the header file
 bool
 KVStore::getMeta(KLayout& k, DSSNMeta &meta)
 {
@@ -98,17 +98,20 @@ KVStore::getMeta(KLayout& k, DSSNMeta &meta)
 	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
 	if (ret.mIsValid) {
 		KVLayout* kv = ret.mValue;
-		meta = kv->getMeta();
+		meta = kv->meta();
 		return true;
 	}
 	return false;
 }
 
+
+/*
 bool
 KVStore::maximizeMetaEta(KVLayout *kv, uint64_t eta) {
-	kv->getMeta().pStamp = std::max(eta, kv->getMeta().pStamp);;
+	kv->meta().pStamp = std::max(eta, kv->meta().pStamp);;
 	return true;
 }
+*/
 
 
 bool
@@ -118,8 +121,8 @@ KVStore::remove(KLayout& k, DSSNMeta &meta) {
 	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
 	if (ret.mIsValid) {
 		KVLayout* kv = ret.mValue;
-		kv->isTombstone() = true;
-		kv->getMeta() = meta;
+		kv->isTombstone(true);
+		kv->meta(meta);
 		return true;
 	}
 	return false;

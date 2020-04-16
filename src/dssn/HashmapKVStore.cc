@@ -25,20 +25,20 @@ KVLayout* HashmapKVStore::preput(KVLayout &kvIn)
 
 bool HashmapKVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
 {
-    kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
-    kv->getMeta().pStampPrev = 0;
-    kv->getMeta().sStampPrev = pi;
-    kv->getMeta().sStamp = cts; //Fixme: tx pi or tx cts? the SSN paper is vague about this
+    kv->meta().cStamp = kv->meta().pStamp = cts;
+    kv->meta().pStampPrev = 0;
+    kv->meta().sStampPrev = pi;
+    kv->meta().sStamp = cts; //Fixme: tx pi or tx cts? the SSN paper is vague about this
     elem_pointer<KVLayout> lptr = my_hashtable->put(kv->getKey(), kv);
     return lptr.ptr_ != NULL;
 }
 
 bool HashmapKVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength)
 {
-    kv->getMeta().cStamp = kv->getMeta().pStamp = cts;
-    kv->getMeta().pStampPrev = kv->getMeta().pStamp;
-    kv->getMeta().sStampPrev = pi;
-    kv->getMeta().sStamp = cts; //Fixme: tx pi or tx cts? the SSN paper is vague about this
+    kv->meta().cStamp = kv->meta().pStamp = cts;
+    kv->meta().pStampPrev = kv->meta().pStamp;
+    kv->meta().sStampPrev = pi;
+    kv->meta().sStamp = cts; //Fixme: tx pi or tx cts? the SSN paper is vague about this
     if (kv->v.valuePtr)
         delete kv->v.valuePtr;
     kv->v.valueLength = valueLength;
@@ -53,6 +53,7 @@ KVLayout * HashmapKVStore::fetch(KLayout& k)
     return lptr.ptr_;
 }
 
+// Obsoleted, reason in the header file
 bool HashmapKVStore::getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength)
 {
     KVLayout * kv = fetch(k);
@@ -76,23 +77,24 @@ bool HashmapKVStore::getMeta(KLayout& k, DSSNMeta &meta)
 {
     KVLayout * kv = fetch(k);
     if (kv) {
-	    meta = kv->getMeta();
+	    meta = kv->meta();
 		return true;
 	}
 	return false;
 }
 
+/*
 bool HashmapKVStore::maximizeMetaEta(KVLayout *kv, uint64_t eta) {
-	kv->getMeta().pStamp = std::max(eta, kv->getMeta().pStamp);;
+	kv->meta().pStamp = std::max(eta, kv->meta().pStamp);;
 	return true;
-}
+}*/
 
 bool HashmapKVStore::remove(KLayout& k, DSSNMeta &meta)
 {
     KVLayout * kv = fetch(k);
     if (kv) {
-		kv->isTombstone() = true;
-		kv->getMeta() = meta;
+		kv->isTombstone(true);
+		kv->meta(meta);
 		return true;
 	}
 	return false;

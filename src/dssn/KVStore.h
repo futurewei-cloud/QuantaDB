@@ -51,10 +51,14 @@ struct KVLayout {
 
 
 	explicit KVLayout(uint32_t keySize) : k(keySize) { }
-	inline DSSNMeta& getMeta() { return v.meta; }
+
+	inline DSSNMeta& meta() { return v.meta; }
+	inline void meta(const DSSNMeta &meta) { v.meta = meta; }
+	inline bool isTombstone() { return v.isTombstone; }
+	inline void isTombstone(const bool tomb) { v.isTombstone = tomb; }
+
 	inline KLayout& getKey() { return k; }
 	inline VLayout& getVLayout() { return v; }
-	inline bool& isTombstone() { return v.isTombstone; }
 };
 
 //The helper structure to extract key from the stored key value
@@ -140,21 +144,28 @@ class KVStore {
     /*
      * The caller provides k.keyLength and k.key. Upon successful return, meta points to the meta data.
      */
+    /* Make this obsolete, as the only way to get the meta is to get the KVLayout then access the
+     * meta field. Due to the multi-threaded nature of the underlying design, it's possible for
+     * back to back invocation of getMeta and getValue(k,kv) to access different kv, even though the 
+     * k is the same.*/
     bool getMeta(KLayout& k, DSSNMeta &meta);
 
     /*
      * Update eta with the input eta and existing eta, whichever is larger.
      */
-    bool maximizeMetaEta(KVLayout *kv, uint64_t eta);
+    // Make this obsolete, as this can be done by the KVLayout itself, don't have be in KVStore.
+    //bool maximizeMetaEta(KVLayout *kv, uint64_t eta);
 
     /*
      * The caller prepares k.keyLength and k.key. Returns the valuePtr and valueLength.
      */
+    // Make this obsolete as well, the same reason for obsoleting the getMeta(k,meta)
     bool getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength);
 
     /*
      * The caller prepares k.keyLength and k.key. Returns the pointer to VKLayout.
      */
+    // Make this obsolete as well, the same reason for obsoleting the getMeta(k,meta)
     bool getValue(KLayout& k, KVLayout *&kv);
 
     /*
