@@ -160,6 +160,12 @@ enum ControlOp {
 };
 
 /**
+ * DSSN Constant definition
+ */
+#define DSSN_MD_INITIAL  0
+#define DSSN_MD_INFINITY (uint64_t)-1
+
+/**
  * Used in linearizable RPCs to check whether or not the RPC can be processed.
  */
 struct ClientLease {
@@ -174,6 +180,7 @@ struct ClientLease {
 struct DSSNTxMeta {
     uint64_t eta;
     uint64_t pi;
+    uint64_t cstamp;
 } __attribute__((packed));
 
 /**
@@ -1863,7 +1870,6 @@ struct TxPrepare {
 
     struct Request {
         RequestCommon common;
-        uint64_t dssnCTS;
         union {
             ClientLease lease;      // Lease information for the requested
                                     // transaction.  To ensure prepare requests

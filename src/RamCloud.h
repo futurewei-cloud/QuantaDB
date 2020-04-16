@@ -767,14 +767,14 @@ struct MultiReadObject : public MultiOpObject {
         , value(value)
         , rejectRules(rejectRules)
         , version()
-        , meta({0,0})
+        , meta({DSSN_MD_INITIAL,DSSN_MD_INITIAL,DSSN_MD_INITIAL})
       {}
 
     MultiReadObject()
         : value()
         , rejectRules()
         , version()
-        , meta({0,0})
+        , meta({DSSN_MD_INITIAL,DSSN_MD_INITIAL,DSSN_MD_INITIAL})
     {}
 
     MultiReadObject(const MultiReadObject& other)

@@ -48,6 +48,11 @@ Transaction::commit()
 {
     ClientTransactionTask* task = taskPtr.get();
 
+    if (!task->isTxValid()) {
+        //This is not a valid transaction. return failure
+        return false;
+    }
+
     if (!commitStarted) {
         commitStarted = true;
         ramcloud->transactionManager->startTransactionTask(taskPtr);
@@ -349,7 +354,8 @@ Transaction::ReadOp::wait(bool* objectExists)
     }
 
     ClientTransactionTask* task = transaction->taskPtr.get();
-    WireFormat::DSSNTxMeta meta = {0,0};
+    WireFormat::DSSNTxMeta meta = {DSSN_MD_INITIAL, DSSN_MD_INITIAL,
+				   DSSN_MD_INITIAL};
 
     Key keyObj(tableId, keyBuf, 0, keyLength);
     ClientTransactionTask::CacheEntry* entry = task->findCacheEntry(keyObj);
@@ -407,11 +413,17 @@ Transaction::ReadOp::wait(bool* objectExists)
             entry->rejectRules.givenVersion = version;
             entry->rejectRules.versionNeGiven = true;
 	    entry->meta = meta;
+#ifdef DSSNTX
+	    assert(entry->meta.pi == DSSN_MD_INFINITY);
+#endif
         } else {
             // Object did not exists at the time of the read so remember to
             // reject (abort) the transaction if it does exist.
             entry->rejectRules.exists = true;
             objectFound = false;
+	    //DSSN: abort this transaction
+	    entry->meta = {DSSN_MD_INFINITY, DSSN_MD_INFINITY,
+			   DSSN_MD_INFINITY};
         }
 
     } else if (entry->type == ClientTransactionTask::CacheEntry::REMOVE) {
@@ -422,6 +434,9 @@ Transaction::ReadOp::wait(bool* objectExists)
         // Read after read resulting in object DNE; object still DNE.
         objectFound = false;
     }
+
+    //Update the DSSN transaction meta data
+    task->updateSSNReadMeta(entry->meta);
 
     if (objectExists == NULL) {
         if (!objectFound)
