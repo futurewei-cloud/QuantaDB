@@ -65,13 +65,11 @@ class TxEntry {
     boost::scoped_array<KVLayout *> writeSetInStore;
     boost::scoped_array<KVLayout *> readSetInStore;
 
-    //Handy index to resume active filter check
+    //Handy index to resume active tx filter check
     uint32_t writeSetIndex;
     uint32_t readSetIndex;
 
-    /* Henry: possibly put parameterized Bloom Filters here.
-    BloomFilter writeSetFilter;
-    BloomFilter readSetFilter;
+    /*
     Henry: possibly needs these
     uint64_t id; //transaction globally unique ID
     uint64_t readSnapshotTimestamp; //0 - not a read-only tx, max - most recent, [1, max) - specific snapshot

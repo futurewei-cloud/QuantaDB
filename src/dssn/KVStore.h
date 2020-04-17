@@ -148,7 +148,7 @@ class KVStore {
      * meta field. Due to the multi-threaded nature of the underlying design, it's possible for
      * back to back invocation of getMeta and getValue(k,kv) to access different kv, even though the 
      * k is the same.*/
-    bool getMeta(KLayout& k, DSSNMeta &meta);
+    //bool getMeta(KLayout& k, DSSNMeta &meta);
 
     /*
      * Update eta with the input eta and existing eta, whichever is larger.
@@ -160,13 +160,13 @@ class KVStore {
      * The caller prepares k.keyLength and k.key. Returns the valuePtr and valueLength.
      */
     // Make this obsolete as well, the same reason for obsoleting the getMeta(k,meta)
-    bool getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength);
+    //bool getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength);
 
     /*
      * The caller prepares k.keyLength and k.key. Returns the pointer to VKLayout.
      */
     // Make this obsolete as well, the same reason for obsoleting the getMeta(k,meta)
-    bool getValue(KLayout& k, KVLayout *&kv);
+    //bool getValue(KLayout& k, KVLayout *&kv);
 
     /*
      * The caller prepares k.keyLength and k.key.

@@ -54,6 +54,7 @@ KVLayout * HashmapKVStore::fetch(KLayout& k)
 }
 
 // Obsoleted, reason in the header file
+/*
 bool HashmapKVStore::getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength)
 {
     KVLayout * kv = fetch(k);
@@ -82,6 +83,7 @@ bool HashmapKVStore::getMeta(KLayout& k, DSSNMeta &meta)
 	}
 	return false;
 }
+*/
 
 /*
 bool HashmapKVStore::maximizeMetaEta(KVLayout *kv, uint64_t eta) {

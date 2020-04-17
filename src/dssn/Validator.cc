@@ -25,7 +25,6 @@ Validator::start() {
 
     // Henry: may need to use TBB to pin the threads to specific cores LATER
     std::thread( [=] { serialize(); });
-    std::thread( [=] { validateDistributedTxs(0); });
     std::thread( [=] { sweep(); });
     std::thread( [=] { scheduleDistributedTxs(); });
 }
@@ -105,29 +104,23 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
 }
 
 bool
-Validator::write(KLayout& k, uint64_t &vPrevEta) {
-	DSSNMeta meta;
-	kvStore.getMeta(k, meta);
-	vPrevEta = meta.pStampPrev;
-	return true;
-
-	KVLayout *kv;
-	bool found = kvStore.getValue(k, kv);
-	if (found && !kv->isTombstone()) {
-		return true;
-	}
-	return false;
+Validator::write(KLayout& k, uint64_t &vPrevPStamp) {
+    DSSNMeta meta;
+    KVLayout *kv = kvStore.fetch(k);
+    if (kv) {
+        meta = kv->meta();
+        vPrevPStamp = meta.pStampPrev;
+        return true;
+    }
+    return false;
 }
 
 bool
 Validator::read(KLayout& k, KVLayout *&kv) {
 	//FIXME: This read can happen concurrently while conclude() is
 	//modifying the KVLayout instance.
-	bool found = kvStore.getValue(k, kv);
-	if (found && !kv->isTombstone()) {
-		return true;
-	}
-	return false;
+        kv = kvStore.fetch(k);
+        return (kv!=NULL && !kv->isTombstone());
 }
 
 bool
@@ -155,104 +148,6 @@ Validator::validateLocalTx(TxEntry& txEntry) {
 
     return true;
 };
-
-void
-Validator::validateDistributedTxs(int worker) {
-    /* Scheme B3
-    while (true) {
-        for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = activeTxSet[worker].begin(); itr != activeTxSet[worker].end(); ++itr) {
-            TXEntry *txEntry = itr;
-
-            if (txEntry->getTxState() == TXEntry::TX_PENDING 
-                    && txEntry->getTxCIState() == TXEntry::TX_CI_TRANSIENT) {
-
-                //normal case first try:
-
-                //calculate local ETA and PI
-                updateTxEtaPi(*txEntry);
-
-                //send PEER_SSN_INFO to Tx peers.
-                //FIXME: SendTxPeerSSNInfo(txEntry);
-
-                txEntry->setTXCiState(TXEntry::TX_CI_INPROGRESS);
-            }
-
-            if (txEntry->getTxState() == TXEntry::TX_PENDING) {
-                uint64_t waitingTime = currentTime() - txEntry->getCTS();
-                if (waitingTime > abortThreshold) {
-                    txEntry->setTxState(TXEntry::TX_ABORT);
-                } else if (waitingTime > alertThreshold) {
-                    //such tx should be waiting for the peer's SSN info
-                    assert (txEntry->getTxCiState() == TXEntry::TX_CI_INPROGRESS);
-
-                    //request PEER_SSN_INFO from Tx peers. (blocking/non-blocking)
-                    //FIXME: RequestTxPeerSSNInfo(txEntry);
-                    //
-                    //after the request, either here or the PEER_SSN_INFO handler
-                    //will set the TxEntry's state to TX_ABORT or TX_COMMIT.
-                }
-            }
-
-            if (txEntry->getTxState() == TXEntry::TX_ABORT
-                    || (txEntry->getTxState() == TXEntry::TX_COMMIT) {
-
-                //FIXME: the PEER_SSN_INFO RPC handler will conclude
-                //conclude(*txEntry);
-
-                activeTxSet[worker].remove(txEntry);
-            }
-        }
-    }
-    */
-            
-
-
-    /*  
-    while (true) {
-        for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = reorderQueue.begin(); itr != reorderQueue.end(); ++itr) {
-            TXEntry *txEntry = itr;
-            if (txEntry->getCTS() > currentTime()) {
-                break; //no need to look further in the sorted queue
-            }
-            if (txEntry->getTxState() == TXEntry::TX_PENDING
-                    && txEntry->getTxCIState() == TXEntry::TX_CI_TRANSIENT) {
-                //calculate local eta and pi
-                updateTxEtaPi(*txEntry);
-
-                //log the commit-intent for failure recovery
-                //LATER
-
-                //send non-blocking SEND_SSN_INFO IPC messages to tx peers
-                //LATER
-
-                //update state
-                txEntry->setTxCIState(TXEntry::TX_CI_INPROGRESS);
-            }
-            if (txEntry->getTxState() == TXEntry::TX_PENDING) {
-                //if tx takes too long, try to abort it
-                if (txEntry->getCTS() - currentTime() > alertThreshold)
-                    txEntry->setTxState(TXEntry::TX_ALERT);
-            } else if (txEntry->getTxState() == TXEntry::TX_ALERT) {
-                //send non-blocking REQUEST_SSN_INFO IPC to tx peers
-            } else if (txEntry->getTxState() == TXEntry::TX_ABORT
-                    || txEntry->getTxState() == TXEntry::TX_COMMIT) {
-                //remove tx from reorder queue
-                reorderQueue.remove(txEntry);
-
-                //trigger conclusion, be it an abort or a commit
-                conclude(*txEntry);
-
-                //remove from active tx set if needed
-                if (txEntry->getTxCIState() == TXEntry::TX_CI_TRANSIENT
-                        || txEntry->getTxCIState() == TXEntry::TX_CI_INPROGRESS
-                        || txEntry->getTxCIState() == TXEntry::TX_CI_CONCLUDED) {
-                    activeTxSet.remove(txEntry);
-                }
-            }
-        }
-    }
-    */
-}
 
 void
 Validator::scheduleDistributedTxs() {
