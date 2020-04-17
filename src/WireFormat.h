@@ -1966,7 +1966,7 @@ struct TxPrepare {
 };
 
 struct TxCommitDSSN : TxPrepare {
-    static const Opcode opcode = Opcode::TX_PREPARE; //TODO: replace the type
+    static const Opcode opcode = Opcode::DSSN_COMMIT;
     static const ServiceType service = DSSN_SERVICE;
 };
 
