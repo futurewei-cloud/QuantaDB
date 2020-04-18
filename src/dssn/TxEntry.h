@@ -32,8 +32,8 @@ class TxEntry {
 
     //DSSN data
     uint64_t cts; //commit time-stamp, globally unique
-    uint64_t eta;
-    uint64_t pi;
+    uint64_t pstamp;
+    uint64_t sstamp;
 
     //DSSN tx states
     uint32_t txState;
@@ -86,13 +86,13 @@ class TxEntry {
         /* Transaction commit-intent is blocked from being scheduled due to dependency */
         TX_CI_WAITING = 3,
 
-        /* Transaction commit-intent is scheduled, but its local SSN eta and pi could be bogus */
+        /* Transaction commit-intent is scheduled, but its local SSN pstamp and sstamp could be bogus */
         TX_CI_TRANSIENT = 4,
 
-        /* Transaction commit-intent is scheduled, and its local SSN eta and pi can be used */
+        /* Transaction commit-intent is scheduled, and its local SSN pstamp and sstamp can be used */
         TX_CI_INPROGRESS = 5,
 
-        /* Transaction commit-intent is scheduled, and its local SSN eta and pi are finalized */
+        /* Transaction commit-intent is scheduled, and its local SSN pstamp and sstamp are finalized */
         TX_CI_CONCLUDED = 6,
 
 		/* Transaction commit-intent is finished, and txEntry can be purged */
@@ -124,8 +124,8 @@ class TxEntry {
     TxEntry(uint32_t readSetSize, uint32_t writeSetSize);
     ~TxEntry();
     inline uint64_t getCTS() { return cts; }
-    inline uint64_t getEta() { return eta; }
-    inline uint64_t getPi() { return pi; }
+    inline uint64_t getPStamp() { return pstamp; }
+    inline uint64_t getSStamp() { return sstamp; }
     inline uint32_t getTxState() { return txState; }
     inline uint32_t getTxCIState() { return commitIntentState; }
     inline std::mutex& getMutex() { return mutexForPeerUpdate; }
@@ -145,11 +145,11 @@ class TxEntry {
     inline auto& getWriteSetIndex() { return writeSetIndex; }
     inline auto& getReadSetIndex() { return readSetIndex; }
     inline void setCTS(uint64_t val) { cts = val; }
-    inline void setPi(uint64_t val) { pi = val; }
-    inline void setEta(uint64_t val) { eta = val; }
+    inline void setSStamp(uint64_t val) { sstamp = val; }
+    inline void setPStamp(uint64_t val) { pstamp = val; }
     inline void setTxState(uint32_t val) { txState = val; }
     inline void setTxCIState(uint32_t val) { commitIntentState = val; }
-    inline bool isExclusionViolated() { return pi <= eta; }
+    inline bool isExclusionViolated() { return sstamp <= pstamp; }
     bool insertWriteSet(KVLayout* kv, uint32_t i);
     bool insertReadSet(KVLayout* kv, uint32_t i);
     inline void insertWriteSetInStore(KVLayout* kv, uint32_t i) { writeSetInStore[i] = kv; }

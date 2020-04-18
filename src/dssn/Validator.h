@@ -46,8 +46,8 @@ class Validator {
     HashmapKVStore &kvStore;
 
     // all SSN data maintenance operations
-    bool updateTxEtaPi(TxEntry& txEntry);
-    bool updateKVReadSetEta(TxEntry& txEntry);
+    bool updateTxPStampSStamp(TxEntry& txEntry);
+    bool updateKVReadSetPStamp(TxEntry& txEntry);
     bool updateKVWriteSet(TxEntry& txEntry);
 
     // schedule SSN validation on distributed transactions

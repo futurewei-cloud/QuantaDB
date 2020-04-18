@@ -10,8 +10,8 @@
 namespace DSSN {
 
 TxEntry::TxEntry(uint32_t readSetSize, uint32_t writeSetSize) {
-	this->pi = std::numeric_limits<uint64_t>::max();
-	this->eta = 0;
+	this->sstamp = std::numeric_limits<uint64_t>::max();
+	this->pstamp = 0;
 	this->txState = TX_PENDING;
 	this->commitIntentState = TX_CI_UNQUEUED;
 	this->cts = 0;

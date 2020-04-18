@@ -110,8 +110,8 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
     Object object(tableId, 0, 0, buffer);
     object.appendValueToBuffer(rpc->replyPayload);
 
-    respHdr->meta.eta = kv->getVLayout().meta.pStamp; // eta
-    respHdr->meta.pi  = kv->getVLayout().meta.sStamp; // pi
+    respHdr->meta.pstamp = kv->getVLayout().meta.pStamp;
+    respHdr->meta.sstamp = kv->getVLayout().meta.sStamp;
     respHdr->meta.cstamp = kv->getVLayout().meta.cStamp;
     respHdr->length = rpc->replyPayload->size() - initialLength;
 }
@@ -153,8 +153,8 @@ DSSNService::readKeysAndValue(const WireFormat::ReadKeysAndValueDSSN::Request* r
     Object object(tableId, 0, 0, buffer);
     object.appendKeysAndValueToBuffer(*(rpc->replyPayload));
 
-    respHdr->meta.eta = kv->getVLayout().meta.pStamp; // eta
-    respHdr->meta.pi  = kv->getVLayout().meta.sStamp; // pi
+    respHdr->meta.pstamp = kv->getVLayout().meta.pStamp;
+    respHdr->meta.sstamp = kv->getVLayout().meta.sStamp;
     respHdr->meta.cstamp = kv->getVLayout().meta.cStamp;
     respHdr->length = rpc->replyPayload->size() - initialLength;
 }
