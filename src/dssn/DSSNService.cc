@@ -289,8 +289,8 @@ DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
         Object object(key, kv->getVLayout().valuePtr, kv->getVLayout().valueLength, 0, 0, buffer);
         object.appendKeysAndValueToBuffer(*(rpc->replyPayload));
 
-        currentResp->meta.eta = kv->getVLayout().meta.pStamp; // eta
-        currentResp->meta.pi  = kv->getVLayout().meta.sStamp; // pi
+        currentResp->meta.pstamp = kv->getVLayout().meta.pStamp; // eta
+        currentResp->meta.sstamp = kv->getVLayout().meta.sStamp; // pi
         currentResp->length = rpc->replyPayload->size() - initialLength;
 
         // std::cout << "repLen: " << currentResp->length << std::endl; // XXX
