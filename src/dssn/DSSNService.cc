@@ -86,7 +86,6 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
 
     if (stringKey == NULL) {
         respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
-        rpc->sendReply();
         return;
     }
 
@@ -101,13 +100,16 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
         return;
     }
 
-    Buffer buffer;
     uint32_t initialLength = rpc->replyPayload->size();
 
-    uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout().valueLength));
-    std::memcpy(p, kv->getVLayout().valuePtr, kv->getVLayout().valueLength);
+    Buffer buffer;
+    if (kv->getVLayout().valueLength > 0) {
+        buffer.alloc(kv->getVLayout().valueLength);
+        buffer.append(kv->getVLayout().valuePtr, kv->getVLayout().valueLength);
+    }
 
-    Object object(tableId, 0, 0, buffer);
+    Key key(tableId, stringKey, reqHdr->keyLength);
+    Object object(key, kv->getVLayout().valuePtr, kv->getVLayout().valueLength, 0, 0, buffer);
     object.appendValueToBuffer(rpc->replyPayload);
 
     respHdr->meta.eta = kv->getVLayout().meta.pStamp; // eta
@@ -143,13 +145,16 @@ DSSNService::readKeysAndValue(const WireFormat::ReadKeysAndValueDSSN::Request* r
         return;
     }
 
-    Buffer buffer;
+    Key key(tableId, stringKey, reqHdr->keyLength);
     uint32_t initialLength = rpc->replyPayload->size();
 
-    uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout().valueLength));
-    std::memcpy(p, kv->getVLayout().valuePtr, kv->getVLayout().valueLength);
+    Buffer buffer;
+    if (kv->getVLayout().valueLength > 0) {
+        buffer.alloc(kv->getVLayout().valueLength);
+        buffer.append(kv->getVLayout().valuePtr, kv->getVLayout().valueLength);
+    }
 
-    Object object(tableId, 0, 0, buffer);
+    Object object(key, kv->getVLayout().valuePtr, kv->getVLayout().valueLength, 0, 0, buffer);
     object.appendKeysAndValueToBuffer(*(rpc->replyPayload));
 
     respHdr->meta.eta = kv->getVLayout().meta.pStamp; // eta
@@ -199,8 +204,95 @@ DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
 		       WireFormat::MultiOp::Response* respHdr,
 		       Rpc* rpc)
 {
-    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
-    s->multiRead(reqHdr, respHdr, rpc);
+    uint32_t numRequests = reqHdr->count;
+    uint32_t reqOffset = sizeof32(*reqHdr);
+
+    respHdr->count = numRequests;
+    uint32_t oldResponseLength = rpc->replyPayload->size();
+
+    // std::cout << "MultiRead nReq=" << numRequests << " InitRespLen=" << oldResponseLength << std::endl;
+
+    // Each iteration extracts one request from request rpc, finds the
+    // corresponding object, and appends the response to the response rpc.
+    for (uint32_t i = 0; ; i++) {
+        // If the RPC response has exceeded the legal limit, truncate it
+        // to the last object that fits below the limit (the client will
+        // retry the objects we don't return).
+        uint32_t newLength = rpc->replyPayload->size();
+        if (newLength > Transport::MAX_RPC_LEN) {
+            rpc->replyPayload->truncate(oldResponseLength);
+            respHdr->count = i-1;
+            break;
+        } else {
+            oldResponseLength = newLength;
+        }
+        if (i >= numRequests) {
+            // The loop-termination check is done here rather than in the
+            // "for" statement above so that we have a chance to do the
+            // size check above even for every object inserted, including
+            // the last object and those with STATUS_OBJECT_DOESNT_EXIST.
+            break;
+        }
+
+        const WireFormat::MultiOp::Request::ReadPart *currentReq =
+                rpc->requestPayload->getOffset<
+                WireFormat::MultiOp::Request::ReadPart>(reqOffset);
+        reqOffset += sizeof32(WireFormat::MultiOp::Request::ReadPart);
+
+        const void* stringKey = rpc->requestPayload->getRange(
+                reqOffset, currentReq->keyLength);
+        reqOffset += currentReq->keyLength;
+
+        if (stringKey == NULL) {
+            respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+            break;
+        }
+
+        WireFormat::MultiOp::Response::ReadPart* currentResp =
+               rpc->replyPayload->emplaceAppend<
+               WireFormat::MultiOp::Response::ReadPart>();
+
+        // ---- get value of the current key -----
+        uint64_t tableId = currentReq->tableId;
+        KLayout k(currentReq->keyLength + sizeof(tableId)); //make room composite key in KVStore
+        std::memcpy(k.key.get(), &tableId, sizeof(tableId));
+        std::memcpy(k.key.get() + sizeof(tableId), stringKey,  currentReq->keyLength);
+
+        KVLayout *kv = kvStore->fetch(k);
+
+        // std::string ky((const char*)stringKey, currentReq->keyLength); //XXX
+        // std::cout << "tabldId:" << tableId << " key: " << ky ;  // XXX
+
+        if (!kv || kv->getVLayout().isTombstone) {
+            currentResp->status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
+
+            // if (kv) std::cout << " v: is tomb" << std::endl; // XXX
+            // else    std::cout << " v: not found" << std::endl; // XXX
+
+            continue;
+        }
+
+        uint32_t initialLength = rpc->replyPayload->size();
+
+        // std::string v((const char*)kv->getVLayout().valuePtr, kv->getVLayout().valueLength); //XXX
+        // std::cout << " vallen: " << kv->getVLayout().valueLength << " val: " << v ; //XXX
+        // std::cout << " replyPayloadSize: " << initialLength; // XXX
+
+        Key key(tableId, stringKey, currentReq->keyLength);
+        Buffer buffer;
+        if (kv->getVLayout().valueLength > 0) {
+            buffer.alloc(kv->getVLayout().valueLength);
+            buffer.append(kv->getVLayout().valuePtr, kv->getVLayout().valueLength);
+        }
+        Object object(key, kv->getVLayout().valuePtr, kv->getVLayout().valueLength, 0, 0, buffer);
+        object.appendKeysAndValueToBuffer(*(rpc->replyPayload));
+
+        currentResp->meta.eta = kv->getVLayout().meta.pStamp; // eta
+        currentResp->meta.pi  = kv->getVLayout().meta.sStamp; // pi
+        currentResp->length = rpc->replyPayload->size() - initialLength;
+
+        // std::cout << "repLen: " << currentResp->length << std::endl; // XXX
+    }
 }
 
 void
@@ -268,10 +360,11 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
 
     KeyLength pKeyLen;
     const void* pKey = object.getKey(0, &pKeyLen);
-    const void* pVal = object.getKeysAndValue();
-    uint32_t pValLen = object.getKeysAndValueLength();
+    uint32_t pValLen;
+    const void* pVal = object.getValue(&pValLen);
     uint64_t tableId = object.getTableId();
 
+    #if (0) // No table check. DSSN does not (yet) support the RamCloud style Table Mgmt
     Key key(tableId, pKey, pKeyLen);
     // If the tablet doesn't exist in the NORMAL state, we must plead ignorance.
     TabletManager::Tablet tablet;
@@ -279,6 +372,7 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
         respHdr->common.status = RAMCloud::STATUS_UNKNOWN_TABLET;
         return;
     }
+
     if (tablet.state != TabletManager::NORMAL) {
         if (tablet.state == TabletManager::LOCKED_FOR_MIGRATION)
             throw RetryException(HERE, 1000, 2000,
@@ -286,12 +380,17 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
         respHdr->common.status = RAMCloud::STATUS_UNKNOWN_TABLET;
         return;
     }
+    #endif // 0
 
     KVLayout pkv(pKeyLen + sizeof(tableId)); //make room composite key in KVStore
     std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
     std::memcpy(pkv.getKey().key.get() + sizeof(tableId), pKey, pKeyLen);
     pkv.v.valueLength = pValLen;
     pkv.v.valuePtr = (uint8_t*)const_cast<void*>(pVal);
+
+    // std::string k((const char*)pKey, (uint32_t)pKeyLen); //DBG
+    // std::string v((const char*)pVal, (uint32_t)pValLen);
+    // std::cout << "write: key: " << k << " vallen: " << pValLen << " val: " << v << std::endl; 
 
     KVLayout *kv = kvStore->fetch(pkv.k);
 
