@@ -114,6 +114,16 @@ TEST_F(TransactionTest, commit_basic) {
     EXPECT_TRUE(transaction->commitStarted);
 }
 
+TEST_F(TransactionTest, client_early_abort) {
+    bool exist = false;
+    Buffer value;
+    transaction->read(tableId1, "0", 1, &value, &exist);
+    transaction->write(tableId1, "1", 1, "hello", 5);
+
+    EXPECT_FALSE(transaction->commitStarted);
+    EXPECT_FALSE(transaction->commit());
+}
+
 
 TEST_F(TransactionTest, commit_abort) {
     std::cout << "[Test Skipped]: "

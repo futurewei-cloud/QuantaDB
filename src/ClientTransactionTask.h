@@ -63,7 +63,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
             : type(CacheEntry::INVALID)
             , objectBuf()
             , rejectRules({0, 0, 0, 0, 0})
-	    , meta({0,0})
+	    , meta({DSSN_MD_INITIAL,DSSN_MD_INITIAL,DSSN_MD_INITIAL})
             , rpcId(0)
             , state(PENDING)
         {}
@@ -90,6 +90,10 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
     }
     void performTask();
 
+    // Check if the Tx is valid.  Called by commit or sync
+    bool isTxValid();
+    void updateSSNReadMeta(WireFormat::DSSNTxMeta& v);
+
   PRIVATE:
     // Forward declaration of RPCs
     class PrepareRpc;
@@ -97,6 +101,9 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
 
     /// Overall client state information.
     RamCloud* ramcloud;
+
+    // DSSN TX metadata
+    WireFormat::DSSNTxMeta mMeta;
 
   PUBLIC:
     /// Flag that can be set indicating that the transaction is read-only and

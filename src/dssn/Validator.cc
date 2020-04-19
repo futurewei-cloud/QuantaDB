@@ -25,15 +25,14 @@ Validator::start() {
 
     // Henry: may need to use TBB to pin the threads to specific cores LATER
     std::thread( [=] { serialize(); });
-    std::thread( [=] { validateDistributedTxs(0); });
     std::thread( [=] { sweep(); });
     std::thread( [=] { scheduleDistributedTxs(); });
 }
 
 bool
-Validator::updateTxEtaPi(TxEntry &txEntry) {
+Validator::updateTxPStampSStamp(TxEntry &txEntry) {
     /*
-     * Find out my largest predecessor (eta) and smallest successor (pi).
+     * Find out my largest predecessor (pstamp) and smallest successor (sstamp).
      * For reads, see if another has over-written the tuples by checking successor LSN.
      * For writes, see if another has read the tuples by checking access LSN.
      *
@@ -43,14 +42,14 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
      * is to pass the write set (and read set) through the commit-intent.
      */
 
-    txEntry.setPi(std::min(txEntry.getPi(), txEntry.getCTS()));
+    txEntry.setSStamp(std::min(txEntry.getSStamp(), txEntry.getCTS()));
 
-    //update pi of transaction
+    //update sstamp of transaction
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
     	KVLayout *kv = kvStore.fetch(readSet[i]->k);
     	if (kv) {
-    		txEntry.setPi(std::min(txEntry.getPi(), kv->getMeta().sStamp));
+    		txEntry.setSStamp(std::min(txEntry.getSStamp(), kv->meta().sStamp));
     		if (txEntry.isExclusionViolated()) {
     			return false;
     		}
@@ -58,12 +57,12 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
     	txEntry.insertReadSetInStore(kv, i);
     }
 
-    //update eta of transaction
+    //update pstamp of transaction
     auto  &writeSet = txEntry.getWriteSet();
     for (uint32_t i = 0; i < txEntry.getWriteSetSize(); i++) {
     	KVLayout *kv = kvStore.fetch(writeSet[i]->k);
     	if (kv) {
-    		txEntry.setEta(std::max(txEntry.getEta(), kv->getMeta().pStamp));
+    		txEntry.setPStamp(std::max(txEntry.getPStamp(), kv->meta().pStamp));
     		if (txEntry.isExclusionViolated()) {
     			return false;
     		}
@@ -75,16 +74,16 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
 }
 
 bool
-Validator::updateKVReadSetEta(TxEntry &txEntry) {
-	auto &readSet = txEntry.getReadSetInStore();
-	for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
-		if (readSet[i]) {
-			kvStore.maximizeMetaEta(readSet[i], txEntry.getCTS());
-		} else {
-			//Fixme: put a tombstoned entry in KVStore???
-			//or leave it blank???
-		}
-	}
+Validator::updateKVReadSetPStamp(TxEntry &txEntry) {
+    auto &readSet = txEntry.getReadSetInStore();
+    for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
+        if (readSet[i]) {
+            readSet[i]->meta().pStamp = std::max(txEntry.getCTS(), readSet[i]->meta().pStamp);;
+        } else {
+            //Fixme: put a tombstoned entry in KVStore???
+            //or leave it blank???
+        }
+    }
     return true;
 }
 
@@ -94,10 +93,10 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
     auto &writeSetInStore = txEntry.getWriteSetInStore();
     for (uint32_t i = 0; i < txEntry.getWriteSetSize(); i++) {
         if (writeSetInStore[i]) {
-        	kvStore.put(writeSetInStore[i], txEntry.getCTS(), txEntry.getPi(),
+        	kvStore.put(writeSetInStore[i], txEntry.getCTS(), txEntry.getSStamp(),
         			writeSet[i]->v.valuePtr, writeSet[i]->v.valueLength);
         } else {
-        	kvStore.putNew(writeSet[i], txEntry.getCTS(), txEntry.getPi());
+        	kvStore.putNew(writeSet[i], txEntry.getCTS(), txEntry.getSStamp());
         	writeSet[i] = 0; //prevent txEntry destructor from freeing the KVLayout pointer
         }
     }
@@ -105,34 +104,28 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
 }
 
 bool
-Validator::write(KLayout& k, uint64_t &vPrevEta) {
-	DSSNMeta meta;
-	kvStore.getMeta(k, meta);
-	vPrevEta = meta.pStampPrev;
-	return true;
-
-	KVLayout *kv;
-	bool found = kvStore.getValue(k, kv);
-	if (found && !kv->isTombstone()) {
-		return true;
-	}
-	return false;
+Validator::write(KLayout& k, uint64_t &vPrevPStamp) {
+    DSSNMeta meta;
+    KVLayout *kv = kvStore.fetch(k);
+    if (kv) {
+        meta = kv->meta();
+        vPrevPStamp = meta.pStampPrev;
+        return true;
+    }
+    return false;
 }
 
 bool
 Validator::read(KLayout& k, KVLayout *&kv) {
 	//FIXME: This read can happen concurrently while conclude() is
 	//modifying the KVLayout instance.
-	bool found = kvStore.getValue(k, kv);
-	if (found && !kv->isTombstone()) {
-		return true;
-	}
-	return false;
+        kv = kvStore.fetch(k);
+        return (kv!=NULL && !kv->isTombstone());
 }
 
 bool
-Validator::updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry) {
-	return peerInfo.update(cts, peerId, eta, pi, txEntry);
+Validator::updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t pstamp, uint64_t sstamp, TxEntry *&txEntry) {
+	return peerInfo.update(cts, peerId, pstamp, sstamp, txEntry);
 }
 
 bool
@@ -143,8 +136,8 @@ Validator::insertConcludeQueue(TxEntry *txEntry) {
 
 bool
 Validator::validateLocalTx(TxEntry& txEntry) {
-    //calculate local eta and pi
-    updateTxEtaPi(txEntry);
+    //calculate local pstamp and sstamp
+    updateTxPStampSStamp(txEntry);
 
     if (txEntry.isExclusionViolated()) {
         txEntry.setTxState(TxEntry::TX_ABORT);
@@ -155,104 +148,6 @@ Validator::validateLocalTx(TxEntry& txEntry) {
 
     return true;
 };
-
-void
-Validator::validateDistributedTxs(int worker) {
-    /* Scheme B3
-    while (true) {
-        for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = activeTxSet[worker].begin(); itr != activeTxSet[worker].end(); ++itr) {
-            TXEntry *txEntry = itr;
-
-            if (txEntry->getTxState() == TXEntry::TX_PENDING 
-                    && txEntry->getTxCIState() == TXEntry::TX_CI_TRANSIENT) {
-
-                //normal case first try:
-
-                //calculate local ETA and PI
-                updateTxEtaPi(*txEntry);
-
-                //send PEER_SSN_INFO to Tx peers.
-                //FIXME: SendTxPeerSSNInfo(txEntry);
-
-                txEntry->setTXCiState(TXEntry::TX_CI_INPROGRESS);
-            }
-
-            if (txEntry->getTxState() == TXEntry::TX_PENDING) {
-                uint64_t waitingTime = currentTime() - txEntry->getCTS();
-                if (waitingTime > abortThreshold) {
-                    txEntry->setTxState(TXEntry::TX_ABORT);
-                } else if (waitingTime > alertThreshold) {
-                    //such tx should be waiting for the peer's SSN info
-                    assert (txEntry->getTxCiState() == TXEntry::TX_CI_INPROGRESS);
-
-                    //request PEER_SSN_INFO from Tx peers. (blocking/non-blocking)
-                    //FIXME: RequestTxPeerSSNInfo(txEntry);
-                    //
-                    //after the request, either here or the PEER_SSN_INFO handler
-                    //will set the TxEntry's state to TX_ABORT or TX_COMMIT.
-                }
-            }
-
-            if (txEntry->getTxState() == TXEntry::TX_ABORT
-                    || (txEntry->getTxState() == TXEntry::TX_COMMIT) {
-
-                //FIXME: the PEER_SSN_INFO RPC handler will conclude
-                //conclude(*txEntry);
-
-                activeTxSet[worker].remove(txEntry);
-            }
-        }
-    }
-    */
-            
-
-
-    /*  
-    while (true) {
-        for (SkipList<std::vector<uint8_t>,TXEntry *>::iterator itr = reorderQueue.begin(); itr != reorderQueue.end(); ++itr) {
-            TXEntry *txEntry = itr;
-            if (txEntry->getCTS() > currentTime()) {
-                break; //no need to look further in the sorted queue
-            }
-            if (txEntry->getTxState() == TXEntry::TX_PENDING
-                    && txEntry->getTxCIState() == TXEntry::TX_CI_TRANSIENT) {
-                //calculate local eta and pi
-                updateTxEtaPi(*txEntry);
-
-                //log the commit-intent for failure recovery
-                //LATER
-
-                //send non-blocking SEND_SSN_INFO IPC messages to tx peers
-                //LATER
-
-                //update state
-                txEntry->setTxCIState(TXEntry::TX_CI_INPROGRESS);
-            }
-            if (txEntry->getTxState() == TXEntry::TX_PENDING) {
-                //if tx takes too long, try to abort it
-                if (txEntry->getCTS() - currentTime() > alertThreshold)
-                    txEntry->setTxState(TXEntry::TX_ALERT);
-            } else if (txEntry->getTxState() == TXEntry::TX_ALERT) {
-                //send non-blocking REQUEST_SSN_INFO IPC to tx peers
-            } else if (txEntry->getTxState() == TXEntry::TX_ABORT
-                    || txEntry->getTxState() == TXEntry::TX_COMMIT) {
-                //remove tx from reorder queue
-                reorderQueue.remove(txEntry);
-
-                //trigger conclusion, be it an abort or a commit
-                conclude(*txEntry);
-
-                //remove from active tx set if needed
-                if (txEntry->getTxCIState() == TXEntry::TX_CI_TRANSIENT
-                        || txEntry->getTxCIState() == TXEntry::TX_CI_INPROGRESS
-                        || txEntry->getTxCIState() == TXEntry::TX_CI_CONCLUDED) {
-                    activeTxSet.remove(txEntry);
-                }
-            }
-        }
-    }
-    */
-}
 
 void
 Validator::scheduleDistributedTxs() {
@@ -324,7 +219,7 @@ Validator::conclude(TxEntry& txEntry) {
 
 	//record results and meta data
 	if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
-		updateKVReadSetEta(txEntry);
+		updateKVReadSetPStamp(txEntry);
 		updateKVWriteSet(txEntry);
 	}
 

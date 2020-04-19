@@ -160,6 +160,12 @@ enum ControlOp {
 };
 
 /**
+ * DSSN Constant definition
+ */
+#define DSSN_MD_INITIAL  0
+#define DSSN_MD_INFINITY (uint64_t)-1
+
+/**
  * Used in linearizable RPCs to check whether or not the RPC can be processed.
  */
 struct ClientLease {
@@ -172,8 +178,9 @@ struct ClientLease {
 } __attribute__((packed));
 
 struct DSSNTxMeta {
-    uint64_t eta;
-    uint64_t pi;
+    uint64_t pstamp;
+    uint64_t sstamp;
+    uint64_t cstamp;
 } __attribute__((packed));
 
 /**
@@ -580,8 +587,8 @@ struct DSSNCommit {
     struct Request {
         RequestCommon common;
         uint64_t cts;
-        uint64_t eta;
-        uint64_t pi;
+        uint64_t pstamp;
+        uint64_t sstamp;
         uint32_t shardCount; // Number of Part structures following
         uint32_t readSetCount; // Number of Part structures following
         uint32_t writeSetCount; // Number of Part structures following
@@ -1863,7 +1870,6 @@ struct TxPrepare {
 
     struct Request {
         RequestCommon common;
-        uint64_t dssnCTS;
         union {
             ClientLease lease;      // Lease information for the requested
                                     // transaction.  To ensure prepare requests
@@ -1960,7 +1966,7 @@ struct TxPrepare {
 };
 
 struct TxCommitDSSN : TxPrepare {
-    static const Opcode opcode = Opcode::TX_PREPARE; //TODO: replace the type
+    static const Opcode opcode = Opcode::DSSN_COMMIT;
     static const ServiceType service = DSSN_SERVICE;
 };
 

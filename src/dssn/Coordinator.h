@@ -37,23 +37,23 @@ typedef RAMCloud::Buffer Buffer;
 class Coordinator {
     PROTECTED:
     //DSSN data
-    uint64_t cts; //commit time-stamp, globally unique
-    uint64_t eta;
-    uint64_t pi;
+    uint64_t cts;       //commit time-stamp, globally unique
+    uint64_t pstamp;    //predecessor high watermark
+    uint64_t sstamp;    //successor low watermark
 
     uint32_t txState;
     std::set<KVLayout> readSet;
     std::set<KVLayout> writeSet;
 
-    inline bool isExclusionViolated() { return pi <= eta; }
+    inline bool isExclusionViolated() { return sstamp <= pstamp; }
 
     bool ssnRead(KVLayout& kv, uint64_t cStamp, uint64_t sStamp) {
     	if (writeSet.find(kv) != writeSet.end()) {
-    		eta = std::max(eta, cStamp);
+    		pstamp = std::max(pstamp, cStamp);
     		if (sStamp == 0xffffffffffffffff) {
     			readSet.insert(kv);
     		} else {
-    			pi = std::min(pi, sStamp);
+    			sstamp = std::min(sstamp, sStamp);
     		}
     	}
     	return isExclusionViolated();
@@ -61,7 +61,7 @@ class Coordinator {
 
     bool ssnWrite(KVLayout& kv, uint64_t pStampPrev) {
     	if (writeSet.find(kv) != writeSet.end()) {
-    		eta = std::max(eta, pStampPrev);
+    		pstamp = std::max(pstamp, pStampPrev);
     		writeSet.insert(kv);
     		readSet.erase(kv);
     	}

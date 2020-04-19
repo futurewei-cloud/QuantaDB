@@ -45,8 +45,8 @@ ValidatorRPCHelper::readObject(uint64_t tableId, Key& key, Buffer* outBuffer,
 
     uint8_t* p = static_cast<uint8_t*>(buffer.alloc(kv->getVLayout().valueLength));
     std::memcpy(p, kv->getVLayout().valuePtr, kv->getVLayout().valueLength);
-    cStamp = kv->getMeta().cStamp;
-    sStamp = kv->getMeta().sStamp;
+    cStamp = kv->meta().cStamp;
+    sStamp = kv->meta().sStamp;
 
     if (outVersion != NULL)
         *outVersion = version;
@@ -79,8 +79,8 @@ ValidatorRPCHelper::writeObject(Object& newObject, RejectRules* rejectRules,
     KVLayout *kv;
     bool found = validator.read(k, kv);
     if (found) {
-    	currentVersion = kv->getMeta().cStamp;
-    	pStampPrev = kv->getMeta().pStampPrev;
+    	currentVersion = kv->meta().cStamp;
+    	pStampPrev = kv->meta().pStampPrev;
     }
 
     if (rejectRules != NULL) {
