@@ -311,8 +311,75 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
 			WireFormat::MultiOp::Response* respHdr,
 			Rpc* rpc)
 {
-    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
-    s->multiWrite(reqHdr, respHdr, rpc);
+    uint32_t numRequests = reqHdr->count;
+    uint32_t reqOffset = sizeof32(*reqHdr);
+    respHdr->count = numRequests;
+
+    // Store info about objects being removed (overwritten)
+    // so that we can later remove index entries corresponding to them.
+    // This is space inefficient as it occupies numRequests times size of
+    // Buffer on stack.
+    Buffer oldObjectBuffers[numRequests];
+
+    // Each iteration extracts one request from the rpc, writes the object
+    // if possible, and appends a status and version to the response buffer.
+    for (uint32_t i = 0; i < numRequests; i++) {
+        const WireFormat::MultiOp::Request::WritePart *currentReq =
+                rpc->requestPayload->getOffset<
+                WireFormat::MultiOp::Request::WritePart>(reqOffset);
+
+        if (currentReq == NULL) {
+            respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+            break;
+        }
+
+        reqOffset += sizeof32(WireFormat::MultiOp::Request::WritePart);
+
+        if (rpc->requestPayload->size() < reqOffset + currentReq->length) {
+            respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+            break;
+        }
+        WireFormat::MultiOp::Response::WritePart* currentResp =
+                rpc->replyPayload->emplaceAppend<
+                WireFormat::MultiOp::Response::WritePart>();
+
+        Object object(currentReq->tableId, 0, 0, *(rpc->requestPayload),
+                reqOffset, currentReq->length);
+
+        // ---- write the object ----
+        KeyLength pKeyLen;
+        uint32_t pValLen;
+        uint64_t tableId = object.getTableId();
+        const void* pVal = object.getValue(&pValLen);
+        const void* pKey = object.getKey(0, &pKeyLen);
+
+        KVLayout pkv(pKeyLen + sizeof(tableId)); //make room composite key in KVStore
+        std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
+        std::memcpy(pkv.getKey().key.get() + sizeof(tableId), pKey, pKeyLen);
+        pkv.v.valueLength = pValLen;
+        pkv.v.valuePtr = (uint8_t*)const_cast<void*>(pVal);
+    
+        KVLayout *kv = kvStore->fetch(pkv.k);
+ 
+        if (kv == NULL) {
+            KVLayout *nkv = kvStore->preput(pkv);
+            kvStore->putNew(nkv, 0, 0xffffffffffffffff);
+        } else {
+            void * pval = new char[pValLen];
+            std::memcpy(pval, pVal, pValLen);
+            kvStore->put(kv, 0, 0xffffffffffffffff, (uint8_t*)pval, pValLen);
+        }
+        currentResp->status = STATUS_OK;
+        // ---- write one object done ----
+
+        reqOffset += currentReq->length;
+    }
+
+    // By design, our response will be shorter than the request. This ensures
+    // that the response can go back in a single RPC.
+    assert(rpc->replyPayload->size() <= Transport::MAX_RPC_LEN);
+
+    rpc->sendReply();
 }
   
 void

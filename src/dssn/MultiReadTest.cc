@@ -251,7 +251,7 @@ TEST_F(MultiReadTest, rejectRules_end_to_end) {
     EXPECT_STREQ("STATUS_OBJECT_DOESNT_EXIST",
                     statusToSymbol(objects[5].status));
 #else
-    std::cout << "Test Skipped] MultiReadTest::rejectRules_end_to_end" << std::endl;
+    std::cout << "[Test Skipped] MultiReadTest::rejectRules_end_to_end" << std::endl;
 #endif
 }
 
