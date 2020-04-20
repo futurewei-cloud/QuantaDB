@@ -37,6 +37,7 @@ TESTS_SRCFILES := \
           src/dssn/MultiOpTest.cc \
           src/dssn/MultiReadTest.cc \
           src/dssn/MultiWriteTest.cc \
+          src/dssn/MultiRemoveTest.cc \
 		  src/dssn/TransactionDSSNTest.cc \
 		  src/dssn/SequencerTest.cc \
 		  src/dssn/ValidatorTest.cc \
