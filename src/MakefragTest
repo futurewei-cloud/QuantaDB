@@ -34,6 +34,7 @@ TESTS_SRCFILES := \
 		  src/dssn/HashmapKVStoreTest.cc \
 		  src/dssn/ClusterTimeServiceTest.cc \
 		  src/dssn/RamCloudDSSNTest.cc \
+          src/dssn/MultiOpTest.cc \
           src/dssn/MultiReadTest.cc \
           src/dssn/MultiWriteTest.cc \
 		  src/dssn/TransactionDSSNTest.cc \
