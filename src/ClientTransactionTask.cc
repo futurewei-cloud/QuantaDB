@@ -730,6 +730,7 @@ ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
     reqHdr->ackId = ramcloud->rpcTracker->ackId();
     reqHdr->participantCount = task->participantCount;
     reqHdr->opCount = 0;
+    reqHdr->readOpCount = 0;
     request.appendExternal(&task->participantList);
 #ifdef DSSNTX
     reqHdr->meta = task->mMeta;
@@ -765,6 +766,7 @@ ClientTransactionTask::PrepareRpc::appendOp(CommitCacheMap::iterator opEntry)
                     task->readOnly);
             request.appendExternal(entry->objectBuf.getKey(),
                     entry->objectBuf.getKeyLength());
+	    reqHdr->readOpCount++;
             break;
         case CacheEntry::REMOVE:
             request.emplaceAppend<WireFormat::TxPrepare::Request::RemoveOp>(
