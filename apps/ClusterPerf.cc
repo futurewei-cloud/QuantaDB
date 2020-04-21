@@ -57,6 +57,7 @@ namespace po = boost::program_options;
 #include "btreeRamCloud/Btree.h"
 #include "ClientLeaseAgent.h"
 #include "IndexLookup.h"
+#include "Notifier.h"
 #include "TimeTrace.h"
 #include "Transaction.h"
 #include "Util.h"
@@ -5000,8 +5001,9 @@ notify_workload()
     start = Cycles::rdtsc();
     if (clientIndex == 0) {
         for (uint i = 0; i < numMsg; i++) {
-	    cluster->notify(WireFormat::DSSN_NOTIFY_TEST, const_cast<char*>(message.data()),
-			    message.length(), &sessions[0]);
+	    Notifier::notify(context, WireFormat::DSSN_NOTIFY_TEST,
+			     const_cast<char*>(message.data()),
+			     message.length(), &sessions[0]);
 	}
     }
     end = Cycles::rdtsc();
