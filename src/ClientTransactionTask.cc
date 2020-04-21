@@ -21,6 +21,7 @@
 #include "RamCloud.h"
 #include "RpcTracker.h"
 #include "ShortMacros.h"
+#include <bitset>
 
 namespace RAMCloud {
 
@@ -125,7 +126,11 @@ ClientTransactionTask::performTask()
             startTime = Cycles::rdtsc();
 
             // Build participant list
+#ifdef DSSNTX
+	    initTaskDSSN();
+#else
             initTask();
+#endif
             nextCacheEntry = commitCache.begin();
             state = PREPARE;
         }
@@ -259,6 +264,35 @@ ClientTransactionTask::initTask()
     assert(i == commitCache.size());
 }
 
+void
+ClientTransactionTask::initTaskDSSN()
+{
+    std::bitset<4096> participantSet;
+    lease = ramcloud->clientLeaseAgent->getLease();
+    // First RPC id is used to identify the transaction.  One additional RPC
+    // id is needed for each operation in the transation.
+    txId = ramcloud->rpcTracker->newRpcIdBlock(this, commitCache.size() + 1);
+
+    nextCacheEntry = commitCache.begin();
+    uint64_t i = 0;
+    while (nextCacheEntry != commitCache.end()) {
+        const CacheKey* key = &nextCacheEntry->first;
+	CacheEntry* entry = &nextCacheEntry->second;
+	entry->rpcId = txId + (++i);
+	uint64_t serverId = ramcloud->clientContext->objectFinder->lookupTablet(key->tableId, key->keyHash)->tablet.serverId.getId();
+
+	if (!participantSet[serverId]) {
+	    participantList.emplaceAppend<WireFormat::TxParticipant>(
+		  key->tableId,
+		  static_cast<uint64_t>(key->keyHash),
+		  serverId);
+	    participantCount++;
+	    participantSet[serverId] = true;
+	}
+        nextCacheEntry++;
+    }
+    assert(participantCount > 0);
+}
 /**
  * Process any decision rpcs that have completed.  Used in performTask.
  * Factored out mostly for clarity and ease of testing.

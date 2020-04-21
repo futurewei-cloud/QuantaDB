@@ -174,6 +174,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
     uint64_t startTime;
 
     void initTask();
+    void initTaskDSSN();
     void processDecisionRpcResults();
     void processPrepareRpcResults();
     void sendDecisionRpc();
