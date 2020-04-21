@@ -414,7 +414,7 @@ Transaction::ReadOp::wait(bool* objectExists)
             entry->rejectRules.versionNeGiven = true;
 	    entry->meta = meta;
 #ifdef DSSNTX
-	    assert(entry->meta.pi == DSSN_MD_INFINITY);
+	    assert(entry->meta.sstamp == DSSN_MD_INFINITY);
 #endif
         } else {
             // Object did not exists at the time of the read so remember to

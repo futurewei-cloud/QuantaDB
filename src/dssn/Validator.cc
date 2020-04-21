@@ -30,9 +30,9 @@ Validator::start() {
 }
 
 bool
-Validator::updateTxEtaPi(TxEntry &txEntry) {
+Validator::updateTxPStampSStamp(TxEntry &txEntry) {
     /*
-     * Find out my largest predecessor (eta) and smallest successor (pi).
+     * Find out my largest predecessor (pstamp) and smallest successor (sstamp).
      * For reads, see if another has over-written the tuples by checking successor LSN.
      * For writes, see if another has read the tuples by checking access LSN.
      *
@@ -42,14 +42,14 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
      * is to pass the write set (and read set) through the commit-intent.
      */
 
-    txEntry.setPi(std::min(txEntry.getPi(), txEntry.getCTS()));
+    txEntry.setSStamp(std::min(txEntry.getSStamp(), txEntry.getCTS()));
 
-    //update pi of transaction
+    //update sstamp of transaction
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
     	KVLayout *kv = kvStore.fetch(readSet[i]->k);
     	if (kv) {
-    		txEntry.setPi(std::min(txEntry.getPi(), kv->meta().sStamp));
+    		txEntry.setSStamp(std::min(txEntry.getSStamp(), kv->meta().sStamp));
     		if (txEntry.isExclusionViolated()) {
     			return false;
     		}
@@ -57,12 +57,12 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
     	txEntry.insertReadSetInStore(kv, i);
     }
 
-    //update eta of transaction
+    //update pstamp of transaction
     auto  &writeSet = txEntry.getWriteSet();
     for (uint32_t i = 0; i < txEntry.getWriteSetSize(); i++) {
     	KVLayout *kv = kvStore.fetch(writeSet[i]->k);
     	if (kv) {
-    		txEntry.setEta(std::max(txEntry.getEta(), kv->meta().pStamp));
+    		txEntry.setPStamp(std::max(txEntry.getPStamp(), kv->meta().pStamp));
     		if (txEntry.isExclusionViolated()) {
     			return false;
     		}
@@ -74,16 +74,16 @@ Validator::updateTxEtaPi(TxEntry &txEntry) {
 }
 
 bool
-Validator::updateKVReadSetEta(TxEntry &txEntry) {
-	auto &readSet = txEntry.getReadSetInStore();
-	for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
-		if (readSet[i]) {
-	                readSet[i]->meta().pStamp = std::max(txEntry.getCTS(), readSet[i]->meta().pStamp);;
-		} else {
-			//Fixme: put a tombstoned entry in KVStore???
-			//or leave it blank???
-		}
-	}
+Validator::updateKVReadSetPStamp(TxEntry &txEntry) {
+    auto &readSet = txEntry.getReadSetInStore();
+    for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
+        if (readSet[i]) {
+            readSet[i]->meta().pStamp = std::max(txEntry.getCTS(), readSet[i]->meta().pStamp);;
+        } else {
+            //Fixme: put a tombstoned entry in KVStore???
+            //or leave it blank???
+        }
+    }
     return true;
 }
 
@@ -93,10 +93,10 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
     auto &writeSetInStore = txEntry.getWriteSetInStore();
     for (uint32_t i = 0; i < txEntry.getWriteSetSize(); i++) {
         if (writeSetInStore[i]) {
-        	kvStore.put(writeSetInStore[i], txEntry.getCTS(), txEntry.getPi(),
+        	kvStore.put(writeSetInStore[i], txEntry.getCTS(), txEntry.getSStamp(),
         			writeSet[i]->v.valuePtr, writeSet[i]->v.valueLength);
         } else {
-        	kvStore.putNew(writeSet[i], txEntry.getCTS(), txEntry.getPi());
+        	kvStore.putNew(writeSet[i], txEntry.getCTS(), txEntry.getSStamp());
         	writeSet[i] = 0; //prevent txEntry destructor from freeing the KVLayout pointer
         }
     }
@@ -124,8 +124,8 @@ Validator::read(KLayout& k, KVLayout *&kv) {
 }
 
 bool
-Validator::updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry) {
-	return peerInfo.update(cts, peerId, eta, pi, txEntry);
+Validator::updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t pstamp, uint64_t sstamp, TxEntry *&txEntry) {
+	return peerInfo.update(cts, peerId, pstamp, sstamp, txEntry);
 }
 
 bool
@@ -136,8 +136,8 @@ Validator::insertConcludeQueue(TxEntry *txEntry) {
 
 bool
 Validator::validateLocalTx(TxEntry& txEntry) {
-    //calculate local eta and pi
-    updateTxEtaPi(txEntry);
+    //calculate local pstamp and sstamp
+    updateTxPStampSStamp(txEntry);
 
     if (txEntry.isExclusionViolated()) {
         txEntry.setTxState(TxEntry::TX_ABORT);
@@ -219,7 +219,7 @@ Validator::conclude(TxEntry& txEntry) {
 
 	//record results and meta data
 	if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
-		updateKVReadSetEta(txEntry);
+		updateKVReadSetPStamp(txEntry);
 		updateKVWriteSet(txEntry);
 	}
 

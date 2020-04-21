@@ -852,7 +852,7 @@ ClientTransactionTask::isTxValid()
     bool result = true;
 
 #ifdef DSSNTX
-    if (mMeta.pi > mMeta.eta) {
+    if (mMeta.sstamp > mMeta.pstamp) {
         return result;
     }
     //Invalid transaction
@@ -867,8 +867,8 @@ ClientTransactionTask::isTxValid()
 void
 ClientTransactionTask::updateSSNReadMeta(WireFormat::DSSNTxMeta& v)
 {
-    if (v.cstamp > mMeta.eta) {
-        mMeta.eta = v.cstamp;
+    if (v.cstamp > mMeta.pstamp) {
+        mMeta.pstamp= v.cstamp;
     }
 }
 

@@ -36,14 +36,14 @@ PeerInfo::sweep() {
 }
 
 bool
-PeerInfo::update(CTS cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry) {
+PeerInfo::update(CTS cts, uint64_t peerId, uint64_t pstamp, uint64_t sstamp, TxEntry *&txEntry) {
 	tbb::concurrent_unordered_map<CTS, TxEntry *>::iterator it;
 	it = peerInfo.find(cts);
 	if (it != peerInfo.end()) {
 		txEntry = it->second;
 		std::lock_guard<std::mutex> lock(txEntry->getMutex());
-		txEntry->setEta(std::max(txEntry->getEta(), eta));
-		txEntry->setPi(std::min(txEntry->getPi(), pi));
+		txEntry->setPStamp(std::max(txEntry->getPStamp(), pstamp));
+		txEntry->setSStamp(std::min(txEntry->getSStamp(), sstamp));
 		txEntry->insertPeerSeenSet(peerId);
 		return true;
 	}

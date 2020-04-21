@@ -178,8 +178,8 @@ struct ClientLease {
 } __attribute__((packed));
 
 struct DSSNTxMeta {
-    uint64_t eta;
-    uint64_t pi;
+    uint64_t pstamp;
+    uint64_t sstamp;
     uint64_t cstamp;
 } __attribute__((packed));
 
@@ -587,8 +587,8 @@ struct DSSNCommit {
     struct Request {
         RequestCommon common;
         uint64_t cts;
-        uint64_t eta;
-        uint64_t pi;
+        uint64_t pstamp;
+        uint64_t sstamp;
         uint32_t shardCount; // Number of Part structures following
         uint32_t readSetCount; // Number of Part structures following
         uint32_t writeSetCount; // Number of Part structures following
