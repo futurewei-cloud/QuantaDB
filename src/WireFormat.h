@@ -1783,8 +1783,12 @@ struct TakeIndexletOwnershipDSSN : TakeIndexletOwnership {
 struct TxParticipant {
     uint64_t tableId;           // Table Id of the participant object.
     uint64_t keyHash;           // Key Hash of the participant object.
-    uint64_t rpcId;             // rpcId of TxPrepare RPC assigned for
-                                // the participant object.
+    union {
+        uint64_t rpcId;             // rpcId of TxPrepare RPC assigned for
+                                    // the participant object.
+        uint64_t dssnServerId;      // participanting DSSN Server ID.  For
+                                    // DSSN, rpcId is not being used
+    };
 
     TxParticipant()
         : tableId()
