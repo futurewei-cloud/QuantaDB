@@ -22,6 +22,7 @@ class DSSNService : public Service {
    ~DSSNService();
    void dispatch(WireFormat::Opcode opcode, Rpc* rpc);
  private:
+   inline uint64_t getServerId() { return serverId.getId(); }
    void multiOp(const WireFormat::MultiOpDSSN::Request* reqHdr,
                 WireFormat::MultiOpDSSN::Response* respHdr,
                 Rpc* rpc);

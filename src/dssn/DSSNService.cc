@@ -69,7 +69,7 @@ DSSNService::dispatch(WireFormat::Opcode opcode, Rpc* rpc)
 			&DSSNService::txDecision>(rpc);
 	    break;
         case WireFormat::DSSN_NOTIFY_TEST:
-	    RAMCLOUD_LOG(NOTICE, "Received notify test messages");
+	    RAMCLOUD_LOG(NOTICE, "Received notify test message");
 	    break;
         default:
 	    throw UnimplementedRequestError(HERE);
@@ -294,6 +294,7 @@ DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
 
         currentResp->meta.pstamp = kv->getVLayout().meta.pStamp; // eta
         currentResp->meta.sstamp = kv->getVLayout().meta.sStamp; // pi
+        currentResp->meta.cstamp = kv->getVLayout().meta.cStamp; // cts
         currentResp->length = rpc->replyPayload->size() - initialLength;
 
         // std::cout << "repLen: " << currentResp->length << std::endl; // XXX
@@ -305,8 +306,51 @@ DSSNService::multiRemove(const WireFormat::MultiOp::Request* reqHdr,
 			 WireFormat::MultiOp::Response* respHdr,
 			 Rpc* rpc)
 {
-    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
-    s->multiRemove(reqHdr, respHdr, rpc);
+    uint32_t numRequests = reqHdr->count;
+    uint32_t reqOffset = sizeof32(*reqHdr);
+
+    respHdr->count = numRequests;
+
+    // Each iteration extracts one request from request rpc, deletes the
+    // corresponding object if possible, and appends the response to the
+    // response rpc.
+    for (uint32_t i = 0; i < numRequests; i++) {
+        const WireFormat::MultiOp::Request::RemovePart *currentReq =
+                rpc->requestPayload->getOffset<
+                WireFormat::MultiOp::Request::RemovePart>(reqOffset);
+
+        if (currentReq == NULL) {
+            respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+            break;
+        }
+
+        reqOffset += sizeof32(WireFormat::MultiOp::Request::RemovePart);
+        const void* stringKey = rpc->requestPayload->getRange(
+                reqOffset, currentReq->keyLength);
+        reqOffset += currentReq->keyLength;
+
+        if (stringKey == NULL) {
+            respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+            break;
+        }
+
+        WireFormat::MultiOp::Response::RemovePart* currentResp =
+                rpc->replyPayload->emplaceAppend<
+                WireFormat::MultiOp::Response::RemovePart>();
+
+        // ---- remove one object -----
+        uint64_t tableId = currentReq->tableId;
+        KLayout k(currentReq->keyLength + sizeof(tableId)); //make room composite key in KVStore
+        std::memcpy(k.key.get(), &tableId, sizeof(tableId));
+        std::memcpy(k.key.get() + sizeof(tableId), stringKey,  currentReq->keyLength);
+
+        KVLayout *kv = kvStore->fetch(k);
+        if (kv) {
+            kv->getVLayout().isTombstone = true;
+        }
+        currentResp->status = STATUS_OK; 
+        // ----
+    }
 }
 
 void
@@ -317,12 +361,6 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
     uint32_t numRequests = reqHdr->count;
     uint32_t reqOffset = sizeof32(*reqHdr);
     respHdr->count = numRequests;
-
-    // Store info about objects being removed (overwritten)
-    // so that we can later remove index entries corresponding to them.
-    // This is space inefficient as it occupies numRequests times size of
-    // Buffer on stack.
-    Buffer oldObjectBuffers[numRequests];
 
     // Each iteration extracts one request from the rpc, writes the object
     // if possible, and appends a status and version to the response buffer.
@@ -407,7 +445,6 @@ DSSNService::remove(const WireFormat::RemoveDSSN::Request* reqHdr,
     KLayout k(reqHdr->keyLength + sizeof(tableId)); //make room composite key in KVStore
     std::memcpy(k.key.get(), &tableId, sizeof(tableId));
     std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
-    Key key(reqHdr->tableId, stringKey, reqHdr->keyLength);
 
     KVLayout *kv = kvStore->fetch(k);
     if (!kv) {
