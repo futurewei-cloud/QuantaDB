@@ -2846,6 +2846,20 @@ MasterService::txPrepare(const WireFormat::TxPrepare::Request* reqHdr,
 {
     uint32_t reqOffset = sizeof32(*reqHdr);
 
+    /*
+     * Fixme: for cross-shard transaction, each validator needs to a list of
+     * peer participants. The design intent is to make validator less involved with
+     * shard management and coordinator more involved with shard managemnet
+     * as coordinator should direct messages to the proper shards any way.
+     * To that design goal, here we should prepare a proper participant list
+     * to each validator involved. The validator would construct a list of
+     * peerId (64-bit) excluding itself, and that peerId would be meaningful to
+     * the undering IPC/RPC service layer to locate the corresponding shard.
+     * As a result, the participant (a misnomer in our new context -- should be peer)
+     * count can be zero here as in the
+     * case of a single-shard transaction. [Henry 4/21/2020]
+     */
+
     // 1. Process participant list.
     uint32_t participantCount = reqHdr->participantCount;
     WireFormat::TxParticipant *participants =

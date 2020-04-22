@@ -46,7 +46,7 @@ class Validator {
     HashmapKVStore &kvStore;
 
     // all SSN data maintenance operations
-    bool updateTxPStampSStamp(TxEntry& txEntry);
+    bool updateTxPStampSStamp(TxEntry& txEntry); //Fixme: to be called by peer info sender also
     bool updateKVReadSetPStamp(TxEntry& txEntry);
     bool updateKVWriteSet(TxEntry& txEntry);
 
@@ -75,12 +75,27 @@ class Validator {
 	Validator(HashmapKVStore &kvStore);
 	~Validator();
 
-    // start threads and work
+    // start/stop internal worker threads
     void start();
+    void stop();
 
-    // used for read/write by coordinator
+    // used for tx RPC handlers
+    /* The current design does not expect a write to reach the validator.
+     * SSN validation still works properly as the serialize() would go through the
+     * write set to retrieve the latest committed version for its sstamp and pstamp.
+     *
+     * As for read, RPC handler would return the cts, sstamp, pstamp, associated
+     * value, and VLayout table id and offset to the caller, and those in turn would be conveyed
+     * in the commit intent (whose RPC handler would insertTxEntry())
+     * to enable the validator to locate the proper version of the read tuple to continue
+     * the validation.
+     *
+     * For distributed tx, validator needs to exchange meta data with peering validators.
+     * Upon receiving meta data from a peer, RPC handler would updatePeerInfo() and
+     * insertConcludeQueue().
+     */
     bool read(KLayout& k, KVLayout *&kv);
-    bool write(KLayout& k, uint64_t &vPrevEta);
+    bool insertTxEntry(TxEntry *txEntry);
     bool updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
     bool insertConcludeQueue(TxEntry *txEntry);
 }; // end Validator class
