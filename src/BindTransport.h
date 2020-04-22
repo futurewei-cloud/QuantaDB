@@ -115,7 +115,9 @@ struct BindTransport : public Transport {
         void sendRequest(Buffer* request, Buffer* response,
                          RpcNotifier* notifier)
         {
-            response->reset();
+	    if (notifier->requiredRsp()){
+	        response->reset();
+	    }
             lastRequest = request;
             lastResponse = response;
             lastNotifier = notifier;

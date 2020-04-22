@@ -66,7 +66,7 @@ DSSNService::dispatch(WireFormat::Opcode opcode, Rpc* rpc)
 			&DSSNService::txDecision>(rpc);
 	    break;
         case WireFormat::DSSN_NOTIFY_TEST:
-	    RAMCLOUD_LOG(NOTICE, "Received notify test messages");
+	    RAMCLOUD_LOG(NOTICE, "Received notify test message");
 	    break;
         default:
 	    throw UnimplementedRequestError(HERE);

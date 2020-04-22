@@ -14,7 +14,7 @@ class Notifier {
   public:
     static void notify(Context* context, const WireFormat::Opcode type,
 		       const void* message, const uint32_t length,
-		       ServerId id);
+		       ServerId& id);
     static void notify(Context* context, const WireFormat::Opcode type,
 		       const void* message, const uint32_t length,
 		       Transport::SessionRef* endpoint = NULL,
