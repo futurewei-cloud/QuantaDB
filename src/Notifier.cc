@@ -17,11 +17,19 @@ Notifier::notify(Context* context,
 		 const uint32_t length, ServerId id)
 {
     NotificationRpc* rpc = NULL;
-    Transport::SessionRef s = context->serverList->getSession(id);
-    rpc = new NotificationRpc(context, s,
-			      type, message,length);
-    rpc->wait();
-    delete rpc;
+    if (context->serverList) {
+        Transport::SessionRef s = context->serverList->getSession(id);
+	if (s == FailSession::get()) {
+	    RAMCLOUD_LOG(ERROR, "Invalid participanting server id: %ld",
+			 id.getId());
+	}
+	rpc = new NotificationRpc(context, s,
+				  type, message,length);
+	rpc->wait();
+	delete rpc;
+    } else {
+        RAMCLOUD_LOG(ERROR, "the serverList is not initialized");
+    }
 }
 
 void
