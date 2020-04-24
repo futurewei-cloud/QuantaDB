@@ -18,8 +18,7 @@ DSSNService::DSSNService(Context* context, ServerList* serverList,
     , serverConfig(serverConfig)
 {
     kvStore = new HashmapKVStore();
-    validator = new Validator(*kvStore);
-    validator->start();
+    validator = new Validator(*kvStore, serverConfig->master.isTesting);
     tabletManager = new TabletManager();
     context->services[WireFormat::DSSN_SERVICE] = this;
 }

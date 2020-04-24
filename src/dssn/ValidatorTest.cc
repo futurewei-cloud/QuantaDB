@@ -36,7 +36,7 @@ class ValidatorTest : public ::testing::Test {
         , context()
         , cluster(&context)
         , clusterClock()
-		, validator(kvStore)
+		, validator(kvStore, true)
 		, helper(validator)
     {
     }
@@ -176,7 +176,6 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
     std::memcpy(k.key.get(), txEntry[0]->getWriteSet()[0]->k.key.get(), k.keyLength);
 
     validator.localTxQueue.add(txEntry[0]);
-    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
     EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
     kv = validator.kvStore.fetch(k);
@@ -189,7 +188,6 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
     fillTxEntry(1, 4); //one write key, three read keys
 
     validator.localTxQueue.add(txEntry[0]);
-    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     validator.serialize();
     EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
     kv = validator.kvStore.fetch(k);
@@ -318,7 +316,6 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     	validator.localTxQueue.add(txEntry[i]);
     }
     //validator.localTxQueue.schedule(true);
-    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
     start = Cycles::rdtscp();
     validator.serialize();
     stop = Cycles::rdtscp();
@@ -333,8 +330,6 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
 TEST_F(ValidatorTest, BATPeerInfo) {
 
 	fillTxEntry(5, 10, 2); //5 txs of 10 keys and 2 peers
-
-    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
 
     //start cross-validation but leave it unfinished
 	validator.serialize();
@@ -362,8 +357,6 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 #endif //
 
 TEST_F(ValidatorTest, BATValidateDistributedTxs) {
-    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
-
     int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     size = 20;
 
@@ -392,8 +385,6 @@ TEST_F(ValidatorTest, BATValidateDistributedTxs) {
 }
 
 TEST_F(ValidatorTest, BATDistributedTxSetPerf) {
-    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
-
     //int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     int size = 500000;
     uint64_t start, stop;
@@ -451,8 +442,6 @@ TEST_F(ValidatorTest, BATDistributedTxSetPerf) {
 
 /*
 TEST_F(ValidatorTest, BATDependencyMatrix) {
-    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
-
 	fillTxEntry(35, 20, 2); //35 txs of 20 keys and 2 peers
 
 	//add to reorder queue with bad order to test proper reordering
@@ -498,8 +487,6 @@ TEST_F(ValidatorTest, BATDependencyMatrix) {
 }
 
 TEST_F(ValidatorTest, BATDependencyMatrixPerf) {
-    validator.isUnderTest = true; //so that serialize loop will end when queue is empty
-
     //int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     int size = 64;
     uint64_t start, stop;

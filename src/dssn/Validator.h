@@ -39,11 +39,11 @@ class Validator {
 	ConcludeQueue concludeQueue;
     uint64_t alertThreshold = 1000; //LATER
     std::atomic<uint64_t> localTxCTSBase;
-    bool isUnderTest = false;
     ClusterTimeService clock;
     //LATER DependencyMatrix blockedTxSet;
     //KVStore kvStore;
     HashmapKVStore &kvStore;
+    bool isUnderTest;
 
     // all SSN data maintenance operations
     bool updateTxPStampSStamp(TxEntry& txEntry); //Fixme: to be called by peer info sender also
@@ -71,13 +71,13 @@ class Validator {
     // handle garbage collection
     void sweep();
 
-    PUBLIC:
-	Validator(HashmapKVStore &kvStore);
-	~Validator();
+    // for unit testing, triggering a run of functions without using threads
+    void testRun();
 
-    // start/stop internal worker threads
-    void start();
-    void stop();
+    PUBLIC:
+	//Validator(HashmapKVStore &kvStore);
+	Validator(HashmapKVStore &kvStore, bool isTesting = false);
+	~Validator();
 
     // used for tx RPC handlers
     /* The current design does not expect a write to reach the validator.

@@ -13,26 +13,31 @@ namespace DSSN {
 const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
 const uint64_t minTimeStamp = 0;
 
-Validator::Validator(HashmapKVStore &_kvStore) : kvStore(_kvStore) {
-}
+/*Validator::Validator(HashmapKVStore &_kvStore) : kvStore(_kvStore) {
+	start();
+}*/
 
-Validator::~Validator() {
-	stop();
-}
-
-void
-Validator::start() {
+Validator::Validator(HashmapKVStore &_kvStore, bool isTesting)
+		: kvStore(_kvStore), isUnderTest(isTesting) {
 	localTxCTSBase = clock.getLocalTime();
 
     // Henry: may need to use TBB to pin the threads to specific cores LATER
-    std::thread( [=] { serialize(); });
-    std::thread( [=] { sweep(); });
-    std::thread( [=] { scheduleDistributedTxs(); });
+	if (!isUnderTest) {
+		std::thread( [=] { serialize(); });
+		std::thread( [=] { sweep(); });
+		std::thread( [=] { scheduleDistributedTxs(); });
+	}
+}
+
+Validator::~Validator() {
+	//Fixme: need to kill threads if they are running
 }
 
 void
-Validator::stop() {
-	//Fixme: need to kill threads if they are running
+Validator::testRun() {
+	scheduleDistributedTxs();
+	serialize();
+	sweep();
 }
 
 bool
@@ -250,7 +255,10 @@ Validator::conclude(TxEntry& txEntry) {
 
 void
 Validator::sweep() {
-	peerInfo.sweep();
+	do {
+		peerInfo.sweep();
+		this_thread::yield();
+	} while (!isUnderTest);
 }
 
 bool

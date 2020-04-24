@@ -131,7 +131,7 @@ TEST_F(TransactionTest, commit_abort) {
 	      << ":"
 	      << ::testing::UnitTest::GetInstance()->current_test_info()->name()
 	      << std::endl;
-    #if 0
+#if 1
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
 
     Buffer value;
@@ -489,7 +489,7 @@ TEST_F(TransactionTest, ReadOp_isReady_batched) {
 	      << ":"
 	      << ::testing::UnitTest::GetInstance()->current_test_info()->name()
 	      << std::endl;
-#if 0
+#if 1
     Buffer value;
     Transaction::ReadOp
             readOp(transaction.get(), tableId1, "0", 1, &value, true);
@@ -572,7 +572,7 @@ TEST_F(TransactionTest, ReadOp_wait_batch_basic) {
 	      << ":"
 	      << ::testing::UnitTest::GetInstance()->current_test_info()->name()
 	      << std::endl;
-#if 0
+#if 1
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
@@ -607,7 +607,7 @@ TEST_F(TransactionTest, ReadOp_wait_batch_noObject) {
 	      << ":"
 	      << ::testing::UnitTest::GetInstance()->current_test_info()->name()
 	      << std::endl;
-#if 0
+#if 1
     Key key(tableId1, "0", 1);
     EXPECT_TRUE(task->findCacheEntry(key) == NULL);
 
