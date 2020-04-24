@@ -33,11 +33,14 @@ Validator::~Validator() {
 	//Fixme: need to kill threads if they are running
 }
 
-void
+bool
 Validator::testRun() {
+	if (!isUnderTest)
+		return false;
 	scheduleDistributedTxs();
 	serialize();
 	sweep();
+	return true;
 }
 
 bool

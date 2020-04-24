@@ -550,7 +550,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             rpc->requestPayload->getOffset<
             WireFormat::TxPrepare::OpType>(reqOffset);
 
-    if (*type != WireFormat::TxPrepare::READONLY) {
+    if (*type == WireFormat::TxPrepare::READONLY) {
+    	assert(0); //Fixme: this case not handled yet, need to a better indicator
     	//read-only transaction needs no validation
         respHdr->common.status = STATUS_RETRY;
         respHdr->vote = WireFormat::TxPrepare::COMMITTED;
@@ -711,7 +712,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 
     	//Fixme: for now just loop to wait for result
     	while (txEntry->getTxCIState() != TxEntry::TX_CI_FINISHED) { //Fixme: need volatile?
-    		std::this_thread::yield();
+    		if (!validator->testRun())
+    			std::this_thread::yield();
     	}
 
     	if (txEntry->getTxState() == TxEntry::TX_ABORT) {

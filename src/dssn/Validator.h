@@ -71,9 +71,6 @@ class Validator {
     // handle garbage collection
     void sweep();
 
-    // for unit testing, triggering a run of functions without using threads
-    void testRun();
-
     PUBLIC:
 	//Validator(HashmapKVStore &kvStore);
 	Validator(HashmapKVStore &kvStore, bool isTesting = false);
@@ -98,6 +95,9 @@ class Validator {
     bool insertTxEntry(TxEntry *txEntry);
     bool updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
     bool insertConcludeQueue(TxEntry *txEntry);
+
+    // for unit testing, triggering a run of functions without using threads
+    bool testRun();
 }; // end Validator class
 
 } // end namespace DSSN
