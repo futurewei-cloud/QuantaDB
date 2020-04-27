@@ -13,20 +13,34 @@ namespace DSSN {
 const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
 const uint64_t minTimeStamp = 0;
 
-Validator::Validator(HashmapKVStore &_kvStore) : kvStore(_kvStore) {
-}
+/*Validator::Validator(HashmapKVStore &_kvStore) : kvStore(_kvStore) {
+	start();
+}*/
 
-Validator::~Validator() {
-}
-
-void
-Validator::start() {
+Validator::Validator(HashmapKVStore &_kvStore, bool isTesting)
+		: kvStore(_kvStore), isUnderTest(isTesting) {
 	localTxCTSBase = clock.getLocalTime();
 
     // Henry: may need to use TBB to pin the threads to specific cores LATER
-    std::thread( [=] { serialize(); });
-    std::thread( [=] { sweep(); });
-    std::thread( [=] { scheduleDistributedTxs(); });
+	if (!isUnderTest) {
+		std::thread( [=] { serialize(); });
+		std::thread( [=] { sweep(); });
+		std::thread( [=] { scheduleDistributedTxs(); });
+	}
+}
+
+Validator::~Validator() {
+	//Fixme: need to kill threads if they are running
+}
+
+bool
+Validator::testRun() {
+	if (!isUnderTest)
+		return false;
+	scheduleDistributedTxs();
+	serialize();
+	sweep();
+	return true;
 }
 
 bool
@@ -49,6 +63,16 @@ Validator::updateTxPStampSStamp(TxEntry &txEntry) {
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
     	KVLayout *kv = kvStore.fetch(readSet[i]->k);
     	if (kv) {
+			//A safety check to ensure that the version in the kv store
+			//is the same one when the read has occurred.
+			//A missing version, possibly due to failure recovery or
+    		//our design choice of not keeping long version chains,
+    		//would cause an abort.
+    		if (kv->meta().cStamp != readSet[i]->meta().cStamp) {
+    			txEntry.setSStamp(0); //deliberately cause an exclusion window violation
+    			return false;
+    		}
+
     		txEntry.setSStamp(std::min(txEntry.getSStamp(), kv->meta().sStamp));
     		if (txEntry.isExclusionViolated()) {
     			return false;
@@ -103,6 +127,7 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
     return true;
 }
 
+#if 0 //unused for now
 bool
 Validator::write(KLayout& k, uint64_t &vPrevPStamp) {
     DSSNMeta meta;
@@ -114,6 +139,7 @@ Validator::write(KLayout& k, uint64_t &vPrevPStamp) {
     }
     return false;
 }
+#endif
 
 bool
 Validator::read(KLayout& k, KVLayout *&kv) {
@@ -232,7 +258,18 @@ Validator::conclude(TxEntry& txEntry) {
 
 void
 Validator::sweep() {
-	peerInfo.sweep();
+	do {
+		peerInfo.sweep();
+		this_thread::yield();
+	} while (!isUnderTest);
+}
+
+bool
+Validator::insertTxEntry(TxEntry *txEntry) {
+	if (txEntry->getPeerSet().size() == 0)
+		return localTxQueue.add(txEntry);
+	else
+		return distributedTxSet.add(txEntry);
 }
 
 } // end Validator class

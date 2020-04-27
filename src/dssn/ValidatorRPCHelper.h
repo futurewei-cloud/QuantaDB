@@ -97,9 +97,21 @@ class ValidatorRPCHelper {
 	                uint64_t* outVersion, Buffer* removedObjBuffer,
 	                uint64_t& pStampPrev);
 
-
+	//to be called by SSN info receiving RPC handler to validate distributed tx
 	Status
 	updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi); //Fixme: change arguments
+
+	//to be called by validator to send SSN info to all peers
+	void
+	sendPeerInfo(TxEntry *txEntry);
+
+	//to be called by validator to send SSN info to a specific peer
+	void
+	sendPeerInfo(TxEntry *txEntry, uint64_t peerId);
+
+	//to be called by validator to request missing SSN info from the associated peers
+	void
+	requestPeerInfo(TxEntry *txEntry);
 }; // end ValidatorRPCHandler class
 
 } // end namespace DSSN

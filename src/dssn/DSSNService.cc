@@ -7,6 +7,8 @@
 #include "WireFormat.h"
 #include "MasterService.h"  //TODO: Remove
 
+#include "Validator.h"
+
 namespace DSSN {
 
 DSSNService::DSSNService(Context* context, ServerList* serverList,
@@ -16,7 +18,7 @@ DSSNService::DSSNService(Context* context, ServerList* serverList,
     , serverConfig(serverConfig)
 {
     kvStore = new HashmapKVStore();
-    validator = new Validator(*kvStore);
+    validator = new Validator(*kvStore, serverConfig->master.isTesting);
     tabletManager = new TabletManager();
     context->services[WireFormat::DSSN_SERVICE] = this;
 }
@@ -66,7 +68,7 @@ DSSNService::dispatch(WireFormat::Opcode opcode, Rpc* rpc)
 			&DSSNService::txDecision>(rpc);
 	    break;
         case WireFormat::DSSN_NOTIFY_TEST:
-	    RAMCLOUD_LOG(NOTICE, "Received notify test messages");
+	    RAMCLOUD_LOG(NOTICE, "Received notify test message");
 	    break;
         default:
 	    throw UnimplementedRequestError(HERE);
@@ -291,6 +293,7 @@ DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
 
         currentResp->meta.pstamp = kv->getVLayout().meta.pStamp; // eta
         currentResp->meta.sstamp = kv->getVLayout().meta.sStamp; // pi
+        currentResp->meta.cstamp = kv->getVLayout().meta.cStamp; // cts
         currentResp->length = rpc->replyPayload->size() - initialLength;
 
         // std::cout << "repLen: " << currentResp->length << std::endl; // XXX
@@ -528,8 +531,201 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 		      Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
-    respHdr->common.status = STATUS_OK;
-    respHdr->vote = WireFormat::TxPrepare::COMMITTED;
+
+
+    uint32_t reqOffset = sizeof32(*reqHdr);
+
+    uint32_t participantCount = reqHdr->participantCount;
+    WireFormat::TxParticipant *participants =
+    		(WireFormat::TxParticipant*)rpc->requestPayload->getRange(reqOffset,
+    				sizeof32(WireFormat::TxParticipant) * participantCount);
+    reqOffset += sizeof32(WireFormat::TxParticipant) * participantCount;
+
+    uint32_t numRequests = reqHdr->opCount;
+    uint32_t numReadRequests = reqHdr->readOpCount;
+    assert(numRequests > 0);
+    assert(numReadRequests <= numRequests);
+
+    const WireFormat::TxPrepare::OpType *type =
+            rpc->requestPayload->getOffset<
+            WireFormat::TxPrepare::OpType>(reqOffset);
+
+    if (*type == WireFormat::TxPrepare::READONLY) {
+    	assert(0); //Fixme: this case not handled yet, need to a better indicator
+    	//read-only transaction needs no validation
+        respHdr->common.status = STATUS_RETRY;
+        respHdr->vote = WireFormat::TxPrepare::COMMITTED;
+        rpc->sendReply();
+        return;
+    }
+
+    TxEntry *txEntry = new TxEntry(numReadRequests, numRequests - numReadRequests);
+    txEntry->setCTS(reqHdr->lease.timestamp);
+    txEntry->setPStamp(reqHdr->meta.pstamp);
+    txEntry->setSStamp(reqHdr->meta.sstamp);
+    //Fixme: we only focus on local tx for now, so we will leave the peer set empty
+	for (uint32_t i = 1/*Fixme to 0 later*/; i < participantCount; i++) {
+		txEntry->insertPeerSet(participants[i].dssnServerId);
+	}
+    uint32_t readSetIdx = 0;
+    uint32_t writeSetIdx = 0;
+
+    for (uint32_t i = 0; i < numRequests; i++) {
+        Tub<PreparedOp> op;
+        uint64_t tableId, rpcId;
+        RejectRules rejectRules;
+
+        respHdr->common.status = STATUS_OK;
+        respHdr->vote = WireFormat::TxPrepare::PREPARED;
+
+        Buffer buffer;
+        const WireFormat::TxPrepare::OpType *type =
+                rpc->requestPayload->getOffset<
+                WireFormat::TxPrepare::OpType>(reqOffset);
+        if (*type == WireFormat::TxPrepare::READ) {
+            const WireFormat::TxPrepare::Request::ReadOp *currentReq =
+                    rpc->requestPayload->getOffset<
+                    WireFormat::TxPrepare::Request::ReadOp>(reqOffset);
+
+            reqOffset += sizeof32(WireFormat::TxPrepare::Request::ReadOp);
+
+            if (currentReq == NULL || rpc->requestPayload->size() <
+                                      reqOffset + currentReq->keyLength) {
+                respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+                respHdr->vote = WireFormat::TxPrepare::ABORT;
+                break;
+            }
+            tableId = currentReq->tableId;
+            rpcId = currentReq->rpcId;
+            rejectRules = currentReq->rejectRules;
+
+            const void* stringKey = rpc->requestPayload->getRange(
+            		reqOffset, currentReq->keyLength);
+            reqOffset += currentReq->keyLength;
+
+            if (stringKey == NULL) {
+            	respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+                respHdr->vote = WireFormat::TxPrepare::ABORT;
+            	break;
+            }
+
+            KVLayout pkv(currentReq->keyLength + sizeof(tableId)); //make room composite key in KVStore
+            std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
+            std::memcpy(pkv.getKey().key.get() + sizeof(tableId), stringKey, currentReq->keyLength);
+            KVLayout *nkv = kvStore->preput(pkv);
+            txEntry->insertReadSet(nkv, readSetIdx++);
+            assert(readSetIdx <= numReadRequests);
+
+        } else if (*type == WireFormat::TxPrepare::REMOVE) {
+            const WireFormat::TxPrepare::Request::RemoveOp *currentReq =
+                    rpc->requestPayload->getOffset<
+                    WireFormat::TxPrepare::Request::RemoveOp>(reqOffset);
+
+            reqOffset += sizeof32(WireFormat::TxPrepare::Request::RemoveOp);
+
+            if (currentReq == NULL || rpc->requestPayload->size() <
+                                      reqOffset + currentReq->keyLength) {
+                respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+                respHdr->vote = WireFormat::TxPrepare::ABORT;
+                break;
+            }
+            tableId = currentReq->tableId;
+            rpcId = currentReq->rpcId;
+            rejectRules = currentReq->rejectRules;
+
+            const void* stringKey = rpc->requestPayload->getRange(
+            		reqOffset, currentReq->keyLength);
+            reqOffset += currentReq->keyLength;
+
+            if (stringKey == NULL) {
+            	respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+                respHdr->vote = WireFormat::TxPrepare::ABORT;
+            	break;
+            }
+
+            //a remove is treated as a tombstone entry without value
+            KVLayout pkv(currentReq->keyLength + sizeof(tableId)); //make room composite key in KVStore
+            std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
+            std::memcpy(pkv.getKey().key.get() + sizeof(tableId), stringKey, currentReq->keyLength);
+            pkv.v.isTombstone = true;
+            KVLayout *nkv = kvStore->preput(pkv);
+            txEntry->insertWriteSet(nkv, writeSetIdx++);
+            assert(writeSetIdx <= (numRequests - numReadRequests));
+        } else if (*type == WireFormat::TxPrepare::WRITE) {
+            const WireFormat::TxPrepare::Request::WriteOp *currentReq =
+                    rpc->requestPayload->getOffset<
+                    WireFormat::TxPrepare::Request::WriteOp>(reqOffset);
+
+            reqOffset += sizeof32(WireFormat::TxPrepare::Request::WriteOp);
+
+            if (currentReq == NULL || rpc->requestPayload->size() <
+                                      reqOffset + currentReq->length) {
+                respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+                respHdr->vote = WireFormat::TxPrepare::ABORT;
+                break;
+            }
+            tableId = currentReq->tableId;
+            rpcId = currentReq->rpcId;
+            rejectRules = currentReq->rejectRules;
+            op.construct(*type, 0 /*irrelevant*/, 0 /*irrelevant*/,
+                                     rpcId,
+                                     tableId, 0, 0,
+                                     *(rpc->requestPayload), reqOffset,
+                                     currentReq->length);
+
+            KeyLength keyLen;
+            const void* pKey = op.get()->object.getKey(0, &keyLen);
+            uint32_t valLen;
+            const void* pVal = op.get()->object.getValue(&valLen);
+            uint64_t tableId = op.get()->object.getTableId();
+
+            if (keyLen == 0) {
+            	respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+                respHdr->vote = WireFormat::TxPrepare::ABORT;
+            	break;
+            }
+
+            KVLayout pkv(keyLen + sizeof(tableId)); //make room composite key in KVStore
+            std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
+            std::memcpy(pkv.getKey().key.get() + sizeof(tableId), pKey, keyLen);
+            if (valLen == 0) {
+                pkv.getVLayout().isTombstone = true;
+            } else {
+            	pkv.getVLayout().valueLength = valLen;
+            	pkv.getVLayout().valuePtr = (uint8_t*)const_cast<void*>(pVal);
+            }
+            KVLayout *nkv = kvStore->preput(pkv);
+            txEntry->insertWriteSet(nkv, writeSetIdx++);
+            assert(writeSetIdx <= (numRequests - numReadRequests));
+        } else if (*type == WireFormat::TxPrepare::READONLY) {
+            assert(0);
+        } else {
+            respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+            respHdr->vote = WireFormat::TxPrepare::ABORT;
+            break;
+        }
+
+    }
+
+    if (respHdr->common.status == STATUS_OK) {
+    	validator->insertTxEntry(txEntry);
+
+    	//Fixme: for now just loop to wait for result
+    	while (txEntry->getTxCIState() != TxEntry::TX_CI_FINISHED) { //Fixme: need volatile?
+    		if (!validator->testRun())
+    			std::this_thread::yield();
+    	}
+
+    	if (txEntry->getTxState() == TxEntry::TX_ABORT) {
+            respHdr->vote = WireFormat::TxPrepare::ABORT;
+    	} else if (txEntry->getTxState() == TxEntry::TX_COMMIT) {
+            respHdr->vote = WireFormat::TxPrepare::COMMITTED;
+    	} else
+    		assert(0);
+    }
+
+    delete txEntry;
+
     rpc->sendReply();
 }
 

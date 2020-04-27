@@ -1892,6 +1892,9 @@ struct TxPrepare {
         uint32_t participantCount;  // Number of all objects participating TX
                                     // in whole cluster.
         uint32_t opCount;           // Number of operations this RPC contains.
+#ifdef DSSNTX
+        uint32_t readOpCount;		// Number of read operations this RPC contains.
+#endif
 
         // Following this structure, a TxPrepare request message contains,
         // - array of all TxParticipants of current transaction and
