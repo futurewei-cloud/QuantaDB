@@ -19,7 +19,7 @@ using namespace std;
 
 #define	PREFETCH_MAX_THREADS	10
 #define	PREFETCH_Q_SIZE			512
-#define	HASH_TABLE_TEMPLATE		cbuf_desc_t, char *, uint64_t, hash_c_str, equal_to_c_str
+#define	HASH_TABLE_TEMPLATE		cbuf_desc_t, char *, uint64_t, hash_c_str
 #define	ROUND_DOWN(n,p)			(n & ~(p-1))
 #define	ROUND_UP(n,p)			((n + p - 1) & ~(p - 1))
 

@@ -14,9 +14,10 @@ public:
     string value;
 
     Element(std::string k, std::string v) { key=k; value=v; }
+    inline string getKey() { return key; }
 };
 
-hash_table<Element, std::string, std::string, std::hash<std::string>, std::equal_to<std::string> > my_hashtable;
+hash_table<Element, std::string, std::string, std::hash<std::string>> my_hashtable;
 
 void print_header(int bucket)
 {

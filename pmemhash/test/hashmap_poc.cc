@@ -8,9 +8,11 @@ public:
     uint64_t value;
 
     Element(uint64_t k, uint64_t v) { key=k; value=v; }
+
+    inline uint64_t getKey() { return key; }
 };
 
-hash_table<Element, uint64_t, uint64_t, std::hash<uint64_t>, std::equal_to<uint64_t> > my_hashtable;
+hash_table<Element, uint64_t, uint64_t, std::hash<uint64_t>> my_hashtable;
 
 void print_header(int bucket)
 {

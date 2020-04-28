@@ -40,7 +40,7 @@ TEST_F(HashmapKVTest, putNew) {
     bool ret = KVStore.putNew(&kv, 0, 0); 
     EXPECT_EQ(ret, true);
     ret = KVStore.putNew(&kv, 0, 0);
-    EXPECT_EQ(ret, false);
+    EXPECT_EQ(ret, true);
 }
 
 TEST_F(HashmapKVTest, putNewBench) {

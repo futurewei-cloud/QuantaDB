@@ -81,6 +81,7 @@ typedef struct cbuf_descriptor {
 	char				key[CBUF_MAX_KEY_LEN];	//
 	uint64_t			cbuf_custom_field_1;		// Custom field to be used by application code
 	uint64_t			cbuf_custom_field_2;		// Custom field to be used by application code
+    inline char * getKey() { return key; }
 } cbuf_desc_t;
 
 // Header struct for a record stored in cbuf

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <immintrin.h>
 #include <functional>
+#include <atomic>
 #include <vector>
 #include <assert.h>
 
@@ -67,7 +68,7 @@ public:
 		for (uint32_t idx = 0; idx < bucket_count; idx++) {
 			buckets_[idx].hdr_.valid_ = 0;
 		}
-        lossy = true;
+        evict_ctr_ = 0;
     }
 
     ~hash_table()
@@ -76,25 +77,21 @@ public:
             delete buckets_;
     }
 
-    void set_no_lossy() { lossy = false; }
-
     elem_pointer<Elem> get(const K & key) {
         return find_or_prepare_insert(key);
     }
 
     elem_pointer<Elem> put(const K & key, Elem *ptr) {
-        bool ret;
-        elem_pointer<Elem> l_hint = find_or_prepare_insert(key);
-        if (l_hint.ptr_ == NULL) {
-            l_hint = insert_internal(key, ptr, l_hint);
-        } else if (lossy) {
-            while ((ret = update_internal(key, ptr, l_hint)) == false) {
-                // what if l_hint is empty?
-                l_hint = find_or_prepare_insert(key); 
+        elem_pointer<Elem> l_hint;
+
+        do {
+            l_hint = find_or_prepare_insert(key);
+            if (l_hint.ptr_ == NULL) {
+                l_hint = insert_internal(key, ptr, l_hint);
+                break;
             }
-        } else {
-            l_hint = elem_pointer<Elem>(0, 0, NULL);
-        }
+        } while (update_internal(key, ptr, l_hint) == false);
+
         return l_hint;
     }
 
@@ -141,7 +138,7 @@ public:
     elem_pointer<Elem> insert_internal(const K & key, Elem *ptr, elem_pointer<Elem> hint) {
 
         elem_pointer<Elem> ret;
-        bool successful;
+        bool successful, evict;
         uint8_t l_slot, l_victim_slot;
 
         // find the bucket.
@@ -167,6 +164,8 @@ public:
             // pick the next victim.
             l_victim_slot = l_victim_list[l_victim_idx];
 
+            evict = (l_valid & (1ULL << l_victim_slot)) != 0;
+
             union bucket_hdr64 l_new_hdr;
             l_new_hdr.hdr.victim_idx_ = (l_victim_idx +1) % VICTIM_LIST_SIZE;
             l_new_hdr.hdr.valid_ = ((l_valid | (1ULL << l_slot))     // set my slot
@@ -174,6 +173,9 @@ public:
 
             successful = __sync_bool_compare_and_swap((uint64_t*)hdr_ptr, (uint64_t)l_hdr.hdr64, (uint64_t)l_new_hdr.hdr64);
         } while (!successful);
+
+        if (evict)
+            evict_ctr_++;
 
         buckets_[bucket].sig_.sig8_[l_victim_slot] = SIG_INVALID;
         buckets_[bucket].ptr_[l_slot] = ptr; //new index
@@ -224,7 +226,7 @@ private:
     uint32_t bucket_count_;
     hash_bucket<Elem> *buckets_;
     std::vector<int> victim_;
-    bool lossy;                     // if true, put will replace old value
+    std::atomic<uint32_t> evict_ctr_;
 };
 
 

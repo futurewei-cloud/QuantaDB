@@ -11,9 +11,10 @@ public:
     uint64_t value;
 
     Element(uint64_t k = 0, uint64_t v = 0) { key=k; value=v; }
+    inline uint64_t getKey() { return key; }
 };
 
-hash_table<Element, uint64_t, uint64_t, std::hash<uint64_t>, std::equal_to<uint64_t> > my_hashtable;
+hash_table<Element, uint64_t, uint64_t, std::hash<uint64_t>> my_hashtable;
 
 // -- MT test globals --- //
 #define	N_THREAD 10

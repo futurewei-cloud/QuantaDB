@@ -16,9 +16,10 @@ public:
     string value;
 
     Element(char * k, std::string v) { strcpy(key, k); value=v; }
+    inline char * getKey() { return key; }
 };
 
-hash_table<Element, char *, std::string, hash_c_str, equal_to_c_str> my_hashtable;
+hash_table<Element, char *, std::string, hash_c_str> my_hashtable;
 
 void print_header(int bucket)
 {
@@ -43,10 +44,10 @@ int main(void)
     elem_ret = my_hashtable.put(elem_1.key, &elem_1);
     printf("put key:%s bucket:%i slot:%i value:%s\n", elem_1.key, elem_ret.bucket_, elem_ret.slot_, elem_1.value.c_str());
     print_header(elem_ret.bucket_);
-    elem_ret = my_hashtable.put(elem_1.key, &elem_2);
+    elem_ret = my_hashtable.put(elem_2.key, &elem_2);
     printf("put key:%s bucket:%i slot:%i value:%s\n", elem_1.key, elem_ret.bucket_, elem_ret.slot_, elem_2.value.c_str());
     print_header(elem_ret.bucket_);
-    elem_ret = my_hashtable.put(elem_1.key, &elem_3);
+    elem_ret = my_hashtable.put(elem_3.key, &elem_3);
     printf("put key:%s bucket:%i slot:%i value:%s\n", elem_1.key, elem_ret.bucket_, elem_ret.slot_, elem_3.value.c_str());
     print_header(elem_ret.bucket_);
     
@@ -57,8 +58,8 @@ int main(void)
     char *key = (char *)"2049";
     elem_ret = my_hashtable.get(key);
     if (elem_ret.ptr_!=NULL) {
-        //printf("get key:%s bucket:%i slot:%i key:%s, value:%s\n", key.c_str(), elem_ret.bucket_, elem_ret.slot_,
-            //elem_ret.ptr_->key.c_str(), elem_ret.ptr_->value.c_str());
+        printf("get key:%s bucket:%i slot:%i key:%s, value:%s\n", key, elem_ret.bucket_, elem_ret.slot_,
+            elem_ret.ptr_->key, elem_ret.ptr_->value.c_str());
 	}
 
     key = (char *)"1";
@@ -68,7 +69,6 @@ int main(void)
             elem_ret.ptr_->key, elem_ret.ptr_->value.c_str());
     } else {
         printf("get key:%s failed\n", key);
-		assert(0);
 	}
 
 #if (0)

@@ -34,7 +34,6 @@ class HashmapTest : public ::testing::Test {
   HashmapTest()
   {
 	my_hashtable = new hash_table<HASH_TABLE_TEMPLATE>(1024);
-    my_hashtable->set_no_lossy();
     #define ELEM_SIZE   1024
     elems = new Element[ELEM_SIZE];
 
