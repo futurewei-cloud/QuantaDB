@@ -560,7 +560,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     }
 
     TxEntry *txEntry = new TxEntry(numReadRequests, numRequests - numReadRequests);
-    txEntry->setCTS(reqHdr->lease.timestamp);
+    txEntry->setCTS(reqHdr->meta.cstamp);
     txEntry->setPStamp(reqHdr->meta.pstamp);
     txEntry->setSStamp(reqHdr->meta.sstamp);
     //Fixme: we only focus on local tx for now, so we will leave the peer set empty
@@ -672,6 +672,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
                                      tableId, 0, 0,
                                      *(rpc->requestPayload), reqOffset,
                                      currentReq->length);
+            reqOffset += currentReq->length;
 
             KeyLength keyLen;
             const void* pKey = op.get()->object.getKey(0, &keyLen);
