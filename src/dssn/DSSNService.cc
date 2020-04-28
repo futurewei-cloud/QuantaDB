@@ -546,18 +546,19 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     assert(numRequests > 0);
     assert(numReadRequests <= numRequests);
 
+    /* Fixme: add a better indicator of read-only tx later
     const WireFormat::TxPrepare::OpType *type =
             rpc->requestPayload->getOffset<
             WireFormat::TxPrepare::OpType>(reqOffset);
 
     if (*type == WireFormat::TxPrepare::READONLY) {
-    	assert(0); //Fixme: this case not handled yet, need to a better indicator
+    	assert(0);
     	//read-only transaction needs no validation
         respHdr->common.status = STATUS_RETRY;
         respHdr->vote = WireFormat::TxPrepare::COMMITTED;
         rpc->sendReply();
         return;
-    }
+    }*/
 
     TxEntry *txEntry = new TxEntry(numReadRequests, numRequests - numReadRequests);
     txEntry->setCTS(reqHdr->meta.cstamp);
@@ -582,7 +583,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
         const WireFormat::TxPrepare::OpType *type =
                 rpc->requestPayload->getOffset<
                 WireFormat::TxPrepare::OpType>(reqOffset);
-        if (*type == WireFormat::TxPrepare::READ) {
+        if (*type == WireFormat::TxPrepare::READ
+        		|| *type == WireFormat::TxPrepare::READONLY) {
             const WireFormat::TxPrepare::Request::ReadOp *currentReq =
                     rpc->requestPayload->getOffset<
                     WireFormat::TxPrepare::Request::ReadOp>(reqOffset);
@@ -698,8 +700,6 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             KVLayout *nkv = kvStore->preput(pkv);
             txEntry->insertWriteSet(nkv, writeSetIdx++);
             assert(writeSetIdx <= (numRequests - numReadRequests));
-        } else if (*type == WireFormat::TxPrepare::READONLY) {
-            assert(0);
         } else {
             respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
             respHdr->vote = WireFormat::TxPrepare::ABORT;
