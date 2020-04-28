@@ -8,7 +8,7 @@
 #include <vector>
 #include <assert.h>
 
-#define DEFAULT_BUCKET_COUNT 1024
+#define DEFAULT_BUCKET_COUNT 1024*1024
 #define BUCKET_SIZE 32
 #define VICTIM_LIST_SIZE (BUCKET_SIZE)
 

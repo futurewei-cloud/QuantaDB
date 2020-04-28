@@ -27,7 +27,7 @@ struct HashKLayout{
 class HashmapKVStore : public KVStore
 {
 public:
-    HashmapKVStore(uint32_t nbucket = 1024)
+    HashmapKVStore(uint32_t nbucket = DEFAULT_BUCKET_COUNT)
     {
         bucket_count = nbucket;
         my_hashtable = new hash_table<KVLayout, KLayout, VLayout, HashKLayout>(bucket_count);
