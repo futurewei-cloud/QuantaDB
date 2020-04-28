@@ -12,12 +12,13 @@ public:
     uint64_t value;
 
     Element(uint64_t k = 0, uint64_t v = 0) { key=k; value=v; }
+    inline uint64_t getKey() { return key; }
 };
 
 #define ELEM_BOUND 65536
 Element elem[ELEM_BOUND*64];
 
-hash_table<Element, uint64_t, uint64_t, std::hash<uint64_t>, std::equal_to<uint64_t> > my_hashtable;
+hash_table<Element, uint64_t, uint64_t, std::hash<uint64_t>> my_hashtable;
 volatile int thread_run_run = 0;			// global switch
 
 inline uint64_t getusec()
@@ -145,11 +146,12 @@ int main(void)
 
 	for (uint32_t i = 0; i < 2 ; i++) {
 		init_elem(i);
-#if 0
 		printf("========== Hash Map MT Insert Benchmark - contention:%d ==\n", i);
 
 		total = run_parallel(1, 10 /* #sec */, mt_insert_test);
 		printf("1      thread  total (insert/sec) = %'lu\n", total); fflush(stdout);
+
+        // printf("Evict=%d Insert=%d\n", my_hashtable.get_evict_count(), my_hashtable.get_insert_count());
 
 		total = run_parallel(2, 10 /* #sec */, mt_insert_test);
 		printf("2      thread  total (insert/sec) = %'lu\n", total); fflush(stdout);
@@ -168,7 +170,7 @@ int main(void)
 
 		total = run_parallel(64, 10 /* #sec */, mt_insert_test);
 		printf("64     threads total (insert/sec) = %'lu\n", total); fflush(stdout);
-#endif
+
 		printf("========== Hash Map MT Lookup Benchmark - contention:%d ==\n", i);
 
 		total = run_parallel(1, 10 /* #sec */, mt_lookup_test);
