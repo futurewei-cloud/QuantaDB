@@ -143,7 +143,7 @@ DSSNService::readKeysAndValue(const WireFormat::ReadKeysAndValueDSSN::Request* r
     std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
 
     KVLayout *kv = kvStore->fetch(k);
-    if (!kv) {
+    if (!kv || kv->getVLayout().isTombstone) {
         respHdr->common.status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
         return;
     }

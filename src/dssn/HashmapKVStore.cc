@@ -20,6 +20,8 @@ KVLayout* HashmapKVStore::preput(KVLayout &kvIn)
     kvOut->v.valueLength = kvIn.v.valueLength;
     kvOut->v.valuePtr = new uint8_t[kvIn.v.valueLength];
     std::memcpy((void *)kvOut->v.valuePtr, (void *)kvIn.v.valuePtr, kvIn.v.valueLength);
+    kvOut->v.meta = kvIn.v.meta;
+    kvOut->v.isTombstone = kvIn.v.isTombstone;
     return kvOut;
 }
 
