@@ -69,6 +69,7 @@ public:
 			buckets_[idx].hdr_.valid_ = 0;
 		}
         evict_ctr_ = 0;
+        insert_ctr_ = 0;
     }
 
     ~hash_table()
@@ -138,7 +139,10 @@ public:
     elem_pointer<Elem> insert_internal(const K & key, Elem *ptr, elem_pointer<Elem> hint) {
 
         elem_pointer<Elem> ret;
-        bool successful, evict;
+        bool successful;
+        #ifndef NDEBUG
+        bool evict;
+        #endif
         uint8_t l_slot, l_victim_slot;
 
         // find the bucket.
@@ -164,7 +168,9 @@ public:
             // pick the next victim.
             l_victim_slot = l_victim_list[l_victim_idx];
 
+            #ifndef NDEBUG
             evict = (l_valid & (1ULL << l_victim_slot)) != 0;
+            #endif
 
             union bucket_hdr64 l_new_hdr;
             l_new_hdr.hdr.victim_idx_ = (l_victim_idx +1) % VICTIM_LIST_SIZE;
@@ -174,8 +180,11 @@ public:
             successful = __sync_bool_compare_and_swap((uint64_t*)hdr_ptr, (uint64_t)l_hdr.hdr64, (uint64_t)l_new_hdr.hdr64);
         } while (!successful);
 
+        #ifndef  NDEBUG
+        insert_ctr_++;
         if (evict)
             evict_ctr_++;
+        #endif  // NDEBUG
 
         buckets_[bucket].sig_.sig8_[l_victim_slot] = SIG_INVALID;
         buckets_[bucket].ptr_[l_slot] = ptr; //new index
@@ -218,6 +227,9 @@ public:
         return elem_pointer<Elem>(0, 0, NULL);
     }
 
+    uint32_t get_evict_count() { return evict_ctr_; }
+    uint32_t get_insert_count() { return insert_ctr_; }
+
     int bucketize(const K & key) { return Hash{}(key) % bucket_count_; }
     uint8_t signature(const K & key) { return (Hash{}(key) / bucket_count_) & 0xFF; }
     int find_empty(uint32_t valid) { return __builtin_ffs(~valid) - 1; }
@@ -226,7 +238,10 @@ private:
     uint32_t bucket_count_;
     hash_bucket<Elem> *buckets_;
     std::vector<int> victim_;
+    #ifndef NDEBUG
     std::atomic<uint32_t> evict_ctr_;
+    std::atomic<uint32_t> insert_ctr_;
+    #endif
 };
 
 
