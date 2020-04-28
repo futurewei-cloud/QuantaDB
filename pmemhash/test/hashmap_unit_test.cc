@@ -68,4 +68,6 @@ int main(void)
     assert (elem_ret.ptr_!=NULL);
     printf("MT INSERT Result: bucket:%i slot:%i key:%lu, value:%lu\n", elem_ret.bucket_, elem_ret.slot_,
                 elem_ret.ptr_->key, elem_ret.ptr_->value);
+    printf("Evict count = %d\n", my_hashtable.get_evict_count());
+    printf("Insert count = %d\n", my_hashtable.get_insert_count());
 }

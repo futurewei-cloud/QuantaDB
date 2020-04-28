@@ -238,10 +238,8 @@ private:
     uint32_t bucket_count_;
     hash_bucket<Elem> *buckets_;
     std::vector<int> victim_;
-    #ifndef NDEBUG
     std::atomic<uint32_t> evict_ctr_;
     std::atomic<uint32_t> insert_ctr_;
-    #endif
 };
 
 
