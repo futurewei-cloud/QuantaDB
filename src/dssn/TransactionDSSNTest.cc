@@ -131,7 +131,7 @@ TEST_F(TransactionTest, commit_abort) {
 	      << ":"
 	      << ::testing::UnitTest::GetInstance()->current_test_info()->name()
 	      << std::endl;
-#if 1
+#if 0
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
 
     Buffer value;
@@ -572,7 +572,7 @@ TEST_F(TransactionTest, ReadOp_wait_batch_basic) {
 	      << ":"
 	      << ::testing::UnitTest::GetInstance()->current_test_info()->name()
 	      << std::endl;
-#if 1
+#if 0
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
