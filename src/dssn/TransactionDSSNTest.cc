@@ -377,6 +377,32 @@ TEST_F(TransactionTest, remove_afterCommit) {
                  TxOpAfterCommit);
 }
 
+TEST_F(TransactionTest, remove_commit_read) {
+    Buffer value1, value2, value3, value4, value5, value;
+    ramcloud->write(tableId1, "key0", 4, "abcdef", 6);
+    ramcloud->write(tableId1, "key1", 4, "abcdef", 6);
+    ramcloud->write(tableId1, "key2", 4, "abcdef", 6);
+    ramcloud->write(tableId1, "key3", 4, "abcdef", 6);
+    ramcloud->write(tableId1, "key4", 4, "abcdef", 6);
+    ramcloud->write(tableId1, "key5", 4, "abcdef", 6);
+    ramcloud->write(tableId1, "key6", 4, "abcdef", 6);
+    ramcloud->write(tableId1, "key7", 4, "abcdef", 6);
+    ramcloud->write(tableId1, "key8", 4, "abcdef", 6);
+
+    transaction->read(tableId1, "key1", 4, &value1);
+    transaction->read(tableId1, "key2", 4, &value2);
+    transaction->read(tableId1, "key3", 4, &value3);
+    transaction->read(tableId1, "key4", 4, &value4);
+    transaction->read(tableId1, "key5", 4, &value5);
+    transaction->write(tableId1, "key9", 4, "abcdef", 6);
+
+    transaction->remove(tableId1, "key8", 4);
+
+    transaction->commit();
+    EXPECT_THROW(ramcloud->read(tableId1, "key8", 4, &value),
+		 ObjectDoesntExistException);
+}
+
 TEST_F(TransactionTest, write) {
     uint32_t dataLength = 0;
     const char* str;

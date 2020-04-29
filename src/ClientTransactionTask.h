@@ -205,11 +205,8 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
 
         /// Information about all of the ops that are being requested
         /// in this RPC.
-#ifdef TESTING
-        static const uint32_t MAX_OBJECTS_PER_RPC = 3;
-#else
         static const uint32_t MAX_OBJECTS_PER_RPC = 75;
-#endif
+
         CommitCacheMap::iterator ops[MAX_OBJECTS_PER_RPC];
 
         DISALLOW_COPY_AND_ASSIGN(ClientTransactionRpcWrapper);
