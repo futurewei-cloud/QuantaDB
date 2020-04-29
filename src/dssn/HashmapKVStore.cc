@@ -31,6 +31,8 @@ bool HashmapKVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
     kv->meta().pStampPrev = 0;
     kv->meta().sStampPrev = pi;
     kv->meta().sStamp = (uint64_t) -1; //not overwritten yet
+    if (kv->v.valuePtr == NULL || kv->v.valueLength == 0)
+    	kv->v.isTombstone = true;
     elem_pointer<KVLayout> lptr = my_hashtable->put(kv->getKey(), kv);
     return lptr.ptr_ != NULL;
 }
@@ -45,6 +47,8 @@ bool HashmapKVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *value
         delete kv->v.valuePtr;
     kv->v.valueLength = valueLength;
     kv->v.valuePtr = valuePtr;
+    if (valuePtr == NULL || valueLength == 0)
+    	kv->v.isTombstone = true;
     return true;
 }
 
@@ -53,55 +57,6 @@ KVLayout * HashmapKVStore::fetch(KLayout& k)
 
     elem_pointer<KVLayout> lptr = my_hashtable->get(k);
     return lptr.ptr_;
-}
-
-// Obsoleted, reason in the header file
-/*
-bool HashmapKVStore::getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength)
-{
-    KVLayout * kv = fetch(k);
-
-    if (kv == NULL) {
-	    valueLength = 0;
-        return false;
-    }
-	valuePtr = kv->v.valuePtr;
-	valueLength = kv->v.valueLength;
-	return true;
-}
-
-bool HashmapKVStore::getValue(KLayout& k, KVLayout *&kv)
-{
-    kv = fetch(k);
-    return (kv != NULL);
-}
-
-bool HashmapKVStore::getMeta(KLayout& k, DSSNMeta &meta)
-{
-    KVLayout * kv = fetch(k);
-    if (kv) {
-	    meta = kv->meta();
-		return true;
-	}
-	return false;
-}
-*/
-
-/*
-bool HashmapKVStore::maximizeMetaEta(KVLayout *kv, uint64_t eta) {
-	kv->meta().pStamp = std::max(eta, kv->meta().pStamp);;
-	return true;
-}*/
-
-bool HashmapKVStore::remove(KLayout& k, DSSNMeta &meta)
-{
-    KVLayout * kv = fetch(k);
-    if (kv) {
-		kv->isTombstone(true);
-		kv->meta(meta);
-		return true;
-	}
-	return false;
 }
 
 } // DSSN
