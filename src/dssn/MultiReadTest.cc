@@ -335,14 +335,25 @@ TEST_F(MultiReadTest, readNullAndEmptyValues) {
     values[0]->getValue(&valueLength);
     EXPECT_EQ(9U, valueLength);
 
+    #if (1) // DSSN treats a "" value as '\0' of value length
+            // But RamCloud read RPC pass "" as a length 0 value which DSSN treats as tombstone
+    EXPECT_STREQ("STATUS_OBJECT_DOESNT_EXIST",
+            statusToSymbol(objects[6].status));
+    #else
     EXPECT_EQ("object4-1", string(reinterpret_cast<const char*>(
                            values[6].get()->getKey()), 9));
     values[6]->getValue(&valueLength);
     EXPECT_EQ(0U, valueLength);
+    #endif // 
 
+    #if (1) // DSSN treats a nullptr value as tombstone
+    EXPECT_STREQ("STATUS_OBJECT_DOESNT_EXIST",
+            statusToSymbol(objects[7].status));
+    #else
     EXPECT_EQ("object4-2", string(reinterpret_cast<const char*>(
                            values[7].get()->getKey()), 9));
     values[7]->getValue(&valueLength);
     EXPECT_EQ(0U, valueLength);
+    #endif
 }
 }  // namespace RAMCloud
