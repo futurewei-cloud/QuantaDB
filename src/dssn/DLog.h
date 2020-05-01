@@ -12,21 +12,53 @@ namespace DSSN {
  * - DLog is a local log device. No remote access.
  * - Logicalaly, DLog is a log device with append write and ramdom read.
  * - Physically, DLog is consisted of a set of log files (aka chunk file).
- * - DLog log files are memory mapped for high speed access.
- * - DLog supports concurrent append operation (using fetch_and_add pointer)
+ * - Log files are memory mapped for high speed access.
+ * - Supports concurrent append operation.
+ * - Log append space can be reserved. Class object serialzation output can
+ *   go directly into log buffer to save an intermediate stage.
  * Non-goals
  * - DLog is not a Plog simulator.
+ * API
+ * - uint64_t append (void *data, uint32_t len) 
+ *
+ *   Append data of size 'len' to log. Return the beginning offset (to the log)
+ *   of the appended data. The offset is good until the next trim operation.
+ *   Multi-thread concurrent append() is supported.
+ *
+ * - void * reserve (uint32_t len)
+ *
+ *   Reserve log append space of 'len' size. Return the memory address of reserved space.   
+ *   Multi-thread concurrent reserve() is supported.
+ *
+ * - uint64_t trim (uint64_t len)
+ *
+ *   Trim the log from the beginning for 'len' bytes.
+ *   Trim will also delete the associated backing store files.
+ *   Return the size that was actually trimmed.
+ *   Note that trim() will not trim active (i.e., unsealed) chunk files.
+ *
+ * - uint32_t read (uint64_t off, void *obuf, uint32_t len)
+ *
+ *   Read 'len' bytes from 'off' offset into 'obuf'. Return bytes read.
+ *
+ * - void * getaddr(uint64_t off, uint32_t *len)
+ *
+ *   Return log buffer address at offset 'off'. The output argument 'len' stores buffer length
  */
 template <uint32_t CHUNK_SIZE = (16*1024*1024) >
 class DLog {
   private:
-    #define DLOG_SIGNATURE    0xF0F05A5A
+    /*
+     * DLog Internal data structure
+     */
     // ondisk chunk header
     typedef struct ondisk_chunk_header {
+        #define DLOG_SIGNATURE    0xF0F05A5A
         uint32_t    Sig;
-        uint8_t     version;
+        uint8_t     version;// header version
         uint8_t     sealed; // bool
         uint32_t    fsize;  // chunk file size
+        uint32_t    offset; // data offset
         uint32_t    dsize;  // data size
         uint32_t    seqno;
     } chunk_hdr_t;
@@ -37,12 +69,10 @@ class DLog {
         std::string path;
         void *          maddr;
         chunk_hdr_t *   hdr;
-        ~chunk()
-        {
+        ~chunk() {
             munmap(maddr, hdr->fsize);
         }
-        void remove() 
-        {
+        void remove() {
             int ret = unlink(path.c_str());
             assert(ret == 0);
             delete this; 
@@ -50,14 +80,17 @@ class DLog {
     } chunk_t;
 
   public:
-    DLog(std::string logdir = "/tmp") : topdir(logdir)
+    DLog(std::string logdir = "/tmp", bool recovery_mode = false) : topdir(logdir)
     {
         next_seqno = 0;
         chunk_head = chunk_tail = NULL;
         chunk_size = CHUNK_SIZE;
 
         // Load existing logs
-        load_chunks(topdir.c_str());
+        if (recovery_mode)
+            load_chunks(topdir.c_str());
+        else
+            clean_chunks(topdir.c_str());
 
         // If no log yet, create one.
         if (chunk_head == NULL) {
@@ -93,7 +126,7 @@ class DLog {
     {
         uint32_t free_size = 0;
         for (chunk_t *tmp = chunk_tail; tmp; tmp = tmp->next) {
-            free_size += tmp->hdr->fsize - tmp->hdr->dsize - sizeof(chunk_hdr_t);
+            free_size += tmp->hdr->fsize - tmp->hdr->dsize - tmp->hdr->offset;
         }
         return free_size;
     }
@@ -138,26 +171,78 @@ class DLog {
         return off;
     }
 
-    // Trim Log content starting from offset for length bytes. 
+    // Trim Log content from the beginning for length bytes. 
     // If length == 0, trim all.
-    void trim (uint32_t length)
+    // Return trim'ed size.
+    uint64_t trim (uint64_t length)
     {
-        uint32_t remain = length;
+        mtx.lock();
+        if (length == 0)
+            length = size();
+        uint64_t remain = length;
         chunk_t * tmp, * old_head;
         tmp = old_head = chunk_head;
         while (tmp) {
+            if (!tmp->hdr->sealed) {
+                // can not trim unsealed chunk
+                break;
+            }
             if (tmp->hdr->dsize > remain) {
+                tmp->hdr->offset += remain;
+                tmp->hdr->dsize  -= remain;
+                remain = 0;
                 break;
             }
             remain -= tmp->hdr->dsize;
             tmp = tmp->next;
         }
         chunk_head = tmp;
+
+        // Remove trim'ed chunks
         tmp = old_head;
         while (tmp != chunk_head) {
             tmp->remove();
             tmp = tmp->next;
         }
+        mtx.unlock();
+        return length - remain;
+    }
+
+    // Return log buffer address at offset 'off'.
+    // The output argument 'len' stores buffer length
+    void * getaddr (uint64_t off, uint32_t *len)
+    {
+        chunk_t * tmp = chunk_head;
+        uint64_t remain = off;
+        while (tmp && (remain > 0)) {
+            if ((tmp->hdr->dsize) > remain) {
+                break;
+            }
+            remain -= tmp->hdr->dsize;
+            tmp = tmp->next;
+        }
+        if (!tmp) {
+            *len = 0;
+            return NULL; // off is beyond the log size
+        }
+        *len = tmp->hdr->dsize - remain;
+        return (char *)tmp->maddr + tmp->hdr->offset + remain;  
+    }
+
+    uint32_t read (uint64_t off, void *obuf, uint32_t len)
+    {
+        uint32_t todo, remain;
+        uint32_t logsize = size();
+        todo = remain = (logsize > len)? len : logsize;
+        while (remain) {
+            uint32_t dlen;
+            void * dptr = getaddr(off, &dlen);
+            uint32_t ncopy = (remain > dlen)? dlen : remain;
+            memcpy(obuf, dptr, ncopy);
+            remain -= ncopy;
+            off += ncopy;
+        }
+        return todo;
     }
 
     void set_chunk_size(uint32_t size)
@@ -196,6 +281,7 @@ class DLog {
         hdr->seqno =    seqno;
         hdr->sealed =   false;
         hdr->dsize =    0;
+        hdr->offset =   sizeof(chunk_hdr_t);
         hdr->fsize =    current_chunk_size;
 
         // Setup chunk_t
@@ -327,6 +413,29 @@ class DLog {
                 chunk_t * chunkp = load_one_chunk(logdir, dent->d_name);
                 if (chunkp)
                     insert_chunk(chunkp);
+           }
+        }
+    }
+
+    void clean_chunks (const char *logdir)
+    {
+        DIR * dir;
+        
+        if((dir = opendir(logdir)) == NULL) {
+            if (mkdir(logdir, 0777) == -1) {
+                std::cout << "Failed to create Log dir: " << dir << std::endl;
+                exit (1);
+            }
+        }
+
+        // Scan chunk files
+        struct dirent *dent;
+        while ((dent = readdir(dir)) != NULL) {
+            uint32_t logno;
+            if (sscanf(dent->d_name, "DLog-%d", &logno) == 1) {
+                std::string path = std::string(logdir) + "/" + std::string(dent->d_name);
+                int ret = unlink(path.c_str());
+                assert(ret == 0);
            }
         }
     }
