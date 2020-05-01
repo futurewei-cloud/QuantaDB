@@ -1,10 +1,15 @@
 /*
  * Copyright (c) 2020 Futurewei Technologies Inc
  */
+#include <sys/types.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <dirent.h>
 #include <string.h>
+#include <libgen.h>
 #include <mutex>
+#include <iostream>
 
 namespace DSSN {
 /*
@@ -85,6 +90,12 @@ class DLog {
         next_seqno = 0;
         chunk_head = chunk_tail = NULL;
         chunk_size = CHUNK_SIZE;
+
+        struct stat st;
+        if (stat(topdir.c_str(), &st) != 0) {
+            int ret = mkpath(topdir.c_str(), 0777);
+            assert(ret == 0);
+        }
 
         // Load existing logs
         if (recovery_mode)
@@ -394,13 +405,27 @@ class DLog {
         return off;
     }
 
+    int mkpath(const char *dir, mode_t mode)
+    {
+        struct stat st;
+        if (!dir)
+            return 0;
+
+        if (!stat(dir, &st))
+            return 0;
+
+        mkpath(dirname(strdupa(dir)), mode);
+
+        return mkdir(dir, mode);
+    }
+
     void load_chunks (const char *logdir)
     {
         DIR * dir;
         
         if((dir = opendir(logdir)) == NULL) {
-            if (mkdir(logdir, 0777) == -1) {
-                std::cout << "Failed to create Log dir: " << dir << std::endl;
+            if (mkpath(logdir, 0777) != 0) {
+                std::cout << "Failed to create Log dir: " << logdir << std::endl;
                 exit (1);
             }
         }
@@ -422,10 +447,7 @@ class DLog {
         DIR * dir;
         
         if((dir = opendir(logdir)) == NULL) {
-            if (mkdir(logdir, 0777) == -1) {
-                std::cout << "Failed to create Log dir: " << dir << std::endl;
-                exit (1);
-            }
+            return;
         }
 
         // Scan chunk files

@@ -26,9 +26,12 @@ else
 DPDK_SRCFILES :=
 endif
 
+
+
 ifeq ($(DSSNTX),yes)
 #DSSN specific test files
 TESTS_SRCFILES := \
+    	  src/dssn/TxLogTest.cc \
 		  src/dssn/DLogTest.cc \
 		  src/dssn/SkipListTest.cc \
 		  src/dssn/HashmapTest.cc \
