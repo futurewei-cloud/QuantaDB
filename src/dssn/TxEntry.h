@@ -45,6 +45,9 @@ class TxEntry {
     ///frequent malloc/dealloc of this small object.
     std::mutex mutexForPeerUpdate;
 
+    //RPC handle for replying to commit intent
+    void *rpcHandle;
+
     //Set of IDs of participant shards excluding self
     ///use std::set for sake of equality check
     std::set<uint64_t> peerSet;
@@ -129,6 +132,7 @@ class TxEntry {
     inline uint32_t getTxState() { return txState; }
     inline uint32_t getTxCIState() { return commitIntentState; }
     inline std::mutex& getMutex() { return mutexForPeerUpdate; }
+    inline void* getRpcHandle() { return rpcHandle; }
     inline void insertPeerSet(uint64_t peerId) { peerSet.insert(peerId); }
     inline auto& getPeerSet() { return peerSet; }
     inline void insertPeerSeenSet(uint64_t peerId) { peerSeenSet.insert(peerId); }
@@ -149,6 +153,7 @@ class TxEntry {
     inline void setPStamp(uint64_t val) { pstamp = val; }
     inline void setTxState(uint32_t val) { txState = val; }
     inline void setTxCIState(uint32_t val) { commitIntentState = val; }
+    inline void setRpcHandle(void *rpc) { rpcHandle = rpc; }
     inline bool isExclusionViolated() { return sstamp <= pstamp; }
     bool insertWriteSet(KVLayout* kv, uint32_t i);
     bool insertReadSet(KVLayout* kv, uint32_t i);
