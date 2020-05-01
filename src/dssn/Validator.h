@@ -31,24 +31,32 @@ namespace DSSN {
 class Validator {
     PROTECTED:
 
-    WaitList localTxQueue{1000001};
-    SkipList reorderQueue;
-    DistributedTxSet distributedTxSet;
-    ActiveTxSet activeTxSet;
-    PeerInfo peerInfo;
-	ConcludeQueue concludeQueue;
+    //Fixme: renname to KVStore kvStore
+    HashmapKVStore &kvStore;
+    bool isUnderTest;
+    //WaitList localTxQueue{1000001};
+	WaitList &localTxQueue;
+    SkipList &reorderQueue;
+    DistributedTxSet &distributedTxSet;
+    ActiveTxSet &activeTxSet;
+    PeerInfo &peerInfo;
+	ConcludeQueue &concludeQueue;
     uint64_t alertThreshold = 1000; //LATER
     std::atomic<uint64_t> localTxCTSBase;
     ClusterTimeService clock;
     //LATER DependencyMatrix blockedTxSet;
     //KVStore kvStore;
-    HashmapKVStore &kvStore;
-    bool isUnderTest;
+
+    // threads
+    std::thread schedulingThread;
+    std::thread serializeThread;
+    std::thread cleanupThread;
 
     // all SSN data maintenance operations
     bool updateTxPStampSStamp(TxEntry& txEntry); //Fixme: to be called by peer info sender also
     bool updateKVReadSetPStamp(TxEntry& txEntry);
     bool updateKVWriteSet(TxEntry& txEntry);
+
 
     // schedule SSN validation on distributed transactions
     /// move due CIs from reorderQueue into blockedTxSet
@@ -72,7 +80,7 @@ class Validator {
     void sweep();
 
     PUBLIC:
-	//Validator(HashmapKVStore &kvStore);
+
 	Validator(HashmapKVStore &kvStore, bool isTesting = false);
 	~Validator();
 
