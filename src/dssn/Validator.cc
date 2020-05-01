@@ -14,24 +14,39 @@ namespace DSSN {
 const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
 const uint64_t minTimeStamp = 0;
 
-/*Validator::Validator(HashmapKVStore &_kvStore) : kvStore(_kvStore) {
-	start();
-}*/
-
 Validator::Validator(HashmapKVStore &_kvStore, bool isTesting)
-		: kvStore(_kvStore), isUnderTest(isTesting) {
+		: kvStore(_kvStore),
+		  isUnderTest(isTesting),
+		  localTxQueue(*new WaitList(1000001)),
+		  reorderQueue(*new SkipList()),
+		  distributedTxSet(*new DistributedTxSet()),
+		  activeTxSet(*new ActiveTxSet()),
+		  peerInfo(*new PeerInfo()),
+		  concludeQueue(*new ConcludeQueue())
+		  {
 	localTxCTSBase = clock.getLocalTime();
 
-    // Henry: may need to use TBB to pin the threads to specific cores LATER
+    // Fixme: may need to use TBB to pin the threads to specific cores LATER
 	if (!isUnderTest) {
-		std::thread( [=] { serialize(); });
-		std::thread( [=] { sweep(); });
-		std::thread( [=] { scheduleDistributedTxs(); });
+		serializeThread = std::thread(&Validator::serialize, this);
+		cleanupThread = std::thread(&Validator::sweep, this);
+		schedulingThread = std::thread(&Validator::scheduleDistributedTxs, this);
 	}
 }
 
 Validator::~Validator() {
-	//Fixme: need to kill threads if they are running
+	if (!isUnderTest) {
+		serializeThread.join();
+		cleanupThread.join();
+		schedulingThread.join();
+	}
+
+	delete &localTxQueue;
+	delete &reorderQueue;
+	delete &distributedTxSet;
+	delete &activeTxSet;
+	delete &peerInfo;
+	delete &concludeQueue;
 }
 
 bool
