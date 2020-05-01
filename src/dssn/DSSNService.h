@@ -21,6 +21,9 @@ class DSSNService : public Service {
 		       const ServerConfig* serverConfig);
    ~DSSNService();
    void dispatch(WireFormat::Opcode opcode, Rpc* rpc);
+
+   static bool sendTxCommitReply(TxEntry *txEntry);
+
  private:
    inline uint64_t getServerId() { return serverId.getId(); }
    void multiOp(const WireFormat::MultiOpDSSN::Request* reqHdr,

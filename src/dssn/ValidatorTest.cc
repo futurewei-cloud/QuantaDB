@@ -39,6 +39,7 @@ class ValidatorTest : public ::testing::Test {
 		, validator(kvStore, true)
 		, helper(validator)
     {
+    	memset(txEntry, 0, sizeof(txEntry));
     }
 
     DISALLOW_COPY_AND_ASSIGN(ValidatorTest);
@@ -80,6 +81,8 @@ class ValidatorTest : public ::testing::Test {
 
     }
 
+    //should be called to match fillTxEntry() because
+    //conclude() is muted from freeing txEntry[] during uni test
     void freeTxEntry(int noEntries) {
         for (int i = 0; i < noEntries; i++) {
         	delete txEntry[i];

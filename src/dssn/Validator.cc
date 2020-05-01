@@ -6,6 +6,7 @@
 
 #include "sstream"
 #include "Validator.h"
+#include "DSSNService.h"
 #include <thread>
 
 namespace DSSN {
@@ -253,6 +254,12 @@ Validator::conclude(TxEntry& txEntry) {
 		activeTxSet.remove(&txEntry);
 
 	txEntry.setTxCIState(TxEntry::TX_CI_FINISHED);
+	DSSNService::sendTxCommitReply(&txEntry);
+
+	//for ease of managing memory, do not free during unit test
+	if (!isUnderTest)
+		delete &txEntry;
+
 	return true;
 }
 

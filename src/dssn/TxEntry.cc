@@ -28,6 +28,7 @@ TxEntry::TxEntry(uint32_t _readSetSize, uint32_t _writeSetSize) {
 		writeSet[i] = writeSetInStore[i] = NULL;
 	for (uint32_t i = 0; i < readSetSize; i++)
 		readSet[i] = readSetInStore[i] = NULL;
+	rpcHandle = NULL;
 }
 
 

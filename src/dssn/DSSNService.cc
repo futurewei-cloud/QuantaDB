@@ -564,6 +564,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     txEntry->setCTS(reqHdr->meta.cstamp);
     txEntry->setPStamp(reqHdr->meta.pstamp);
     txEntry->setSStamp(reqHdr->meta.sstamp);
+    txEntry->setRpcHandle(rpc);
     //Fixme: we only focus on local tx for now, so we will leave the peer set empty
 	for (uint32_t i = 1/*Fixme to 0 later*/; i < participantCount; i++) {
 		txEntry->insertPeerSet(participants[i].dssnServerId);
@@ -711,6 +712,12 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     if (respHdr->common.status == STATUS_OK) {
     	validator->insertTxEntry(txEntry);
 
+    	while (validator->testRun()) {
+    		delete txEntry;
+    		//Fixme: deal with cross-shard tx unit test later with conditional break
+    		break;
+    	}
+    	/*
     	//Fixme: for now just loop to wait for result
     	while (txEntry->getTxCIState() != TxEntry::TX_CI_FINISHED) { //Fixme: need volatile?
     		if (!validator->testRun())
@@ -723,11 +730,12 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             respHdr->vote = WireFormat::TxPrepare::COMMITTED;
     	} else
     		assert(0);
+    	delete txEntry;
+    	rpc->sendReply();*/
+    } else {
+        delete txEntry;
+        rpc->sendReply();
     }
-
-    delete txEntry;
-
-    rpc->sendReply();
 }
 
 void
@@ -738,6 +746,29 @@ DSSNService::txDecision(const WireFormat::TxDecisionDSSN::Request* reqHdr,
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
     RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
     s->txDecision(reqHdr, respHdr, rpc);
+}
+
+bool
+DSSNService::sendTxCommitReply(TxEntry *txEntry)
+{
+	Rpc *rpc = (Rpc *)txEntry->getRpcHandle();
+	if (rpc == NULL)
+		return false; //this may be the case during Validator unit test
+	WireFormat::TxCommitDSSN::Response* respHdr =
+			rpc->replyPayload->getStart<WireFormat::TxCommitDSSN::Response>();
+	if (txEntry->getTxState() == TxEntry::TX_COMMIT)
+		respHdr->vote = WireFormat::TxPrepare::COMMITTED;
+	else if (txEntry->getTxState() == TxEntry::TX_ABORT)
+		respHdr->vote = WireFormat::TxPrepare::ABORT;
+	else if (txEntry->getTxState() == TxEntry::TX_CONFLICT) {
+		assert(0);
+		respHdr->vote = WireFormat::TxPrepare::ABORT_REQUESTED; //Fixme: Need a code to signal conflict
+	} else {
+		assert(0);
+		respHdr->vote = WireFormat::TxPrepare::ABORT_REQUESTED;
+	}
+	rpc->sendReply();
+	return true;
 }
 
 }
