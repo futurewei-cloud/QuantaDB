@@ -4,6 +4,7 @@
 #define __KVSTORE_H__
 
 #include "Common.h"
+#include "MemStreamIo.h"
 #include <boost/scoped_array.hpp>
 
 namespace DSSN {
@@ -32,15 +33,45 @@ struct VLayout {
     VLayout() {
         valuePtr = NULL;
     }
+    inline void serialize( outMemStream & out )
+    {
+        out.write(&valueLength, sizeof(valueLength));
+        out.write(valuePtr, valueLength);
+        out.write(&meta, sizeof(meta));
+        out.write(&isTombstone, sizeof(isTombstone));
+    }
+
+    inline void deSerialize( inMemStream & in )
+    {
+        in.read(&valueLength, sizeof(valueLength));
+        if (valueLength > 0) {
+            valuePtr = (uint8_t*)malloc(valueLength);
+            in.read(valuePtr, valueLength);
+        } else 
+            valuePtr = NULL;
+        in.read(&meta, sizeof(meta));
+        in.read(&isTombstone, sizeof(isTombstone));
+    }
 };
 
 struct KLayout {
 	uint32_t keyLength = 0;
 	boost::scoped_array<uint8_t> key;
 
-        friend bool operator==(const KLayout &lhs, const KLayout &rhs);
+    friend bool operator==(const KLayout &lhs, const KLayout &rhs);
 	KLayout() {}
 	explicit KLayout(uint32_t keySize) : keyLength(keySize), key(new uint8_t[keySize+1]) { bzero(key.get(), keySize+1);}
+    inline void serialize( outMemStream & out )
+    {
+        out.write(&keyLength, sizeof(keyLength));
+        out.write(key.get(), keyLength);
+    }
+
+    inline void deSerialize( inMemStream & in )
+    {
+        in.read(&keyLength, sizeof(keyLength));
+        in.read(key.get(), keyLength);
+    }
 };
 
 bool operator == (const KLayout &lhs, const KLayout &rhs);
@@ -59,6 +90,16 @@ struct KVLayout {
 
 	inline KLayout& getKey() { return k; }
 	inline VLayout& getVLayout() { return v; }
+    inline void serialize( outMemStream & out )
+    {
+        v.serialize ( out );
+        k.serialize ( out );
+    }
+    inline void deSerialize( inMemStream & in )
+    {
+        v.deSerialize ( in );
+        k.deSerialize ( in );
+    }
 };
 
 //The helper structure to extract key from the stored key value

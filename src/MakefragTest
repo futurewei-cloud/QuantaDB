@@ -31,6 +31,7 @@ endif
 ifeq ($(DSSNTX),yes)
 #DSSN specific test files
 TESTS_SRCFILES := \
+          src/dssn/MemStreamIoTest.cc \
     	  src/dssn/TxLogTest.cc \
 		  src/dssn/DLogTest.cc \
 		  src/dssn/SkipListTest.cc \
