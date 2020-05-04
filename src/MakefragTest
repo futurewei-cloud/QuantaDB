@@ -26,9 +26,14 @@ else
 DPDK_SRCFILES :=
 endif
 
+
+
 ifeq ($(DSSNTX),yes)
 #DSSN specific test files
 TESTS_SRCFILES := \
+          src/dssn/MemStreamIoTest.cc \
+    	  src/dssn/TxLogTest.cc \
+		  src/dssn/DLogTest.cc \
 		  src/dssn/SkipListTest.cc \
 		  src/dssn/HashmapTest.cc \
 		  src/dssn/HashmapKVStoreTest.cc \
@@ -39,7 +44,7 @@ TESTS_SRCFILES := \
           src/dssn/MultiReadTest.cc \
           src/dssn/MultiWriteTest.cc \
           src/dssn/MultiRemoveTest.cc \
-	          src/dssn/TpcCDSSNTest.cc \
+	      src/dssn/TpcCDSSNTest.cc \
 		  src/dssn/TransactionDSSNTest.cc \
 		  src/dssn/SequencerTest.cc \
 		  src/dssn/ValidatorTest.cc \
