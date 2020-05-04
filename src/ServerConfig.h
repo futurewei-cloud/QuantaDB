@@ -240,9 +240,7 @@ struct ServerConfig {
             , useMinCopysets(false)
             , usePlusOneBackup(false)
             , allowLocalBackup(false)
-#ifdef DSSNTX
-        	,isTesting(true)
-#endif
+            ,isTesting(true)
         {}
 
         /**
@@ -359,10 +357,8 @@ struct ServerConfig {
         /// If true, allow replication to local backup.
         bool allowLocalBackup;
 
-#ifdef DSSNTX
         /// If true, the DSSNService (and Validator) would be instantiated differently
         bool isTesting = false;
-#endif
     } master;
 
     /**
