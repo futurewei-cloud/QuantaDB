@@ -14,9 +14,9 @@ namespace DSSN {
 const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
 const uint64_t minTimeStamp = 0;
 
-Validator::Validator(HashmapKVStore &_kvStore, bool isTesting)
+Validator::Validator(HashmapKVStore &_kvStore, bool _isTesting)
 		: kvStore(_kvStore),
-		  isUnderTest(isTesting),
+		  isUnderTest(_isTesting),
 		  localTxQueue(*new WaitList(1000001)),
 		  reorderQueue(*new SkipList()),
 		  distributedTxSet(*new DistributedTxSet()),
@@ -36,11 +36,13 @@ Validator::Validator(HashmapKVStore &_kvStore, bool isTesting)
 
 Validator::~Validator() {
 	if (!isUnderTest) {
-		serializeThread.join();
-		cleanupThread.join();
-		schedulingThread.join();
+		if (serializeThread.joinable())
+			serializeThread.detach();
+		if (cleanupThread.joinable())
+			cleanupThread.detach();
+		if (schedulingThread.joinable())
+			schedulingThread.detach();
 	}
-
 	delete &localTxQueue;
 	delete &reorderQueue;
 	delete &distributedTxSet;
