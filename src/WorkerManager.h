@@ -19,12 +19,13 @@
 #include <queue>
 
 #include "Dispatch.h"
-#include "Service.h"
 #include "Transport.h"
 #include "WireFormat.h"
 #include "ThreadId.h"
 #include "TimeTrace.h"
+#include "PerfCounter.h"
 #include "PerfStats.h"
+#include "ServerId.h"
 
 namespace RAMCloud {
 
@@ -34,6 +35,8 @@ namespace RAMCloud {
  * the dispatch thread (which manages all of the network connections for a
  * server and runs Transport code) and the worker threads.
  */
+class Worker;
+
 class WorkerManager : Dispatch::Poller {
   public:
     explicit WorkerManager(Context* context, uint32_t maxCores = 3);

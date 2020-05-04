@@ -24,13 +24,10 @@
 #include "ServerId.h"
 #include "WireFormat.h"
 #include "PerfCounter.h"
+#include "Transport.h"
+#include "WorkerManager.h"
 
 namespace RAMCloud {
-
-// There are cross-dependencies between this header file and WorkerManager.h;
-// the declaration below is used instead of #including WorkerManager.h to
-// break the circularity.
-class Worker;
 
 /**
  * Base class for RPC services.  Each service manages a related set of RPC
@@ -56,9 +53,10 @@ class Service {
          * Constructor for Rpc.
          */
         Rpc(Worker* worker, Buffer* requestPayload, Buffer* replyPayload)
-            : requestPayload(requestPayload)
+	    : requestPayload(requestPayload)
             , replyPayload(replyPayload)
-            , worker(worker) {}
+            , worker(worker)
+	    , async(false) {}
 
         void sendReply();
 
@@ -71,7 +69,14 @@ class Service {
         /// Information about the worker thread that is executing
         /// this request.
         Worker* worker;
-
+	/// Get the Transport RPC handler for the async processing
+	Transport::ServerRpc* getReplyHandle() { return worker->rpc; }
+	/// Enable this rpc process for async response;
+	void enableAsync() { async = true; }
+	bool isAsync() { return async; }
+      private:
+	/// Enable this flag for async processing
+	bool async;
         friend class WorkerManager;
         friend class Service;
         DISALLOW_COPY_AND_ASSIGN(Rpc);
