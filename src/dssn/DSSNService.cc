@@ -564,7 +564,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     txEntry->setCTS(reqHdr->meta.cstamp);
     txEntry->setPStamp(reqHdr->meta.pstamp);
     txEntry->setSStamp(reqHdr->meta.sstamp);
-    txEntry->setRpcHandle(rpc);
+    txEntry->setRpcHandle(rpc->getReplyHandle());
     //Fixme: we only focus on local tx for now, so we will leave the peer set empty
 	for (uint32_t i = 1/*Fixme to 0 later*/; i < participantCount; i++) {
 		txEntry->insertPeerSet(participants[i].dssnServerId);
@@ -711,6 +711,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 
     if (respHdr->common.status == STATUS_OK) {
     	validator->insertTxEntry(txEntry);
+	rpc->enableAsync();
 
     	while (validator->testRun()) {
     		delete txEntry;
@@ -751,11 +752,11 @@ DSSNService::txDecision(const WireFormat::TxDecisionDSSN::Request* reqHdr,
 bool
 DSSNService::sendTxCommitReply(TxEntry *txEntry)
 {
-	Rpc *rpc = (Rpc *)txEntry->getRpcHandle();
+	Transport::ServerRpc *rpc = (Transport::ServerRpc *)txEntry->getRpcHandle();
 	if (rpc == NULL)
 		return false; //this may be the case during Validator unit test
 	WireFormat::TxCommitDSSN::Response* respHdr =
-			rpc->replyPayload->getStart<WireFormat::TxCommitDSSN::Response>();
+			rpc->replyPayload.getStart<WireFormat::TxCommitDSSN::Response>();
 	if (txEntry->getTxState() == TxEntry::TX_COMMIT)
 		respHdr->vote = WireFormat::TxPrepare::COMMITTED;
 	else if (txEntry->getTxState() == TxEntry::TX_ABORT)
