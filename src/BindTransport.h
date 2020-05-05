@@ -130,8 +130,16 @@ struct BindTransport : public Transport {
                     transport.serverRpcPool, serverRpc);
             Worker w(NULL);
             w.rpc = serverRpc;
+	    // Transfer the request buffer to serverRpc
+	    Buffer* req = &serverRpc->requestPayload;
+	    Buffer* rsp = &serverRpc->replyPayload;
+	    req->reset();
+	    rsp->reset();
+	    req->appendCopy(request->getRange(0, request->size()),
+			   request->size());
 
-            Service::Rpc rpc(&w, request, response);
+            Service::Rpc rpc(&w, req, rsp);
+
             if (transport.abortCounter > 0) {
                 transport.abortCounter--;
                 if (transport.abortCounter == 0) {
@@ -146,7 +154,9 @@ struct BindTransport : public Transport {
                 return;
             }
             Service::handleRpc(context, &rpc);
-
+	    // Transfer from the serverRpc buffer to app buffer
+	    response->appendCopy(rsp->getRange(0, rsp->size()),
+				rsp->size());
             if (!dontNotify) {
                 notifier->completed();
                 lastNotifier = NULL;
