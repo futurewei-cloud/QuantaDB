@@ -55,5 +55,39 @@ TxEntry::insertWriteSet(KVLayout* kv, uint32_t i) {
 	return true;
 }
 
+void 
+TxEntry::serialize( outMemStream& out )
+{
+    out.write(&cts, sizeof(cts));
+    out.write(&txState, sizeof(txState));
+    if(txState == TX_PENDING) {
+        out.write(&commitIntentState, sizeof(commitIntentState));
+        out.write(&writeSetIndex, sizeof(writeSetIndex));
+        for (uint32_t i = 0; i < writeSetIndex; i++) {
+    	    KVLayout *kv = writeSet[i];
+    	    assert (kv);
+            kv->serialize(out);
+        }
+    }
+}
+
+void
+TxEntry::deSerialize( inMemStream& in )
+{
+    in.read(&cts, sizeof(cts));
+    in.read(&txState, sizeof(txState));
+    if (txState == TX_PENDING) {
+        in.read(&commitIntentState, sizeof(commitIntentState));
+        in.read(&writeSetIndex, sizeof(writeSetIndex));
+        writeSetSize = writeSetIndex;
+	    writeSet.reset(new KVLayout *[writeSetIndex]);
+        for (uint32_t i = 0; i < writeSetIndex; i++) {
+    	    KVLayout* kv = new KVLayout(0);
+            kv->deSerialize(in);
+            writeSet[i] = kv;
+        }
+    }
+}
+
 } // end TxEntry class
 
