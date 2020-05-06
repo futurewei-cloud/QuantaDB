@@ -41,10 +41,17 @@ struct BindTransport : public Transport {
      */
     class ServerRpc : public Transport::ServerRpc {
         public:
-            ServerRpc() {}
-            void sendReply() {}
+            ServerRpc() { sentReply = false; }
+            void sendReply() { sentReply = true; } 
+	    bool isReplySent() { return sentReply; }
             string getClientServiceLocator() {return std::string();}
+	    void clear() {
+                sentReply = false;
+	        requestPayload.reset();
+	        replyPayload.reset();
+	    }
         private:
+	    bool sentReply;
             DISALLOW_COPY_AND_ASSIGN(ServerRpc);
     };
 
@@ -129,9 +136,16 @@ struct BindTransport : public Transport {
             ServerRpcPoolGuard<ServerRpc> serverRpcKiller(
                     transport.serverRpcPool, serverRpc);
             Worker w(NULL);
+	    serverRpc->clear();
             w.rpc = serverRpc;
+	    // Transfer the request buffer to serverRpc
+	    Buffer* req = &serverRpc->requestPayload;
+	    Buffer* rsp = &serverRpc->replyPayload;
+	    req->appendCopy(request->getRange(0, request->size()),
+			   request->size());
 
-            Service::Rpc rpc(&w, request, response);
+            Service::Rpc rpc(&w, req, rsp);
+
             if (transport.abortCounter > 0) {
                 transport.abortCounter--;
                 if (transport.abortCounter == 0) {
@@ -146,7 +160,14 @@ struct BindTransport : public Transport {
                 return;
             }
             Service::handleRpc(context, &rpc);
+	    //For async processing, wait for processing function to generate reply
+	    if (rpc.isAsync()) {
+	        while (!serverRpc->isReplySent());
+	    }
 
+	    // Transfer from the serverRpc buffer to app buffer
+	    response->appendCopy(rsp->getRange(0, rsp->size()),
+				rsp->size());
             if (!dontNotify) {
                 notifier->completed();
                 lastNotifier = NULL;

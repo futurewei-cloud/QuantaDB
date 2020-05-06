@@ -205,7 +205,11 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
 
         /// Information about all of the ops that are being requested
         /// in this RPC.
-        static const uint32_t MAX_OBJECTS_PER_RPC = 75;
+#if defined(DSSNTX) || !defined(TESTING)
+	static const uint32_t MAX_OBJECTS_PER_RPC = 75;
+#else
+	static const uint32_t MAX_OBJECTS_PER_RPC = 3;
+#endif
 
         CommitCacheMap::iterator ops[MAX_OBJECTS_PER_RPC];
 

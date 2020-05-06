@@ -25,6 +25,7 @@
 #include "RawMetrics.h"
 #include "RpcLevel.h"
 #include "ShortMacros.h"
+#include "Service.h"
 #include "ServerRpcPool.h"
 #include "TimeTrace.h"
 #include "WireFormat.h"
@@ -195,7 +196,7 @@ WorkerManager::handleRpc(Transport::ServerRpc* rpc)
         }
 #endif
         Service::handleRpc(context, &serviceRpc);
-        rpc->sendReply();
+	rpc->sendReply();
         return;
     }
 
@@ -461,6 +462,11 @@ WorkerManager::workerMain(Worker* worker)
             Service::Rpc rpc(worker, &worker->rpc->requestPayload,
                     &worker->rpc->replyPayload);
             Service::handleRpc(worker->context, &rpc);
+	    if (rpc.isAsync()) {
+	        // Worker thread has handed off to other thread for async processing
+	        // The new thread should have cached the transport rpc handler
+	        worker->rpc = NULL;
+	    }
 
             // Pass the RPC back to the dispatch thread for completion.
             Fence::leave();

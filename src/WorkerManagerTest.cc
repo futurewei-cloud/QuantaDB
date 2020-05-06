@@ -20,6 +20,7 @@
 #include "MockTransport.h"
 #include "RpcLevel.h"
 #include "Tub.h"
+#include "Service.h"
 #include "WorkerManager.h"
 
 namespace RAMCloud {

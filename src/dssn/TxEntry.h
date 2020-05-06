@@ -159,7 +159,8 @@ class TxEntry {
     bool insertReadSet(KVLayout* kv, uint32_t i);
     inline void insertWriteSetInStore(KVLayout* kv, uint32_t i) { writeSetInStore[i] = kv; }
     inline void insertReadSetInStore(KVLayout* kv, uint32_t i) { readSetInStore[i] = kv; }
-
+    void serialize( outMemStream& out );
+    void deSerialize( inMemStream& in );
 }; // end TXEntry class
 
 class TxComparator {
