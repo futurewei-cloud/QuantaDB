@@ -18,8 +18,11 @@
 #include "SkipList.h"
 #include "ClusterTimeService.h"
 #include "DistributedTxSet.h"
+#include "DSSNService.h"
 
 namespace DSSN {
+
+class DSSNService; //forward declaration to resolve interdependency
 
 /**
  * Supposedly one Validator instance per storage node, to handle DSSN validation.
@@ -33,6 +36,7 @@ class Validator {
 
     //Fixme: renname to KVStore kvStore
     HashmapKVStore &kvStore;
+    DSSNService *rpcService;
     bool isUnderTest;
     //WaitList localTxQueue{1000001};
 	WaitList &localTxQueue;
@@ -81,7 +85,7 @@ class Validator {
 
     PUBLIC:
 
-	Validator(HashmapKVStore &kvStore, bool isTesting = false);
+	Validator(HashmapKVStore &kvStore, DSSNService *rpcService = NULL, bool isTesting = false);
 	~Validator();
 
     // used for tx RPC handlers
@@ -98,11 +102,15 @@ class Validator {
      * For distributed tx, validator needs to exchange meta data with peering validators.
      * Upon receiving meta data from a peer, RPC handler would updatePeerInfo() and
      * insertConcludeQueue().
+     *
+     * receive/replySSNInfo handle the peer SSN info exchange.
      */
     bool read(KLayout& k, KVLayout *&kv);
     bool insertTxEntry(TxEntry *txEntry);
     bool updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
     bool insertConcludeQueue(TxEntry *txEntry);
+    void receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
+    void replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
 
     // for unit testing, triggering a run of functions without using threads
     bool testRun();

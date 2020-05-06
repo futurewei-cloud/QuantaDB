@@ -6,7 +6,6 @@
 #include "DSSNService.h"
 #include "WireFormat.h"
 #include "MasterService.h"  //TODO: Remove
-
 #include "Validator.h"
 
 namespace DSSN {
@@ -18,7 +17,7 @@ DSSNService::DSSNService(Context* context, ServerList* serverList,
     , serverConfig(serverConfig)
 {
     kvStore = new HashmapKVStore();
-    validator = new Validator(*kvStore, serverConfig->master.isTesting);
+    validator = new Validator(*kvStore, this, serverConfig->master.isTesting);
     tabletManager = new TabletManager();
     context->services[WireFormat::DSSN_SERVICE] = this;
 }
@@ -70,6 +69,12 @@ DSSNService::dispatch(WireFormat::Opcode opcode, Rpc* rpc)
         case WireFormat::DSSN_NOTIFY_TEST:
 	    RAMCLOUD_LOG(NOTICE, "Received notify test message");
 	    break;
+        case WireFormat::DSSNSendInfoAsync::opcode:
+        handleSendInfoAsync(rpc);
+        break;
+        case WireFormat::DSSNRequestInfoAsync::opcode:
+        handleRequestInfoAsync(rpc);
+		break;
         default:
 	    throw UnimplementedRequestError(HERE);
     }
@@ -717,21 +722,6 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     		//Fixme: deal with cross-shard tx unit test later with conditional break
     		break;
     	}
-    	/*
-    	//Fixme: for now just loop to wait for result
-    	while (txEntry->getTxCIState() != TxEntry::TX_CI_FINISHED) { //Fixme: need volatile?
-    		if (!validator->testRun())
-    			std::this_thread::yield();
-    	}
-
-    	if (txEntry->getTxState() == TxEntry::TX_ABORT) {
-            respHdr->vote = WireFormat::TxPrepare::ABORT;
-    	} else if (txEntry->getTxState() == TxEntry::TX_COMMIT) {
-            respHdr->vote = WireFormat::TxPrepare::COMMITTED;
-    	} else
-    		assert(0);
-    	delete txEntry;
-    	rpc->sendReply();*/
     } else {
         delete txEntry;
         rpc->sendReply();
@@ -771,4 +761,49 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
 	return true;
 }
 
+bool
+DSSNService::sendDSSNInfo(TxEntry *txEntry)
+{
+	WireFormat::DSSNSendInfoAsync::Request req;
+	req.cts = txEntry->getCTS();
+	req.pstamp = txEntry->getPStamp();
+	req.sstamp = txEntry->getSStamp();;
+	req.senderPeerId = getServerId();
+	req.txState = txEntry->getTxState();
+
+	std::set<uint64_t>::iterator it;
+	for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
+		Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
+				reinterpret_cast<void *>(&req), sizeof(req), *new ServerId(*it));
+	}
+	return true;
 }
+
+void
+DSSNService::handleSendInfoAsync(Rpc* rpc)
+{
+    RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
+
+    assert(rpc->replyPayload->size() == 0);
+    WireFormat::DSSNSendInfoAsync::Request* reqHdr =
+        rpc->requestPayload->getStart<WireFormat::DSSNSendInfoAsync::Request>();
+    if (reqHdr == NULL)
+        throw MessageTooShortError(HERE);
+    validator->receiveSSNInfo(reqHdr->senderPeerId, reqHdr->cts, reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState);
+}
+
+void
+DSSNService::handleRequestInfoAsync(Rpc* rpc)
+{
+    RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
+
+    assert(rpc->replyPayload->size() == 0);
+    WireFormat::DSSNRequestInfoAsync::Request* reqHdr =
+        rpc->requestPayload->getStart<WireFormat::DSSNRequestInfoAsync::Request>();
+    if (reqHdr == NULL)
+        throw MessageTooShortError(HERE);
+    validator->replySSNInfo(reqHdr->senderPeerId, reqHdr->cts, reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState);
+}
+
+
+} //end DSSNService class

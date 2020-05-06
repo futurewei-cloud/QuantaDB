@@ -11,10 +11,13 @@
 #include "ServerList.h"
 #include "Validator.h"
 #include "TabletManager.h"
+#include "Notifier.h"
 
 namespace DSSN {
 using namespace RAMCloud;
-  
+
+class Validator; //forward declaration to resolve interdependency
+
 class DSSNService : public Service {
  public:
    explicit DSSNService(Context* context, ServerList* serverList,
@@ -23,6 +26,8 @@ class DSSNService : public Service {
    void dispatch(WireFormat::Opcode opcode, Rpc* rpc);
 
    static bool sendTxCommitReply(TxEntry *txEntry);
+
+   bool sendDSSNInfo(TxEntry *txEntry);
 
  private:
    inline uint64_t getServerId() { return serverId.getId(); }
@@ -63,6 +68,8 @@ class DSSNService : public Service {
 		   const WireFormat::TxDecisionDSSN::Request* reqHdr,
 		   WireFormat::TxDecisionDSSN::Response* respHdr,
 		   Rpc* rpc);
+   void handleSendInfoAsync(Rpc* rpc);
+   void handleRequestInfoAsync(Rpc* rpc);
    Context* context;
    ServerList* serverList;
    const ServerConfig* serverConfig;

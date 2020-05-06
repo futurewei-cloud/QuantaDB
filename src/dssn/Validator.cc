@@ -6,7 +6,6 @@
 
 #include "sstream"
 #include "Validator.h"
-#include "DSSNService.h"
 #include <thread>
 
 namespace DSSN {
@@ -14,8 +13,9 @@ namespace DSSN {
 const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
 const uint64_t minTimeStamp = 0;
 
-Validator::Validator(HashmapKVStore &_kvStore, bool _isTesting)
+Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _isTesting)
 		: kvStore(_kvStore),
+		  rpcService(_rpcService),
 		  isUnderTest(_isTesting),
 		  localTxQueue(*new WaitList(1000001)),
 		  reorderQueue(*new SkipList()),
@@ -168,11 +168,6 @@ Validator::read(KLayout& k, KVLayout *&kv) {
 }
 
 bool
-Validator::updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t pstamp, uint64_t sstamp, TxEntry *&txEntry) {
-	return peerInfo.update(cts, peerId, pstamp, sstamp, txEntry);
-}
-
-bool
 Validator::insertConcludeQueue(TxEntry *txEntry) {
 	return concludeQueue.push(txEntry);
 }
@@ -294,6 +289,40 @@ Validator::insertTxEntry(TxEntry *txEntry) {
 		return localTxQueue.add(txEntry);
 	else
 		return distributedTxSet.add(txEntry);
+}
+
+void
+Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
+	TxEntry *txEntry;
+	if (peerInfo.update(cts, peerId, pstamp, sstamp, txEntry)) {
+		if (txEntry->isExclusionViolated()) {
+			txEntry->setTxState(TxEntry::TX_ABORT);
+			if (peerTxState == TxEntry::TX_COMMIT) {
+				txEntry->setTxState(TxEntry::TX_CONFLICT);
+				assert(0); //Fixme: recover or debug
+			}
+		} else if (txEntry->isAllPeerSeen() && !txEntry->isExclusionViolated()) {
+			txEntry->setTxState(TxEntry::TX_COMMIT);
+			if (peerTxState == TxEntry::TX_ABORT) {
+				txEntry->setTxState(TxEntry::TX_CONFLICT);
+				assert(0); //Fixme: recover or debug
+			}
+		} else
+			return; //inconclusive yet
+		insertConcludeQueue(txEntry);
+		txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
+	}
+}
+
+void
+Validator::replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
+	TxEntry *txEntry;
+	if (peerTxState == TxEntry::TX_CONFLICT)
+		assert(0); //Fixme: do recovery or debug
+	peerInfo.update(cts, peerId, pstamp, sstamp, txEntry);
+	assert(rpcService); //if NULL, this should not be called
+	if (rpcService)
+		rpcService->sendDSSNInfo(txEntry);
 }
 
 } // end Validator class
