@@ -283,11 +283,13 @@ class InfUdDriver : public Driver {
     /// `ibv_devinfo` in command line to check what ports are available on
     /// each HCA.
     int ibPhysicalPort;
-
+    /// Link type of the physical port
+    int linkType;
     /// Identifies our HCA uniquely among all those in the Infiniband
     /// network; roughly equivalent to a host address.
     int lid;
-
+    /// local gid (index=0) for this HCA and physical port
+    union ibv_gid gid;
     /// Active maximum MTU enabled on #ibPhysicalPort to transmit and receive.
     /// This is the maximum message size that an UD QP can transmit.
     uint32_t mtu;

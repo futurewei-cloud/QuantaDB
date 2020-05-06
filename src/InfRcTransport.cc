@@ -292,9 +292,20 @@ InfRcTransport::InfRcTransport(Context* context, const ServiceLocator *sl,
     // Step 2:
     //  Set up the initial verbs necessities: open the device, allocate
     //  protection domain, create shared receive queue, register buffers.
-
+    linkType = infiniband->getLinkType(ibPhysicalPort);
+    LOG(NOTICE, "Physical Link Type is %s", (linkType <= 1) ? "Infiniband":"ETHERNET");
     lid = infiniband->getLid(ibPhysicalPort);
     LOG(NOTICE, "Local Infiniband lid is %u", lid);
+    infiniband->getGid(ibPhysicalPort, &gid);
+    LOG(NOTICE, "Local Infiniband gid is %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+	gid.raw[ 0], gid.raw[ 1],
+	gid.raw[ 2], gid.raw[ 3],
+	gid.raw[ 4], gid.raw[ 5],
+	gid.raw[ 6], gid.raw[ 7],
+	gid.raw[ 8], gid.raw[ 9],
+	gid.raw[10], gid.raw[11],
+	gid.raw[12], gid.raw[13],
+	gid.raw[14], gid.raw[15]);
 
     // create two shared receive queues. all client queue pairs use one and all
     // server queue pairs use the other. we post receive buffer work requests
@@ -753,7 +764,8 @@ InfRcTransport::clientTrySetupQueuePair(IpAddress& address)
 
     // Create a new QueuePair and send its parameters to the server so it
     // can create its qp and reply with its parameters.
-    QueuePair *qp = infiniband->createQueuePair(IBV_QPT_RC,
+    QueuePair *qp = infiniband->createQueuePair(linkType,
+						IBV_QPT_RC,
                                                 ibPhysicalPort, clientSrq,
                                                 commonTxCq, clientRxCq,
                                                 MAX_TX_QUEUE_DEPTH,
@@ -765,6 +777,7 @@ InfRcTransport::clientTrySetupQueuePair(IpAddress& address)
 
     for (uint32_t i = 0; i < QP_EXCHANGE_MAX_TIMEOUTS; i++) {
         QueuePairTuple outgoingQpt(downCast<uint16_t>(lid),
+				   gid,
                                    qp->getLocalQpNumber(),
                                    qp->getInitialPsn(), nonce,
                                    name);
@@ -847,6 +860,7 @@ InfRcTransport::ServerConnectHandler::handleFileEvent(int events)
     // which case the response to the client request could have been lost.
 
     QueuePair *qp = transport->infiniband->createQueuePair(
+	    transport->linkType,
             IBV_QPT_RC,
             transport->ibPhysicalPort,
             transport->serverSrq,
@@ -867,6 +881,7 @@ InfRcTransport::ServerConnectHandler::handleFileEvent(int events)
     // now send the client back our queue pair information so they can
     // complete the initialisation.
     QueuePairTuple outgoingQpt(downCast<uint16_t>(transport->lid),
+			       transport->gid,
                                qp->getLocalQpNumber(),
                                qp->getInitialPsn(), incomingQpt.getNonce());
     len = sendto(transport->serverSetupSocket, &outgoingQpt,
