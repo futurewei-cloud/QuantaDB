@@ -46,30 +46,6 @@ class TxLog {
     bool getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout> &writeSet);
 
     private:
-    // Private data structures
-    enum {
-        TXLOG_COMMIT_INTENT = 1,
-        TXLOG_COMITTED = 2
-    };
-    typedef struct TxLogHeader {
-        uint16_t TxLogType;
-        uint16_t TxLogSize; // size include this header
-    } TxLogHeader_t;
-
-    typedef struct TxCILog { // commit Intent Log
-        TxLogHeader_t header;
-        uint64_t    CTS;
-        uint32_t    TxCIState;
-        /* serialized validator info */
-    } TxCILog_t;
-
-    typedef struct TxCommitLog { // commit Intent Log
-        TxLogHeader_t header;
-        uint64_t    CTS;
-        uint32_t    TxState;
-    } TxCommitLog_t;
-
-
     // private variables
     #define TXLOG_DIR   "/tmp/txlog"
     #define TXLOG_CHUNK_SIZE (64*1024*1024)
