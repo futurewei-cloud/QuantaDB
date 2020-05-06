@@ -70,7 +70,9 @@ struct KLayout {
     inline void deSerialize( inMemStream & in )
     {
         in.read(&keyLength, sizeof(keyLength));
+        key.reset(new uint8_t[keyLength+1]);
         in.read(key.get(), keyLength);
+        key.get()[keyLength] = 0; // null termination
     }
 };
 
