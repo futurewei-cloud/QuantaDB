@@ -28,7 +28,6 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
 {
     // KLayout test
     KLayout k1(30), k2(30);
-    GTEST_COUT << "MemStreamIoTest" << std::endl;
 
     const char *keystr = (const char *)"MemStreamIoTestKey";
     uint8_t *valstr = const_cast<uint8_t *>((const uint8_t*)"MemStreamIoTestValue");
@@ -36,6 +35,8 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
     memcpy(k1.key.get(), keystr, strlen(keystr));
     outMemStream out(buf, sizeof(buf));
     k1.serialize(out);
+
+    EXPECT_EQ(out.dsize(), k1.serializeSize());
 
     inMemStream in(buf, out.dsize());
     k2.deSerialize( in );
@@ -51,6 +52,8 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
 
     outMemStream out1(buf, sizeof(buf));
     kv1.serialize( out1 );
+
+    EXPECT_EQ(out1.dsize(), kv1.serializeSize());
 
     inMemStream in1(buf, out1.dsize());
     kv2.deSerialize( in1 );
@@ -74,9 +77,14 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
     writeSet[6] = &kv16;
     tx1.txState = TxEntry::TX_PENDING;
     tx1.commitIntentState = TxEntry::TX_CI_INPROGRESS;
+    for (int idx = 0; idx < 10; idx++) {
+        tx1.insertPeerSet((uint64_t)idx);
+    }
 
     outMemStream out2(buf, sizeof(buf));
     tx1.serialize( out2 );
+
+    EXPECT_EQ(out2.dsize(), tx1.serializeSize());
 
     inMemStream in2(buf, out2.dsize());
     tx2.deSerialize ( in2 );
@@ -97,6 +105,7 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
         EXPECT_EQ(strncmp((const char*)kv1->v.valuePtr, (const char*)kv2->v.valuePtr, kv1->v.valueLength), 0);
     }
 
+    EXPECT_EQ(tx1.getPeerSet(), tx2.getPeerSet());
 }
 
 }  // namespace RAMCloud
