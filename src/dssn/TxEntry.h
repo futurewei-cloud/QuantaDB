@@ -104,6 +104,8 @@ class TxEntry {
     enum {
     	//TX_xxx states track tx state visible to outside components like peers and coordinator
         /// Transaction is active and in an unstable state
+
+        /* Transaction is active and in an unstable state. */
         TX_PENDING = 1,
 
         /// Transaction has reached an abort conclusion, a stable state
@@ -159,7 +161,10 @@ class TxEntry {
     bool insertReadSet(KVLayout* kv, uint32_t i);
     inline void insertWriteSetInStore(KVLayout* kv, uint32_t i) { writeSetInStore[i] = kv; }
     inline void insertReadSetInStore(KVLayout* kv, uint32_t i) { readSetInStore[i] = kv; }
+    uint32_t serializeSize();
     void serialize( outMemStream& out );
+    void deSerialize_common( inMemStream& in );
+    void deSerialize_additional( inMemStream& in );
     void deSerialize( inMemStream& in );
 }; // end TXEntry class
 

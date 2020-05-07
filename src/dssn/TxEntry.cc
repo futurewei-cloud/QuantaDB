@@ -55,39 +55,92 @@ TxEntry::insertWriteSet(KVLayout* kv, uint32_t i) {
 	return true;
 }
 
+uint32_t 
+TxEntry::serializeSize()
+{
+    uint32_t sz = sizeof(cts) + sizeof(txState) + sizeof(pstamp) + sizeof(sstamp);
+    if (txState == TX_PENDING) {
+        // writeSet
+        sz += sizeof(commitIntentState);
+        sz += sizeof(writeSetIndex);
+        for (uint32_t i = 0; i < writeSetIndex; i++) {
+    	    assert (writeSet[i]);
+            sz += writeSet[i]->serializeSize();
+        }
+        // peerSet
+        sz += sizeof(uint32_t);
+        sz += peerSet.size() * sizeof(uint64_t);
+    }
+    return sz;
+}
+
 void 
 TxEntry::serialize( outMemStream& out )
 {
     out.write(&cts, sizeof(cts));
     out.write(&txState, sizeof(txState));
+    out.write(&pstamp,  sizeof(pstamp));
+    out.write(&sstamp,  sizeof(sstamp));
     if(txState == TX_PENDING) {
+        // writeSet
         out.write(&commitIntentState, sizeof(commitIntentState));
         out.write(&writeSetIndex, sizeof(writeSetIndex));
         for (uint32_t i = 0; i < writeSetIndex; i++) {
-    	    KVLayout *kv = writeSet[i];
-    	    assert (kv);
-            kv->serialize(out);
+            //KVLayout *kv = writeSet[i];
+            assert (writeSet[i]);
+            writeSet[i]->serialize(out);
         }
+        // peerSet
+        uint32_t peerSetSize = peerSet.size();
+        out.write(&peerSetSize, sizeof(peerSetSize));
+        for(std::set<uint64_t>::iterator it = peerSet.begin(); it != peerSet.end(); it++) {
+            uint64_t peer = *it;
+            out.write(&peer, sizeof(peer));
+        }
+    }
+}
+
+void
+TxEntry::deSerialize_common( inMemStream& in )
+{
+    in.read(&cts, sizeof(cts));
+    in.read(&txState, sizeof(txState));
+    in.read(&pstamp,  sizeof(pstamp));
+    in.read(&sstamp,  sizeof(sstamp));
+}
+
+void
+TxEntry::deSerialize_additional( inMemStream& in )
+{
+    // writeSet
+    in.read(&commitIntentState, sizeof(commitIntentState));
+    in.read(&writeSetIndex, sizeof(writeSetIndex));
+    writeSetSize = writeSetIndex;
+	writeSet.reset(new KVLayout *[writeSetIndex]);
+    for (uint32_t i = 0; i < writeSetIndex; i++) {
+    	KVLayout* kv = new KVLayout(0);
+        kv->deSerialize(in);
+        writeSet[i] = kv;
+    }
+
+    // peerSet
+    uint32_t peerSetSize;
+    in.read(&peerSetSize, sizeof(peerSetSize));
+    peerSet.clear();
+    for(uint32_t idx = 0; idx < peerSetSize; idx++) {
+        uint64_t peer;
+        in.read(&peer, sizeof(peer));
+        insertPeerSet(peer);
     }
 }
 
 void
 TxEntry::deSerialize( inMemStream& in )
 {
-    in.read(&cts, sizeof(cts));
-    in.read(&txState, sizeof(txState));
+    deSerialize_common( in );
     if (txState == TX_PENDING) {
-        in.read(&commitIntentState, sizeof(commitIntentState));
-        in.read(&writeSetIndex, sizeof(writeSetIndex));
-        writeSetSize = writeSetIndex;
-	    writeSet.reset(new KVLayout *[writeSetIndex]);
-        for (uint32_t i = 0; i < writeSetIndex; i++) {
-    	    KVLayout* kv = new KVLayout(0);
-            kv->deSerialize(in);
-            writeSet[i] = kv;
-        }
+        deSerialize_additional( in );
     }
 }
 
 } // end TxEntry class
-

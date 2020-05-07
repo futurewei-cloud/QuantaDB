@@ -37,15 +37,22 @@ class TxLog {
     ///the returned id has meaning internal to the class but is expected to be tx CTS
     ///the class may allocate peerSet and writeSet, caller responsible for destructing them?
     ///expected to be used for restart recovery
-    bool getFirstPendingTx(uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout> &writeSet);
+    bool getFirstPendingTx(uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout*> &writeSet);
 
     //obtain the next (non-concluded) commit-intent in the log after the one identified by id
     ///the id, which is considered to be the iterator internally, will be advanced
     ///the class may allocate peerSet and writeSet, caller responsible for destructing them?
     ///expected to be used for restart recovery
-    bool getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout> &writeSet);
+    bool getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout*> &writeSet);
 
     private:
+    // private struct
+    typedef struct TxLogHeader {
+        #define TX_LOG_SIG 0xA5A5F0F0
+        uint32_t sig;   // signature
+        uint32_t length;// log record size, include this header
+    } TxLogHeader_t;
+
     // private variables
     #define TXLOG_DIR   "/tmp/txlog"
     #define TXLOG_CHUNK_SIZE (64*1024*1024)

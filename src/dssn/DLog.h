@@ -143,8 +143,8 @@ class DLog {
     }
 
     // Reserve 'len' bytes append space in log.
-    // Return starting address of the reserved space.  
-    void * reserve(uint32_t len, uint64_t * offset = NULL)
+    // Return starting address of the reserved (continuous) space.
+    void * reserve(uint32_t len, /* out */ uint64_t * offset = NULL )
     {
         uint32_t oldsize;
         chunk_t * chunk;
@@ -220,7 +220,7 @@ class DLog {
     }
 
     // Return log buffer address at offset 'off'.
-    // The output argument 'len' stores buffer length
+    // The output argument 'len' stores continuous buffer length
     void * getaddr (uint64_t off, uint32_t *len)
     {
         chunk_t * tmp = chunk_head;
