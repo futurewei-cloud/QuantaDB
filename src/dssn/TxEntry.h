@@ -80,47 +80,47 @@ class TxEntry {
 
     PUBLIC:
     enum {
-        /* Transaction commit-intent is not or no longer queued for scheduling */
+    	//TX_CI_xxx states are for validator internal use to track the progress
+    	//through the processing stages
+        /// Transaction commit-intent is not queued for scheduling
         TX_CI_UNQUEUED = 1,
 
-        /* Transaction commit-intent is queued for scheduling */
+        /// Transaction commit-intent is queued for scheduling
         TX_CI_QUEUED = 2,
 
-        /* Transaction commit-intent is blocked from being scheduled due to dependency */
-        TX_CI_WAITING = 3,
+        /// Transaction commit-intent is scheduled
+        TX_CI_SCHEDULED = 3,
 
-        /* Transaction commit-intent is scheduled, but its local SSN pstamp and sstamp could be bogus */
-        TX_CI_TRANSIENT = 4,
+        /// Transaction commit-intent has had SSN info sent to peers
+        TX_CI_LISTENING = 4,
 
-        /* Transaction commit-intent is scheduled, and its local SSN pstamp and sstamp can be used */
-        TX_CI_INPROGRESS = 5,
+        /// Transaction commit-intent has reached a commit/abort/conflict decision
+        TX_CI_CONCLUDED = 5,
 
-        /* Transaction commit-intent is scheduled, and its local SSN pstamp and sstamp are finalized */
-        TX_CI_CONCLUDED = 6,
-
-		/* Transaction commit-intent is finished, and txEntry can be purged */
-		TX_CI_FINISHED = 7,
+		/// Transaction commit-intent has finished its life, and txEntry can be purged
+		TX_CI_FINISHED = 6,
     };
 
     enum {
-        /* Transaction is active and in an unstable state. */
+    	//TX_xxx states track tx state visible to outside components like peers and coordinator
+        /// Transaction is active and in an unstable state
         TX_PENDING = 1,
 
-        /* Transaction is aborted. */
+        /// Transaction has reached an abort conclusion, a stable state
         TX_ABORT = 2,
 
-        /* Transaction is validated and committed. */
+        /// Transaction has reached a commit conclusion, a stable state
         TX_COMMIT = 3,
 
         /* Transaction is deactivated and in an unstable state. The responder will
-         * no longer send out its SSN data again.
+         * no longer send out its SSN data again. (Fixme)
          */
+		/// Transaction is to be aborted if peers agree, an unstable state
         TX_ALERT = 4,
 
-        /* Transaction has inconsistent commit and abort decisions among the peers.
-         * It is supposed to expose software bugs and require manual recovery because
-         * no new transactions involving its read/write sets can proceed.
-         */
+        /// Transaction has inconsistent commit and abort decisions among the peers.
+        /// It is supposed to expose software bugs and require manual recovery because
+        /// no new transactions involving its read/write sets can/should proceed.
         TX_CONFLICT = 5
     };
 

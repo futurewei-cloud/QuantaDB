@@ -13,6 +13,7 @@
 namespace DSSN {
 
 typedef uint64_t CTS;
+typedef tbb::concurrent_unordered_map<CTS, TxEntry *>::iterator PeerInfoIterator;
 
 /**
  * The class implements a search-able table of tx entries undergoing
@@ -44,6 +45,10 @@ class PeerInfo {
     PUBLIC:
 	//add a tx for tracking peer info
     bool add(TxEntry* txEntry);
+
+    //for iteration
+    TxEntry* getFirst(PeerInfoIterator &it);;
+    TxEntry* getNext(PeerInfoIterator &it);
 
     //free txs which have been enqueued into conclusion queue
     bool sweep();

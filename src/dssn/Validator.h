@@ -54,7 +54,7 @@ class Validator {
     // threads
     std::thread schedulingThread;
     std::thread serializeThread;
-    std::thread cleanupThread;
+    std::thread peeringThread;
 
     // all SSN data maintenance operations
     bool updateTxPStampSStamp(TxEntry& txEntry); //Fixme: to be called by peer info sender also
@@ -81,7 +81,7 @@ class Validator {
     bool conclude(TxEntry& txEntry);
 
     // handle garbage collection
-    void sweep();
+    void peer();
 
     PUBLIC:
 

@@ -73,7 +73,7 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
     writeSet[5] = &kv15;
     writeSet[6] = &kv16;
     tx1.txState = TxEntry::TX_PENDING;
-    tx1.commitIntentState = TxEntry::TX_CI_INPROGRESS;
+    tx1.commitIntentState = TxEntry::TX_CI_SCHEDULED;
 
     outMemStream out2(buf, sizeof(buf));
     tx1.serialize( out2 );

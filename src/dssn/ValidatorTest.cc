@@ -12,7 +12,7 @@
 
 #include <ostream>
 #include <string>
-#define GTEST_COUT  std::cerr << "[ INFO ] "
+#define GTEST_COUT  std::cerr << std::scientific << "[ INFO ] "
 
 namespace DSSN {
 
