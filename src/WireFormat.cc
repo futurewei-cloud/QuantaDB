@@ -125,8 +125,8 @@ opcodeSymbol(uint32_t opcode)
         case ECHO:                         return "ECHO";
         case DSSN_NOTIFY_TEST:             return "DSSN_NOTIFY_TEST";
         case DSSN_COMMIT:                  return "DSSN_COMMIT";
-        case DSSN_SEND_SSN_ASYNC:          return "DSSN_SEND_SSN_ASYNC";
-        case DSSN_REQUEST_SSN_ASYNC:       return "DSSN_REQUEST_SSN_ASYNC";
+        case DSSN_SEND_INFO_ASYNC:          return "DSSN_SEND_SSN_ASYNC";
+        case DSSN_REQUEST_INFO_ASYNC:       return "DSSN_REQUEST_SSN_ASYNC";
         case ILLEGAL_RPC_TYPE:             return "ILLEGAL_RPC_TYPE";
     }
 
