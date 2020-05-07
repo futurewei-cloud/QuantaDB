@@ -14,8 +14,7 @@ using namespace DSSN;
 class TxLogTest : public ::testing::Test {
   public:
   TxLogTest() {};
-  ~TxLogTest() {
-  };
+  ~TxLogTest() {};
 
   TxLog txlog;
 
@@ -24,45 +23,40 @@ class TxLogTest : public ::testing::Test {
 
 TEST_F(TxLogTest, TxLogUnitTest)
 {
-    GTEST_COUT << "TxLogTest" << std::endl;
+    for (uint64_t idx = 0; idx < 100; idx++) {
+        TxEntry tx(10,10);
+        tx.setCTS(idx);
+        tx.setPStamp(idx);
+        tx.setSStamp(idx);
+        tx.setTxState(((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT); 
+        txlog.add(&tx);
+    }
+
+    // getTxState
+    for (uint64_t idx = 0; idx < 100; idx++) {
+        uint32_t tx_state = ((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT;
+        EXPECT_EQ(txlog.getTxState(idx), tx_state);
+    }
+
+    uint64_t idOut;
+    DSSNMeta meta;
+    std::set<uint64_t> peerSet;
+    boost::scoped_array<KVLayout*> writeSet;
+    bool ret = txlog.getFirstPendingTx(idOut, meta, peerSet, writeSet);
+
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(meta.pStamp, (uint64_t)0);
+
+    uint64_t idIn = idOut;
+    uint32_t ctr = 0;
+    while (txlog.getNextPendingTx(idIn, idOut, meta, peerSet, writeSet)) {
+        idIn = idOut;
+        EXPECT_TRUE((meta.pStamp % 2) == 0);
+        ctr++;
+    }
+
+    EXPECT_EQ(ctr, (uint32_t)100/2 -1);
+
 }
 
-#if (0)
-TEST_F(TxLogTest, TxLogBench) {
-    log.set_chunk_size(1024*1024*64);
-
-    uint32_t loop = 1024*1024;
-    uint64_t start, stop;
-    //
-    start = Cycles::rdtsc();
-    for (uint32_t i = 0; i < loop; i += 10) {
-        log.reserve(1);
-        log.reserve(1);
-        log.reserve(1);
-        log.reserve(1);
-        log.reserve(1);
-        log.reserve(1);
-        log.reserve(1);
-        log.reserve(1);
-        log.reserve(1);
-        log.reserve(1);
-    }
-    stop = Cycles::rdtsc();
-    GTEST_COUT << "log.reserve latency: "
-    << Cycles::toNanoseconds(stop - start)/loop << " nano sec" << std::endl;
-
-    //
-    start = Cycles::rdtsc();
-    for (uint32_t i = 0; i < loop; i++) {
-        char buf[1024*4];
-        log.append(buf, sizeof(buf));
-    }
-    stop = Cycles::rdtsc();
-    uint64_t msec = Cycles::toNanoseconds(stop - start)/(1000*1000);
-    float    gbps = (float)(1024*4)/msec;
-    std::cerr << std::fixed;
-    GTEST_COUT << "log.append throughput: " << gbps << " GB/sec" << std::endl;
-
-}
-#endif
 }  // namespace RAMCloud
