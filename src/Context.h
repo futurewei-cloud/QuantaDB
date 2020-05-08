@@ -24,6 +24,7 @@ namespace RAMCloud {
 
 // forward declarations
 class AbstractServerList;
+class AdminService;
 class BackupService;
 class CacheTrace;
 class CommandLineOptions;
@@ -182,6 +183,16 @@ class Context {
     getDSSNService() {
         return reinterpret_cast<DSSNService*>(
                 services[WireFormat::DSSN_SERVICE]);
+    }
+
+    /**
+     * Returns the AdminService associated with this context, if there is one,
+     * or NULL if there is none.
+     */
+    AdminService*
+    getAdminService() {
+        return reinterpret_cast<AdminService*>(
+                services[WireFormat::ADMIN_SERVICE]);
     }
   PRIVATE:
     void destroy();
