@@ -123,9 +123,9 @@ class DLog {
     }
 
     // Return log data size
-    inline uint32_t size(void)
+    inline size_t size(void)
     {
-        uint32_t lsize = 0;
+        size_t lsize = 0;
         for (chunk_t *tmp = chunk_head; tmp; tmp = tmp->next) {
             lsize += tmp->hdr->dsize;
         }
@@ -133,9 +133,9 @@ class DLog {
     }
 
     // Return free space
-    inline uint32_t free_space(void)
+    inline size_t free_space(void)
     {
-        uint32_t free_size = 0;
+        size_t free_size = 0;
         for (chunk_t *tmp = chunk_tail; tmp; tmp = tmp->next) {
             free_size += tmp->hdr->fsize - tmp->hdr->dsize - tmp->hdr->offset;
         }
