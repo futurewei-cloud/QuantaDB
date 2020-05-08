@@ -45,6 +45,8 @@ class TxLog {
     ///expected to be used for restart recovery
     bool getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout*> &writeSet);
 
+    size_t size() { return log->size(); }
+
     private:
     // private struct
     typedef struct TxLogHeader {
