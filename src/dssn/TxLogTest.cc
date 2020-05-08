@@ -21,18 +21,20 @@ class TxLogTest : public ::testing::Test {
   DISALLOW_COPY_AND_ASSIGN(TxLogTest);
 };
 
-class TxLogRecoverTest : public ::testing::Test {
+class TxLogRecoveryTest : public ::testing::Test {
   public:
-  TxLogRecoverTest() { txlog = new TxLog(true); };
-  ~TxLogRecoverTest() {};
+  TxLogRecoveryTest() { txlog = new TxLog(true); };
+  ~TxLogRecoveryTest() {};
 
   TxLog *txlog;
 
-  DISALLOW_COPY_AND_ASSIGN(TxLogRecoverTest);
+  DISALLOW_COPY_AND_ASSIGN(TxLogRecoveryTest);
 };
 
 TEST_F(TxLogTest, TxLogUnitTest)
 {
+    EXPECT_EQ(txlog.size(), (size_t)0);
+
     for (uint64_t idx = 0; idx < 100; idx++) {
         TxEntry tx(10,10);
         tx.setCTS(idx);
@@ -69,9 +71,9 @@ TEST_F(TxLogTest, TxLogUnitTest)
 
 }
 
-TEST_F(TxLogRecoverTest, TxLogUnitTest)
+TEST_F(TxLogRecoveryTest, TxLogUnitTest)
 {
-    GTEST_COUT << "TxLogRecoverTest: dsize:" << txlog->size() << std::endl;
+    EXPECT_GT(txlog->size(), (size_t)0);
 
     // getTxState
     for (uint64_t idx = 0; idx < 100; idx++) {
