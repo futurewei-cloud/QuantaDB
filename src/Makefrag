@@ -90,10 +90,9 @@ SHARED_SRCFILES := \
 		   src/dssn/KVStore.cc \
 		   src/dssn/PeerInfo.cc \
 		   src/dssn/DSSNService.cc \
-		   src/dssn/ValidatorRPCHelper.cc \
 		   src/dssn/BlockedTxSet.cc \
 		   src/dssn/DistributedTxSet.cc \
-           src/dssn/TxLog.cc \
+		   src/dssn/TxLog.cc \
 		   src/IndexKey.cc \
 		   src/IndexletManager.cc \
 		   src/IndexLookup.cc \

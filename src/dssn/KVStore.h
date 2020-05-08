@@ -33,6 +33,12 @@ struct VLayout {
     VLayout() {
         valuePtr = NULL;
     }
+
+    inline uint32_t serializeSize()
+    {
+        return sizeof(valueLength) + valueLength + sizeof(meta) + sizeof(isTombstone); 
+    }
+
     inline void serialize( outMemStream & out )
     {
         out.write(&valueLength, sizeof(valueLength));
@@ -61,6 +67,12 @@ struct KLayout {
     friend bool operator==(const KLayout &lhs, const KLayout &rhs);
 	KLayout() {}
 	explicit KLayout(uint32_t keySize) : keyLength(keySize), key(new uint8_t[keySize+1]) { bzero(key.get(), keySize+1);}
+
+    inline uint32_t serializeSize()
+    {
+        return sizeof(keyLength) + keyLength;
+    }
+
     inline void serialize( outMemStream & out )
     {
         out.write(&keyLength, sizeof(keyLength));
@@ -70,7 +82,9 @@ struct KLayout {
     inline void deSerialize( inMemStream & in )
     {
         in.read(&keyLength, sizeof(keyLength));
+        key.reset(new uint8_t[keyLength+1]);
         in.read(key.get(), keyLength);
+        key.get()[keyLength] = 0; // null termination
     }
 };
 
@@ -90,6 +104,12 @@ struct KVLayout {
 
 	inline KLayout& getKey() { return k; }
 	inline VLayout& getVLayout() { return v; }
+
+    inline uint32_t serializeSize()
+    {
+        return v.serializeSize() + k.serializeSize();
+    }
+
     inline void serialize( outMemStream & out )
     {
         v.serialize ( out );

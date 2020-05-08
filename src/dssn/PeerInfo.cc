@@ -15,6 +15,24 @@ PeerInfo::add(TxEntry *txEntry) {
 	return true;
 }
 
+TxEntry*
+PeerInfo::getFirst(PeerInfoIterator &it) {
+	it = peerInfo.begin();
+	if (it != peerInfo.end()) {
+		return it->second;
+	}
+	return NULL;
+}
+
+TxEntry*
+PeerInfo::getNext(PeerInfoIterator &it) {
+	it++;
+	if (it != peerInfo.end()) {
+		return it->second;
+	}
+	return NULL;
+}
+
 bool
 PeerInfo::sweep() {
 	//sweep concluded peerInfo entry
@@ -32,6 +50,8 @@ PeerInfo::sweep() {
 	if (prev) {
 		peerInfo.unsafe_erase(prev->getCTS());
 	}
+
+
 	return true;
 }
 

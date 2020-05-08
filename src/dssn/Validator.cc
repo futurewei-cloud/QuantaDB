@@ -6,7 +6,6 @@
 
 #include "sstream"
 #include "Validator.h"
-#include "DSSNService.h"
 #include <thread>
 
 namespace DSSN {
@@ -14,8 +13,9 @@ namespace DSSN {
 const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
 const uint64_t minTimeStamp = 0;
 
-Validator::Validator(HashmapKVStore &_kvStore, bool _isTesting)
+Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _isTesting)
 		: kvStore(_kvStore),
+		  rpcService(_rpcService),
 		  isUnderTest(_isTesting),
 		  localTxQueue(*new WaitList(1000001)),
 		  reorderQueue(*new SkipList()),
@@ -29,7 +29,7 @@ Validator::Validator(HashmapKVStore &_kvStore, bool _isTesting)
     // Fixme: may need to use TBB to pin the threads to specific cores LATER
 	if (!isUnderTest) {
 		serializeThread = std::thread(&Validator::serialize, this);
-		cleanupThread = std::thread(&Validator::sweep, this);
+		peeringThread = std::thread(&Validator::peer, this);
 		schedulingThread = std::thread(&Validator::scheduleDistributedTxs, this);
 	}
 }
@@ -38,8 +38,8 @@ Validator::~Validator() {
 	if (!isUnderTest) {
 		if (serializeThread.joinable())
 			serializeThread.detach();
-		if (cleanupThread.joinable())
-			cleanupThread.detach();
+		if (peeringThread.joinable())
+			peeringThread.detach();
 		if (schedulingThread.joinable())
 			schedulingThread.detach();
 	}
@@ -57,7 +57,7 @@ Validator::testRun() {
 		return false;
 	scheduleDistributedTxs();
 	serialize();
-	sweep();
+	peer();
 	return true;
 }
 
@@ -168,11 +168,6 @@ Validator::read(KLayout& k, KVLayout *&kv) {
 }
 
 bool
-Validator::updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t pstamp, uint64_t sstamp, TxEntry *&txEntry) {
-	return peerInfo.update(cts, peerId, pstamp, sstamp, txEntry);
-}
-
-bool
 Validator::insertConcludeQueue(TxEntry *txEntry) {
 	return concludeQueue.push(txEntry);
 }
@@ -242,8 +237,13 @@ Validator::serialize() {
 
         // process due commit-intents on cross-shard transaction queue
         while ((txEntry = distributedTxSet.findReadyTx(activeTxSet))) {
+        	//enable blocking incoming dependent transactions
         	assert(activeTxSet.add(txEntry));
-        	txEntry->setTxCIState(TxEntry::TX_CI_TRANSIENT);
+
+        	//enable sending SSN info to peer
+        	txEntry->setTxCIState(TxEntry::TX_CI_SCHEDULED);
+        	peerInfo.add(txEntry);
+
         	hasEvent = true;
         }
 
@@ -281,8 +281,21 @@ Validator::conclude(TxEntry& txEntry) {
 }
 
 void
-Validator::sweep() {
+Validator::peer() {
+	PeerInfoIterator it;
+	TxEntry *txEntry;
 	do {
+		if (rpcService) {
+			txEntry = peerInfo.getFirst(it);
+			while (txEntry) {
+				if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED
+						&& txEntry->getTxState() != TxEntry::TX_ALERT) { //Fixme: not to set upon ALERT???
+					rpcService->sendDSSNInfo(txEntry);
+					txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
+				}
+				txEntry = peerInfo.getNext(it);
+			}
+		}
 		peerInfo.sweep();
 		this_thread::yield();
 	} while (!isUnderTest);
@@ -290,10 +303,53 @@ Validator::sweep() {
 
 bool
 Validator::insertTxEntry(TxEntry *txEntry) {
-	if (txEntry->getPeerSet().size() == 0)
-		return localTxQueue.add(txEntry);
-	else
-		return distributedTxSet.add(txEntry);
+	if (txEntry->getPeerSet().size() == 0) {
+		//single-shard tx
+		if (localTxQueue.add(txEntry)) {
+			txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
+			return true;
+		}
+	} else {
+		//cross-shard tx
+		if (distributedTxSet.add(txEntry)) {
+			txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
+		}
+	}
+	return false;
+}
+
+void
+Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
+	TxEntry *txEntry;
+	//Fixme: implement/use the TxState state machine --- here and/or peering thread???
+	if (peerInfo.update(cts, peerId, pstamp, sstamp, txEntry)) {
+		if (txEntry->isExclusionViolated()) {
+			txEntry->setTxState(TxEntry::TX_ABORT);
+			if (peerTxState == TxEntry::TX_COMMIT) {
+				txEntry->setTxState(TxEntry::TX_CONFLICT);
+				assert(0); //Fixme: recover or debug
+			}
+		} else if (txEntry->isAllPeerSeen() && !txEntry->isExclusionViolated()) {
+			txEntry->setTxState(TxEntry::TX_COMMIT);
+			if (peerTxState == TxEntry::TX_ABORT) {
+				txEntry->setTxState(TxEntry::TX_CONFLICT);
+				assert(0); //Fixme: recover or debug
+			}
+		} else
+			return; //inconclusive yet
+		insertConcludeQueue(txEntry);
+		txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
+	}
+}
+
+void
+Validator::replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
+	TxEntry *txEntry;
+	if (peerTxState == TxEntry::TX_CONFLICT)
+		assert(0); //Fixme: do recovery or debug
+	peerInfo.update(cts, peerId, pstamp, sstamp, txEntry);
+	if (rpcService) //unit test may make it NULL
+		rpcService->sendDSSNInfo(txEntry);
 }
 
 } // end Validator class

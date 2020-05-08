@@ -133,8 +133,8 @@ enum Opcode {
     ECHO                        = 80,
     DSSN_NOTIFY_TEST            = 81,
     DSSN_COMMIT                 = 82,
-    DSSN_SEND_SSN_ASYNC         = 83,
-    DSSN_REQUEST_SSN_ASYNC      = 84,
+    DSSN_SEND_INFO_ASYNC         = 83,
+    DSSN_REQUEST_INFO_ASYNC      = 84,
     ILLEGAL_RPC_TYPE            = 85, // 1 + the highest legitimate Opcode
 };
 
@@ -633,6 +633,32 @@ struct DSSNCommit {
     } __attribute__((packed));
 };
 #endif
+
+struct DSSNRequestInfoAsync {
+    static const Opcode opcode = DSSN_REQUEST_INFO_ASYNC;
+    static const ServiceType service = DSSN_SERVICE;
+    struct Request {
+        RequestCommon common;
+        uint64_t senderPeerId;
+        uint64_t cts;
+        uint64_t pstamp;
+        uint64_t sstamp;
+        uint8_t txState;
+    } __attribute__((packed));
+};
+
+struct DSSNSendInfoAsync {
+    static const Opcode opcode = DSSN_SEND_INFO_ASYNC;
+    static const ServiceType service = DSSN_SERVICE;
+    struct Request {
+        RequestCommon common;
+        uint64_t senderPeerId;
+        uint64_t cts;
+        uint64_t pstamp;
+        uint64_t sstamp;
+        uint8_t txState;
+    } __attribute__((packed));
+};
 
 struct Echo {
     static const Opcode opcode = ECHO;

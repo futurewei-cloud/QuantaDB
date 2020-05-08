@@ -5,7 +5,6 @@
 #include "TestUtil.h"
 #include "MockCluster.h"
 #include "LeaseCommon.h"
-#include "ValidatorRPCHelper.h"
 #include "Validator.h"
 #include "Tub.h"
 #include "MultiWrite.h"
@@ -13,7 +12,7 @@
 
 #include <ostream>
 #include <string>
-#define GTEST_COUT  std::cerr << "[ INFO ] "
+#define GTEST_COUT  std::cerr << std::scientific << "[ INFO ] "
 
 namespace DSSN {
 
@@ -29,15 +28,13 @@ class ValidatorTest : public ::testing::Test {
     DSSN::Validator validator;
     TxEntry *txEntry[1000000];
     uint8_t dataBlob[512];
-	ValidatorRPCHelper helper;
 
     ValidatorTest()
         : logEnabler()
         , context()
         , cluster(&context)
         , clusterClock()
-		, validator(kvStore, true)
-		, helper(validator)
+		, validator(kvStore, NULL, true)
     {
     	memset(txEntry, 0, sizeof(txEntry));
     }
@@ -76,7 +73,7 @@ class ValidatorTest : public ::testing::Test {
     void fillTxEntryPeers(TxEntry *txEntry) {
     	validator.peerInfo.add(txEntry);
     	for (uint64_t peerId = 0; peerId <= txEntry->getPeerSet().size(); peerId++) {
-    		helper.updatePeerInfo(txEntry->getCTS(), peerId, 0, 0xfffffff);
+    		validator.receiveSSNInfo(peerId, txEntry->getCTS(), 0, 0xfffffff, txEntry->getTxState());
     	}
 
     }
@@ -347,9 +344,10 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 	for (int ent = 1; ent < 4; ent++) {
 		for (uint64_t peer = 0; peer < 2; peer++) {
 			EXPECT_EQ(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
-			helper.updatePeerInfo(txEntry[ent]->getCTS(), peer, 0, 0xfffffff);
+			validator.receiveSSNInfo(peer, txEntry[ent]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING);
 		}
 		EXPECT_NE(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
+		EXPECT_EQ(txEntry[ent]->getPeerSet(), txEntry[ent]->getPeerSeenSet());
 	}
 	EXPECT_EQ((uint32_t)5, validator.peerInfo.size());
 	validator.peerInfo.sweep();

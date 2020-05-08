@@ -37,38 +37,21 @@ class TxLog {
     ///the returned id has meaning internal to the class but is expected to be tx CTS
     ///the class may allocate peerSet and writeSet, caller responsible for destructing them?
     ///expected to be used for restart recovery
-    bool getFirstPendingTx(uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout> &writeSet);
+    bool getFirstPendingTx(uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout*> &writeSet);
 
     //obtain the next (non-concluded) commit-intent in the log after the one identified by id
     ///the id, which is considered to be the iterator internally, will be advanced
     ///the class may allocate peerSet and writeSet, caller responsible for destructing them?
     ///expected to be used for restart recovery
-    bool getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout> &writeSet);
+    bool getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout*> &writeSet);
 
     private:
-    // Private data structures
-    enum {
-        TXLOG_COMMIT_INTENT = 1,
-        TXLOG_COMITTED = 2
-    };
+    // private struct
     typedef struct TxLogHeader {
-        uint16_t TxLogType;
-        uint16_t TxLogSize; // size include this header
+        #define TX_LOG_SIG 0xA5A5F0F0
+        uint32_t sig;   // signature
+        uint32_t length;// log record size, include this header
     } TxLogHeader_t;
-
-    typedef struct TxCILog { // commit Intent Log
-        TxLogHeader_t header;
-        uint64_t    CTS;
-        uint32_t    TxCIState;
-        /* serialized validator info */
-    } TxCILog_t;
-
-    typedef struct TxCommitLog { // commit Intent Log
-        TxLogHeader_t header;
-        uint64_t    CTS;
-        uint32_t    TxState;
-    } TxCommitLog_t;
-
 
     // private variables
     #define TXLOG_DIR   "/tmp/txlog"
