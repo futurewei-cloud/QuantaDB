@@ -346,6 +346,8 @@ class InfRcTransport : public Transport {
     ibv_cq*      commonTxCq;        // common completion queue for all transmits
     int          ibPhysicalPort;    // physical port number on the HCA
     int          lid;               // local id for this HCA and physical port
+    int          linkType;          // Link type of the physical port
+    union ibv_gid gid;              // local gid (index=0) for this HCA and physical port
     int          serverSetupSocket; // UDP socket for incoming setup requests;
                                     // -1 means we're not a server
     int          clientSetupSocket; // UDP socket for outgoing setup requests

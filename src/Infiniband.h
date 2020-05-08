@@ -50,19 +50,20 @@ class Infiniband {
     // back and forth.
     class QueuePairTuple {
       public:
-        QueuePairTuple() : qpn(0), psn(0), lid(0), nonce(0)
+        QueuePairTuple() : qpn(0), psn(0), lid(0), gid({0}), nonce(0)
         {
-            static_assert(sizeof(QueuePairTuple) == 68,
+            static_assert(sizeof(QueuePairTuple) == 84,
                               "QueuePairTuple has unexpected size");
         }
-        QueuePairTuple(uint16_t lid, uint32_t qpn, uint32_t psn,
-                       uint64_t nonce, const char* peerName = "?unknown?")
-            : qpn(qpn), psn(psn), lid(lid), nonce(nonce)
+        QueuePairTuple(uint16_t lid, union ibv_gid gid, uint32_t qpn,
+		       uint32_t psn, uint64_t nonce, const char* peerName = "?unknown?")
+        : qpn(qpn), psn(psn), lid(lid), gid(gid), nonce(nonce)
         {
             snprintf(this->peerName, sizeof(this->peerName), "%s",
                 peerName);
         }
         uint16_t    getLid() const      { return lid; }
+	union ibv_gid getGid() const    { return gid;}
         uint32_t    getQpn() const      { return qpn; }
         uint32_t    getPsn() const      { return psn; }
         uint64_t    getNonce() const    { return nonce; }
@@ -72,6 +73,7 @@ class Infiniband {
         uint32_t qpn;            // queue pair number
         uint32_t psn;            // initial packet sequence number
         uint16_t lid;            // infiniband address: "local id"
+	union ibv_gid gid;       // infiniband address: "gid"
         uint64_t nonce;          // random nonce used to confirm replies are
                                  // for received requests
         char peerName[50];       // Optional name for the sender (intended for
@@ -179,6 +181,7 @@ class Infiniband {
     class QueuePair {
       public:
         QueuePair(Infiniband& infiniband,
+		  int linkType,
                   ibv_qp_type type,
                   int ibPhysicalPort,
                   ibv_srq *srq,
@@ -190,9 +193,9 @@ class Infiniband {
                   uint32_t QKey = 0);
         // exists solely as superclass constructor for MockQueuePair derivative
         explicit QueuePair(Infiniband& infiniband)
-            : infiniband(infiniband), type(0), ctxt(NULL), ibPhysicalPort(-1),
-            pd(NULL), srq(NULL), qp(NULL), txcq(NULL), rxcq(NULL),
-            initialPsn(-1), handshakeSin(), peerLid(0) {}
+	  : infiniband(infiniband), linkType(IBV_LINK_LAYER_UNSPECIFIED), type(0),
+	    ctxt(NULL), ibPhysicalPort(-1), pd(NULL), srq(NULL), qp(NULL),
+	    txcq(NULL), rxcq(NULL), initialPsn(-1), handshakeSin(), peerLid(0) {}
         ~QueuePair();
         uint32_t    getInitialPsn() const;
         uint32_t    getLocalQpNumber() const;
@@ -208,6 +211,7 @@ class Infiniband {
 
       //private:
         Infiniband&  infiniband;     // Infiniband to which this QP belongs
+	int          linkType;       // Link type of the physical port
         int          type;           // QP type (IBV_QPT_RC, etc.)
         ibv_context* ctxt;           // device context of the HCA to use
         int          ibPhysicalPort; // physical port number of the HCA
@@ -454,7 +458,8 @@ class Infiniband {
     };
 
     QueuePair*
-    createQueuePair(ibv_qp_type type,
+    createQueuePair(int linkType,
+		    ibv_qp_type type,
                     int ibPhysicalPort,
                     ibv_srq *srq,
                     ibv_cq *txcq,
@@ -465,8 +470,10 @@ class Infiniband {
                     uint32_t QKey = 0);
 
     int getLid(int port);
+    int getLinkType(int port);
     uint32_t getBandwidthGbps(int port);
     uint32_t getMtu(int port);
+    void getGid(int port, union ibv_gid *gid);
 
     void
     postReceive(QueuePair* qp, BufferDescriptor* bd);

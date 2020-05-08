@@ -186,14 +186,28 @@ InfUdDriver::InfUdDriver(Context* context, const ServiceLocator *sl)
         throw DriverException(HERE, errno);
     }
 
-    qp = infiniband->createQueuePair(
-            localMac ? IBV_QPT_RAW_PACKET : IBV_QPT_UD,
-            ibPhysicalPort, NULL, txcq, rxcq, MAX_TX_QUEUE_DEPTH,
-            MAX_RX_QUEUE_DEPTH, 2, QKEY);
-
     // Cache these for easier access.
+    linkType = infiniband->getLinkType(ibPhysicalPort);
+    LOG(NOTICE, "Physical Link Type is %s", (linkType <= 1) ? "Infiniband":"ETHERNET");
     lid = infiniband->getLid(ibPhysicalPort);
+    LOG(NOTICE, "Local Infiniband lid is %u", lid);
     qpn = qp->getLocalQpNumber();
+    infiniband->getGid(ibPhysicalPort, &gid);
+    LOG(NOTICE, "Local Infiniband gid is %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+	gid.raw[ 0], gid.raw[ 1],
+	gid.raw[ 2], gid.raw[ 3],
+	gid.raw[ 4], gid.raw[ 5],
+	gid.raw[ 6], gid.raw[ 7],
+	gid.raw[ 8], gid.raw[ 9],
+	gid.raw[10], gid.raw[11],
+	gid.raw[12], gid.raw[13],
+	gid.raw[14], gid.raw[15]);
+
+    qp = infiniband->createQueuePair(
+	    linkType,
+            localMac ? IBV_QPT_RAW_PACKET : IBV_QPT_UD,
+	    ibPhysicalPort, NULL, txcq, rxcq, MAX_TX_QUEUE_DEPTH,
+            MAX_RX_QUEUE_DEPTH, 2, QKEY);
 
     // Update our locatorString, if one was provided, with the dynamic
     // address.

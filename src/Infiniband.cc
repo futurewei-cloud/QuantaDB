@@ -67,12 +67,13 @@ Infiniband::dumpStats()
  * See QueuePair::QueuePair for parameter documentation.
  */
 Infiniband::QueuePair*
-Infiniband::createQueuePair(ibv_qp_type type, int ibPhysicalPort, ibv_srq *srq,
+Infiniband::createQueuePair(int linkType, ibv_qp_type type, int ibPhysicalPort,
+			    ibv_srq *srq,
                             ibv_cq *txcq, ibv_cq *rxcq, uint32_t maxSendWr,
                             uint32_t maxRecvWr, uint32_t maxSendSges,
                             uint32_t QKey)
 {
-    return new QueuePair(*this, type, ibPhysicalPort, srq, txcq, rxcq,
+    return new QueuePair(*this, linkType, type, ibPhysicalPort, srq, txcq, rxcq,
                          maxSendWr, maxRecvWr, maxSendSges, QKey);
 }
 
@@ -140,6 +141,28 @@ Infiniband::getLid(int port)
         throw TransportException(HERE, ret);
     }
     return ipa.lid;
+}
+
+int
+Infiniband::getLinkType(int port)
+{
+    ibv_port_attr ipa;
+    int ret = ibv_query_port(device.ctxt, downCast<uint8_t>(port), &ipa);
+    if (ret) {
+        RAMCLOUD_LOG(ERROR, "ibv_query_port failed on port %u\n", port);
+        throw TransportException(HERE, ret);
+    }
+    return ipa.link_layer;
+}
+
+void
+Infiniband::getGid(int port, union ibv_gid *gid)
+{
+    int ret = ibv_query_gid(device.ctxt, downCast<uint8_t>(port), 0, gid);
+    if (ret) {
+        RAMCLOUD_LOG(ERROR, "ibv_query_gid failed on port %u\n", port);
+	throw TransportException(HERE, ret);
+    }
 }
 
 /**
@@ -515,10 +538,11 @@ Infiniband::pollCompletionQueue(ibv_cq *cq, int numEntries, ibv_wc *retWcArray)
  * \param QKey
  *      UD Queue Pairs only. The QKey for this pair. 
  */
-Infiniband::QueuePair::QueuePair(Infiniband& infiniband, ibv_qp_type type,
-    int ibPhysicalPort, ibv_srq *srq, ibv_cq *txcq, ibv_cq *rxcq,
+  Infiniband::QueuePair::QueuePair(Infiniband& infiniband, int linkType,
+    ibv_qp_type type, int ibPhysicalPort, ibv_srq *srq, ibv_cq *txcq, ibv_cq *rxcq,
     uint32_t maxSendWr, uint32_t maxRecvWr, uint32_t maxSendSges, uint32_t QKey)
     : infiniband(infiniband),
+      linkType(linkType),
       type(type),
       ctxt(infiniband.device.ctxt),
       ibPhysicalPort(ibPhysicalPort),
@@ -644,6 +668,12 @@ Infiniband::QueuePair::plumb(QueuePairTuple *qpt)
     qpa.ah_attr.sl = 0;
     qpa.ah_attr.src_path_bits = 0;
     qpa.ah_attr.port_num = downCast<uint8_t>(ibPhysicalPort);
+    if (linkType == IBV_LINK_LAYER_ETHERNET) {
+        qpa.ah_attr.grh.dgid = qpt->getGid();
+	qpa.ah_attr.grh.sgid_index = 0;
+	qpa.ah_attr.grh.hop_limit = 1;
+	qpa.ah_attr.is_global = 1;
+    }
 
     r = ibv_modify_qp(qp, &qpa, IBV_QP_STATE |
                                 IBV_QP_AV |
