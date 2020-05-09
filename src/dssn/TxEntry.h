@@ -81,24 +81,25 @@ class TxEntry {
     PUBLIC:
     enum {
     	//TX_CI_xxx states are for validator internal use to track the progress
-    	//through the processing stages
+    	//through the processing stages. The sequential order must be maintained.
+
         /// Transaction commit-intent is not queued for scheduling
         TX_CI_UNQUEUED = 1,
 
         /// Transaction commit-intent is queued for scheduling
-        TX_CI_QUEUED = 2,
+        TX_CI_QUEUED,
 
         /// Transaction commit-intent is scheduled
-        TX_CI_SCHEDULED = 3,
+        TX_CI_SCHEDULED,
 
         /// Transaction commit-intent has had SSN info sent to peers
-        TX_CI_LISTENING = 4,
+        TX_CI_LISTENING,
 
-        /// Transaction commit-intent has reached a commit/abort/conflict decision
-        TX_CI_CONCLUDED = 5,
+        /// Transaction commit-intent has reached a decision and that is logged
+        TX_CI_CONCLUDED,
 
 		/// Transaction commit-intent has finished its life, and txEntry can be purged
-		TX_CI_FINISHED = 6,
+		TX_CI_FINISHED,
     };
 
     enum {
