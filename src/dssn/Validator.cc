@@ -256,11 +256,6 @@ Validator::serialize() {
 
 bool
 Validator::conclude(TxEntry& txEntry) {
-    /*
-     * log the commit result of a local tx.?
-     * log the commit/abort result of a distributed tx as its CI has been logged?
-     */
-
 	//record results and meta data
 	if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
 		updateKVReadSetPStamp(txEntry);
@@ -269,9 +264,10 @@ Validator::conclude(TxEntry& txEntry) {
 
 	if (txEntry.getPeerSet().size() >= 1)
 		activeTxSet.remove(&txEntry);
+	else
+		rpcService->sendTxCommitReply(&txEntry);
 
-	txEntry.setTxCIState(TxEntry::TX_CI_FINISHED);
-	DSSNService::sendTxCommitReply(&txEntry);
+	txEntry.setTxCIState(TxEntry::TX_CI_FINISHED); //redundant if txEntry is deleted right after
 
 	//for ease of managing memory, do not free during unit test
 	if (!isUnderTest)
@@ -290,6 +286,8 @@ Validator::peer() {
 			while (txEntry) {
 				if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED
 						&& txEntry->getTxState() != TxEntry::TX_ALERT) { //Fixme: not to set upon ALERT???
+					//log CI before sending
+					//Fixme: txLog.add(txEntry);
 					rpcService->sendDSSNInfo(txEntry);
 					txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
 				}
@@ -322,7 +320,9 @@ void
 Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
 	TxEntry *txEntry;
 	//Fixme: implement/use the TxState state machine --- here and/or peering thread???
+	//Fixme: handle peer SSN info being received before txEntry creation!!!
 	if (peerInfo.update(cts, peerId, pstamp, sstamp, txEntry)) {
+		//Fixme: should following section be part of the above update() to be thread safe???
 		if (txEntry->isExclusionViolated()) {
 			txEntry->setTxState(TxEntry::TX_ABORT);
 			if (peerTxState == TxEntry::TX_COMMIT) {
@@ -337,8 +337,19 @@ Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64
 			}
 		} else
 			return; //inconclusive yet
-		insertConcludeQueue(txEntry);
-		txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
+
+		//Our validator restart design assumes logging going asynchronously
+		//with saving write set to KV store, but
+		//Logging must precede sending tx CI reply
+		//Note that our overall scheme does not need to log local transactions at all
+		//By now the tuples should have successfully been preput into the KV store, so
+		//logging the CI conclusion is considered sealing a tx commit.
+		if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED
+				&& true /* Fixme: txLog.add(txEntry) */) {
+			txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
+			assert(insertConcludeQueue(txEntry));
+			rpcService->sendTxCommitReply(txEntry);
+		}
 	}
 }
 

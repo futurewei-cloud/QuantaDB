@@ -6,6 +6,7 @@
 #ifndef DSSNSERVICE_H
 #define DSSNSERVICE_H
 
+#include "AdminService.h"
 #include "Service.h"
 #include "ServerConfig.h"
 #include "ServerList.h"
@@ -30,7 +31,13 @@ class DSSNService : public Service {
    bool sendDSSNInfo(TxEntry *txEntry);
 
  private:
-   inline uint64_t getServerId() { return serverId.getId(); }
+   inline uint64_t getServerId() {
+       AdminService* admin = context->getAdminService();
+       if (admin) {
+	   return admin->serverId.getId();
+       }
+       return 0;
+   }
    void multiOp(const WireFormat::MultiOpDSSN::Request* reqHdr,
                 WireFormat::MultiOpDSSN::Response* respHdr,
                 Rpc* rpc);
