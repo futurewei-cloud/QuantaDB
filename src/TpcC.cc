@@ -354,6 +354,8 @@ Driver::initBenchmark()
                             static_cast<uint32_t>(it->second.size()) * 4);
                 cNameKey nameKey;
                 memcpy(nameKey.lastName, it->first.data(), it->first.size());
+		nameKey.W_ID = W_ID;
+		nameKey.D_ID = D_ID;
                 ramcloud->write(tableId[W_ID], &nameKey,
                                 static_cast<uint16_t>(sizeof(nameKey)),
                                 toWrite.getRange(0, toWrite.size()),
@@ -421,6 +423,8 @@ Driver::initBenchmark(uint32_t W_ID)
                         static_cast<uint32_t>(it->second.size()) * 4);
             cNameKey nameKey;
             memcpy(nameKey.lastName, it->first.data(), it->first.size());
+	    nameKey.W_ID = W_ID;
+	    nameKey.D_ID = D_ID;
             ramcloud->write(tableId[W_ID], &nameKey,
                             static_cast<uint16_t>(sizeof(nameKey)),
                             toWrite.getRange(0, toWrite.size()),
@@ -776,6 +780,8 @@ InputPayment::generate(int W_ID, int numWarehouse)
     if (rand() % 100 < 60) {
         byLastName = true;
         genLastName(lastName, NURand(255, 0, 999));
+	//Generate a C_ID in case the generated last name doesn't exist
+	C_ID = NURand(1023, 1, 3000);
     } else {
         byLastName = false;
         C_ID = NURand(1023, 1, 3000);
@@ -803,6 +809,8 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
     bool byLastName = in->byLastName;
     cNameKey nameKey;
     strncpy(nameKey.lastName, in->lastName, 17);
+    nameKey.D_ID = C_D_ID;
+    nameKey.W_ID = C_W_ID;
     double H_AMOUNT = in->H_AMOUNT;
 
     ///////////////////////////
@@ -818,21 +826,20 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
     if (byLastName) {
         t.read(tableId[W_ID], &nameKey, static_cast<uint16_t>(sizeof(nameKey)),
                &buf_cid, &isObjectExist);
-	if (!isObjectExist) {
-	    *outcome = false;
-	    return 0;
-	}
-        numCustomer = *(buf_cid.getStart<uint32_t>());
-        buf_idx += sizeof32(numCustomer);
-        if (numCustomer == 0) {
-            //TODO abort TX.
-            return 0;
-        }
 
-        uint32_t* cids;
-        cids = static_cast<uint32_t*>(buf_cid.getRange(buf_idx, numCustomer*4));
-        in->C_ID = cids[(int)((numCustomer - 1) / 2)];
-        C_ID = in->C_ID;
+	if (isObjectExist) {
+	    numCustomer = *(buf_cid.getStart<uint32_t>());
+	    buf_idx += sizeof32(numCustomer);
+	    if (numCustomer == 0) {
+	        //TODO abort TX.
+	        return 0;
+	    }
+
+	    uint32_t* cids;
+	    cids = static_cast<uint32_t*>(buf_cid.getRange(buf_idx, numCustomer*4));
+	    in->C_ID = cids[(int)((numCustomer - 1) / 2)];
+	    C_ID = in->C_ID; //Update the C_ID associated with the LastName
+	}
     }
     assert(C_ID);
 
@@ -913,6 +920,8 @@ InputOrderStatus::generate()
     if (rand() % 100 < 60) {
         byLastName = true;
         genLastName(lastName, NURand(255, 0, 999));
+	//Generate a C_ID in case the generated last name doesn't exist
+	C_ID = NURand(1023, 1, 3000);
     } else {
         byLastName = false;
         C_ID = NURand(1023, 1, 3000);
@@ -937,6 +946,8 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
     bool byLastName = in->byLastName;
     cNameKey nameKey;
     strncpy(nameKey.lastName, in->lastName, 17);
+    nameKey.D_ID = D_ID;
+    nameKey.W_ID = W_ID;
 
     ///////////////////////////
     // Process: Read.
@@ -950,19 +961,17 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
     if (byLastName) {
         t.read(tableId[W_ID], &nameKey, static_cast<uint16_t>(sizeof(nameKey)),
                &buf_cid, &isObjectExist);
-	if (!isObjectExist) {
-	    *outcome = false;
-	    return 0;
-	}
-        numCustomer = *(buf_cid.getStart<uint32_t>());
-        buf_idx += sizeof32(numCustomer);
-        if (numCustomer == 0) {
-            return 0;
-        }
+	if (isObjectExist) {
+	    numCustomer = *(buf_cid.getStart<uint32_t>());
+	    buf_idx += sizeof32(numCustomer);
+	    if (numCustomer == 0) {
+	        return 0;
+	    }
 
-        uint32_t* cids;
-        cids = static_cast<uint32_t*>(buf_cid.getRange(buf_idx, numCustomer*4));
-        in->C_ID = cids[(int)((numCustomer - 1) / 2)];
+	    uint32_t* cids;
+	    cids = static_cast<uint32_t*>(buf_cid.getRange(buf_idx, numCustomer*4));
+	    in->C_ID = cids[(int)((numCustomer - 1) / 2)];
+	}
         C_ID = in->C_ID;
     }
     assert(C_ID);

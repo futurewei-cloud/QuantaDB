@@ -365,7 +365,7 @@ void TpcCTest::txPayment_byLastName() {
     in.generate(W_ID, driver->context.numWarehouse);
     // Overrides the generated input to use lastName instead of C_ID.
     in.byLastName = true;
-    genLastName(in.lastName, 0); //BARBARBAR
+    snprintf(in.lastName, sizeof(in.lastName), "%s", "txPayment");
     in.C_ID = 0;
 
     Buffer toWrite;
@@ -378,7 +378,9 @@ void TpcCTest::txPayment_byLastName() {
     toWrite.appendExternal(nameToId.data(),
                 static_cast<uint32_t>(nameToId.size()) * 4);
     cNameKey nameKey;
-    strncpy(nameKey.lastName, "BARBARBAR", 17);
+    strncpy(nameKey.lastName, in.lastName, 17);
+    nameKey.W_ID = in.C_W_ID;
+    nameKey.D_ID = in.C_D_ID;
     ramcloud->write(tableId[W_ID], &nameKey,
                     static_cast<uint16_t>(sizeof(nameKey)),
                     toWrite.getRange(0, toWrite.size()),
@@ -452,7 +454,7 @@ void TpcCTest::txOrderStatus_byLastName() {
     in.generate();
     // Overrides the generated input to use lastName instead of C_ID.
     in.byLastName = true;
-    genLastName(in.lastName, 0); //BARBARBAR
+    snprintf(in.lastName, sizeof(in.lastName), "%s", "txOrderStatus");
     in.C_ID = 0;
 
     Buffer toWrite;
@@ -465,7 +467,9 @@ void TpcCTest::txOrderStatus_byLastName() {
     toWrite.appendExternal(nameToId.data(),
                 static_cast<uint32_t>(nameToId.size()) * 4);
     cNameKey nameKey;
-    strncpy(nameKey.lastName, "BARBARBAR", 17);
+    nameKey.W_ID = W_ID;
+    nameKey.D_ID = in.D_ID;
+    strncpy(nameKey.lastName, in.lastName, 17);
     ramcloud->write(tableId[W_ID], &nameKey,
                     static_cast<uint16_t>(sizeof(nameKey)),
                     toWrite.getRange(0, toWrite.size()),

@@ -405,6 +405,8 @@ class cNameKey {
     explicit cNameKey() : typeLastName(11), lastName() {}
 
     uint32_t typeLastName;
+    uint32_t D_ID;
+    uint32_t W_ID;
     char lastName[17];
 }__attribute__((packed));
 
