@@ -570,9 +570,9 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     txEntry->setPStamp(reqHdr->meta.pstamp);
     txEntry->setSStamp(reqHdr->meta.sstamp);
     txEntry->setRpcHandle(rpc->getReplyHandle());
-    //Fixme: we only focus on local tx for now, so we will leave the peer set empty
-	for (uint32_t i = 1/*Fixme to 0 later*/; i < participantCount; i++) {
-		txEntry->insertPeerSet(participants[i].dssnServerId);
+	for (uint32_t i = 0; i < participantCount; i++) {
+		if (participants[i].dssnServerId != getServerId())
+			txEntry->insertPeerSet(participants[i].dssnServerId);
 	}
     uint32_t readSetIdx = 0;
     uint32_t writeSetIdx = 0;
@@ -621,6 +621,11 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
             std::memcpy(pkv.getKey().key.get() + sizeof(tableId), stringKey, currentReq->keyLength);
             KVLayout *nkv = kvStore->preput(pkv);
+            if (nkv == NULL) {
+                respHdr->common.status = STATUS_NO_TABLE_SPACE;
+                respHdr->vote = WireFormat::TxPrepare::ABORT;
+                break;
+            }
             txEntry->insertReadSet(nkv, readSetIdx++);
             assert(readSetIdx <= numReadRequests);
 
@@ -657,6 +662,11 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             std::memcpy(pkv.getKey().key.get() + sizeof(tableId), stringKey, currentReq->keyLength);
             pkv.v.isTombstone = true;
             KVLayout *nkv = kvStore->preput(pkv);
+            if (nkv == NULL) {
+                respHdr->common.status = STATUS_NO_TABLE_SPACE;
+                respHdr->vote = WireFormat::TxPrepare::ABORT;
+                break;
+            }
             txEntry->insertWriteSet(nkv, writeSetIdx++);
             assert(writeSetIdx <= (numRequests - numReadRequests));
         } else if (*type == WireFormat::TxPrepare::WRITE) {
@@ -704,6 +714,11 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             	pkv.getVLayout().valuePtr = (uint8_t*)const_cast<void*>(pVal);
             }
             KVLayout *nkv = kvStore->preput(pkv);
+            if (nkv == NULL) {
+                respHdr->common.status = STATUS_NO_TABLE_SPACE;
+                respHdr->vote = WireFormat::TxPrepare::ABORT;
+                break;
+            }
             txEntry->insertWriteSet(nkv, writeSetIdx++);
             assert(writeSetIdx <= (numRequests - numReadRequests));
         } else {
@@ -716,7 +731,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 
     if (respHdr->common.status == STATUS_OK) {
     	validator->insertTxEntry(txEntry);
-	rpc->enableAsync();
+    	rpc->enableAsync();
 
     	while (validator->testRun()) {
     		delete txEntry;
@@ -770,7 +785,11 @@ DSSNService::sendDSSNInfo(TxEntry *txEntry)
 	req.pstamp = txEntry->getPStamp();
 	req.sstamp = txEntry->getSStamp();;
 	req.senderPeerId = getServerId();
-	req.txState = txEntry->getTxState();
+	//report ABORT/COMMIT only if the conclusion is logged
+	if (txEntry->getTxCIState() == TxEntry::TX_CI_CONCLUDED)
+		req.txState = txEntry->getTxState();
+	else
+		req.txState = TxEntry::TX_PENDING;
 
 	std::set<uint64_t>::iterator it;
 	for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {

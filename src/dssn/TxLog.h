@@ -45,15 +45,17 @@ class TxLog {
     ///expected to be used for restart recovery
     bool getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout*> &writeSet);
 
+    // Return data size of TxLog
     size_t size() { return log->size(); }
 
     private:
     // private struct
-    typedef struct TxLogHeader {
-        #define TX_LOG_SIG 0xA5A5F0F0
+    typedef struct TxLogMarker {
+        #define TX_LOG_HEAD_SIG 0xA5A5F0F0
+        #define TX_LOG_TAIL_SIG 0xF0F0A5A5
         uint32_t sig;   // signature
-        uint32_t length;// log record size, include this header
-    } TxLogHeader_t;
+        uint32_t length;// Tx log record size, include header and tailer
+    } TxLogHeader_t, TxLogTailer_t;
 
     // private variables
     #define TXLOG_DIR   "/tmp/txlog"

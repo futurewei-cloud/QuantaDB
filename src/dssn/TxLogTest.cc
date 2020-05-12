@@ -47,6 +47,8 @@ TEST_F(TxLogTest, TxLogUnitTest)
     // getTxState
     for (uint64_t idx = 0; idx < 100; idx++) {
         uint32_t tx_state = ((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT;
+        if (txlog.getTxState(idx) != tx_state)
+            GTEST_COUT << "idx=" << idx << std::endl;
         EXPECT_EQ(txlog.getTxState(idx), tx_state);
     }
 
