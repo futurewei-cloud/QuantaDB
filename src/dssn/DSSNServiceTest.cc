@@ -79,3 +79,12 @@ TEST_F(DSSNServiceTest, notification_invalid_serverid) {
     EXPECT_EQ("notify: Invalid participate server id: 99",
 	      TestLog::get());
 }
+
+TEST_F(DSSNServiceTest, notification_send_dssn_info) {
+    const string message(100, 'x');
+    TestLog::reset();
+    DSSN::TxEntry txEntry(1,1);
+    service->sendDSSNInfo(&txEntry, true, serverId.serverId);
+    EXPECT_EQ("notify: Invalid participate server id: 99",
+          TestLog::get());
+}

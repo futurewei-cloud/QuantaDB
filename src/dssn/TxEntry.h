@@ -137,20 +137,20 @@ class TxEntry {
     inline std::mutex& getMutex() { return mutexForPeerUpdate; }
     inline void* getRpcHandle() { return rpcHandle; }
     inline void insertPeerSet(uint64_t peerId) { peerSet.insert(peerId); }
-    inline auto& getPeerSet() { return peerSet; }
+    inline std::set<uint64_t>& getPeerSet() { return peerSet; }
     inline void insertPeerSeenSet(uint64_t peerId) { peerSeenSet.insert(peerId); }
-    inline auto& getPeerSeenSet() { return peerSeenSet; }
+    inline std::set<uint64_t>& getPeerSeenSet() { return peerSeenSet; }
     inline bool isAllPeerSeen() { return peerSeenSet == peerSet; }
-    inline auto& getWriteSet() { return writeSet; }
-    inline auto& getReadSet() { return readSet; }
-    inline auto getWriteSetSize() { return writeSetSize; }
-    inline auto getReadSetSize() { return readSetSize; }
-    inline auto& getWriteSetHash() { return writeSetHash; }
-    inline auto& getReadSetHash() { return readSetHash; }
-    inline auto& getWriteSetInStore() { return writeSetInStore; }
-    inline auto& getReadSetInStore() { return readSetInStore; }
-    inline auto& getWriteSetIndex() { return writeSetIndex; }
-    inline auto& getReadSetIndex() { return readSetIndex; }
+    inline boost::scoped_array<KVLayout *>& getWriteSet() { return writeSet; }
+    inline boost::scoped_array<KVLayout *>& getReadSet() { return readSet; }
+    inline uint32_t getWriteSetSize() { return writeSetSize; }
+    inline uint32_t getReadSetSize() { return readSetSize; }
+    inline boost::scoped_array<uint64_t>& getWriteSetHash() { return writeSetHash; }
+    inline boost::scoped_array<uint64_t>& getReadSetHash() { return readSetHash; }
+    inline boost::scoped_array<KVLayout *>& getWriteSetInStore() { return writeSetInStore; }
+    inline boost::scoped_array<KVLayout *>& getReadSetInStore() { return readSetInStore; }
+    inline uint32_t& getWriteSetIndex() { return writeSetIndex; }
+    inline uint32_t& getReadSetIndex() { return readSetIndex; }
     inline void setCTS(uint64_t val) { cts = val; }
     inline void setSStamp(uint64_t val) { sstamp = val; }
     inline void setPStamp(uint64_t val) { pstamp = val; }
@@ -162,6 +162,7 @@ class TxEntry {
     bool insertReadSet(KVLayout* kv, uint32_t i);
     inline void insertWriteSetInStore(KVLayout* kv, uint32_t i) { writeSetInStore[i] = kv; }
     inline void insertReadSetInStore(KVLayout* kv, uint32_t i) { readSetInStore[i] = kv; }
+    //Fixme: move these functions into TxLog.cc to hide implementation details from TxEntry
     uint32_t serializeSize();
     void serialize( outMemStream& out );
     void deSerialize_common( inMemStream& in );

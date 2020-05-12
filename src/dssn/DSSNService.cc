@@ -413,6 +413,7 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
             void * pval = new char[pValLen];
             std::memcpy(pval, pVal, pValLen);
             kvStore->put(kv, 0, 0xffffffffffffffff, (uint8_t*)pval, pValLen);
+            assert(0);
         }
         currentResp->status = STATUS_OK;
         // ---- write one object done ----
@@ -463,6 +464,7 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
 		  WireFormat::WriteDSSN::Response* respHdr,
 		  Rpc* rpc)
 {
+    //Fixme: later replace this with a single-write transaction
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
 
     // A temporary object that has an invalid version and timestamp
@@ -514,6 +516,7 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
         void * pval = new char[pValLen];
         std::memcpy(pval, pVal, pValLen);
         kvStore->put(kv, 0, 0xffffffffffffffff, (uint8_t*)pval, pValLen);
+        assert(0);
     }
 }
   
@@ -778,7 +781,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
 }
 
 bool
-DSSNService::sendDSSNInfo(TxEntry *txEntry)
+DSSNService::sendDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
 {
 	WireFormat::DSSNSendInfoAsync::Request req;
 	req.cts = txEntry->getCTS();
@@ -791,12 +794,43 @@ DSSNService::sendDSSNInfo(TxEntry *txEntry)
 	else
 		req.txState = TxEntry::TX_PENDING;
 
-	std::set<uint64_t>::iterator it;
-	for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
-		Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
-				reinterpret_cast<void *>(&req), sizeof(req), *new ServerId(*it));
+	if (isSpecific) {
+	    Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
+	            reinterpret_cast<void *>(&req), sizeof(req), *new ServerId(target));
+	} else {
+	    std::set<uint64_t>::iterator it;
+	    for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
+	        if (txEntry->getPeerSeenSet().count(*it) > 0)
+	            continue;
+	        Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
+	                reinterpret_cast<void *>(&req), sizeof(req), *new ServerId(*it));
+	    }
 	}
 	return true;
+}
+
+bool
+DSSNService::requestDSSNInfo(TxEntry *txEntry)
+{
+    WireFormat::DSSNRequestInfoAsync::Request req;
+    req.cts = txEntry->getCTS();
+    req.pstamp = txEntry->getPStamp();
+    req.sstamp = txEntry->getSStamp();;
+    req.senderPeerId = getServerId();
+    //report ABORT/COMMIT only if the conclusion is logged
+    if (txEntry->getTxCIState() == TxEntry::TX_CI_CONCLUDED)
+        req.txState = txEntry->getTxState();
+    else
+        req.txState = TxEntry::TX_PENDING;
+
+    std::set<uint64_t>::iterator it;
+    for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
+        if (txEntry->getPeerSeenSet().count(*it) > 0)
+            continue;
+        Notifier::notify(context, WireFormat::DSSN_REQUEST_INFO_ASYNC,
+                reinterpret_cast<void *>(&req), sizeof(req), *new ServerId(*it));
+    }
+    return true;
 }
 
 void

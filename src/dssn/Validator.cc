@@ -79,24 +79,24 @@ Validator::updateTxPStampSStamp(TxEntry &txEntry) {
     //update sstamp of transaction
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
-    	KVLayout *kv = kvStore.fetch(readSet[i]->k);
-    	if (kv) {
-			//A safety check to ensure that the version in the kv store
-			//is the same one when the read has occurred.
-			//A missing version, possibly due to failure recovery or
-    		//our design choice of not keeping long version chains,
-    		//would cause an abort.
-    		if (kv->meta().cStamp != readSet[i]->meta().cStamp) {
-    			txEntry.setSStamp(0); //deliberately cause an exclusion window violation
-    			return false;
-    		}
+        KVLayout *kv = kvStore.fetch(readSet[i]->k);
+        if (kv) {
+            //A safety check to ensure that the version in the kv store
+            //is the same one when the read has occurred.
+            //A missing version, possibly due to failure recovery or
+            //our design choice of not keeping long version chains,
+            //would cause an abort.
+            if (kv->meta().cStamp != readSet[i]->meta().cStamp) {
+                txEntry.setSStamp(0); //deliberately cause an exclusion window violation
+                return false;
+            }
 
-    		txEntry.setSStamp(std::min(txEntry.getSStamp(), kv->meta().sStamp));
-    		if (txEntry.isExclusionViolated()) {
-    			return false;
-    		}
+            txEntry.setSStamp(std::min(txEntry.getSStamp(), kv->meta().sStamp));
+            if (txEntry.isExclusionViolated()) {
+                return false;
+            }
         }
-    	txEntry.insertReadSetInStore(kv, i);
+        txEntry.insertReadSetInStore(kv, i);
     }
 
     //update pstamp of transaction
@@ -360,7 +360,7 @@ Validator::replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t
 		assert(0); //Fixme: do recovery or debug
 	peerInfo.update(cts, peerId, pstamp, sstamp, txEntry);
 	if (rpcService) //unit test may make it NULL
-		rpcService->sendDSSNInfo(txEntry);
+		rpcService->sendDSSNInfo(txEntry, true, peerId);
 }
 
 } // end Validator class
