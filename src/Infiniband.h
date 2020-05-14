@@ -267,15 +267,17 @@ class Infiniband {
         string toString() const;
 
         Address(Infiniband& infiniband, int physicalPort,
-                   const ServiceLocator* serviceLocator);
+		const ServiceLocator* serviceLocator, int linkType=IBV_LINK_LAYER_INFINIBAND);
         Address(Infiniband& infiniband, int physicalPort,
-                   uint16_t lid, uint32_t qpn)
+		uint16_t lid, uint32_t qpn, union ibv_gid gid, int linkType = IBV_LINK_LAYER_INFINIBAND)
             : Driver::Address()
             , infiniband(infiniband)
             , physicalPort(physicalPort)
             , lid(lid)
             , qpn(qpn)
+	    , linkType(linkType)
             , ah(NULL)
+	    , gid(gid)
         {
         }
         Address(const Address& other)
@@ -284,7 +286,9 @@ class Infiniband {
             , physicalPort(other.physicalPort)
             , lid(other.lid)
             , qpn(other.qpn)
+	    , linkType(other.linkType)
             , ah(NULL) // don't want multiple ibv_destroy_ah calls
+	    , gid(other.gid)
         {
         }
         ~Address();
@@ -302,7 +306,9 @@ class Infiniband {
         int physicalPort;   // physical port number on local device
         uint16_t lid;       // local id (address) of the remote HCA
         uint32_t qpn;       // queue pair number
+	int linkType;       // Physical link type (Infiniband vs Ethernet)
         mutable ibv_ah* ah; // address handle, may be NULL
+	union ibv_gid gid;
     };
 
     // wrap an RX or TX buffer registered with the HCA

@@ -64,9 +64,9 @@ class InfUdDriver : public Driver {
             return new MacAddress(
                 serviceLocator->getOption<const char*>("mac"));
         } else {
-            Infiniband::Address ibAddress(*infiniband, ibPhysicalPort,
-                    serviceLocator);
-            return new Address(ibAddress.getHandle(), ibAddress.getQpn());
+	    Infiniband::Address* ibAddress = new Infiniband::Address(*infiniband, ibPhysicalPort,
+					  serviceLocator, linkType);
+            return new Address(ibAddress->getHandle(), ibAddress->getQpn());
         }
     }
 

@@ -948,11 +948,13 @@ Infiniband::QueuePair::getSinName() const
  */
 Infiniband::Address::Address(Infiniband& infiniband,
                              int physicalPort,
-                             const ServiceLocator* serviceLocator)
+                             const ServiceLocator* serviceLocator,
+			     int linkType)
     : infiniband(infiniband)
     , physicalPort(physicalPort)
     , lid()
     , qpn()
+    , linkType(linkType)
     , ah(NULL)
 {
     try {
@@ -972,6 +974,27 @@ Infiniband::Address::Address(Infiniband& infiniband,
     } catch (NoSuchKeyException &e) {
         throw BadAddressException(HERE,
             "Mandatory option ``qpn'' missing from infiniband "
+            "ServiceLocator.", serviceLocator);
+    } catch (...) {
+        throw BadAddressException(HERE,
+            "Could not parse qpn. Invalid or out of range.",
+            serviceLocator);
+    }
+
+    try {
+        string gidStr = serviceLocator->getOption("gid");
+	sscanf(gidStr.c_str(), "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+	       &gid.raw[ 0], &gid.raw[ 1],
+	       &gid.raw[ 2], &gid.raw[ 3],
+	       &gid.raw[ 4], &gid.raw[ 5],
+	       &gid.raw[ 6], &gid.raw[ 7],
+	       &gid.raw[ 8], &gid.raw[ 9],
+	       &gid.raw[10], &gid.raw[11],
+	       &gid.raw[12], &gid.raw[13],
+	       &gid.raw[14], &gid.raw[15]);
+    } catch (NoSuchKeyException &e) {
+        throw BadAddressException(HERE,
+            "Mandatory option ``gid'' missing from infiniband "
             "ServiceLocator.", serviceLocator);
     } catch (...) {
         throw BadAddressException(HERE,
@@ -1000,7 +1023,18 @@ Infiniband::Address::getHash() const
 string
 Infiniband::Address::toString() const
 {
-    return format("%u:%u", lid, qpn);
+    char gidCStr[40];
+    snprintf(gidCStr, sizeof(gidCStr),
+	     "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+	     gid.raw[ 0], gid.raw[ 1],
+	     gid.raw[ 2], gid.raw[ 3],
+	     gid.raw[ 4], gid.raw[ 5],
+	     gid.raw[ 6], gid.raw[ 7],
+	     gid.raw[ 8], gid.raw[ 9],
+	     gid.raw[10], gid.raw[11],
+	     gid.raw[12], gid.raw[13],
+	     gid.raw[14], gid.raw[15]);
+    return format("%u:%u:%s", lid, qpn, gidCStr);
 }
 
 /**
@@ -1016,17 +1050,27 @@ Infiniband::Address::toString() const
 ibv_ah*
 Infiniband::Address::getHandle() const
 {
+    uint8_t ahKey = 0;
+
+    if (linkType == IBV_LINK_LAYER_ETHERNET) {
+        //TODO: qpn might not be unique in the cluster
+        //memcpy(&ahKey, &gid.raw[14], sizeof(ahKey));
+	ahKey = qpn;
+    } else {
+        ahKey = lid;
+    }
+
     if (ah != NULL) {
         return ah;
     }
 
     // See if we have a cached value.
-    AddressHandleMap::iterator it = infiniband.ahMap.find(lid);
+    AddressHandleMap::iterator it = infiniband.ahMap.find(ahKey);
     if (it != infiniband.ahMap.end()) {
         ah = it->second;
         return ah;
     }
-
+    //RAMCLOUD_LOG(NOTICE, "Address: %s", this->toString().c_str());
     // Must allocate a new address handle. See also:
     // https://www.rdmamojo.com/2012/09/22/ibv_create_ah/
     ibv_ah_attr attr = {
@@ -1038,13 +1082,22 @@ Infiniband::Address::getHandle() const
         .is_global = 0,
         .port_num = downCast<uint8_t>(physicalPort)
     };
+
+    if (linkType == IBV_LINK_LAYER_ETHERNET) {
+        // For RoCE mode, GRH header is mandatory
+        attr.grh.dgid = gid;
+	attr.grh.sgid_index = 0;
+	attr.grh.hop_limit = 1;
+	attr.is_global = 1;
+    }
+
     infiniband.totalAddressHandleAllocCalls += 1;
     uint64_t start = Cycles::rdtsc();
     ah = ibv_create_ah(infiniband.pd.pd, &attr);
     infiniband.totalAddressHandleAllocTime += Cycles::rdtsc() - start;
     if (ah == NULL)
         throw TransportException(HERE, "failed to create ah", errno);
-    infiniband.ahMap[lid] = ah;
+    infiniband.ahMap[ahKey] = ah;
     return ah;
 }
 

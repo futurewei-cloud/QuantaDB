@@ -191,24 +191,27 @@ InfUdDriver::InfUdDriver(Context* context, const ServiceLocator *sl)
     LOG(NOTICE, "Physical Link Type is %s", (linkType <= 1) ? "Infiniband":"ETHERNET");
     lid = infiniband->getLid(ibPhysicalPort);
     LOG(NOTICE, "Local Infiniband lid is %u", lid);
-    qpn = qp->getLocalQpNumber();
-    infiniband->getGid(ibPhysicalPort, &gid);
-    LOG(NOTICE, "Local Infiniband gid is %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
-	gid.raw[ 0], gid.raw[ 1],
-	gid.raw[ 2], gid.raw[ 3],
-	gid.raw[ 4], gid.raw[ 5],
-	gid.raw[ 6], gid.raw[ 7],
-	gid.raw[ 8], gid.raw[ 9],
-	gid.raw[10], gid.raw[11],
-	gid.raw[12], gid.raw[13],
-	gid.raw[14], gid.raw[15]);
 
+    infiniband->getGid(ibPhysicalPort, &gid);
+    char gidCStr[40];
+    snprintf(gidCStr, sizeof(gidCStr), "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+	     gid.raw[ 0], gid.raw[ 1],
+	     gid.raw[ 2], gid.raw[ 3],
+	     gid.raw[ 4], gid.raw[ 5],
+	     gid.raw[ 6], gid.raw[ 7],
+	     gid.raw[ 8], gid.raw[ 9],
+	     gid.raw[10], gid.raw[11],
+	     gid.raw[12], gid.raw[13],
+	     gid.raw[14], gid.raw[15]);
+
+    LOG(NOTICE, "Local Infiniband gid is %s", gidCStr);
     qp = infiniband->createQueuePair(
 	    linkType,
             localMac ? IBV_QPT_RAW_PACKET : IBV_QPT_UD,
 	    ibPhysicalPort, NULL, txcq, rxcq, MAX_TX_QUEUE_DEPTH,
             MAX_RX_QUEUE_DEPTH, 2, QKEY);
 
+    qpn = qp->getLocalQpNumber();
     // Update our locatorString, if one was provided, with the dynamic
     // address.
     if (!locatorString.empty()) {
@@ -219,7 +222,8 @@ InfUdDriver::InfUdDriver(Context* context, const ServiceLocator *sl)
         if (localMac) {
             locatorString += "mac=" + localMac->toString();
         } else {
-            locatorString += format("lid=%u,qpn=%u", lid, qpn);
+            locatorString += format("lid=%u,qpn=%u,", lid, qpn);
+	    locatorString += format("gid=%s", gidCStr);
         }
         LOG(NOTICE, "Locator for InfUdDriver: %s", locatorString.c_str());
     }
@@ -660,18 +664,33 @@ InfUdDriver::receivePackets(uint32_t maxPackets,
                     bd->packetLength - ETH_HEADER_SIZE,
                     bd->buffer + ETH_HEADER_SIZE);
         } else {
-            ibv_ah* ah;
-            auto it = infiniband->ahMap.find(incoming->slid);
-            if (unlikely(it == infiniband->ahMap.end())) {
-                Infiniband::Address infAddress(*infiniband, ibPhysicalPort,
-                        incoming->slid, incoming->src_qp);
-                ah = infAddress.getHandle();
-            } else {
-                ah = it->second;
-            }
+	    uint16_t ahKey = 0;
+	    ibv_ah* ah;
 
-            static_assert(GRH_SIZE >= sizeof(Address), "Not enough space");
-            new(bd->buffer) Address(ah, incoming->src_qp);
+	    if (linkType == IBV_LINK_LAYER_INFINIBAND) {
+		ahKey = incoming->slid;
+	    } else {
+	        ahKey = incoming->src_qp; //TODO: qp number might not be unique
+	    }
+
+	    auto it = infiniband->ahMap.find(ahKey);
+	    if (unlikely(it == infiniband->ahMap.end())) {
+	        // Extract GRH from the receiver buffer
+	        struct ibv_grh grh = {};
+		struct ibv_grh* pgrh = &grh;
+		if (incoming->wc_flags & IBV_WC_GRH) {
+		    pgrh = reinterpret_cast<struct ibv_grh*>(bd->buffer);
+		}
+		Infiniband::Address infAddress(*infiniband, ibPhysicalPort,
+					       incoming->slid, incoming->src_qp, pgrh->sgid, linkType);
+		ah = infAddress.getHandle();
+		infiniband->ahMap[ahKey] = ah;
+	    } else {
+		ah = it->second;
+	    }
+
+	    static_assert(GRH_SIZE >= sizeof(Address), "Not enough space");
+	    new(bd->buffer) Address(ah, incoming->src_qp);
             receivedPackets->emplace_back(
                     reinterpret_cast<Address*>(bd->buffer), this,
                     bd->packetLength - GRH_SIZE, bd->buffer + GRH_SIZE);

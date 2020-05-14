@@ -40,24 +40,22 @@ class InfAddressTest : public ::testing::Test {
 };
 
 TEST_F(InfAddressTest, constructor) {
-    EXPECT_EQ("ok", tryLocator("fast+infud: lid=0, qpn=0"));
+    EXPECT_EQ("ok", tryLocator("fast+infud: lid=0, qpn=0, gid=0000:0000:0000:0000:0000:0000:0000:0000"));
     EXPECT_EQ("ok",
-        tryLocator("fast+infud: lid=65535, qpn=4294967295"));
+	      tryLocator("fast+infud: lid=65535, qpn=4294967295, gid=0000:0000:0000:0000:0000:0000:0000:1234"));
 
-    EXPECT_EQ("Service locator 'fast+infud: lid=65536, qpn=0' "
-        "couldn't be converted to Infiniband address: Could not parse lid. "
-        "Invalid or out of range.",
-        tryLocator("fast+infud: lid=65536, qpn=0"));
+    EXPECT_EQ("Service locator 'fast+infud: lid=65536, qpn=0, gid=0000:0000:0000:0000:0000:0000:0000:1234' couldn't be converted to Infiniband address: Could not parse lid. Invalid or out of range.",
+	      tryLocator("fast+infud: lid=65536, qpn=0, gid=0000:0000:0000:0000:0000:0000:0000:1234"));
 
     EXPECT_EQ("Service locator 'fast+infud: lid=0, "
-        "qpn=4294967296' couldn't be converted to Infiniband address: "
+        "qpn=4294967296, gid=0000:0000:0000:0000:0000:0000:0000:1234' couldn't be converted to Infiniband address: "
         "Could not parse qpn. Invalid or out of range.",
-        tryLocator("fast+infud: lid=0, qpn=4294967296"));
+        tryLocator("fast+infud: lid=0, qpn=4294967296, gid=0000:0000:0000:0000:0000:0000:0000:1234"));
 
-    EXPECT_EQ("Service locator 'fast+infud: foo=0, qpn=0' "
+    EXPECT_EQ("Service locator 'fast+infud: foo=0, qpn=0, gid=0000:0000:0000:0000:0000:0000:0000:1234' "
         "couldn't be converted to Infiniband address: Could not parse "
         "lid. Invalid or out of range.",
-        tryLocator("fast+infud: foo=0, qpn=0"));
+        tryLocator("fast+infud: foo=0, qpn=0, gid=0000:0000:0000:0000:0000:0000:0000:1234"));
 
     EXPECT_EQ("Service locator 'fast+infud: lid=0, bar=0' "
         "couldn't be converted to Infiniband address: Could not parse "
@@ -66,11 +64,11 @@ TEST_F(InfAddressTest, constructor) {
 }
 
 TEST_F(InfAddressTest, toString) {
-    ServiceLocator sl("fast+infud: lid=721, qpn=23472");
+    ServiceLocator sl("fast+infud: lid=721, qpn=23472, gid=0000:0000:0000:0000:0000:0000:0000:1234");
     // dangerous cast!
     Infiniband::Address a(*reinterpret_cast<Infiniband*>(x), 0,
                         &sl);
-    EXPECT_EQ("721:23472", a.toString());
+    EXPECT_EQ("721:23472:0000:0000:0000:0000:0000:0000:0000:1234", a.toString());
 }
 
 }  // namespace RAMCloud
