@@ -155,6 +155,7 @@ class MultiWriteTest : public ::testing::Test {
 
     DISALLOW_COPY_AND_ASSIGN(MultiWriteTest);
 };
+#if 0 //not supported as it is using backdoor write
 
 // Filter out the desired log entries below (skipping log and replicated segment
 // messages made during the multiwrite operations).
@@ -337,5 +338,5 @@ TEST_F(MultiWriteTest, readResponse_shortResponses) {
     EXPECT_EQ(STATUS_OK, objects[1]->status);
     // EXPECT_EQ(7U, objects[0]->version + objects[1]->version);
 }
-
+#endif
 }  // namespace RAMCloud

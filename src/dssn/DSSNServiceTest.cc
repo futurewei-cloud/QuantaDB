@@ -59,8 +59,7 @@ class DSSNServiceTest : public ::testing::Test {
 };
 
 TEST_F(DSSNServiceTest, notification) {
-  
-    const string message(100, 'x');
+    const string message = "0123456789abcdefghijklmnopqrstuvwxyz";
     TestLog::reset();
     Notifier::notify(&context, WireFormat::DSSN_NOTIFY_TEST,
 		     const_cast<char*>(message.data()),
@@ -81,10 +80,19 @@ TEST_F(DSSNServiceTest, notification_invalid_serverid) {
 }
 
 TEST_F(DSSNServiceTest, notification_send_dssn_info) {
-    const string message(100, 'x');
     TestLog::reset();
     DSSN::TxEntry txEntry(1,1);
-    service->sendDSSNInfo(&txEntry, true, serverId.serverId);
-    EXPECT_EQ("notify: Invalid participate server id: 99",
-          TestLog::get());
+    WireFormat::DSSNRequestInfoAsync::Request req;
+    req.cts = txEntry.getCTS();
+    req.pstamp = txEntry.getPStamp();
+    req.sstamp = txEntry.getSStamp();;
+    req.senderPeerId = serverId.serverId;
+    req.txState = txEntry.getTxState();
+    char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
+    Notifier::notify(&context, WireFormat::DSSN_REQUEST_INFO_ASYNC,
+                msg, sizeof(req) - sizeof(WireFormat::Notification::Request), *new ServerId(serverId.serverId));
+    //expect a reply is sent back to this sender
+    EXPECT_NE(string::npos, TestLog::get().find("sendDSSNInfo"));
+    EXPECT_NE(string::npos, TestLog::get().find(std::to_string(serverId.serverId)));
+
 }
