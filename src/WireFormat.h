@@ -638,7 +638,8 @@ struct DSSNRequestInfoAsync {
     static const Opcode opcode = DSSN_REQUEST_INFO_ASYNC;
     static const ServiceType service = DSSN_SERVICE;
     struct Request {
-        RequestCommon common;
+        RequestCommon common; //must match struct Notification
+        uint32_t length; //must match struct Notification -- indicating length of following
         uint64_t senderPeerId;
         uint64_t cts;
         uint64_t pstamp;
@@ -651,7 +652,8 @@ struct DSSNSendInfoAsync {
     static const Opcode opcode = DSSN_SEND_INFO_ASYNC;
     static const ServiceType service = DSSN_SERVICE;
     struct Request {
-        RequestCommon common;
+        RequestCommon common; //must match struct Notification
+        uint32_t length; //must match struct Notification -- indicating length of following
         uint64_t senderPeerId;
         uint64_t cts;
         uint64_t pstamp;

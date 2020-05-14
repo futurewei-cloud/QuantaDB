@@ -217,7 +217,7 @@ class MultiOpTest : public ::testing::Test {
 namespace {
 static const Status UNDERWAY = MultiOp::UNDERWAY;
 }
-
+#if 0 //not supported as it is using backdoor write
 TEST_F(MultiOpTest, basics) {
     // Send more than MAX_RPCS overall rpcs and don't fill all the RPCs
     // with exactly MAX_OBJECTS_PER_RPC requests.
@@ -560,4 +560,5 @@ TEST_F(MultiOpTest, PartRpc_handleTransportError) {
     EXPECT_EQ("flushSession: flushing session for mock:host=master1",
             TestLog::get());
 }
+#endif
 }

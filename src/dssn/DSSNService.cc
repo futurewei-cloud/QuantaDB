@@ -11,10 +11,10 @@
 namespace DSSN {
 
 DSSNService::DSSNService(Context* context, ServerList* serverList,
-			 const ServerConfig* serverConfig)
-    : context(context)
-    , serverList(serverList)
-    , serverConfig(serverConfig)
+        const ServerConfig* serverConfig)
+: context(context)
+, serverList(serverList)
+, serverConfig(serverConfig)
 {
     kvStore = new HashmapKVStore();
     validator = new Validator(*kvStore, this, serverConfig->master.isTesting);
@@ -34,56 +34,56 @@ void
 DSSNService::dispatch(WireFormat::Opcode opcode, Rpc* rpc)
 {
     switch (opcode){
-        case WireFormat::TxCommitDSSN::opcode:
-	    callHandler<WireFormat::TxCommitDSSN, DSSNService,
-			&DSSNService::txCommit>(rpc);
-	    break;
-        case WireFormat::MultiOpDSSN::opcode:
-	    callHandler<WireFormat::MultiOpDSSN, DSSNService,
-			&DSSNService::multiOp>(rpc);
-	    break;
-        case WireFormat::ReadDSSN::opcode:
-	    callHandler<WireFormat::ReadDSSN, DSSNService,
-			&DSSNService::read>(rpc);
-	    break;
-        case WireFormat::ReadKeysAndValueDSSN::opcode:
-	    callHandler<WireFormat::ReadKeysAndValueDSSN, DSSNService,
-			&DSSNService::readKeysAndValue>(rpc);
-	    break;
-        case WireFormat::RemoveDSSN::opcode:
-	    callHandler<WireFormat::RemoveDSSN, DSSNService,
-		      &DSSNService::remove>(rpc);
-	    break;
-        case WireFormat::TakeTabletOwnershipDSSN::opcode:
-	    callHandler<WireFormat::TakeTabletOwnershipDSSN, DSSNService,
-		      &DSSNService::takeTabletOwnership>(rpc);
-	    break;
-        case WireFormat::WriteDSSN::opcode:
-	    callHandler<WireFormat::WriteDSSN, DSSNService,
-			&DSSNService::write>(rpc);
-	    break;
-        case WireFormat::TxDecisionDSSN::opcode:  //TODO: remove
-	    callHandler<WireFormat::TxDecisionDSSN, DSSNService,
-			&DSSNService::txDecision>(rpc);
-	    break;
-        case WireFormat::DSSN_NOTIFY_TEST:
-	    RAMCLOUD_LOG(NOTICE, "Received notify test message");
-	    break;
-        case WireFormat::DSSNSendInfoAsync::opcode:
+    case WireFormat::TxCommitDSSN::opcode:
+        callHandler<WireFormat::TxCommitDSSN, DSSNService,
+        &DSSNService::txCommit>(rpc);
+        break;
+    case WireFormat::MultiOpDSSN::opcode:
+        callHandler<WireFormat::MultiOpDSSN, DSSNService,
+        &DSSNService::multiOp>(rpc);
+        break;
+    case WireFormat::ReadDSSN::opcode:
+        callHandler<WireFormat::ReadDSSN, DSSNService,
+        &DSSNService::read>(rpc);
+        break;
+    case WireFormat::ReadKeysAndValueDSSN::opcode:
+        callHandler<WireFormat::ReadKeysAndValueDSSN, DSSNService,
+        &DSSNService::readKeysAndValue>(rpc);
+        break;
+    case WireFormat::RemoveDSSN::opcode:
+        callHandler<WireFormat::RemoveDSSN, DSSNService,
+        &DSSNService::remove>(rpc);
+        break;
+    case WireFormat::TakeTabletOwnershipDSSN::opcode:
+        callHandler<WireFormat::TakeTabletOwnershipDSSN, DSSNService,
+        &DSSNService::takeTabletOwnership>(rpc);
+        break;
+    case WireFormat::WriteDSSN::opcode:
+        callHandler<WireFormat::WriteDSSN, DSSNService,
+        &DSSNService::write>(rpc);
+        break;
+    case WireFormat::TxDecisionDSSN::opcode:  //TODO: remove
+        callHandler<WireFormat::TxDecisionDSSN, DSSNService,
+        &DSSNService::txDecision>(rpc);
+        break;
+    case WireFormat::DSSN_NOTIFY_TEST:
+        RAMCLOUD_LOG(NOTICE, "Received notify test message");
+        break;
+    case WireFormat::DSSNSendInfoAsync::opcode:
         handleSendInfoAsync(rpc);
         break;
-        case WireFormat::DSSNRequestInfoAsync::opcode:
+    case WireFormat::DSSNRequestInfoAsync::opcode:
         handleRequestInfoAsync(rpc);
-		break;
-        default:
-	    throw UnimplementedRequestError(HERE);
+        break;
+    default:
+        throw UnimplementedRequestError(HERE);
     }
 }
 
 void
 DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
-		  WireFormat::ReadDSSN::Response* respHdr,
-		  Rpc* rpc)
+        WireFormat::ReadDSSN::Response* respHdr,
+        Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
 
@@ -127,8 +127,8 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
 
 void
 DSSNService::readKeysAndValue(const WireFormat::ReadKeysAndValueDSSN::Request* reqHdr,
-			      WireFormat::ReadKeysAndValueDSSN::Response* respHdr,
-			      Rpc* rpc)
+        WireFormat::ReadKeysAndValueDSSN::Response* respHdr,
+        Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
 
@@ -173,36 +173,36 @@ DSSNService::readKeysAndValue(const WireFormat::ReadKeysAndValueDSSN::Request* r
 
 void
 DSSNService::multiOp(const WireFormat::MultiOpDSSN::Request* reqHdr,
-		     WireFormat::MultiOpDSSN::Response* respHdr,
-		     Rpc* rpc)
+        WireFormat::MultiOpDSSN::Response* respHdr,
+        Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
     switch (reqHdr->type) {
-        case WireFormat::MultiOp::OpType::INCREMENT:
-            multiIncrement(reqHdr, respHdr, rpc);
-            break;
-        case WireFormat::MultiOp::OpType::READ:
-            multiRead(reqHdr, respHdr, rpc);
-            break;
-        case WireFormat::MultiOp::OpType::REMOVE:
-            multiRemove(reqHdr, respHdr, rpc);
-            break;
-        case WireFormat::MultiOp::OpType::WRITE:
-            multiWrite(reqHdr, respHdr, rpc);
-            break;
-        default:
-            LOG(ERROR, "Unimplemented multiOp (type = %u) received!",
-                    (uint32_t) reqHdr->type);
-            prepareErrorResponse(rpc->replyPayload,
-                    STATUS_UNIMPLEMENTED_REQUEST);
-            break;
+    case WireFormat::MultiOp::OpType::INCREMENT:
+        multiIncrement(reqHdr, respHdr, rpc);
+        break;
+    case WireFormat::MultiOp::OpType::READ:
+        multiRead(reqHdr, respHdr, rpc);
+        break;
+    case WireFormat::MultiOp::OpType::REMOVE:
+        multiRemove(reqHdr, respHdr, rpc);
+        break;
+    case WireFormat::MultiOp::OpType::WRITE:
+        multiWrite(reqHdr, respHdr, rpc);
+        break;
+    default:
+        LOG(ERROR, "Unimplemented multiOp (type = %u) received!",
+                (uint32_t) reqHdr->type);
+        prepareErrorResponse(rpc->replyPayload,
+                STATUS_UNIMPLEMENTED_REQUEST);
+        break;
     }
 }
 
 void
 DSSNService::multiIncrement(const WireFormat::MultiOp::Request* reqHdr,
-			    WireFormat::MultiOp::Response* respHdr,
-			    Rpc* rpc)
+        WireFormat::MultiOp::Response* respHdr,
+        Rpc* rpc)
 {
     RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
     s->multiIncrement(reqHdr, respHdr, rpc);
@@ -210,8 +210,8 @@ DSSNService::multiIncrement(const WireFormat::MultiOp::Request* reqHdr,
 
 void
 DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
-		       WireFormat::MultiOp::Response* respHdr,
-		       Rpc* rpc)
+        WireFormat::MultiOp::Response* respHdr,
+        Rpc* rpc)
 {
     uint32_t numRequests = reqHdr->count;
     uint32_t reqOffset = sizeof32(*reqHdr);
@@ -258,8 +258,8 @@ DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
         }
 
         WireFormat::MultiOp::Response::ReadPart* currentResp =
-               rpc->replyPayload->emplaceAppend<
-               WireFormat::MultiOp::Response::ReadPart>();
+                rpc->replyPayload->emplaceAppend<
+                WireFormat::MultiOp::Response::ReadPart>();
 
         // ---- get value of the current key -----
         uint64_t tableId = currentReq->tableId;
@@ -307,8 +307,8 @@ DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
 
 void
 DSSNService::multiRemove(const WireFormat::MultiOp::Request* reqHdr,
-			 WireFormat::MultiOp::Response* respHdr,
-			 Rpc* rpc)
+        WireFormat::MultiOp::Response* respHdr,
+        Rpc* rpc)
 {
     uint32_t numRequests = reqHdr->count;
     uint32_t reqOffset = sizeof32(*reqHdr);
@@ -359,8 +359,8 @@ DSSNService::multiRemove(const WireFormat::MultiOp::Request* reqHdr,
 
 void
 DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
-			WireFormat::MultiOp::Response* respHdr,
-			Rpc* rpc)
+        WireFormat::MultiOp::Response* respHdr,
+        Rpc* rpc)
 {
     uint32_t numRequests = reqHdr->count;
     uint32_t reqOffset = sizeof32(*reqHdr);
@@ -403,9 +403,9 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
         std::memcpy(pkv.getKey().key.get() + sizeof(tableId), pKey, pKeyLen);
         pkv.v.valueLength = pValLen;
         pkv.v.valuePtr = (uint8_t*)const_cast<void*>(pVal);
-    
+
         KVLayout *kv = kvStore->fetch(pkv.k);
- 
+
         if (kv == NULL) {
             KVLayout *nkv = kvStore->preput(pkv);
             kvStore->putNew(nkv, 0, 0xffffffffffffffff);
@@ -427,11 +427,11 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
 
     rpc->sendReply();
 }
-  
+
 void
 DSSNService::remove(const WireFormat::RemoveDSSN::Request* reqHdr,
-		    WireFormat::RemoveDSSN::Response* respHdr,
-		    Rpc* rpc)
+        WireFormat::RemoveDSSN::Response* respHdr,
+        Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
 
@@ -461,8 +461,8 @@ DSSNService::remove(const WireFormat::RemoveDSSN::Request* reqHdr,
 
 void
 DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
-		  WireFormat::WriteDSSN::Response* respHdr,
-		  Rpc* rpc)
+        WireFormat::WriteDSSN::Response* respHdr,
+        Rpc* rpc)
 {
     //Fixme: later replace this with a single-write transaction
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
@@ -479,7 +479,7 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     const void* pVal = object.getValue(&pValLen);
     uint64_t tableId = object.getTableId();
 
-    #if (0) // No table check. DSSN does not (yet) support the RamCloud style Table Mgmt
+#if (0) // No table check. DSSN does not (yet) support the RamCloud style Table Mgmt
     Key key(tableId, pKey, pKeyLen);
     // If the tablet doesn't exist in the NORMAL state, we must plead ignorance.
     TabletManager::Tablet tablet;
@@ -495,7 +495,7 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
         respHdr->common.status = RAMCloud::STATUS_UNKNOWN_TABLET;
         return;
     }
-    #endif // 0
+#endif // 0
 
     KVLayout pkv(pKeyLen + sizeof(tableId)); //make room composite key in KVStore
     std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
@@ -519,11 +519,11 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
         assert(0);
     }
 }
-  
+
 void
 DSSNService::takeTabletOwnership(const WireFormat::TakeTabletOwnershipDSSN::Request* reqHdr,
-				 WireFormat::TakeTabletOwnershipDSSN::Response* respHdr,
-				 Rpc* rpc)
+        WireFormat::TakeTabletOwnershipDSSN::Response* respHdr,
+        Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
 
@@ -535,8 +535,8 @@ DSSNService::takeTabletOwnership(const WireFormat::TakeTabletOwnershipDSSN::Requ
 
 void
 DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
-		      WireFormat::TxCommitDSSN::Response* respHdr,
-		      Rpc* rpc)
+        WireFormat::TxCommitDSSN::Response* respHdr,
+        Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
 
@@ -545,8 +545,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 
     uint32_t participantCount = reqHdr->participantCount;
     WireFormat::TxParticipant *participants =
-    		(WireFormat::TxParticipant*)rpc->requestPayload->getRange(reqOffset,
-    				sizeof32(WireFormat::TxParticipant) * participantCount);
+            (WireFormat::TxParticipant*)rpc->requestPayload->getRange(reqOffset,
+                    sizeof32(WireFormat::TxParticipant) * participantCount);
     reqOffset += sizeof32(WireFormat::TxParticipant) * participantCount;
 
     uint32_t numRequests = reqHdr->opCount;
@@ -573,10 +573,10 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     txEntry->setPStamp(reqHdr->meta.pstamp);
     txEntry->setSStamp(reqHdr->meta.sstamp);
     txEntry->setRpcHandle(rpc->getReplyHandle());
-	for (uint32_t i = 0; i < participantCount; i++) {
-		if (participants[i].dssnServerId != getServerId())
-			txEntry->insertPeerSet(participants[i].dssnServerId);
-	}
+    for (uint32_t i = 0; i < participantCount; i++) {
+        if (participants[i].dssnServerId != getServerId())
+            txEntry->insertPeerSet(participants[i].dssnServerId);
+    }
     uint32_t readSetIdx = 0;
     uint32_t writeSetIdx = 0;
 
@@ -593,7 +593,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
                 rpc->requestPayload->getOffset<
                 WireFormat::TxPrepare::OpType>(reqOffset);
         if (*type == WireFormat::TxPrepare::READ
-        		|| *type == WireFormat::TxPrepare::READONLY) {
+                || *type == WireFormat::TxPrepare::READONLY) {
             const WireFormat::TxPrepare::Request::ReadOp *currentReq =
                     rpc->requestPayload->getOffset<
                     WireFormat::TxPrepare::Request::ReadOp>(reqOffset);
@@ -601,7 +601,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             reqOffset += sizeof32(WireFormat::TxPrepare::Request::ReadOp);
 
             if (currentReq == NULL || rpc->requestPayload->size() <
-                                      reqOffset + currentReq->keyLength) {
+                    reqOffset + currentReq->keyLength) {
                 respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
                 break;
@@ -611,13 +611,13 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             rejectRules = currentReq->rejectRules;
 
             const void* stringKey = rpc->requestPayload->getRange(
-            		reqOffset, currentReq->keyLength);
+                    reqOffset, currentReq->keyLength);
             reqOffset += currentReq->keyLength;
 
             if (stringKey == NULL) {
-            	respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+                respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
-            	break;
+                break;
             }
 
             KVLayout pkv(currentReq->keyLength + sizeof(tableId)); //make room composite key in KVStore
@@ -640,7 +640,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             reqOffset += sizeof32(WireFormat::TxPrepare::Request::RemoveOp);
 
             if (currentReq == NULL || rpc->requestPayload->size() <
-                                      reqOffset + currentReq->keyLength) {
+                    reqOffset + currentReq->keyLength) {
                 respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
                 break;
@@ -650,13 +650,13 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             rejectRules = currentReq->rejectRules;
 
             const void* stringKey = rpc->requestPayload->getRange(
-            		reqOffset, currentReq->keyLength);
+                    reqOffset, currentReq->keyLength);
             reqOffset += currentReq->keyLength;
 
             if (stringKey == NULL) {
-            	respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+                respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
-            	break;
+                break;
             }
 
             //a remove is treated as a tombstone entry without value
@@ -680,7 +680,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             reqOffset += sizeof32(WireFormat::TxPrepare::Request::WriteOp);
 
             if (currentReq == NULL || rpc->requestPayload->size() <
-                                      reqOffset + currentReq->length) {
+                    reqOffset + currentReq->length) {
                 respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
                 break;
@@ -689,10 +689,10 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             rpcId = currentReq->rpcId;
             rejectRules = currentReq->rejectRules;
             op.construct(*type, 0 /*irrelevant*/, 0 /*irrelevant*/,
-                                     rpcId,
-                                     tableId, 0, 0,
-                                     *(rpc->requestPayload), reqOffset,
-                                     currentReq->length);
+                    rpcId,
+                    tableId, 0, 0,
+                    *(rpc->requestPayload), reqOffset,
+                    currentReq->length);
             reqOffset += currentReq->length;
 
             KeyLength keyLen;
@@ -702,9 +702,9 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             uint64_t tableId = op.get()->object.getTableId();
 
             if (keyLen == 0) {
-            	respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
+                respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
-            	break;
+                break;
             }
 
             KVLayout pkv(keyLen + sizeof(tableId)); //make room composite key in KVStore
@@ -713,8 +713,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             if (valLen == 0) {
                 pkv.getVLayout().isTombstone = true;
             } else {
-            	pkv.getVLayout().valueLength = valLen;
-            	pkv.getVLayout().valuePtr = (uint8_t*)const_cast<void*>(pVal);
+                pkv.getVLayout().valueLength = valLen;
+                pkv.getVLayout().valuePtr = (uint8_t*)const_cast<void*>(pVal);
             }
             KVLayout *nkv = kvStore->preput(pkv);
             if (nkv == NULL) {
@@ -733,14 +733,14 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     }
 
     if (respHdr->common.status == STATUS_OK) {
-    	validator->insertTxEntry(txEntry);
-    	rpc->enableAsync();
+        validator->insertTxEntry(txEntry);
+        rpc->enableAsync();
 
-    	while (validator->testRun()) {
-    		delete txEntry;
-    		//Fixme: deal with cross-shard tx unit test later with conditional break
-    		break;
-    	}
+        while (validator->testRun()) {
+            delete txEntry;
+            //Fixme: deal with cross-shard tx unit test later with conditional break
+            break;
+        }
     } else {
         delete txEntry;
         rpc->sendReply();
@@ -749,8 +749,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 
 void
 DSSNService::txDecision(const WireFormat::TxDecisionDSSN::Request* reqHdr,
-			WireFormat::TxDecisionDSSN::Response* respHdr,
-			Rpc* rpc)
+        WireFormat::TxDecisionDSSN::Response* respHdr,
+        Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
     RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
@@ -760,53 +760,57 @@ DSSNService::txDecision(const WireFormat::TxDecisionDSSN::Request* reqHdr,
 bool
 DSSNService::sendTxCommitReply(TxEntry *txEntry)
 {
-	Transport::ServerRpc *rpc = (Transport::ServerRpc *)txEntry->getRpcHandle();
-	if (rpc == NULL)
-		return false; //this may be the case during Validator unit test
-	WireFormat::TxCommitDSSN::Response* respHdr =
-			rpc->replyPayload.getStart<WireFormat::TxCommitDSSN::Response>();
-	if (txEntry->getTxState() == TxEntry::TX_COMMIT)
-		respHdr->vote = WireFormat::TxPrepare::COMMITTED;
-	else if (txEntry->getTxState() == TxEntry::TX_ABORT)
-		respHdr->vote = WireFormat::TxPrepare::ABORT;
-	else if (txEntry->getTxState() == TxEntry::TX_CONFLICT) {
-		assert(0);
-		respHdr->vote = WireFormat::TxPrepare::ABORT_REQUESTED; //Fixme: Need a code to signal conflict
-	} else {
-		assert(0);
-		respHdr->vote = WireFormat::TxPrepare::ABORT_REQUESTED;
-	}
-	rpc->sendReply();
-	return true;
+    Transport::ServerRpc *rpc = (Transport::ServerRpc *)txEntry->getRpcHandle();
+    if (rpc == NULL)
+        return false; //this may be the case during Validator unit test
+    WireFormat::TxCommitDSSN::Response* respHdr =
+            rpc->replyPayload.getStart<WireFormat::TxCommitDSSN::Response>();
+    if (txEntry->getTxState() == TxEntry::TX_COMMIT)
+        respHdr->vote = WireFormat::TxPrepare::COMMITTED;
+    else if (txEntry->getTxState() == TxEntry::TX_ABORT)
+        respHdr->vote = WireFormat::TxPrepare::ABORT;
+    else if (txEntry->getTxState() == TxEntry::TX_CONFLICT) {
+        assert(0);
+        respHdr->vote = WireFormat::TxPrepare::ABORT_REQUESTED; //Fixme: Need a code to signal conflict
+    } else {
+        assert(0);
+        respHdr->vote = WireFormat::TxPrepare::ABORT_REQUESTED;
+    }
+    rpc->sendReply();
+    return true;
 }
 
 bool
 DSSNService::sendDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
 {
-	WireFormat::DSSNSendInfoAsync::Request req;
-	req.cts = txEntry->getCTS();
-	req.pstamp = txEntry->getPStamp();
-	req.sstamp = txEntry->getSStamp();;
-	req.senderPeerId = getServerId();
-	//report ABORT/COMMIT only if the conclusion is logged
-	if (txEntry->getTxCIState() == TxEntry::TX_CI_CONCLUDED)
-		req.txState = txEntry->getTxState();
-	else
-		req.txState = TxEntry::TX_PENDING;
+    RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
 
-	if (isSpecific) {
-	    Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
-	            reinterpret_cast<void *>(&req), sizeof(req), *new ServerId(target));
-	} else {
-	    std::set<uint64_t>::iterator it;
-	    for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
-	        if (txEntry->getPeerSeenSet().count(*it) > 0)
-	            continue;
-	        Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
-	                reinterpret_cast<void *>(&req), sizeof(req), *new ServerId(*it));
-	    }
-	}
-	return true;
+    WireFormat::DSSNSendInfoAsync::Request req;
+    req.cts = txEntry->getCTS();
+    req.pstamp = txEntry->getPStamp();
+    req.sstamp = txEntry->getSStamp();;
+    req.senderPeerId = getServerId();
+    //report ABORT/COMMIT only if the conclusion is logged
+    if (txEntry->getTxCIState() == TxEntry::TX_CI_CONCLUDED)
+        req.txState = txEntry->getTxState();
+    else
+        req.txState = TxEntry::TX_PENDING;
+
+    char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
+    uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);
+    if (isSpecific) {
+        Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
+                msg, length, *new ServerId(target));
+    } else {
+        std::set<uint64_t>::iterator it;
+        for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
+            if (txEntry->getPeerSeenSet().count(*it) > 0)
+                continue;
+            Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
+                    msg, length, *new ServerId(*it));
+        }
+    }
+    return true;
 }
 
 bool
@@ -827,8 +831,10 @@ DSSNService::requestDSSNInfo(TxEntry *txEntry)
     for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
         if (txEntry->getPeerSeenSet().count(*it) > 0)
             continue;
+        char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
+        uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);
         Notifier::notify(context, WireFormat::DSSN_REQUEST_INFO_ASYNC,
-                reinterpret_cast<void *>(&req), sizeof(req), *new ServerId(*it));
+                msg, length, *new ServerId(*it));
     }
     return true;
 }
@@ -840,7 +846,7 @@ DSSNService::handleSendInfoAsync(Rpc* rpc)
 
     assert(rpc->replyPayload->size() == 0);
     WireFormat::DSSNSendInfoAsync::Request* reqHdr =
-        rpc->requestPayload->getStart<WireFormat::DSSNSendInfoAsync::Request>();
+            rpc->requestPayload->getStart<WireFormat::DSSNSendInfoAsync::Request>();
     if (reqHdr == NULL)
         throw MessageTooShortError(HERE);
     validator->receiveSSNInfo(reqHdr->senderPeerId, reqHdr->cts, reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState);
@@ -853,7 +859,7 @@ DSSNService::handleRequestInfoAsync(Rpc* rpc)
 
     assert(rpc->replyPayload->size() == 0);
     WireFormat::DSSNRequestInfoAsync::Request* reqHdr =
-        rpc->requestPayload->getStart<WireFormat::DSSNRequestInfoAsync::Request>();
+            rpc->requestPayload->getStart<WireFormat::DSSNRequestInfoAsync::Request>();
     if (reqHdr == NULL)
         throw MessageTooShortError(HERE);
     validator->replySSNInfo(reqHdr->senderPeerId, reqHdr->cts, reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState);

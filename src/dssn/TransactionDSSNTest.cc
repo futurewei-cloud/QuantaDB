@@ -255,8 +255,6 @@ TEST_F(TransactionTest, commitAndSync_abort) {
 
 TEST_F(TransactionTest, read_basic) {
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
-    ramcloud->write(tableId1, "0", 1, "abcdef", 6);
-    ramcloud->write(tableId1, "0", 1, "abcdef", 6);
 
     EXPECT_TRUE(task->readOnly);
     Key key(tableId1, "0", 1);
@@ -443,8 +441,6 @@ TEST_F(TransactionTest, write_afterCommit) {
 }
 
 TEST_F(TransactionTest, ReadOp_constructor_noCache) {
-    ramcloud->write(tableId1, "0", 1, "abcdef", 6);
-    ramcloud->write(tableId1, "0", 1, "abcdef", 6);
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
 
     Key key(tableId1, "0", 1);
