@@ -115,11 +115,7 @@ class DLog {
 
     ~DLog()
     {
-        chunk_t * tmp;
-        while ((tmp = chunk_head) != NULL) {
-            chunk_head = chunk_head->next;
-            delete tmp;
-        }
+        cleanup();
     }
 
     // Return log data size
@@ -217,6 +213,17 @@ class DLog {
         }
         mtx.unlock();
         return length - remain;
+    }
+
+    // Delete all chunks
+    void inline cleanup(void)
+    {
+        chunk_t * tmp;
+        while ((tmp = chunk_head) != NULL) {
+            chunk_head = chunk_head->next;
+            delete tmp;
+        }
+        chunk_tail = NULL;
     }
 
     // Return log buffer address at offset 'off'.

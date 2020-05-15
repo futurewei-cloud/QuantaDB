@@ -14,9 +14,7 @@ using namespace DSSN;
 class DLogTest : public ::testing::Test {
   public:
   DLogTest() {};
-  ~DLogTest() {
-    log->trim(log->size());
-  };
+  ~DLogTest() { delete log; };
 
   DLog<256> * log = new DLog<256>("/dev/shm", false); // Use small chunk size to stress boundary condition.
 
@@ -26,15 +24,24 @@ class DLogTest : public ::testing::Test {
 class DLogBench : public ::testing::Test {
   public:
   DLogBench() {};
-  ~DLogBench() {
-    log->trim(log->size());
-  };
+  ~DLogBench() { delete log; };
 
   #define DLOG_CHUNK_SIZE (uint64_t)1024*1024*1024*100
   #define DLOG_DIR        "/dev/shm"
   DLog<DLOG_CHUNK_SIZE> * log = new DLog<DLOG_CHUNK_SIZE>(DLOG_DIR, false);
 
   DISALLOW_COPY_AND_ASSIGN(DLogBench);
+};
+
+class MemBench : public ::testing::Test {
+  public:
+  MemBench() {};
+  ~MemBench() { delete log; };
+
+  #define MEM_LOG_SIZE (uint64_t)1024*1024*1024*100
+  char * log = new char[MEM_LOG_SIZE];
+
+  DISALLOW_COPY_AND_ASSIGN(MemBench);
 };
 
 TEST_F(DLogTest, DLogUnitTest)
@@ -101,4 +108,32 @@ TEST_F(DLogBench, DLogBench) {
     GTEST_COUT << "DLog Append: log dir: " << DLOG_DIR << ", log fsize: " << DLOG_CHUNK_SIZE/(1024*1024) << " MB" << std::endl;
     GTEST_COUT << "DLog.append throughput: " << gbps << " GB/sec" << std::endl;
 }
+
+TEST_F(MemBench, MemBench) {
+    uint64_t start, stop;
+    char buf[1024];
+
+    // 1st round, would be slower bcz of page-fault
+    start = Cycles::rdtsc();
+    for (uint64_t off = 0; off < MEM_LOG_SIZE; off += sizeof(buf)) {
+        memcpy(&log[off], buf, sizeof(buf)); 
+    }
+    stop = Cycles::rdtsc();
+    uint64_t msec = Cycles::toMicroseconds(stop - start);
+    float    gbps = (float)(MEM_LOG_SIZE/msec) / 1024;
+    std::cerr << std::fixed;
+    GTEST_COUT << "Mem append throughput (1st round): " << gbps << " GB/sec" << std::endl;
+
+    // 2nd round.
+    start = Cycles::rdtsc();
+    for (uint64_t off = 0; off < MEM_LOG_SIZE; off += sizeof(buf)) {
+        memcpy(&log[off], buf, sizeof(buf)); 
+    }
+    stop = Cycles::rdtsc();
+    msec = Cycles::toMicroseconds(stop - start);
+    gbps = (float)(MEM_LOG_SIZE/msec) / 1024;
+    std::cerr << std::fixed;
+    GTEST_COUT << "Mem append throughput (2nd round): " << gbps << " GB/sec" << std::endl;
+}
+
 }  // namespace RAMCloud
