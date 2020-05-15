@@ -24,24 +24,27 @@ class DLogTest : public ::testing::Test {
 class DLogBench : public ::testing::Test {
   public:
   DLogBench() {};
-  ~DLogBench() { delete log; };
+  ~DLogBench() { delete log; delete log2; };
 
   #define DLOG_CHUNK_SIZE (uint64_t)1024*1024*1024*100
   #define DLOG_DIR        "/dev/shm"
   DLog<DLOG_CHUNK_SIZE> * log = new DLog<DLOG_CHUNK_SIZE>(DLOG_DIR, false);
 
+  #define DLOG_CHUNK_SIZE_2 (uint64_t)1024*1024*1024*100
+  DLog<DLOG_CHUNK_SIZE_2> * log2 = new DLog<DLOG_CHUNK_SIZE_2>(DLOG_DIR, false);
+
   DISALLOW_COPY_AND_ASSIGN(DLogBench);
 };
 
-class MemBench : public ::testing::Test {
+class DLogMemBench : public ::testing::Test {
   public:
-  MemBench() {};
-  ~MemBench() { delete log; };
+  DLogMemBench() {};
+  ~DLogMemBench() { delete log; };
 
   #define MEM_LOG_SIZE (uint64_t)1024*1024*1024*100
   char * log = new char[MEM_LOG_SIZE];
 
-  DISALLOW_COPY_AND_ASSIGN(MemBench);
+  DISALLOW_COPY_AND_ASSIGN(DLogMemBench);
 };
 
 TEST_F(DLogTest, DLogUnitTest)
@@ -105,11 +108,55 @@ TEST_F(DLogBench, DLogBench) {
     uint64_t msec = Cycles::toMicroseconds(stop - start);
     float    gbps = (float)((sizeof(buf)*loop)/msec) / 1024;
     std::cerr << std::fixed;
-    GTEST_COUT << "DLog Append: log dir: " << DLOG_DIR << ", log fsize: " << DLOG_CHUNK_SIZE/(1024*1024) << " MB" << std::endl;
+    GTEST_COUT << "DLog Append: log dir: " << DLOG_DIR
+               << ", log fsize: " << DLOG_CHUNK_SIZE/(1024*1024) << " MB" << std::endl;
     GTEST_COUT << "DLog.append throughput: " << gbps << " GB/sec" << std::endl;
 }
 
-TEST_F(MemBench, MemBench) {
+void writeToLog(DLogBench *c, float *gbps /* out */)
+{
+    char buf[1000];
+    uint64_t start, stop;
+    uint64_t loop = 1024*1024*100;
+    start = Cycles::rdtsc();
+    for (uint64_t i = 0; i < loop; i++) {
+        c->log->append(buf, sizeof(buf));
+    }
+    stop = Cycles::rdtsc();
+    uint64_t msec = Cycles::toMicroseconds(stop - start);
+    *gbps = (float)((sizeof(buf)*loop)/msec) / 1024;
+}
+
+void writeToLog2(DLogBench *c, float *gbps /* out */)
+{
+    char buf1[50], buf2[50];
+    uint64_t start, stop;
+    uint64_t loop = 1024*1024*100;
+    start = Cycles::rdtsc();
+    for (uint64_t i = 0; i < loop; i++) {
+        c->log2->append(buf1, sizeof(buf1));
+        c->log2->append(buf2, sizeof(buf2));
+    }
+    stop = Cycles::rdtsc();
+    uint64_t msec = Cycles::toMicroseconds(stop - start);
+    *gbps = (float)(((sizeof(buf1)+sizeof(buf2))*loop)/msec) / 1024;
+}
+
+TEST_F(DLogBench, DLogMultiBench) {
+    float gbps1 = 0, gbps2 = 0;
+
+    std::thread t1(writeToLog, this, &gbps1);
+    std::thread t2(writeToLog2, this, &gbps2);
+
+    t1.join();
+    t2.join();
+
+    GTEST_COUT << "DLogMultiBench: Two threads. T1 does 100M append of 1000 bytes. T2, 200M append of 50 bytes" << std::endl;
+    GTEST_COUT << "DLogMultiBench T1 thruput: " << gbps1 << "GB/sec. T2: " << gbps2 << "GB/sec" << std::endl;
+
+}
+
+TEST_F(DLogMemBench, MemBench) {
     uint64_t start, stop;
     char buf[1024];
 
