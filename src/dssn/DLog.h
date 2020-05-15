@@ -50,7 +50,7 @@ namespace DSSN {
  *
  *   Return log buffer address at offset 'off'. The output argument 'len' stores buffer length
  */
-template <uint32_t CHUNK_SIZE = (16*1024*1024) >
+template <uint64_t CHUNK_SIZE = (16*1024*1024) >
 class DLog {
   private:
     /*
@@ -123,9 +123,9 @@ class DLog {
     }
 
     // Return log data size
-    inline size_t size(void)
+    inline uint64_t size(void)
     {
-        size_t lsize = 0;
+        uint64_t lsize = 0;
         for (chunk_t *tmp = chunk_head; tmp; tmp = tmp->next) {
             lsize += tmp->hdr->dsize;
         }
@@ -133,9 +133,9 @@ class DLog {
     }
 
     // Return free space
-    inline size_t free_space(void)
+    inline uint64_t free_space(void)
     {
-        size_t free_size = 0;
+        uint64_t free_size = 0;
         for (chunk_t *tmp = chunk_tail; tmp; tmp = tmp->next) {
             free_size += tmp->hdr->fsize - tmp->hdr->dsize - tmp->hdr->offset;
         }
@@ -157,7 +157,7 @@ class DLog {
                     add_new_chunk_file();
                 }
             } else {
-                uint32_t max_oldsize = chunk->hdr->fsize - (len + sizeof(chunk_hdr_t));
+                uint64_t max_oldsize = chunk->hdr->fsize - (len + sizeof(chunk_hdr_t));
                 if ((oldsize = chunk->hdr->dsize) > max_oldsize) {
                     chunk->hdr->sealed = true; // insufficient space, sealed it.
                 } else if (__sync_bool_compare_and_swap(&chunk->hdr->dsize, oldsize, oldsize+len)) {
@@ -256,12 +256,11 @@ class DLog {
         return todo;
     }
 
-    void set_chunk_size(uint32_t size)
+    void set_chunk_size(uint64_t size)
     {
         chunk_size = size;
     }
 
-  private:
     bool add_new_chunk_file()
     {
         char chunk_name[128];
@@ -275,7 +274,7 @@ class DLog {
             return false;
         }
 
-        uint32_t current_chunk_size = chunk_size;
+        uint64_t current_chunk_size = chunk_size;
         if (ftruncate(fd, current_chunk_size) != 0) {
             std::cout << "Failed to set Log file size: " << chunk_name << std::endl;
             close(fd);
@@ -307,6 +306,7 @@ class DLog {
         return true;
     }
 
+  private:
     // Load log file, return chunk_t *. Or if failed, NULL.
     chunk_t * load_one_chunk (const char *dir, const char *logname)
     {
@@ -466,7 +466,7 @@ class DLog {
     std::mutex mtx;
     std::string topdir;
     std::atomic<uint32_t> next_seqno;
-    uint32_t chunk_size;
+    uint64_t chunk_size;
     chunk_t * chunk_head, * chunk_tail;
 };
 
