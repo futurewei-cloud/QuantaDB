@@ -58,8 +58,8 @@ class TxLog {
     } TxLogHeader_t, TxLogTailer_t;
 
     // private variables
-    #define TXLOG_DIR   "/tmp/txlog"
-    #define TXLOG_CHUNK_SIZE (64*1024*1024)
+    #define TXLOG_DIR   "/dev/shm/txlog"
+    #define TXLOG_CHUNK_SIZE (1024*1024*1024)
     DLog<TXLOG_CHUNK_SIZE> *log;
 }; // TxLog
 
