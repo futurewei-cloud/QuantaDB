@@ -88,6 +88,7 @@ Validator::updateTxPStampSStamp(TxEntry &txEntry) {
             //would cause an abort.
             if (kv->meta().cStamp != readSet[i]->meta().cStamp) {
                 txEntry.setSStamp(0); //deliberately cause an exclusion window violation
+                counters.readVersionErrors++;
                 return false;
             }
 
@@ -120,10 +121,14 @@ Validator::updateKVReadSetPStamp(TxEntry &txEntry) {
     auto &readSet = txEntry.getReadSetInStore();
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
         if (readSet[i]) {
-            readSet[i]->meta().pStamp = std::max(txEntry.getCTS(), readSet[i]->meta().pStamp);;
+            readSet[i]->meta().pStamp = std::max(txEntry.getCTS(), readSet[i]->meta().pStamp);
+            counters.commitReads++;
         } else {
-            //Fixme: put a tombstoned entry in KVStore???
-            //or leave it blank???
+            counters.commitMetaErrors++;
+            //In general this condition should not be hit:
+            //the tuple is removed (by another concurrent tx) and garbage-collected
+            //before the current tx is committed. Let's do nothing to it.
+            //Unit test may trigger this condition.
         }
     }
     return true;
@@ -137,9 +142,11 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
         if (writeSetInStore[i]) {
         	kvStore.put(writeSetInStore[i], txEntry.getCTS(), txEntry.getSStamp(),
         			writeSet[i]->v.valuePtr, writeSet[i]->v.valueLength);
+        	counters.commitWrites++;
         } else {
         	kvStore.putNew(writeSet[i], txEntry.getCTS(), txEntry.getSStamp());
         	writeSet[i] = 0; //prevent txEntry destructor from freeing the KVLayout pointer
+        	counters.commitOverwrites++;
         }
     }
     return true;
@@ -161,10 +168,11 @@ Validator::write(KLayout& k, uint64_t &vPrevPStamp) {
 
 bool
 Validator::read(KLayout& k, KVLayout *&kv) {
-	//FIXME: This read can happen concurrently while conclude() is
-	//modifying the KVLayout instance.
-        kv = kvStore.fetch(k);
-        return (kv!=NULL && !kv->isTombstone());
+    //FIXME: This read can happen concurrently while conclude() is
+    //modifying the KVLayout instance.
+    kv = kvStore.fetch(k);
+    counters.reads++;
+    return (kv!=NULL && !kv->isTombstone());
 }
 
 bool
@@ -193,8 +201,11 @@ Validator::scheduleDistributedTxs() {
 	TxEntry *txEntry;
     do {
     	if ((txEntry = (TxEntry *)reorderQueue.try_pop(clock.getLocalTime()))) {
-    		if (txEntry->getCTS() < localTxCTSBase)
+    		if (txEntry->getCTS() < localTxCTSBase) {
+    		    //Fixme:
+    		    counters.lateScheduleErrors++;
     			continue; //ignore this CI that is past a processed CI
+    		}
     		while (!distributedTxSet.add(txEntry));
     		localTxCTSBase = txEntry->getCTS();
     	}
@@ -262,10 +273,15 @@ Validator::conclude(TxEntry& txEntry) {
 		updateKVWriteSet(txEntry);
 	}
 
-	if (txEntry.getPeerSet().size() >= 1)
+	if (txEntry.getPeerSet().size() >= 1) {
 		activeTxSet.remove(&txEntry);
-	else
+	} else {
 		rpcService->sendTxCommitReply(&txEntry);
+		if (txEntry.getTxState() == TxEntry::TX_COMMIT)
+		    counters.commits++;
+		else
+		    counters.aborts++;
+	}
 
 	txEntry.setTxCIState(TxEntry::TX_CI_FINISHED); //redundant if txEntry is deleted right after
 
@@ -301,16 +317,19 @@ Validator::peer() {
 
 bool
 Validator::insertTxEntry(TxEntry *txEntry) {
+    counters.commitIntents++;
 	if (txEntry->getPeerSet().size() == 0) {
 		//single-shard tx
 		if (localTxQueue.add(txEntry)) {
 			txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
+			counters.queuedLocalTxs++;
 			return true;
 		}
 	} else {
 		//cross-shard tx
 		if (distributedTxSet.add(txEntry)) {
 			txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
+			counters.queuedDistributedTxs++;
 		}
 	}
 	return false;
@@ -349,6 +368,10 @@ Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64
 			txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
 			assert(insertConcludeQueue(txEntry));
 			rpcService->sendTxCommitReply(txEntry);
+			if (txEntry->getTxState() == TxEntry::TX_COMMIT)
+			    counters.commits++;
+			else
+			    counters.aborts++;
 		}
 	}
 }
