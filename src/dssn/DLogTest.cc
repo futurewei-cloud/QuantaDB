@@ -108,9 +108,8 @@ TEST_F(DLogBench, DLogBench) {
     uint64_t msec = Cycles::toMicroseconds(stop - start);
     float    gbps = (float)((sizeof(buf)*loop)/msec) / 1024;
     std::cerr << std::fixed;
-    GTEST_COUT << "DLog Append: log dir: " << DLOG_DIR
-               << ", log fsize: " << DLOG_CHUNK_SIZE/(1024*1024) << " MB" << std::endl;
-    GTEST_COUT << "DLog.append throughput: " << gbps << " GB/sec" << std::endl;
+    GTEST_COUT << "DLog.append throughput: " << gbps << " GB/sec"
+               << " (logdir: " << DLOG_DIR << ", logsize: " << DLOG_CHUNK_SIZE/(1024*1024) << " MB)" << std::endl;
 }
 
 void writeToLog(DLogBench *c, float *gbps /* out */)
