@@ -26,16 +26,34 @@ class DSSNService; //forward declaration to resolve interdependency
 
 /**
  * Supposedly one Validator instance per storage node, to handle DSSN validation.
- * It contains a pool of worker threads. They monitor the cross-shard
+ * It contains someone worker threads. They monitor the cross-shard
  * commit-intent (CI) queue and the local commit-intent queue and drain the commit-intents
  * (CI) from the queues. Each commit-intent is subject to DSSN validation.
+ * The committed transactions will be saved in a backing KV store.
  *
  */
+
+struct Counters {
+    uint64_t reads = 0;
+    uint64_t commitIntents = 0;
+    uint64_t queuedDistributedTxs = 0;
+    uint64_t queuedLocalTxs = 0;
+    uint64_t commits = 0;
+    uint64_t aborts = 0;
+    uint64_t preputErrors = 0;
+    uint64_t lateScheduleErrors = 0;
+    uint64_t readVersionErrors = 0;
+    uint64_t commitMetaErrors = 0;
+    uint64_t commitReads = 0;
+    uint64_t commitWrites = 0;
+    uint64_t commitOverwrites = 0;
+};
+
 class Validator {
     PROTECTED:
 
-    //Fixme: renname to KVStore kvStore
-    HashmapKVStore &kvStore;
+    //Fixme: rename to KVStore kvStore
+    HashmapKVStore &kvStore; //Fixme
     DSSNService *rpcService;
     bool isUnderTest;
     //WaitList localTxQueue{1000001};
@@ -49,7 +67,7 @@ class Validator {
     std::atomic<uint64_t> localTxCTSBase;
     ClusterTimeService clock;
     //LATER DependencyMatrix blockedTxSet;
-    //KVStore kvStore;
+    Counters counters;
 
     // threads
     std::thread schedulingThread;

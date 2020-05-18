@@ -15,16 +15,21 @@ bool HashmapKVStore::hash_inited = 0;
 
 KVLayout* HashmapKVStore::preput(KVLayout &kvIn)
 {
+    //Fixme: need to allocate from a garbage-collecting pool and report any failure
     KVLayout* kvOut = new KVLayout(kvIn.k.keyLength);
+    if (kvOut == NULL)
+        return NULL;
     std::memcpy((void *)kvOut->k.key.get(), (void *)kvIn.k.key.get(), kvOut->k.keyLength);
     kvOut->v.valueLength = kvIn.v.valueLength;
     if (kvIn.v.valueLength > 0) {
+        //Fixme: need to allocate from "persistent memory" and report any failure
     	kvOut->v.valuePtr = new uint8_t[kvIn.v.valueLength];
+    	if (kvOut->v.valuePtr == NULL)
+    	    return NULL;
     	std::memcpy((void *)kvOut->v.valuePtr, (void *)kvIn.v.valuePtr, kvIn.v.valueLength);
     }
     kvOut->v.meta = kvIn.v.meta;
     kvOut->v.isTombstone = kvIn.v.isTombstone;
-    //Fixme: if this cannot get into the backing store, return NULL as failure
     return kvOut;
 }
 

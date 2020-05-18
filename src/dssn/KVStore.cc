@@ -19,16 +19,20 @@ KVStore::KVStore() {
 
 KVLayout*
 KVStore::preput(KVLayout &kvIn) {
-	KVLayout* kvOut = new KVLayout(kvIn.k.keyLength);
-	std::memcpy((void *)kvOut->k.key.get(), (void *)kvIn.k.key.get(), kvOut->k.keyLength);
-	kvOut->v.valueLength = kvIn.v.valueLength;
-	if (kvIn.v.valueLength > 0) {
-		kvOut->v.valuePtr = new uint8_t[kvIn.v.valueLength];
-		std::memcpy((void *)kvOut->v.valuePtr, (void *)kvIn.v.valuePtr, kvIn.v.valueLength);
-	}
-	kvOut->v.meta = kvIn.v.meta;
+    KVLayout* kvOut = new KVLayout(kvIn.k.keyLength);
+    if (kvOut == NULL)
+        return NULL;
+    std::memcpy((void *)kvOut->k.key.get(), (void *)kvIn.k.key.get(), kvOut->k.keyLength);
+    kvOut->v.valueLength = kvIn.v.valueLength;
+    if (kvIn.v.valueLength > 0) {
+        kvOut->v.valuePtr = new uint8_t[kvIn.v.valueLength];
+        if (kvOut->v.valuePtr == NULL)
+            return NULL;
+        std::memcpy((void *)kvOut->v.valuePtr, (void *)kvIn.v.valuePtr, kvIn.v.valueLength);
+    }
+    kvOut->v.meta = kvIn.v.meta;
     kvOut->v.isTombstone = kvIn.v.isTombstone;
-	return kvOut;
+    return kvOut;
 }
 
 KVLayout *

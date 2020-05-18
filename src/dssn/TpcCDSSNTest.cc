@@ -695,7 +695,7 @@ TEST_F(TpcCTest, runAllTests) {
     txOrderStatus_byLastName();
     txDelivery();
     txStockLevel();
-    //basic();
+    basic();
     simulate();
 }
 

@@ -623,10 +623,12 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             KVLayout pkv(currentReq->keyLength + sizeof(tableId)); //make room composite key in KVStore
             std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
             std::memcpy(pkv.getKey().key.get() + sizeof(tableId), stringKey, currentReq->keyLength);
+            //Fixme: pkv.meta().cStamp = currentReq->ReadOp()
             KVLayout *nkv = kvStore->preput(pkv);
             if (nkv == NULL) {
                 respHdr->common.status = STATUS_NO_TABLE_SPACE;
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
+                //Fixme: validator->counters.preputErrors++; Better to encapsulate kv store using validator API
                 break;
             }
             txEntry->insertReadSet(nkv, readSetIdx++);
