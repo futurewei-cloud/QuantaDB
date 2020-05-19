@@ -409,21 +409,27 @@ Transaction::ReadOp::wait(bool* objectExists)
         entry = task->insertCacheEntry(keyObj, data, dataLength);
         entry->type = ClientTransactionTask::CacheEntry::READ;
         if (objectFound) {
+#ifndef DSSNTX
             entry->rejectRules.doesntExist = true;
             entry->rejectRules.givenVersion = version;
             entry->rejectRules.versionNeGiven = true;
+#else
 	    entry->meta = meta;
-#ifdef DSSNTX
+	    entry->rejectRules.cstamp = meta.cstamp;
 	    assert(entry->meta.sstamp == DSSN_MD_INFINITY);
 #endif
         } else {
+
             // Object did not exists at the time of the read so remember to
             // reject (abort) the transaction if it does exist.
             entry->rejectRules.exists = true;
-            objectFound = false;
+	    objectFound = false;
+#ifdef DSSNTX
 	    //DSSN: abort this transaction
 	    entry->meta = {DSSN_MD_INFINITY, DSSN_MD_INFINITY,
 			   DSSN_MD_INFINITY};
+	    entry->rejectRules.cstamp = DSSN_MD_INFINITY;
+#endif
         }
 
     } else if (entry->type == ClientTransactionTask::CacheEntry::REMOVE) {
