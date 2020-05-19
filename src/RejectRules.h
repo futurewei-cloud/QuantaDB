@@ -39,7 +39,10 @@ namespace RAMCloud {
  *   different from givenVersion.
  */
 struct RejectRules {
-    uint64_t  givenVersion;
+    union {
+        uint64_t  givenVersion;
+        uint64_t  cstamp;  //DSSN Specific: cts of the KV
+    };
     uint8_t   doesntExist;
     uint8_t   exists;
     uint8_t   versionLeGiven;
