@@ -15,13 +15,6 @@
 #include "Cycles.h"
 #include "ClusterTimeService.h"
 
-static inline uint64_t getusec()
-{
-	struct timeval tv;
-	gettimeofday(&tv,NULL);
-	return (uint64_t)(1000000*tv.tv_sec) + tv.tv_usec;
-}
-
 static int getifname(char ifname[], uint32_t len)
 {
     FILE *f;
@@ -104,56 +97,43 @@ ClusterTimeService::ClusterTimeService()
 {
     char ifname[64], ipaddr[64];
     uint32_t i1, i2, i3, i4;
+    int fd;
 
+    // Parse IF address and get node id.
     if ((getifname(ifname, sizeof(ifname)) != 0) ||
         (getipaddr(ifname, ipaddr, sizeof(ipaddr)) != 0) ||
         (sscanf(ipaddr, "%d.%d.%d.%d", &i1, &i2, &i3, &i4) != 4)) {
         printf("Fatal Error: can not get default IP addr\n");
         *(int *)0 = 0;  // panic
     }
-
     node_id = i4; 
-    last_usec = getusec();
-    ctr  = 0;
-}
 
-// return a cluster unique logical time stamp
-uint64_t ClusterTimeService::getClusterTime()
-{
-    uint64_t usec = getusec();
-    if (usec > last_usec) {
-        last_usec = usec;
-        ctr = 0;
+    // attached to shared delta tracker
+    if ((fd = shm_open(TS_TRACKER_NAME, O_CREAT|O_RDWR, 0666)) == -1) {
+        printf("Fatal Error: shm_open failed. Errno=%d\n", errno);
+        *(int *)0 = 0;  // panic
     }
-    return (last_usec << 20) + (ctr++ << 10) + node_id;
-}
 
-// return a cluster unique time stamp + delta
-uint64_t ClusterTimeService::getClusterTime(uint32_t delta/* nsec*/)
-{
-    uint64_t usec = getusec();
-    if (usec > last_usec) {
-        last_usec = usec;
-        ctr = 0;
+    struct stat st;
+    int ret = fstat(fd, &st); assert(ret == 0); 
+    if (st.st_size == 0) {
+        ret = ftruncate(fd, sizeof(ts_tracker_t));
+        assert(ret == 0);
     }
-    return (last_usec << 20) + ((ctr++ + delta) << 10) + node_id;
-}
 
-// return a local system clock time stamp
-uint64_t ClusterTimeService::getLocalTime()
-{
-    uint64_t usec = getusec();
-    if (usec != last_usec) {
-        last_usec = usec;
-        ctr = 0;
+    tp = (ts_tracker_t *)mmap(NULL, sizeof(ts_tracker_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+    assert(tp);
+
+    // Reset atomic flag if it was left in a wrong state from the last session
+    uint32_t ctr;
+    while (tp->flag.test_and_set()) {
+        if (ctr++ > 1024*10) {
+            tp->last_usec = getusec();
+            tp->ctr = 0;
+            break;
+        }
     }
-    return (last_usec << 10) + ctr++;
-}
-
-// Convert a cluster time stamp to local clock time stamp
-uint64_t ClusterTimeService::Cluster2Local(uint64_t cluster_ts)
-{
-    return (cluster_ts >> 10);
+    tp->flag.clear();
 }
 
 } // DSSN
