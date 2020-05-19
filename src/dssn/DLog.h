@@ -221,7 +221,7 @@ class DLog {
         chunk_t * tmp;
         while ((tmp = chunk_head) != NULL) {
             chunk_head = chunk_head->next;
-            delete tmp;
+            tmp->remove();
         }
         chunk_tail = NULL;
     }

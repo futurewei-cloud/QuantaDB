@@ -30,8 +30,9 @@ class DLogBench : public ::testing::Test {
   #define DLOG_DIR        "/dev/shm"
   DLog<DLOG_CHUNK_SIZE> * log = new DLog<DLOG_CHUNK_SIZE>(DLOG_DIR, false);
 
-  #define DLOG_CHUNK_SIZE_2 (uint64_t)1024*1024*1024*100
-  DLog<DLOG_CHUNK_SIZE_2> * log2 = new DLog<DLOG_CHUNK_SIZE_2>(DLOG_DIR, false);
+  #define DLOG2_CHUNK_SIZE (uint64_t)1024*1024*1024*100
+  #define DLOG2_DIR        "/dev/shm/2"
+  DLog<DLOG2_CHUNK_SIZE> * log2 = new DLog<DLOG2_CHUNK_SIZE>(DLOG2_DIR, false);
 
   DISALLOW_COPY_AND_ASSIGN(DLogBench);
 };
