@@ -177,7 +177,13 @@ Validator::read(KLayout& k, KVLayout *&kv) {
 
 bool
 Validator::insertConcludeQueue(TxEntry *txEntry) {
-	return concludeQueue.push(txEntry);
+    if (txEntry->getTxState() == TxEntry::TX_COMMIT)
+        counters.commits++;
+    else if (txEntry->getTxState() == TxEntry::TX_ABORT)
+        counters.aborts++;
+    else
+        counters.concludeErrors++;
+    return concludeQueue.push(txEntry);
 }
 
 
@@ -253,7 +259,6 @@ Validator::serialize() {
 
         	//enable sending SSN info to peer
         	txEntry->setTxCIState(TxEntry::TX_CI_SCHEDULED);
-        	peerInfo.add(txEntry);
 
         	hasEvent = true;
         }
@@ -283,11 +288,11 @@ Validator::conclude(TxEntry& txEntry) {
 		    counters.aborts++;
 	}
 
-	txEntry.setTxCIState(TxEntry::TX_CI_FINISHED); //redundant if txEntry is deleted right after
+    txEntry.setTxCIState(TxEntry::TX_CI_FINISHED);
 
 	//for ease of managing memory, do not free during unit test
 	if (!isUnderTest)
-		delete &txEntry;
+	    delete &txEntry;
 
 	return true;
 }
@@ -304,7 +309,7 @@ Validator::peer() {
 						&& txEntry->getTxState() != TxEntry::TX_ALERT) { //Fixme: not to set upon ALERT???
 					//log CI before sending
 					//Fixme: txLog.add(txEntry);
-					rpcService->sendDSSNInfo(txEntry);
+					rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry->getTxState(), txEntry);
 					txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
 				}
 				txEntry = peerInfo.getNext(it);
@@ -320,70 +325,58 @@ Validator::insertTxEntry(TxEntry *txEntry) {
     counters.commitIntents++;
 	if (txEntry->getPeerSet().size() == 0) {
 		//single-shard tx
-		if (localTxQueue.add(txEntry)) {
-			txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
-			counters.queuedLocalTxs++;
-			return true;
-		}
+		if (!localTxQueue.add(txEntry))
+		    return false;
+		txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
+		counters.queuedLocalTxs++;
 	} else {
 		//cross-shard tx
-		if (distributedTxSet.add(txEntry)) {
-			txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
-			counters.queuedDistributedTxs++;
-		}
+		if (!distributedTxSet.add(txEntry))
+		    return false;
+		txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
+		counters.queuedDistributedTxs++;
 	}
-	return false;
+
+	peerInfo.add(txEntry->getCTS(), txEntry, this);
+	return true;
 }
 
-void
+TxEntry*
 Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
-	TxEntry *txEntry;
-	//Fixme: implement/use the TxState state machine --- here and/or peering thread???
-	//Fixme: handle peer SSN info being received before txEntry creation!!!
-	if (peerInfo.update(cts, peerId, pstamp, sstamp, txEntry)) {
-		//Fixme: should following section be part of the above update() to be thread safe???
-		if (txEntry->isExclusionViolated()) {
-			txEntry->setTxState(TxEntry::TX_ABORT);
-			if (peerTxState == TxEntry::TX_COMMIT) {
-				txEntry->setTxState(TxEntry::TX_CONFLICT);
-				assert(0); //Fixme: recover or debug
-			}
-		} else if (txEntry->isAllPeerSeen() && !txEntry->isExclusionViolated()) {
-			txEntry->setTxState(TxEntry::TX_COMMIT);
-			if (peerTxState == TxEntry::TX_ABORT) {
-				txEntry->setTxState(TxEntry::TX_CONFLICT);
-				assert(0); //Fixme: recover or debug
-			}
-		} else
-			return; //inconclusive yet
+    //Fixme: if tx is already conlcuded and logged, ignore the received info
 
-		//Our validator restart design assumes logging going asynchronously
-		//with saving write set to KV store, but
-		//Logging must precede sending tx CI reply
-		//Note that our overall scheme does not need to log local transactions at all
-		//By now the tuples should have successfully been preput into the KV store, so
-		//logging the CI conclusion is considered sealing a tx commit.
-		if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED
-				&& true /* Fixme: txLog.add(txEntry) */) {
-			txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
-			assert(insertConcludeQueue(txEntry));
-			rpcService->sendTxCommitReply(txEntry);
-			if (txEntry->getTxState() == TxEntry::TX_COMMIT)
-			    counters.commits++;
-			else
-			    counters.aborts++;
-		}
+    TxEntry *txEntry = NULL;
+	if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this)) {
+	    //Peer info is received before its tx commit intent is received
+	    peerInfo.add(cts, NULL, this); //create a peer entry without commit intent txEntry
+	    peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this);
+	    counters.earlyPeers++;
 	}
+	return txEntry;
 }
 
 void
 Validator::replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
-	TxEntry *txEntry;
-	if (peerTxState == TxEntry::TX_CONFLICT)
-		assert(0); //Fixme: do recovery or debug
-	peerInfo.update(cts, peerId, pstamp, sstamp, txEntry);
-	if (rpcService) //unit test may make it NULL
-		rpcService->sendDSSNInfo(txEntry, true, peerId);
+
+    if (peerTxState == TxEntry::TX_CONFLICT)
+        assert(0); //Fixme: do recovery or debug
+    if (rpcService == NULL) //unit test may make rpcService NULL
+        return;
+
+    //Fixme: if tx is already conlcuded and logged, provide the logged state
+    uint8_t txState = TxEntry::TX_ALERT;
+    TxEntry *txEntry = receiveSSNInfo(peerId, cts, pstamp, sstamp, peerTxState);
+    if (txEntry) {
+        txState = txEntry->getTxState();
+    }
+
+    rpcService->sendDSSNInfo(cts, txState, txEntry, true, peerId);
+}
+
+void
+Validator::sendTxCommitReply(TxEntry *txEntry) {
+    if (rpcService)
+        rpcService->sendTxCommitReply(txEntry);
 }
 
 } // end Validator class

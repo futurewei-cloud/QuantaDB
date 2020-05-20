@@ -8,12 +8,10 @@
 
 #include "Common.h"
 #include "TxEntry.h"
+#include "Validator.h"
 #include "tbb/concurrent_unordered_map.h"
 
 namespace DSSN {
-
-typedef uint64_t CTS;
-typedef tbb::concurrent_unordered_map<CTS, TxEntry *>::iterator PeerInfoIterator;
 
 /**
  * The class implements a search-able table of tx entries undergoing
@@ -31,20 +29,37 @@ typedef tbb::concurrent_unordered_map<CTS, TxEntry *>::iterator PeerInfoIterator
  *
  * Considering all those concurrency concerns, we would use TBB concurrent_unordered_map
  * which supports concurrent insert, find, and iteration. However, a concurrent erase would disrupt
- * the iteration, so we would have to use that thread to erase completed entries while scanning.
+ * the iteration, so we would have to use that thread to erase finished entries while scanning.
  *
  * Compared to TBB concurrent_hash_map, our choice would perform better as the frequent
  * inserts and finds are lock-free while using finer per TxEntry locking to protect concurrent value
  * modification.
  *
  */
+
+struct PeerEntry {
+    std::mutex mutexForPeerUpdate;
+    std::set<uint64_t> peerSeenSet;
+    DSSNMeta meta;
+    TxEntry *txEntry = NULL;
+};
+
+class  Validator;
+
+typedef uint64_t CTS;
+typedef tbb::concurrent_unordered_map<CTS, PeerEntry *>::iterator PeerInfoIterator;
+
 class PeerInfo {
     PROTECTED:
-    tbb::concurrent_unordered_map<CTS, TxEntry *> peerInfo;
+    tbb::concurrent_unordered_map<CTS, PeerEntry *> peerInfo;
+    std::mutex mutexForPeerAdd;
+
+    bool evaluate(PeerEntry *peerEntry, uint8_t peerTxState, TxEntry *txEntry, Validator *validator);
 
     PUBLIC:
 	//add a tx for tracking peer info
-    bool add(TxEntry* txEntry);
+    ///txEntry may or may not be NULL
+    bool add(CTS cts, TxEntry* txEntry, Validator* validator);
 
     //for iteration
     TxEntry* getFirst(PeerInfoIterator &it);;
@@ -53,8 +68,9 @@ class PeerInfo {
     //free txs which have been enqueued into conclusion queue
     bool sweep();
 
-    //update peer info of a tx identified by cts and return the txEntry
-    bool update(CTS cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
+    //update peer info of a tx identified by cts and return true if peer entry is found
+    bool update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t eta, uint64_t pi,
+            TxEntry *&txEntry, Validator *validator);
 
     //current capacity
     uint32_t size();

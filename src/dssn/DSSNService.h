@@ -28,9 +28,9 @@ class DSSNService : public Service {
 
    static bool sendTxCommitReply(TxEntry *txEntry);
 
-   bool sendDSSNInfo(TxEntry *txEntry, bool isSpecific = false, uint64_t target = 0);
+   bool sendDSSNInfo(uint64_t cts, uint8_t txState, TxEntry *txEntry, bool isSpecific = false, uint64_t target = 0);
 
-   bool requestDSSNInfo(TxEntry *txEntry);
+   bool requestDSSNInfo(TxEntry *txEntry, bool isSpecific = false, uint64_t target = 0);
 
  private:
    inline uint64_t getServerId() {

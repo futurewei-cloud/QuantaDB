@@ -22,7 +22,9 @@
 
 namespace DSSN {
 
-class DSSNService; //forward declaration to resolve interdependency
+//forward declaration to resolve interdependency
+class DSSNService;
+class PeerInfo;
 
 /**
  * Supposedly one Validator instance per storage node, to handle DSSN validation.
@@ -36,6 +38,8 @@ class DSSNService; //forward declaration to resolve interdependency
 struct Counters {
     uint64_t reads = 0;
     uint64_t commitIntents = 0;
+    uint64_t foundCommitIntents = 0;
+    uint64_t earlyPeers = 0;
     uint64_t queuedDistributedTxs = 0;
     uint64_t queuedLocalTxs = 0;
     uint64_t commits = 0;
@@ -43,6 +47,7 @@ struct Counters {
     uint64_t preputErrors = 0;
     uint64_t lateScheduleErrors = 0;
     uint64_t readVersionErrors = 0;
+    uint64_t concludeErrors = 0;
     uint64_t commitMetaErrors = 0;
     uint64_t commitReads = 0;
     uint64_t commitWrites = 0;
@@ -127,8 +132,9 @@ class Validator {
     bool insertTxEntry(TxEntry *txEntry);
     bool updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
     bool insertConcludeQueue(TxEntry *txEntry);
-    void receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
+    TxEntry* receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
     void replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
+    void sendTxCommitReply(TxEntry *txEntry);
 
     // for unit testing, triggering a run of functions without using threads
     bool testRun();

@@ -39,19 +39,12 @@ class TxEntry {
     uint32_t txState;
     uint32_t commitIntentState;
 
-    //mutex for protecting concurrent peer info updates
-    ///ideally this mutex should be encapsulated inside PeerInfo class as it is expected
-    ///to be used by peer info exchange RPC handlers only; yet, we'd like to avoid
-    ///frequent malloc/dealloc of this small object.
-    std::mutex mutexForPeerUpdate;
-
     //RPC handle for replying to commit intent
     void *rpcHandle;
 
     //Set of IDs of participant shards excluding self
     ///use std::set for sake of equality check
     std::set<uint64_t> peerSet;
-    std::set<uint64_t> peerSeenSet;
 
     //write set and read set under validation
     uint32_t writeSetSize;
@@ -72,12 +65,6 @@ class TxEntry {
     uint32_t writeSetIndex;
     uint32_t readSetIndex;
 
-    /*
-    Henry: possibly needs these
-    uint64_t id; //transaction globally unique ID
-    uint64_t readSnapshotTimestamp; //0 - not a read-only tx, max - most recent, [1, max) - specific snapshot
-     */
-
     PUBLIC:
     enum {
     	//TX_CI_xxx states are for validator internal use to track the progress
@@ -95,8 +82,11 @@ class TxEntry {
         /// Transaction commit-intent has had SSN info sent to peers
         TX_CI_LISTENING,
 
-        /// Transaction commit-intent has reached a decision and that is logged
+        /// Transaction commit-intent has reached a decision but not been logged
         TX_CI_CONCLUDED,
+
+        /// Transaction commit-intent has reached a decision and that is logged
+        TX_CI_SEALED,
 
 		/// Transaction commit-intent has finished its life, and txEntry can be purged
 		TX_CI_FINISHED,
@@ -134,13 +124,9 @@ class TxEntry {
     inline uint64_t getSStamp() { return sstamp; }
     inline uint32_t getTxState() { return txState; }
     inline uint32_t getTxCIState() { return commitIntentState; }
-    inline std::mutex& getMutex() { return mutexForPeerUpdate; }
     inline void* getRpcHandle() { return rpcHandle; }
     inline void insertPeerSet(uint64_t peerId) { peerSet.insert(peerId); }
     inline std::set<uint64_t>& getPeerSet() { return peerSet; }
-    inline void insertPeerSeenSet(uint64_t peerId) { peerSeenSet.insert(peerId); }
-    inline std::set<uint64_t>& getPeerSeenSet() { return peerSeenSet; }
-    inline bool isAllPeerSeen() { return peerSeenSet == peerSet; }
     inline boost::scoped_array<KVLayout *>& getWriteSet() { return writeSet; }
     inline boost::scoped_array<KVLayout *>& getReadSet() { return readSet; }
     inline uint32_t getWriteSetSize() { return writeSetSize; }

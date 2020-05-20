@@ -783,20 +783,29 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
 }
 
 bool
-DSSNService::sendDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
+DSSNService::sendDSSNInfo(uint64_t cts, uint8_t txState, TxEntry *txEntry, bool isSpecific, uint64_t target)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
 
     WireFormat::DSSNSendInfoAsync::Request req;
-    req.cts = txEntry->getCTS();
-    req.pstamp = txEntry->getPStamp();
-    req.sstamp = txEntry->getSStamp();;
     req.senderPeerId = getServerId();
-    //report ABORT/COMMIT only if the conclusion is logged
-    if (txEntry->getTxCIState() == TxEntry::TX_CI_CONCLUDED)
-        req.txState = txEntry->getTxState();
-    else
-        req.txState = TxEntry::TX_PENDING;
+    if (txEntry != NULL) {
+        req.cts = txEntry->getCTS();
+        assert(cts == req.cts);
+        req.pstamp = txEntry->getPStamp();
+        req.sstamp = txEntry->getSStamp();
+
+        //report ABORT/COMMIT only if the conclusion has been logged
+        if (txEntry->getTxCIState() >= TxEntry::TX_CI_SEALED)
+            req.txState = txEntry->getTxState();
+        else
+            req.txState = TxEntry::TX_PENDING;
+    } else {
+        req.cts = cts;
+        req.pstamp = 0;
+        req.sstamp = 0xffffffffffffffff;
+        req.txState = txState;
+    }
 
     char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
     uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);
@@ -806,8 +815,6 @@ DSSNService::sendDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
     } else {
         std::set<uint64_t>::iterator it;
         for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
-            if (txEntry->getPeerSeenSet().count(*it) > 0)
-                continue;
             Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
                     msg, length, *new ServerId(*it));
         }
@@ -816,7 +823,7 @@ DSSNService::sendDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
 }
 
 bool
-DSSNService::requestDSSNInfo(TxEntry *txEntry)
+DSSNService::requestDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
 {
     WireFormat::DSSNRequestInfoAsync::Request req;
     req.cts = txEntry->getCTS();
@@ -824,19 +831,22 @@ DSSNService::requestDSSNInfo(TxEntry *txEntry)
     req.sstamp = txEntry->getSStamp();;
     req.senderPeerId = getServerId();
     //report ABORT/COMMIT only if the conclusion is logged
-    if (txEntry->getTxCIState() == TxEntry::TX_CI_CONCLUDED)
+    if (txEntry->getTxCIState() >= TxEntry::TX_CI_SEALED)
         req.txState = txEntry->getTxState();
     else
         req.txState = TxEntry::TX_PENDING;
 
-    std::set<uint64_t>::iterator it;
-    for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
-        if (txEntry->getPeerSeenSet().count(*it) > 0)
-            continue;
-        char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
-        uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);
+    char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
+    uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);
+    if (isSpecific) {
         Notifier::notify(context, WireFormat::DSSN_REQUEST_INFO_ASYNC,
-                msg, length, *new ServerId(*it));
+                msg, length, *new ServerId(target));
+    } else {
+        std::set<uint64_t>::iterator it;
+        for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
+            Notifier::notify(context, WireFormat::DSSN_REQUEST_INFO_ASYNC,
+                    msg, length, *new ServerId(*it));
+        }
     }
     return true;
 }

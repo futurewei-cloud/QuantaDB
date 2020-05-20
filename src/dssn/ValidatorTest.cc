@@ -71,7 +71,7 @@ class ValidatorTest : public ::testing::Test {
     }
 
     void fillTxEntryPeers(TxEntry *txEntry) {
-    	validator.peerInfo.add(txEntry);
+    	validator.peerInfo.add(txEntry->getCTS(), txEntry, &validator);
     	for (uint64_t peerId = 0; peerId <= txEntry->getPeerSet().size(); peerId++) {
     		validator.receiveSSNInfo(peerId, txEntry->getCTS(), 0, 0xfffffff, txEntry->getTxState());
     	}
@@ -112,7 +112,6 @@ class ValidatorTest : public ::testing::Test {
     }
 };
 
-#if 1
 TEST_F(ValidatorTest, BATKVStorePutGet) {
     fillTxEntry(1);
 
@@ -336,9 +335,7 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 	EXPECT_EQ(TxEntry::TX_PENDING, txEntry[0]->getTxState());
 
 	for (int ent = 0; ent < 5; ent++) {
-		validator.peerInfo.add(txEntry[ent]);
-
-		EXPECT_NE(txEntry[ent]->getPeerSet(), txEntry[ent]->getPeerSeenSet());
+		validator.peerInfo.add(txEntry[ent]->getCTS(), txEntry[ent], &validator);
 	}
 
 	for (int ent = 1; ent < 4; ent++) {
@@ -347,7 +344,6 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 			validator.receiveSSNInfo(peer, txEntry[ent]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING);
 		}
 		EXPECT_NE(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
-		EXPECT_EQ(txEntry[ent]->getPeerSet(), txEntry[ent]->getPeerSeenSet());
 	}
 	EXPECT_EQ((uint32_t)5, validator.peerInfo.size());
 	validator.peerInfo.sweep();
@@ -355,7 +351,6 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 
 	freeTxEntry(5);
 }
-#endif //
 
 TEST_F(ValidatorTest, BATValidateDistributedTxs) {
     int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
