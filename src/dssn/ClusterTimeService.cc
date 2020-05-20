@@ -124,6 +124,8 @@ ClusterTimeService::ClusterTimeService()
     tp = (ts_tracker_t *)mmap(NULL, sizeof(ts_tracker_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
     assert(tp);
 
+    close(fd);
+
     // Reset atomic flag if it was left in a wrong state from the last session
     uint32_t ctr;
     while (tp->flag.test_and_set()) {
@@ -134,6 +136,11 @@ ClusterTimeService::ClusterTimeService()
         }
     }
     tp->flag.clear();
+}
+
+ClusterTimeService::~ClusterTimeService()
+{
+    munmap(tp, sizeof(ts_tracker_t));
 }
 
 } // DSSN
