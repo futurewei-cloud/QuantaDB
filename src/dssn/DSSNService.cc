@@ -623,7 +623,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             KVLayout pkv(currentReq->keyLength + sizeof(tableId)); //make room composite key in KVStore
             std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
             std::memcpy(pkv.getKey().key.get() + sizeof(tableId), stringKey, currentReq->keyLength);
-            //Fixme: pkv.meta().cStamp = currentReq->ReadOp()
+            pkv.meta().cStamp = currentReq->GetCStamp();
             KVLayout *nkv = kvStore->preput(pkv);
             if (nkv == NULL) {
                 respHdr->common.status = STATUS_NO_TABLE_SPACE;
