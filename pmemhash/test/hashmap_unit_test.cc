@@ -25,15 +25,19 @@ Element mt_insert_elem[N_THREAD];
 
 void * mt_insert_test(void *arg)
 {
-    int tid = (int)(uint64_t)arg;
+    int tid = (int)*(uint64_t*)arg;
     elem_pointer<Element> elem_ret;
+    uint64_t ctr = 0;
 
     printf("mt_insert tid=%d\n", tid);
 
     while (thread_run_run) 
     {
     	elem_ret = my_hashtable.put(mt_insert_elem[tid].key, &mt_insert_elem[tid]);
+        ctr++;
     }
+
+    *(uint64_t*)arg = ctr;
 
     return NULL;
 }
@@ -42,6 +46,7 @@ int main(void)
 {
     elem_pointer<Element> elem_ret;
     printf("========== Hash Map MT Test ==\n");
+    uint64_t id_ctr[N_THREAD];
 	pthread_t tid[N_THREAD];
 
 	// Init mt_insert_elem[MT_INSERT_KEY];
@@ -53,7 +58,8 @@ int main(void)
 	thread_run_run = 1;
 	// 
 	for (auto idx = 0; idx < N_THREAD; idx++) {
-	    pthread_create(&tid[idx], NULL, mt_insert_test, (void *)(uint64_t)idx);
+        id_ctr[idx] = idx;
+	    pthread_create(&tid[idx], NULL, mt_insert_test, (void *)&id_ctr[idx]);
 	}
 
 	sleep(thread_run_time);
@@ -63,6 +69,12 @@ int main(void)
 	    pthread_join(tid[idx], NULL);
 	}
 	
+    uint64_t total_puts = 0;
+	for (auto idx = 0; idx < N_THREAD; idx++) {
+	    total_puts += id_ctr[idx];
+	}
+
+    assert(total_puts == (my_hashtable.get_insert_count() + my_hashtable.get_update_count()));
 
     elem_ret = my_hashtable.get(MT_INSERT_KEY);
     assert (elem_ret.ptr_!=NULL);
