@@ -36,6 +36,10 @@ namespace DSSN {
  *
  * This implementation uses PTP and gettimeofday(2) to get synchronized micro-second precision system time.
  * Sub-microsecond precision is simulated using a call counter. Monotonic increasing property is preserved.
+ *
+ * Extra Note:
+ * Using __rdtsc() and Cycles::toNanoseconds() to simulate nanosecond precision is not only slower, but (for
+ * some unknown reason) also failed the monotonic increasing test.
  */
 
 
