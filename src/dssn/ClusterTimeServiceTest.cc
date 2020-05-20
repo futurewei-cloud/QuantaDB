@@ -90,7 +90,16 @@ TEST_F(ClusterTimeServiceTest, benchGenClusterTime) {
     uint64_t start, stop;
     //
     start = Cycles::rdtsc();
-    for (int i = 0; i < loop; i++) {
+    for (int i = 0; i < loop; i += 10) {
+        clock.getClusterTime();
+        clock.getClusterTime();
+        clock.getClusterTime();
+        clock.getClusterTime();
+        clock.getClusterTime();
+        clock.getClusterTime();
+        clock.getClusterTime();
+        clock.getClusterTime();
+        clock.getClusterTime();
         clock.getClusterTime();
     }
     stop = Cycles::rdtsc();
@@ -99,7 +108,16 @@ TEST_F(ClusterTimeServiceTest, benchGenClusterTime) {
 
     //
     start = Cycles::rdtsc();
-    for (int i = 0; i < loop; i++) {
+    for (int i = 0; i < loop; i += 10) {
+        clock.getClusterTime(1000);
+        clock.getClusterTime(1000);
+        clock.getClusterTime(1000);
+        clock.getClusterTime(1000);
+        clock.getClusterTime(1000);
+        clock.getClusterTime(1000);
+        clock.getClusterTime(1000);
+        clock.getClusterTime(1000);
+        clock.getClusterTime(1000);
         clock.getClusterTime(1000);
     }
     stop = Cycles::rdtsc();
@@ -108,7 +126,16 @@ TEST_F(ClusterTimeServiceTest, benchGenClusterTime) {
 
     //
     start = Cycles::rdtsc();
-    for (int i = 0; i < loop; i++) {
+    for (int i = 0; i < loop; i += 10) {
+        clock.getLocalTime();
+        clock.getLocalTime();
+        clock.getLocalTime();
+        clock.getLocalTime();
+        clock.getLocalTime();
+        clock.getLocalTime();
+        clock.getLocalTime();
+        clock.getLocalTime();
+        clock.getLocalTime();
         clock.getLocalTime();
     }
     stop = Cycles::rdtsc();
@@ -117,7 +144,16 @@ TEST_F(ClusterTimeServiceTest, benchGenClusterTime) {
 
     //
     start = Cycles::rdtsc();
-    for (int i = 0; i < loop; i++) {
+    for (int i = 0; i < loop; i += 10) {
+        clock.Cluster2Local(start);
+        clock.Cluster2Local(start);
+        clock.Cluster2Local(start);
+        clock.Cluster2Local(start);
+        clock.Cluster2Local(start);
+        clock.Cluster2Local(start);
+        clock.Cluster2Local(start);
+        clock.Cluster2Local(start);
+        clock.Cluster2Local(start);
         clock.Cluster2Local(start);
     }
     stop = Cycles::rdtsc();

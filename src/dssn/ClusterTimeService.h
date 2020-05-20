@@ -43,11 +43,12 @@ namespace DSSN {
 class ClusterTimeService {
     public:
     ClusterTimeService();
+    ~ClusterTimeService();
 
     // return a cluster unique logical time stamp
     inline uint64_t getClusterTime()   	         
     {
-        return getClusterTime(0);
+        return (getLocalTime() << 10) + node_id;
     }
 
     // cluster unique time stamp that is local clock + delta
