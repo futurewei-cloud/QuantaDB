@@ -68,8 +68,7 @@ public:
 		for (uint32_t idx = 0; idx < bucket_count; idx++) {
 			buckets_[idx].hdr_.valid_ = 0;
 		}
-        evict_ctr_ = 0;
-        insert_ctr_ = 0;
+        evict_ctr_ = insert_ctr_ = update_ctr_ = 0;
     }
 
     ~hash_table()
@@ -119,16 +118,17 @@ public:
 
     bool update_internal(const K & key, Elem *ptr, elem_pointer<Elem> hint) {
 
-
         // find the bucket.
         auto bucket = bucketize(key);
         //std::vector<int> & l_victim_list = victim_; // or use at()
-
 
         if (hint.ptr_ != NULL && // valid hint, replace old ptr if neccessary
             ((buckets_[bucket].hdr_.valid_ & (1 << hint.slot_)) != 0) ) { // this slot is still valid.
             if (buckets_[bucket].ptr_[hint.slot_] == hint.ptr_) {
                 buckets_[bucket].ptr_[hint.slot_] = ptr;
+                #ifndef  NDEBUG
+                update_ctr_++;
+                #endif  // NDEBUG
                 return true;
             }
         }
@@ -229,6 +229,7 @@ public:
 
     uint32_t get_evict_count() { return evict_ctr_; }
     uint32_t get_insert_count() { return insert_ctr_; }
+    uint32_t get_update_count() { return update_ctr_; }
 
     int bucketize(const K & key) { return Hash{}(key) % bucket_count_; }
     uint8_t signature(const K & key) { return (Hash{}(key) / bucket_count_) & 0xFF; }
@@ -240,6 +241,7 @@ private:
     std::vector<int> victim_;
     std::atomic<uint32_t> evict_ctr_;
     std::atomic<uint32_t> insert_ctr_;
+    std::atomic<uint32_t> update_ctr_;
 };
 
 

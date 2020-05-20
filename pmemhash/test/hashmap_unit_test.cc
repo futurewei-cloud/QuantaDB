@@ -70,4 +70,5 @@ int main(void)
                 elem_ret.ptr_->key, elem_ret.ptr_->value);
     printf("Evict count = %d\n", my_hashtable.get_evict_count());
     printf("Insert count = %d\n", my_hashtable.get_insert_count());
+    printf("Update count = %d\n", my_hashtable.get_update_count());
 }
