@@ -89,7 +89,7 @@ class TpcCTest : public ::testing::Test {
     void read(TPCC::Row* row)
     {
         Buffer buf;
-        ramcloud->read(row->tid(), row->pKey(), row->pKeyLength(), &buf);
+	ramcloud->read(row->tid(), row->pKey(), row->pKeyLength(), &buf);
         row->parseBuffer(buf);
     }
 
@@ -103,6 +103,7 @@ class TpcCTest : public ::testing::Test {
     void txOrderStatus_byLastName();
     void txDelivery();
     void txStockLevel();
+    void txVerify();
     void simulate();
 
     DISALLOW_COPY_AND_ASSIGN(TpcCTest);
@@ -162,7 +163,7 @@ void TpcCTest::txNewOrder() {
     // Preserve the previous state.
     //////////////////////////////////////////////////////
     District d(in.D_ID, W_ID);
-    read(&d);
+    ASSERT_NO_THROW(read(&d));
     uint32_t O_ID = d.data.D_NEXT_O_ID;
 
     NewOrder no(O_ID, in.D_ID, W_ID);
@@ -173,7 +174,7 @@ void TpcCTest::txNewOrder() {
     Tub<Stock> oldStocks[15];
     for (int i = 0; i < in.O_OL_CNT; ++i) {
         oldStocks[i].construct(in.I_IDs[i], W_ID);
-        read(oldStocks[i].get());
+        ASSERT_NO_THROW(read(oldStocks[i].get()));
     }
 
     //////////////////////////////////////////////////////
@@ -188,12 +189,12 @@ void TpcCTest::txNewOrder() {
     //////////////////////////////////////////////////////
 
     // Next oid incremented.
-    read(&d);
+    ASSERT_NO_THROW(read(&d));
     EXPECT_EQ(d.data.D_NEXT_O_ID, O_ID + 1);
 
     // Order header: 2 rows are inserted.
-    read(&no);
-    read(&o);
+    ASSERT_NO_THROW(read(&no));
+    ASSERT_NO_THROW(read(&o));
     EXPECT_EQ(o.data.O_C_ID, in.C_ID);
     EXPECT_EQ(o.data.O_CARRIER_ID, 0);
     EXPECT_EQ(o.data.O_OL_CNT, in.O_OL_CNT);
@@ -211,9 +212,9 @@ void TpcCTest::txNewOrder() {
     Tub<Stock> stocks[15];
     for (int i = 0; i < in.O_OL_CNT; ++i) {
         items[i].construct(in.I_IDs[i], W_ID);
-        read(items[i].get());
+	ASSERT_NO_THROW(read(items[i].get()));
         stocks[i].construct(in.I_IDs[i], W_ID);
-        read(stocks[i].get());
+	ASSERT_NO_THROW(read(stocks[i].get()));
     }
     Tub<OrderLine> ols[15];
     for (uint8_t i = 0; i < in.O_OL_CNT; ++i) {
@@ -236,7 +237,7 @@ void TpcCTest::txNewOrder() {
 
         // ORDER LINE
         ols[i].construct(O_ID, in.D_ID, W_ID, i);
-        read(ols[i].get());
+	ASSERT_NO_THROW(read(ols[i].get()));
 
         EXPECT_EQ(in.I_IDs[i], ols[i]->data.OL_I_ID);
         EXPECT_EQ(in.OL_SUPPLY_W_ID[i], ols[i]->data.OL_SUPPLY_W_ID);
@@ -252,7 +253,7 @@ void TpcCTest::txNewOrder() {
     // Check last orderId of a customer.
     Customer c(in.C_ID, in.D_ID, W_ID);
     Buffer buf_oid;
-    ramcloud->read(tableId[W_ID], c.pKey(), c.lastOidKeyLength(), &buf_oid);
+    ASSERT_NO_THROW(ramcloud->read(tableId[W_ID], c.pKey(), c.lastOidKeyLength(), &buf_oid));
     EXPECT_EQ(O_ID, *(buf_oid.getStart<uint32_t>()));
 }
 
@@ -271,9 +272,9 @@ void TpcCTest::txPayment_basic() {
     Warehouse oldW(W_ID);
     District oldD(in.D_ID, W_ID);
     Customer oldC(in.C_ID, in.C_D_ID, in.C_W_ID);
-    read(&oldW);
-    read(&oldD);
-    read(&oldC);
+    ASSERT_NO_THROW(read(&oldW));
+    ASSERT_NO_THROW(read(&oldD));
+    ASSERT_NO_THROW(read(&oldC));
     // TODO: write a History row checker after fixing RAM-777.
 
     //////////////////////////////////////////////////////
@@ -289,9 +290,9 @@ void TpcCTest::txPayment_basic() {
     Warehouse w(W_ID);
     District d(in.D_ID, W_ID);
     Customer c(in.C_ID, in.C_D_ID, in.C_W_ID);
-    read(&w);
-    read(&d);
-    read(&c);
+    ASSERT_NO_THROW(read(&w));
+    ASSERT_NO_THROW(read(&d));
+    ASSERT_NO_THROW(read(&c));
 
     EXPECT_EQ(oldW.data.W_YTD + in.H_AMOUNT, w.data.W_YTD);
     EXPECT_EQ(oldD.data.D_YTD + in.H_AMOUNT, d.data.D_YTD);
@@ -313,7 +314,7 @@ void TpcCTest::txPayment_badCredit() {
     do {
         in.C_ID = TPCC::NURand(1023, 1, 3000);
         Customer customer(in.C_ID, in.C_D_ID, in.C_W_ID);
-        read(&customer);
+	ASSERT_NO_THROW(read(&customer));
         isBC = strncmp(customer.data.C_CREDIT, "BC", 2) == 0;
     } while (!isBC);
 
@@ -321,7 +322,7 @@ void TpcCTest::txPayment_badCredit() {
     // Preserve the previous state.
     //////////////////////////////////////////////////////
     Customer oldC(in.C_ID, in.C_D_ID, in.C_W_ID);
-    read(&oldC);
+    ASSERT_NO_THROW(read(&oldC));
 
     //////////////////////////////////////////////////////
     // Execute transaction.
@@ -336,9 +337,9 @@ void TpcCTest::txPayment_badCredit() {
     Warehouse w(W_ID);
     District d(in.D_ID, W_ID);
     Customer c(in.C_ID, in.C_D_ID, in.C_W_ID);
-    read(&w);
-    read(&d);
-    read(&c);
+    ASSERT_NO_THROW(read(&w));
+    ASSERT_NO_THROW(read(&d));
+    ASSERT_NO_THROW(read(&c));
 
     EXPECT_TRUE(strncmp(c.data.C_CREDIT, "BC", 2) == 0);
     std::ostringstream newData;
@@ -392,9 +393,9 @@ void TpcCTest::txPayment_byLastName() {
     Warehouse oldW(W_ID);
     District oldD(in.D_ID, W_ID);
     Customer oldC(expectedCID, in.C_D_ID, in.C_W_ID);
-    read(&oldW);
-    read(&oldD);
-    read(&oldC);
+    ASSERT_NO_THROW(read(&oldW));
+    ASSERT_NO_THROW(read(&oldD));
+    ASSERT_NO_THROW(read(&oldC));
 
     //////////////////////////////////////////////////////
     // Execute transaction.
@@ -411,9 +412,9 @@ void TpcCTest::txPayment_byLastName() {
     Warehouse w(W_ID);
     District d(in.D_ID, W_ID);
     Customer c(in.C_ID, in.C_D_ID, in.C_W_ID);
-    read(&w);
-    read(&d);
-    read(&c);
+    ASSERT_NO_THROW(read(&w));
+    ASSERT_NO_THROW(read(&d));
+    ASSERT_NO_THROW(read(&c));
 
     EXPECT_EQ(oldW.data.W_YTD + in.H_AMOUNT, w.data.W_YTD);
     EXPECT_EQ(oldD.data.D_YTD + in.H_AMOUNT, d.data.D_YTD);
@@ -437,7 +438,7 @@ void TpcCTest::txOrderStatus() {
     // Preserve the previous state.
     //////////////////////////////////////////////////////
     Customer oldC(in.C_ID, in.D_ID, W_ID);
-    read(&oldC);
+    ASSERT_NO_THROW(read(&oldC));
 
     //////////////////////////////////////////////////////
     // Execute transaction.
@@ -480,7 +481,7 @@ void TpcCTest::txOrderStatus_byLastName() {
     //////////////////////////////////////////////////////
     uint32_t expectedCID = 50;
     Customer oldC(expectedCID, in.D_ID, W_ID);
-    read(&oldC);
+    ASSERT_NO_THROW(read(&oldC));
 
     //////////////////////////////////////////////////////
     // Execute transaction.
@@ -506,23 +507,23 @@ void TpcCTest::txDelivery() {
         // Preserve the previous state.
         //////////////////////////////////////////////////////
         District d(D_ID, W_ID);
-        read(&d);
+	ASSERT_NO_THROW(read(&d));
         uint32_t O_ID = d.data.lowestToDeliverOid;
 
         NewOrder no(O_ID, D_ID, W_ID);
-        read(&no);
+	ASSERT_NO_THROW(read(&no));
         Order o(O_ID, D_ID, W_ID);
-        read(&o);
+	ASSERT_NO_THROW(read(&o));
         EXPECT_EQ(0U, o.data.O_CARRIER_ID);
 
         Customer oldC(o.data.O_C_ID, D_ID, W_ID);
-        read(&oldC);
+	ASSERT_NO_THROW(read(&oldC));
 
         double sum = 0;
         Tub<OrderLine> ols[15];
         for (uint8_t i = 0; i < o.data.O_OL_CNT; ++i) {
             ols[i].construct(O_ID, D_ID, W_ID, i);
-            read(ols[i].get());
+	    ASSERT_NO_THROW(read(ols[i].get()));
             sum += ols[i]->data.OL_AMOUNT;
             EXPECT_EQ(0, ols[i]->data.OL_DELIVERY_D);
         }
@@ -538,20 +539,20 @@ void TpcCTest::txDelivery() {
         //////////////////////////////////////////////////////
         // Check modifications by the transaction.
         //////////////////////////////////////////////////////
-        read(&d);
+	ASSERT_NO_THROW(read(&d));
         EXPECT_EQ(O_ID + 1, d.data.lowestToDeliverOid);
         EXPECT_THROW(read(&no), ObjectDoesntExistException);
-        read(&o);
+	ASSERT_NO_THROW(read(&o));
         EXPECT_EQ(in.O_CARRIER_ID, o.data.O_CARRIER_ID);
 
         for (uint8_t i = 0; i < o.data.O_OL_CNT; ++i) {
-            read(ols[i].get());
+	    ASSERT_NO_THROW(read(ols[i].get()));
             EXPECT_LE(startTime, ols[i]->data.OL_DELIVERY_D);
             EXPECT_GE(time(NULL), ols[i]->data.OL_DELIVERY_D);
         }
 
         Customer c(o.data.O_C_ID, D_ID, W_ID);
-        read(&c);
+	ASSERT_NO_THROW(read(&c));
         EXPECT_EQ(oldC.data.C_BALANCE + sum, c.data.C_BALANCE);
         EXPECT_EQ(oldC.data.C_DELIVERY_CNT + 1, c.data.C_DELIVERY_CNT);
     }
@@ -667,6 +668,16 @@ void TpcCTest::simulate() {
     }
 }
 
+void TpcCTest::txVerify() {
+    for (uint32_t i = 0; i <= 2000; i++) {
+        txNewOrder();
+	txPayment_basic();
+	txOrderStatus();
+	txDelivery();
+	txStockLevel();
+    }
+}
+
 void printSize() {
     printf("   Type    key  Data\n");
     printf("Warehouse: %3d  %3d\n", sizeof(TPCC::Warehouse::Key), sizeof(TPCC::Warehouse::Data));
@@ -695,7 +706,8 @@ TEST_F(TpcCTest, runAllTests) {
     txOrderStatus_byLastName();
     txDelivery();
     txStockLevel();
-    basic();
+    //basic();
+    txVerify();
     simulate();
 }
 
