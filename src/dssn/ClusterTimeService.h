@@ -38,8 +38,9 @@ namespace DSSN {
  * Sub-microsecond precision is simulated using a call counter. Monotonic increasing property is preserved.
  *
  * Extra Note:
- * Using __rdtsc() and Cycles::toNanoseconds() to simulate nanosecond precision is not only slower, but (for
- * some unknown reason) also failed the monotonic increasing test.
+ * Using __rdtsc() and Cycles::toNanoseconds() to calculate nanosecond precision would be fairer than
+ * using a call counter. But it adds about 15ns to latency. This implementation trades speed with ignorable
+ * inter-node timestamp fairness.
  */
 
 
@@ -64,13 +65,13 @@ class ClusterTimeService {
     // return a local system clock time stamp
     inline uint64_t getLocalTime()
     {
-        uint64_t usec = getusec();
+        uint64_t nsec = getusec() * 1000;
         while (tp->flag.test_and_set());
-        if (usec > tp->last_usec) {
-            tp->last_usec = usec;
+        if (nsec > (tp->last_nsec + tp->ctr)) {
+            tp->last_nsec = nsec;
             tp->ctr = 0;
         }
-        uint64_t ret = (tp->last_usec << 10) + tp->ctr++;
+        uint64_t ret = tp->last_nsec + tp->ctr++;
         tp->flag.clear();
         return ret;
     }
@@ -91,7 +92,7 @@ class ClusterTimeService {
 
     #define TS_TRACKER_NAME  "DSSN_TS_Tracker"
     typedef struct {
-        uint64_t last_usec;             // usec from the last gettimeofday() call
+        uint64_t last_nsec;             // usec from the last gettimeofday() call
         uint32_t ctr;                   // counter
         std::atomic_flag flag;          // spin lock
     } ts_tracker_t;

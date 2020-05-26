@@ -130,7 +130,7 @@ ClusterTimeService::ClusterTimeService()
     uint32_t ctr;
     while (tp->flag.test_and_set()) {
         if (ctr++ > 1024*10) {
-            tp->last_usec = getusec();
+            tp->last_nsec = getusec() * 1000;
             tp->ctr = 0;
             break;
         }
