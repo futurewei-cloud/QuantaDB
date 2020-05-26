@@ -63,15 +63,15 @@ TEST_F(ClusterTimeServiceTest, multiClockTest) {
 void multiThreadTest(ClusterTimeServiceTest *t)
 {
     for(int ii = 0; ii < 1000; ii++) {
-        uint64_t t0 = t->clock.getClusterTime();
-        uint64_t t1 = t->clock1.getClusterTime();
-        uint64_t t2 = t->clock2.getClusterTime();
-        uint64_t t3 = t->clock3.getClusterTime();
-        uint64_t t4 = t->clock4.getClusterTime();
-        EXPECT_GT(t1, t0);
-        EXPECT_GT(t2, t1);
-        EXPECT_GT(t3, t2);
-        EXPECT_GT(t4, t3);
+        uint64_t tA = t->clock.getClusterTime();
+        uint64_t tB = t->clock1.getClusterTime();
+        uint64_t tC = t->clock2.getClusterTime();
+        uint64_t tD = t->clock3.getClusterTime();
+        uint64_t tE = t->clock4.getClusterTime();
+        EXPECT_GT(tB, tA);
+        EXPECT_GT(tC, tB);
+        EXPECT_GT(tD, tC);
+        EXPECT_GT(tE, tD);
     }
 }
 
