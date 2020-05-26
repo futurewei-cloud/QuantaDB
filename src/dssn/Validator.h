@@ -36,19 +36,22 @@ class PeerInfo;
  */
 
 struct Counters {
-    uint64_t reads = 0;
+    uint64_t precommitReads = 0;
+    uint64_t precommitWrites = 0;
     uint64_t commitIntents = 0;
-    uint64_t foundCommitIntents = 0;
+    uint64_t singleWriteIntents = 0;
     uint64_t earlyPeers = 0;
     uint64_t queuedDistributedTxs = 0;
     uint64_t queuedLocalTxs = 0;
-    uint64_t commits = 0;
-    uint64_t aborts = 0;
+    uint64_t precommitReadErrors = 0;
+    uint64_t precommitWriteErrors = 0;
     uint64_t preputErrors = 0;
     uint64_t lateScheduleErrors = 0;
     uint64_t readVersionErrors = 0;
     uint64_t concludeErrors = 0;
     uint64_t commitMetaErrors = 0;
+    uint64_t commits = 0;
+    uint64_t aborts = 0;
     uint64_t commitReads = 0;
     uint64_t commitWrites = 0;
     uint64_t commitOverwrites = 0;
@@ -69,8 +72,8 @@ class Validator {
     PeerInfo &peerInfo;
 	ConcludeQueue &concludeQueue;
     uint64_t alertThreshold = 1000; //LATER
-    std::atomic<uint64_t> localTxCTSBase;
     ClusterTimeService clock;
+    uint64_t lastScheduledTxCTS = 0;
     //LATER DependencyMatrix blockedTxSet;
     Counters counters;
 

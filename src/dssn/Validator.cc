@@ -14,51 +14,48 @@ const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
 const uint64_t minTimeStamp = 0;
 
 Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _isTesting)
-		: kvStore(_kvStore),
-		  rpcService(_rpcService),
-		  isUnderTest(_isTesting),
-		  localTxQueue(*new WaitList(1000001)),
-		  reorderQueue(*new SkipList()),
-		  distributedTxSet(*new DistributedTxSet()),
-		  activeTxSet(*new ActiveTxSet()),
-		  peerInfo(*new PeerInfo()),
-		  concludeQueue(*new ConcludeQueue())
-		  {
-	localTxCTSBase = clock.getLocalTime();
-
+: kvStore(_kvStore),
+  rpcService(_rpcService),
+  isUnderTest(_isTesting),
+  localTxQueue(*new WaitList(1000001)),
+  reorderQueue(*new SkipList()),
+  distributedTxSet(*new DistributedTxSet()),
+  activeTxSet(*new ActiveTxSet()),
+  peerInfo(*new PeerInfo()),
+  concludeQueue(*new ConcludeQueue()) {
     // Fixme: may need to use TBB to pin the threads to specific cores LATER
-	if (!isUnderTest) {
-		serializeThread = std::thread(&Validator::serialize, this);
-		peeringThread = std::thread(&Validator::peer, this);
-		schedulingThread = std::thread(&Validator::scheduleDistributedTxs, this);
-	}
+    if (!isUnderTest) {
+        serializeThread = std::thread(&Validator::serialize, this);
+        peeringThread = std::thread(&Validator::peer, this);
+        schedulingThread = std::thread(&Validator::scheduleDistributedTxs, this);
+    }
 }
 
 Validator::~Validator() {
-	if (!isUnderTest) {
-		if (serializeThread.joinable())
-			serializeThread.detach();
-		if (peeringThread.joinable())
-			peeringThread.detach();
-		if (schedulingThread.joinable())
-			schedulingThread.detach();
-	}
-	delete &localTxQueue;
-	delete &reorderQueue;
-	delete &distributedTxSet;
-	delete &activeTxSet;
-	delete &peerInfo;
-	delete &concludeQueue;
+    if (!isUnderTest) {
+        if (serializeThread.joinable())
+            serializeThread.detach();
+        if (peeringThread.joinable())
+            peeringThread.detach();
+        if (schedulingThread.joinable())
+            schedulingThread.detach();
+    }
+    delete &localTxQueue;
+    delete &reorderQueue;
+    delete &distributedTxSet;
+    delete &activeTxSet;
+    delete &peerInfo;
+    delete &concludeQueue;
 }
 
 bool
 Validator::testRun() {
-	if (!isUnderTest)
-		return false;
-	scheduleDistributedTxs();
-	serialize();
-	peer();
-	return true;
+    if (!isUnderTest)
+        return false;
+    scheduleDistributedTxs();
+    serialize();
+    peer();
+    return true;
 }
 
 bool
@@ -103,14 +100,14 @@ Validator::updateTxPStampSStamp(TxEntry &txEntry) {
     //update pstamp of transaction
     auto  &writeSet = txEntry.getWriteSet();
     for (uint32_t i = 0; i < txEntry.getWriteSetSize(); i++) {
-    	KVLayout *kv = kvStore.fetch(writeSet[i]->k);
-    	if (kv) {
-    		txEntry.setPStamp(std::max(txEntry.getPStamp(), kv->meta().pStamp));
-    		if (txEntry.isExclusionViolated()) {
-    			return false;
-    		}
-    	}
-    	txEntry.insertWriteSetInStore(kv, i);
+        KVLayout *kv = kvStore.fetch(writeSet[i]->k);
+        if (kv) {
+            txEntry.setPStamp(std::max(txEntry.getPStamp(), kv->meta().pStamp));
+            if (txEntry.isExclusionViolated()) {
+                return false;
+            }
+        }
+        txEntry.insertWriteSetInStore(kv, i);
     }
 
     return true;
@@ -140,13 +137,13 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
     auto &writeSetInStore = txEntry.getWriteSetInStore();
     for (uint32_t i = 0; i < txEntry.getWriteSetSize(); i++) {
         if (writeSetInStore[i]) {
-        	kvStore.put(writeSetInStore[i], txEntry.getCTS(), txEntry.getSStamp(),
-        			writeSet[i]->v.valuePtr, writeSet[i]->v.valueLength);
-        	counters.commitWrites++;
+            kvStore.put(writeSetInStore[i], txEntry.getCTS(), txEntry.getSStamp(),
+                    writeSet[i]->v.valuePtr, writeSet[i]->v.valueLength);
+            counters.commitWrites++;
         } else {
-        	kvStore.putNew(writeSet[i], txEntry.getCTS(), txEntry.getSStamp());
-        	writeSet[i] = 0; //prevent txEntry destructor from freeing the KVLayout pointer
-        	counters.commitOverwrites++;
+            kvStore.putNew(writeSet[i], txEntry.getCTS(), txEntry.getSStamp());
+            writeSet[i] = 0; //prevent txEntry destructor from freeing the KVLayout pointer
+            counters.commitOverwrites++;
         }
     }
     return true;
@@ -171,7 +168,7 @@ Validator::read(KLayout& k, KVLayout *&kv) {
     //FIXME: This read can happen concurrently while conclude() is
     //modifying the KVLayout instance.
     kv = kvStore.fetch(k);
-    counters.reads++;
+    counters.precommitReads++;
     return (kv!=NULL && !kv->isTombstone());
 }
 
@@ -204,17 +201,17 @@ Validator::validateLocalTx(TxEntry& txEntry) {
 
 void
 Validator::scheduleDistributedTxs() {
-	TxEntry *txEntry;
+    TxEntry *txEntry;
     do {
-    	if ((txEntry = (TxEntry *)reorderQueue.try_pop(clock.getLocalTime()))) {
-    		if (txEntry->getCTS() < localTxCTSBase) {
-    		    //Fixme:
-    		    counters.lateScheduleErrors++;
-    			continue; //ignore this CI that is past a processed CI
-    		}
-    		while (!distributedTxSet.add(txEntry));
-    		localTxCTSBase = txEntry->getCTS();
-    	}
+        if ((txEntry = (TxEntry *)reorderQueue.try_pop(clock.getLocalTime()))) {
+            if (txEntry->getCTS() < lastScheduledTxCTS) {
+                //Fixme: get into ALERT state?!
+                counters.lateScheduleErrors++;
+                continue; //ignore this CI that is past a processed CI
+            }
+            while (!distributedTxSet.add(txEntry));
+            lastScheduledTxCTS = txEntry->getCTS();
+        }
     } while (!isUnderTest);
 }
 
@@ -223,122 +220,118 @@ Validator::serialize() {
     /*
      * This loop handles the DSSN serialization window critical section
      */
-	bool hasEvent = true;
+    bool hasEvent = true;
     while (!isUnderTest || hasEvent) {
-    	hasEvent = false;
+        hasEvent = false;
 
         // process all commit-intents on local transaction queue
         TxEntry* txEntry;
         uint64_t it;
         txEntry = localTxQueue.findFirst(it);
         while (txEntry) {
-        	if (!activeTxSet.blocks(txEntry)) {
-        		/* There is no need to update activeTXs because this tx is validated
-        		 * and concluded shortly. If the conclude() does through a queue and another
-        		 * task, then we should add tx to active tx set here.
-        		 */
+            if (!activeTxSet.blocks(txEntry)) {
+                /* There is no need to update activeTXs because this tx is validated
+                 * and concluded shortly. If the conclude() does through a queue and another
+                 * task, then we should add tx to active tx set here.
+                 */
 
-        		// As local transactions can be validated in any order, we can set the CTS.
-        		// Use the last largest cross-shard CTS as base. That has very little impact on cross-shard txs.
-        		txEntry->setCTS(++localTxCTSBase);
+                validateLocalTx(*txEntry);
 
-        		validateLocalTx(*txEntry);
-
-        		if (conclude(*txEntry)) {
-            		localTxQueue.remove(it);
-        		}
-        	}
-        	hasEvent = true;
-        	txEntry = localTxQueue.findNext(it);
+                if (conclude(*txEntry)) {
+                    localTxQueue.remove(it);
+                }
+            }
+            hasEvent = true;
+            txEntry = localTxQueue.findNext(it);
         }
 
         // process due commit-intents on cross-shard transaction queue
         while ((txEntry = distributedTxSet.findReadyTx(activeTxSet))) {
-        	//enable blocking incoming dependent transactions
-        	assert(activeTxSet.add(txEntry));
+            //enable blocking incoming dependent transactions
+            assert(activeTxSet.add(txEntry));
 
-        	//enable sending SSN info to peer
-        	txEntry->setTxCIState(TxEntry::TX_CI_SCHEDULED);
+            //enable sending SSN info to peer
+            txEntry->setTxCIState(TxEntry::TX_CI_SCHEDULED);
 
-        	hasEvent = true;
+            hasEvent = true;
         }
 
         while (concludeQueue.try_pop(txEntry)) {
-        	conclude(*txEntry);
-        	hasEvent = true;
+            conclude(*txEntry);
+            hasEvent = true;
         }
     } //end while(true)
 }
 
 bool
 Validator::conclude(TxEntry& txEntry) {
-	//record results and meta data
-	if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
-		updateKVReadSetPStamp(txEntry);
-		updateKVWriteSet(txEntry);
-	}
+    //record results and meta data
+    if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
+        updateKVReadSetPStamp(txEntry);
+        updateKVWriteSet(txEntry);
+    }
 
-	if (txEntry.getPeerSet().size() >= 1) {
-		activeTxSet.remove(&txEntry);
-	} else {
-		rpcService->sendTxCommitReply(&txEntry);
-		if (txEntry.getTxState() == TxEntry::TX_COMMIT)
-		    counters.commits++;
-		else
-		    counters.aborts++;
-	}
+    if (txEntry.getPeerSet().size() >= 1) {
+        activeTxSet.remove(&txEntry);
+    } else {
+        rpcService->sendTxCommitReply(&txEntry);
+        if (txEntry.getTxState() == TxEntry::TX_COMMIT)
+            counters.commits++;
+        else
+            counters.aborts++;
+    }
 
     txEntry.setTxCIState(TxEntry::TX_CI_FINISHED);
 
-	//for ease of managing memory, do not free during unit test
-	if (!isUnderTest)
-	    delete &txEntry;
+    //for ease of managing memory, do not free during unit test
+    if (!isUnderTest)
+        delete &txEntry;
 
-	return true;
+    return true;
 }
 
 void
 Validator::peer() {
-	PeerInfoIterator it;
-	TxEntry *txEntry;
-	do {
-		if (rpcService) {
-			txEntry = peerInfo.getFirst(it);
-			while (txEntry) {
-				if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED
-						&& txEntry->getTxState() != TxEntry::TX_ALERT) { //Fixme: not to set upon ALERT???
-					//log CI before sending
-					//Fixme: txLog.add(txEntry);
-					rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry->getTxState(), txEntry);
-					txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
-				}
-				txEntry = peerInfo.getNext(it);
-			}
-		}
-		peerInfo.sweep();
-		this_thread::yield();
-	} while (!isUnderTest);
+    PeerInfoIterator it;
+    TxEntry *txEntry;
+    do {
+        if (rpcService) {
+            txEntry = peerInfo.getFirst(it);
+            while (txEntry) {
+                if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED
+                        && txEntry->getTxState() != TxEntry::TX_ALERT) { //Fixme: not to set upon ALERT???
+                    //log CI before sending
+                    //Fixme: txLog.add(txEntry);
+                    rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry->getTxState(), txEntry);
+                    txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
+                }
+                txEntry = peerInfo.getNext(it);
+            }
+        }
+        peerInfo.sweep();
+        this_thread::yield();
+    } while (!isUnderTest);
 }
 
 bool
 Validator::insertTxEntry(TxEntry *txEntry) {
     counters.commitIntents++;
-	if (txEntry->getPeerSet().size() == 0) {
-		//single-shard tx
-		if (!localTxQueue.add(txEntry))
-		    return false;
-		txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
-		counters.queuedLocalTxs++;
-	} else {
-		//cross-shard tx
-		if (!distributedTxSet.add(txEntry))
-		    return false;
-		txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
-		counters.queuedDistributedTxs++;
-	}
+    if (txEntry->getPeerSet().size() == 0) {
+        //single-shard tx
+        if (!localTxQueue.add(txEntry))
+            return false;
+        txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
+        counters.queuedLocalTxs++;
+    } else {
+        //cross-shard tx
+        if (!distributedTxSet.add(txEntry))
+            return false;
+        txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
+        counters.queuedDistributedTxs++;
+    }
 
-	peerInfo.add(txEntry->getCTS(), txEntry, this);
-	return true;
+    peerInfo.add(txEntry->getCTS(), txEntry, this);
+    return true;
 }
 
 TxEntry*
@@ -346,13 +339,13 @@ Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64
     //Fixme: if tx is already conlcuded and logged, ignore the received info
 
     TxEntry *txEntry = NULL;
-	if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this)) {
-	    //Peer info is received before its tx commit intent is received
-	    peerInfo.add(cts, NULL, this); //create a peer entry without commit intent txEntry
-	    peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this);
-	    counters.earlyPeers++;
-	}
-	return txEntry;
+    if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this)) {
+        //Peer info is received before its tx commit intent is received
+        peerInfo.add(cts, NULL, this); //create a peer entry without commit intent txEntry
+        peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this);
+        counters.earlyPeers++;
+    }
+    return txEntry;
 }
 
 void
