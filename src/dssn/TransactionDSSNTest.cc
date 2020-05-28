@@ -732,4 +732,26 @@ TEST_F(TransactionTest, ReadOp_wait_objectExists_false) {
 #endif
 }
 
+TEST_F(TransactionTest, commit_loop) {
+    string x("X");
+    uint64_t x_val = 0;
+    string x_val_str = to_string(x_val);
+    string xr_val_str;
+    EXPECT_NO_THROW(ramcloud->write(tableId1, x.c_str(), x.size(), x_val_str.c_str(), x_val_str.size()));
+
+    for (uint32_t i = 0; i < 20000; i++) {
+      Buffer value;
+      Transaction t(ramcloud.get());
+      EXPECT_NO_THROW(t.read(tableId1, x.c_str(), x.size(), &value));
+      xr_val_str = string(reinterpret_cast<const char*>(
+			value.getRange(0, value.size())),
+                        value.size());
+      EXPECT_EQ(x_val_str, xr_val_str);
+      x_val++;
+      x_val_str = to_string(x_val);
+      t.write(tableId1, x.c_str(), x.size(), x_val_str.c_str(), x_val_str.size());
+      EXPECT_TRUE(t.commit());
+    }
+}
+
 }  // namespace RAMCloud

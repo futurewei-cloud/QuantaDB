@@ -36,10 +36,10 @@ class PeerInfo;
  */
 
 struct Counters {
+    uint64_t initialWrites = 0;
     uint64_t precommitReads = 0;
     uint64_t precommitWrites = 0;
     uint64_t commitIntents = 0;
-    uint64_t singleWriteIntents = 0;
     uint64_t earlyPeers = 0;
     uint64_t queuedDistributedTxs = 0;
     uint64_t queuedLocalTxs = 0;
@@ -55,6 +55,7 @@ struct Counters {
     uint64_t commitReads = 0;
     uint64_t commitWrites = 0;
     uint64_t commitOverwrites = 0;
+    uint64_t commitDeletes = 0;
 };
 
 class Validator {
@@ -132,6 +133,7 @@ class Validator {
      * receive/replySSNInfo handle the peer SSN info exchange.
      */
     bool read(KLayout& k, KVLayout *&kv);
+    bool initialWrite(KVLayout &kv);
     bool insertTxEntry(TxEntry *txEntry);
     bool updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
     bool insertConcludeQueue(TxEntry *txEntry);
