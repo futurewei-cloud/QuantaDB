@@ -142,6 +142,7 @@ void writeToLog2(DLogBench *c, float *gbps /* out */)
     *gbps = (float)(((sizeof(buf1)+sizeof(buf2))*loop)/msec) / 1024;
 }
 
+#if (0) // Disable to shorten test time
 TEST_F(DLogBench, DLogMultiBench) {
     float gbps1 = 0, gbps2 = 0;
 
@@ -182,5 +183,6 @@ TEST_F(DLogMemBench, MemBench) {
     std::cerr << std::fixed;
     GTEST_COUT << "Mem append throughput (2nd round): " << gbps << " GB/sec" << std::endl;
 }
+#endif // 0
 
 }  // namespace RAMCloud
