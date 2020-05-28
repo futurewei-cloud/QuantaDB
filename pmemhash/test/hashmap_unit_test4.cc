@@ -58,6 +58,16 @@ uint64_t mt_lookup_after_insert_test_s(uint64_t index)
         assert(elem_ret.ptr_ == &elem[idx]);
 		elem_ret = my_hashtable.get(elem[idx].key);
         assert(elem_ret.ptr_->value == (elem[idx].key << 2));
+
+        // modify value
+		elem[idx].value = ctr;
+		elem_ret = my_hashtable.put(elem[idx].key, &elem[idx]);
+		elem_ret = my_hashtable.get(elem[idx].key);
+        assert(elem_ret.ptr_->value == ctr);
+
+        // restore value (so that next round will not break)
+		elem[idx].value = elem[idx].key << 2;
+
 		ctr++;
 	}
 	return 0;
