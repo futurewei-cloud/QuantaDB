@@ -139,27 +139,32 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
         if (writeSetInStore[i]) {
             kvStore.put(writeSetInStore[i], txEntry.getCTS(), txEntry.getSStamp(),
                     writeSet[i]->v.valuePtr, writeSet[i]->v.valueLength);
-            counters.commitWrites++;
+            counters.commitOverwrites++;
+            //No need to nullify writeSet[i] so that txEntry desutrctor would free KVLayout memory
         } else {
             kvStore.putNew(writeSet[i], txEntry.getCTS(), txEntry.getSStamp());
-            writeSet[i] = 0; //prevent txEntry destructor from freeing the KVLayout pointer
-            counters.commitOverwrites++;
+            counters.commitWrites++;
+            writeSet[i] = 0; //prevent txEntry destructor from freeing the KVLayout memory
         }
     }
     return true;
 }
 
-#if 0 //unused for now
+#if 0 //precommit write does not reach validator for now
 bool
-Validator::write(KLayout& k, uint64_t &vPrevPStamp) {
-    DSSNMeta meta;
-    KVLayout *kv = kvStore.fetch(k);
-    if (kv) {
-        meta = kv->meta();
-        vPrevPStamp = meta.pStampPrev;
-        return true;
+Validator::write(KVLayout& kv) {
+    //treat it as a single-write transaction
+    KVLayout *kvExisting = kvStore.fetch(kv.k);
+
+    if (kvExisting == NULL) {
+        KVLayout *nkv = kvStore.preput(kv);
+        kvStore.putNew(nkv, 0, 0xffffffffffffffff);
+    } else {
+        void* pval = new char[kv.v.valueLength];
+        std::memcpy(pval, kv.v.valuePtr, kv.v.valueLength);
+        kvStore.put(kvExisting, 0, 0xffffffffffffffff, (uint8_t*)pval, kv.v.valueLength);
+        assert(0);
     }
-    return false;
 }
 #endif
 
@@ -168,8 +173,12 @@ Validator::read(KLayout& k, KVLayout *&kv) {
     //FIXME: This read can happen concurrently while conclude() is
     //modifying the KVLayout instance.
     kv = kvStore.fetch(k);
-    counters.precommitReads++;
-    return (kv!=NULL && !kv->isTombstone());
+    if (kv != NULL && !kv->isTombstone()) {
+        counters.precommitReads++;
+        return true;
+    }
+    counters.precommitReadErrors++;
+    return false;
 }
 
 bool

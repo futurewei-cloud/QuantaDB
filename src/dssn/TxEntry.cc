@@ -33,8 +33,19 @@ TxEntry::TxEntry(uint32_t _readSetSize, uint32_t _writeSetSize) {
 
 
 TxEntry::~TxEntry() {
-	//readWriteSet[i] and read/writeSetInStore[i] are managed by KV store - do not free here
-	//scoped_array of KVLayout pointers is supposed to be freed implicitly
+    //Free KVLayout allocated in txCommit RPC handler
+    for (uint32_t i = 0; i < writeSetSize; i++) {
+        if (writeSet[i]) {
+            delete writeSet[i];
+            writeSet[i] = NULL;
+        }
+    }
+    for (uint32_t i = 0; i < readSetSize; i++) {
+        if (readSet[i]) {
+            delete readSet[i];
+            readSet[i] = NULL;
+        }
+    }
 }
 
 bool
