@@ -12,6 +12,7 @@
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <assert.h>
+#include <iostream>
 #include "Cycles.h"
 #include "ClusterTimeService.h"
 
@@ -93,6 +94,51 @@ out:
 namespace DSSN {
 using namespace RAMCloud;
 
+void * ClusterTimeService::update_ts_tracker(void *arg)
+{
+    ClusterTimeService *ctsp = (ClusterTimeService*)arg;
+    ts_tracker_t *tp = ctsp->tp;
+
+    // See if another tracker may be already running
+    if (tp->idx <= 1) {
+        uint64_t nsec = tp->nt[tp->idx].last_nsec;
+        usleep(3);
+        if (nsec != tp->nt[tp->idx].last_nsec) {
+            ctsp->thread_run_run = false;
+            ctsp->tracker_init   = true;
+            return NULL;
+        }
+    }
+
+    // Init
+    tp->nt[0].last_nsec = tp->nt[1].last_nsec = getnsec();
+    tp->nt[0].last_tsc  = tp->nt[1].last_tsc  = __rdtsc();
+    tp->idx = 0;
+    tp->stat_nt_switch = 0;
+    tp->stat_nt_skip = 0;
+    ctsp->tracker_init = true;
+
+    while (ctsp->thread_run_run) {
+        uint64_t ntsc = __rdtsc();
+        uint64_t nsec = getnsec();
+        uint64_t old_nsec = tp->nt[tp->idx].last_nsec + Cycles::toNanoseconds(ntsc - tp->nt[tp->idx].last_tsc);
+
+        if (nsec >= old_nsec) {
+            int nidx = 1 - tp->idx;
+            tp->nt[nidx].last_nsec = nsec;
+            tp->nt[nidx].last_tsc  = ntsc;
+            tp->idx = nidx;
+
+            tp->stat_nt_switch++;
+        } else
+            tp->stat_nt_skip++;
+
+        usleep(2);
+    }
+
+    return NULL;
+}
+
 ClusterTimeService::ClusterTimeService()
 {
     char ifname[64], ipaddr[64];
@@ -126,20 +172,24 @@ ClusterTimeService::ClusterTimeService()
 
     close(fd);
 
-    // Reset atomic flag if it was left in a wrong state from the last session
-    uint32_t ctr;
-    while (tp->flag.test_and_set()) {
-        if (ctr++ > 1024*10) {
-            tp->last_nsec = getusec() * 1000;
-            tp->ctr = 0;
-            break;
-        }
-    }
-    tp->flag.clear();
+    // Start tracker thread
+    thread_run_run = true;
+    tracker_init = false;
+	pthread_create(&tid, NULL, update_ts_tracker, (void *)this);
+
+    while(!tracker_init)
+        usleep(1);
 }
 
 ClusterTimeService::~ClusterTimeService()
 {
+    if (thread_run_run) {
+        void * ret;
+        thread_run_run = false;
+	    pthread_join(tid, &ret);
+        // std::cout << "ClusterTimeService: nt switch ctr: " << tp->stat_nt_switch
+                  // << " skip ctr:" << tp->stat_nt_skip << std::endl;
+    }
     munmap(tp, sizeof(ts_tracker_t));
 }
 

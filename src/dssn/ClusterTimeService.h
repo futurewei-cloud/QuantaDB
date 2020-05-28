@@ -4,12 +4,17 @@
 #pragma once
 #include <fcntl.h>
 #include <stdint.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <atomic>
+#include <iostream>
+#include "Cycles.h"
+
+using namespace RAMCloud;
 
 namespace DSSN {
 /**
@@ -65,15 +70,8 @@ class ClusterTimeService {
     // return a local system clock time stamp
     inline uint64_t getLocalTime()
     {
-        uint64_t nsec = getusec() * 1000;
-        while (tp->flag.test_and_set());
-        if (nsec > (tp->last_nsec + tp->ctr)) {
-            tp->last_nsec = nsec;
-            tp->ctr = 0;
-        }
-        uint64_t ret = tp->last_nsec + tp->ctr++;
-        tp->flag.clear();
-        return ret;
+        nt_pair_t *ntp = &tp->nt[tp->idx];
+        return ntp->last_nsec + Cycles::toNanoseconds(__rdtsc() - ntp->last_tsc);
     }
 
     // Convert a cluster time stamp to local clock time stamp
@@ -83,22 +81,45 @@ class ClusterTimeService {
     }
 
     private:
-    inline uint64_t getusec()
+
+    static void* update_ts_tracker(void *);
+
+    // This is fast (~25ns) about only at usec precision
+    static inline uint64_t getusec()
     {
 	    struct timeval tv;
 	    gettimeofday(&tv,NULL);
 	    return (uint64_t)(1000000*tv.tv_sec) + tv.tv_usec;
     }
 
+    // this is slow (~500ns) about at nsec precision
+    static inline uint64_t getnsec()
+    {
+        timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
+        // return getusec() * 1000;
+    }
+
     #define TS_TRACKER_NAME  "DSSN_TS_Tracker"
     typedef struct {
-        uint64_t last_nsec;             // usec from the last gettimeofday() call
-        uint32_t ctr;                   // counter
-        std::atomic_flag flag;          // spin lock
+        uint64_t last_nsec;           // nano-sec from the last update
+        uint64_t last_tsc;            // TSC from the last update
+    } nt_pair_t;
+
+    typedef struct {
+        uint32_t idx;                 // Ping-pong index. Eiter 0 or 1.
+        nt_pair_t nt[2];
+        uint64_t stat_nt_skip,
+                 stat_nt_switch;  // Statistics
     } ts_tracker_t;
 
-    ts_tracker_t * tp;                  // pointing to a shared ts_tracker
-    uint32_t node_id;		            // 
+    // 
+    ts_tracker_t * tp;                // pointing to a shared ts_tracker
+    uint32_t node_id;		          // 
+    pthread_t tid;
+    bool thread_run_run;
+    bool tracker_init;
 }; // ClusterTimeService
 
 } // end namespace DSSN

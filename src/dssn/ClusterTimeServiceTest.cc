@@ -62,7 +62,7 @@ TEST_F(ClusterTimeServiceTest, multiClockTest) {
 
 void multiThreadTest(ClusterTimeServiceTest *t)
 {
-    for(int ii = 0; ii < 1000; ii++) {
+    for(int ii = 0; ii < 1024*1024; ii++) {
         uint64_t tA = t->clock.getClusterTime();
         uint64_t tB = t->clock1.getClusterTime();
         uint64_t tC = t->clock2.getClusterTime();
