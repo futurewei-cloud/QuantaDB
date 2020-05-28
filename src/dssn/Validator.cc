@@ -139,7 +139,10 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
         if (writeSetInStore[i]) {
             kvStore.put(writeSetInStore[i], txEntry.getCTS(), txEntry.getSStamp(),
                     writeSet[i]->v.valuePtr, writeSet[i]->v.valueLength);
-            counters.commitOverwrites++;
+            if (writeSetInStore[i]->v.isTombstone)
+                counters.commitDeletes++;
+            else
+                counters.commitOverwrites++;
             //No need to nullify writeSet[i] so that txEntry desutrctor would free KVLayout memory
         } else {
             kvStore.putNew(writeSet[i], txEntry.getCTS(), txEntry.getSStamp());
@@ -167,6 +170,22 @@ Validator::write(KVLayout& kv) {
     }
 }
 #endif
+
+bool
+Validator::initialWrite(KVLayout &kv) {
+    //the function is supposed to be used for testing purpose for initializing some tuples
+    KVLayout *existing = kvStore.fetch(kv.k);
+    if (existing != NULL) {
+        assert(0);
+        return false;
+    }
+    KVLayout *nkv = kvStore.preput(kv);
+    if (nkv != NULL && kvStore.putNew(nkv, 0, 0xffffffffffffffff)) {
+        counters.initialWrites++;
+        return true;
+    }
+    return false;
+}
 
 bool
 Validator::read(KLayout& k, KVLayout *&kv) {

@@ -101,11 +101,6 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
     std::memcpy(k.key.get(), &tableId, sizeof(tableId));
     std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
 
-    /*KVLayout *kv = kvStore->fetch(k);
-    if (!kv || kv->getVLayout().isTombstone) {
-        respHdr->common.status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
-        return;
-    }*/
     KVLayout *kv;
     if (!validator->read(k, kv)) {
         respHdr->common.status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
@@ -152,11 +147,6 @@ DSSNService::readKeysAndValue(const WireFormat::ReadKeysAndValueDSSN::Request* r
     std::memcpy(k.key.get(), &tableId, sizeof(tableId));
     std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
 
-    /*KVLayout *kv = kvStore->fetch(k);
-    if (!kv || kv->getVLayout().isTombstone) {
-        respHdr->common.status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
-        return;
-    }*/
     KVLayout *kv;
     if (!validator->read(k, kv)) {
         respHdr->common.status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
@@ -277,19 +267,6 @@ DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
         std::memcpy(k.key.get(), &tableId, sizeof(tableId));
         std::memcpy(k.key.get() + sizeof(tableId), stringKey,  currentReq->keyLength);
 
-       /* KVLayout *kv = kvStore->fetch(k);
-
-        // std::string ky((const char*)stringKey, currentReq->keyLength); //XXX
-        // std::cout << "tabldId:" << tableId << " key: " << ky ;  // XXX
-
-        if (!kv || kv->getVLayout().isTombstone) {
-            currentResp->status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
-
-            // if (kv) std::cout << " v: is tomb" << std::endl; // XXX
-            // else    std::cout << " v: not found" << std::endl; // XXX
-
-            continue;
-        }*/
         KVLayout *kv;
         if (!validator->read(k, kv)) {
             currentResp->status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
@@ -325,6 +302,8 @@ DSSNService::multiRemove(const WireFormat::MultiOp::Request* reqHdr,
         WireFormat::MultiOp::Response* respHdr,
         Rpc* rpc)
 {
+    assert(0); //disallow backdoor remove for now
+    /*
     uint32_t numRequests = reqHdr->count;
     uint32_t reqOffset = sizeof32(*reqHdr);
 
@@ -370,6 +349,7 @@ DSSNService::multiRemove(const WireFormat::MultiOp::Request* reqHdr,
         currentResp->status = STATUS_OK; 
         // ----
     }
+    */
 }
 
 void
@@ -419,18 +399,11 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
         pkv.v.valueLength = pValLen;
         pkv.v.valuePtr = (uint8_t*)const_cast<void*>(pVal);
 
-        KVLayout *kv = kvStore->fetch(pkv.k);
-
-        if (kv == NULL) {
-            KVLayout *nkv = kvStore->preput(pkv);
-            kvStore->putNew(nkv, 0, 0xffffffffffffffff);
+        if (validator->initialWrite(pkv)) {
+            currentResp->status = STATUS_OK;
         } else {
-            void * pval = new char[pValLen];
-            std::memcpy(pval, pVal, pValLen);
-            kvStore->put(kv, 0, 0xffffffffffffffff, (uint8_t*)pval, pValLen);
-            assert(0);
+            currentResp->status = STATUS_INTERNAL_ERROR;
         }
-        currentResp->status = STATUS_OK;
         // ---- write one object done ----
 
         reqOffset += currentReq->length;
@@ -450,6 +423,8 @@ DSSNService::remove(const WireFormat::RemoveDSSN::Request* reqHdr,
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
 
+    assert(0); //disallow backdoor remove for now
+    /*
     assert(reqHdr->rpcId > 0);
 
     const void* stringKey = rpc->requestPayload->getRange(
@@ -472,6 +447,7 @@ DSSNService::remove(const WireFormat::RemoveDSSN::Request* reqHdr,
     }
 
     kv->getVLayout().isTombstone = true;
+    */
 }
 
 void
@@ -523,54 +499,9 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     // std::string v((const char*)pVal, (uint32_t)pValLen);
     // std::cout << "write: key: " << k << " vallen: " << pValLen << " val: " << v << std::endl; 
 
-    KVLayout *kv = kvStore->fetch(pkv.k);
-
-    if (kv == NULL) {
-        KVLayout *nkv = kvStore->preput(pkv);
-        kvStore->putNew(nkv, 0, 0xffffffffffffffff);
-    } else {
-        void * pval = new char[pValLen];
-        std::memcpy(pval, pVal, pValLen);
-        kvStore->put(kv, 0, 0xffffffffffffffff, (uint8_t*)pval, pValLen);
-        assert(0);
+    if (!validator->initialWrite(pkv)) {
+        respHdr->common.status = STATUS_INTERNAL_ERROR;
     }
-
-    /* LATER
-    TxEntry *txEntry = new TxEntry(0, 1);
-    txEntry->setCTS(0);
-    txEntry->setPStamp(0);
-    txEntry->setSStamp(0xffffffffffffffff);
-    txEntry->setRpcHandle(rpc->getReplyHandle());
-
-    KVLayout pkv(pKeyLen + sizeof(tableId)); //make room composite key in KVStore
-    std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
-    std::memcpy(pkv.getKey().key.get() + sizeof(tableId), pKey, pKeyLen);
-    if (pValLen == 0) {
-        pkv.getVLayout().isTombstone = true;
-    } else {
-        pkv.getVLayout().valueLength = pValLen;
-        pkv.getVLayout().valuePtr = (uint8_t*)const_cast<void*>(pVal);
-    }
-    KVLayout *nkv = kvStore->preput(pkv);
-    if (nkv == NULL) {
-        respHdr->common.status = STATUS_NO_TABLE_SPACE;
-        return;
-    }
-    txEntry->insertWriteSet(nkv, 0);
-
-    if (respHdr->common.status == STATUS_OK) {
-        validator->insertTxEntry(txEntry);
-        rpc->enableAsync();
-
-        while (validator->testRun()) {
-            delete txEntry;
-            //Fixme: deal with cross-shard tx unit test later with conditional break
-            break;
-        }
-    } else {
-        delete txEntry;
-        rpc->sendReply();
-    }*/
 }
 
 void
