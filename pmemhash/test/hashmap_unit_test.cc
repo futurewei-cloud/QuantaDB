@@ -4,6 +4,10 @@
 #include <pthread.h>
 #include "hash_map.h"
 
+/*
+ * A simple multi-thread test for hash_map thread safety.
+ */
+
 class Element
 {
 public:
