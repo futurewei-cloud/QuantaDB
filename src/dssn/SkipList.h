@@ -86,7 +86,7 @@ class SkipList {
     /*
      * Insert Element in Skip List
      */
-    void insert(uint64_t key, void *value) 
+    bool insert(uint64_t key, void *value)
     {
         lock();
         SkipNode *x = head;	
@@ -118,6 +118,10 @@ class SkipList {
 
             // x = new SkipNode(lvl, key, value);
             x = new SkipNode(key, value);
+            if (x == NULL) {
+                unlock();
+                return false;
+            }
             ctr++;
 
             for (int i = 0;i <= lvl;i++) 
@@ -129,6 +133,7 @@ class SkipList {
             x->value = value;
         }
         unlock();
+        return true;
     }
 
     /*

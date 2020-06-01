@@ -174,6 +174,10 @@ Validator::write(KVLayout& kv) {
 bool
 Validator::initialWrite(KVLayout &kv) {
     //the function is supposed to be used for testing purpose for initializing some tuples
+    ///Fixme: having this backdoor this way is still not completely safe:
+    ///there could still be a concurrent tx commit that races against this backdoor write.
+    ///One solution is to only allow backdoor write based on a test flag at compile/run time.
+    ///Yet, the safest is to make backdoor write a single-write transaction.
     KVLayout *existing = kvStore.fetch(kv.k);
     if (existing != NULL) {
         assert(0);
@@ -229,13 +233,17 @@ Validator::validateLocalTx(TxEntry& txEntry) {
 
 void
 Validator::scheduleDistributedTxs() {
+    //Move commit intents from reorder queue when they are due in view of local clock
+    //During testing, ignore the timing constraint imposed by the local clock
     TxEntry *txEntry;
     do {
-        if ((txEntry = (TxEntry *)reorderQueue.try_pop(clock.getLocalTime()))) {
+        if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (uint64_t)-1 : clock.getLocalTime()))) {
             if (txEntry->getCTS() < lastScheduledTxCTS) {
-                //Fixme: get into ALERT state?!
+                //abort this CI, which has arrived later than a processed CI
+                txEntry->setTxState(TxEntry::TX_ABORT);
+                sendTxCommitReply(txEntry);
                 counters.lateScheduleErrors++;
-                continue; //ignore this CI that is past a processed CI
+                continue;
             }
             while (!distributedTxSet.add(txEntry));
             lastScheduledTxCTS = txEntry->getCTS();
@@ -352,13 +360,14 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         counters.queuedLocalTxs++;
     } else {
         //cross-shard tx
-        if (!distributedTxSet.add(txEntry))
+        if (!reorderQueue.insert(txEntry->getCTS(), txEntry))
             return false;
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
         counters.queuedDistributedTxs++;
+
+        peerInfo.add(txEntry->getCTS(), txEntry, this);
     }
 
-    peerInfo.add(txEntry->getCTS(), txEntry, this);
     return true;
 }
 

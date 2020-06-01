@@ -11,7 +11,7 @@ namespace DSSN {
 
 bool
 PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
-    std::lock_guard<std::mutex> lock(mutexForPeerAdd); //Fixme: two mutex -- deadlock???
+    std::lock_guard<std::mutex> lock(mutexForPeerAdd);
     PeerInfoIterator it = peerInfo.find(cts);
     if (it == peerInfo.end()) {
         PeerEntry* entry = new PeerEntry();
