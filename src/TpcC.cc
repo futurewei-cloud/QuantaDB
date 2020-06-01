@@ -16,6 +16,7 @@
 #include "TpcC.h"
 
 #include <set>
+#include <unordered_set>
 #include "TimeTrace.h"
 #include "Transaction.h"
 #include "Util.h"
@@ -617,11 +618,20 @@ writeRow(Transaction* t, Row* row)
 void
 InputNewOrder::generate(int W_ID, int numWarehouse)
 {
+    std::unordered_set<uint32_t> items;
+    std::unordered_set<uint32_t>::iterator iter;
+    uint16_t I_ID;
     D_ID = random(1, 10);
     C_ID = NURand(1023, 1, 3000);
     O_OL_CNT = random8(5, 15);
     for (int i = 0; i < O_OL_CNT; ++i) {
-        I_IDs[i] = NURand(8191, 1, 100000);
+        do {
+	    //Find a new inventory id which is not already in the order
+	    I_ID = NURand(8191, 1, 100000);
+	    iter = items.find(I_ID);
+	} while (iter != items.end());
+	items.insert(I_ID);
+        I_IDs[i] = I_ID;
         OL_QUANTITY[i] = random8(1, 10);
         if (rand() % 100 == 0) {
             OL_SUPPLY_W_ID[i] = random(1, numWarehouse);
