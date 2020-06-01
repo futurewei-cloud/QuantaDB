@@ -437,6 +437,25 @@ TEST_F(ValidatorTest, BATDistributedTxSetPerf) {
 	freeTxEntry(size);
 }
 
+TEST_F(ValidatorTest, BATLateDistributedTxs) {
+    int size = 2;
+
+    fillTxEntry(size, 20, 3); //3 participants
+
+    //schedule a younger tx first
+    validator.insertTxEntry(txEntry[1]);
+    validator.testRun();
+
+    //then schedule an older tx
+    validator.insertTxEntry(txEntry[0]);
+    validator.testRun();
+
+    EXPECT_EQ(TxEntry::TX_ABORT, txEntry[0]->getTxState());
+    EXPECT_EQ(TxEntry::TX_PENDING, txEntry[1]->getTxState());
+
+    freeTxEntry(size);
+}
+
 /*
 TEST_F(ValidatorTest, BATDependencyMatrix) {
 	fillTxEntry(35, 20, 2); //35 txs of 20 keys and 2 peers
