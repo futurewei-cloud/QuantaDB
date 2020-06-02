@@ -174,10 +174,14 @@ Validator::write(KVLayout& kv) {
 bool
 Validator::initialWrite(KVLayout &kv) {
     //the function is supposed to be used for testing purpose for initializing some tuples
-    ///Fixme: having this backdoor this way is still not completely safe:
+    ///Disabled initial write if not testing, for fear that:
     ///there could still be a concurrent tx commit that races against this backdoor write.
-    ///One solution is to only allow backdoor write based on a test flag at compile/run time.
-    ///Yet, the safest is to make backdoor write a single-write transaction.
+
+    if (!isUnderTest) {
+        counters.rejectedWrites++;
+        return false;
+    }
+
     KVLayout *existing = kvStore.fetch(kv.k);
     if (existing != NULL) {
         assert(0);
@@ -188,6 +192,7 @@ Validator::initialWrite(KVLayout &kv) {
         counters.initialWrites++;
         return true;
     }
+    counters.rejectedWrites++;
     return false;
 }
 
@@ -334,13 +339,20 @@ Validator::peer() {
         if (rpcService) {
             txEntry = peerInfo.getFirst(it);
             while (txEntry) {
+                //make long-standing commit intent into nervous state
+                if (txEntry->getCTS() - clock.getLocalTime() > alertThreshold) {
+                    txEntry->setTxState(TxEntry::TX_ALERT);
+                }
+
                 if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED
-                        && txEntry->getTxState() != TxEntry::TX_ALERT) { //Fixme: not to set upon ALERT???
+                        && txEntry->getTxState() != TxEntry::TX_ALERT) { //Fixme: not to send upon ALERT???
                     //log CI before sending
                     //Fixme: txLog.add(txEntry);
                     rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry->getTxState(), txEntry);
                     txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
                 }
+
+
                 txEntry = peerInfo.getNext(it);
             }
         }
