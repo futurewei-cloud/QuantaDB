@@ -37,6 +37,7 @@ class PeerInfo;
 
 struct Counters {
     uint64_t initialWrites = 0;
+    uint64_t rejectedWrites = 0;
     uint64_t precommitReads = 0;
     uint64_t precommitWrites = 0;
     uint64_t commitIntents = 0;
@@ -65,7 +66,6 @@ class Validator {
     HashmapKVStore &kvStore; //Fixme
     DSSNService *rpcService;
     bool isUnderTest;
-    //WaitList localTxQueue{1000001};
 	WaitList &localTxQueue;
     SkipList &reorderQueue;
     DistributedTxSet &distributedTxSet;
