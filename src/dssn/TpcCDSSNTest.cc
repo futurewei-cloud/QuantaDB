@@ -509,7 +509,10 @@ void TpcCTest::txDelivery() {
         District d(D_ID, W_ID);
 	ASSERT_NO_THROW(read(&d));
         uint32_t O_ID = d.data.lowestToDeliverOid;
-
+	if (O_ID >= d.data.D_NEXT_O_ID) {
+	    //Skip this district as there is no new order
+	    continue;
+	}
         NewOrder no(O_ID, D_ID, W_ID);
 	ASSERT_NO_THROW(read(&no));
         Order o(O_ID, D_ID, W_ID);
