@@ -602,6 +602,7 @@ TEST_F(RamCloudTest, readKeysAndValue_objectExists) {
 #endif
 }
 
+#if 0 //not supporting backdoor remove
 TEST_F(RamCloudTest, remove) {
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
     uint64_t version;
@@ -616,6 +617,7 @@ TEST_F(RamCloudTest, remove) {
     }
     EXPECT_EQ("STATUS_OBJECT_DOESNT_EXIST", message);
 }
+#endif
 
 TEST_F(RamCloudTest, objectServerControl) {
     #if (0) // XXX
@@ -880,6 +882,7 @@ TEST_F(RamCloudTest, readHashes) {
                 objC1.getValueLength()));
 }
 
+#if 0 //not supporting backdoor remove
 TEST_F(RamCloudTest, lookupIndexKeys) {
     uint64_t tableId = ramcloud->createTable("table");
     ramcloud->createIndex(tableId, 1, 0);
@@ -1037,6 +1040,7 @@ TEST_F(RamCloudTest, lookupIndexKeys) {
                               &numHashes, &nextKeyLength, &nextKeyHash);
     EXPECT_EQ(0U, numHashes);
 }
+#endif
 
 TEST_F(RamCloudTest, lookupIndexKeys_indexNotFound) {
     uint64_t tableId = ramcloud->createTable("table");

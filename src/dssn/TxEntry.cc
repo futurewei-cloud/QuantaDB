@@ -73,14 +73,12 @@ TxEntry::serializeSize()
     if (txState == TX_PENDING) {
         sz += sizeof(commitIntentState);
 
-        /*
         // writeSet
         sz += sizeof(writeSetIndex);
         for (uint32_t i = 0; i < writeSetIndex; i++) {
     	    assert (writeSet[i]);
             sz += writeSet[i]->serializeSize();
         }
-        */
 
         // peerSet
         sz += sizeof(uint32_t);
@@ -99,7 +97,6 @@ TxEntry::serialize( outMemStream& out )
     if(txState == TX_PENDING) {
         out.write(&commitIntentState, sizeof(commitIntentState));
 
-        /*
         // writeSet
         out.write(&writeSetIndex, sizeof(writeSetIndex));
         for (uint32_t i = 0; i < writeSetIndex; i++) {
@@ -107,7 +104,6 @@ TxEntry::serialize( outMemStream& out )
             assert (writeSet[i]);
             writeSet[i]->serialize(out);
         }
-        */
 
         // peerSet
         uint32_t peerSetSize = peerSet.size();
@@ -133,7 +129,6 @@ TxEntry::deSerialize_additional( inMemStream& in )
 {
     in.read(&commitIntentState, sizeof(commitIntentState));
 
-    /*
     // writeSet
     in.read(&writeSetIndex, sizeof(writeSetIndex));
     writeSetSize = writeSetIndex;
@@ -143,7 +138,6 @@ TxEntry::deSerialize_additional( inMemStream& in )
         kv->deSerialize(in);
         writeSet[i] = kv;
     }
-    */
 
     // peerSet
     uint32_t peerSetSize;

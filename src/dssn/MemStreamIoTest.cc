@@ -65,16 +65,17 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
 
     // TxEntry
     TxEntry tx1(10, 10), tx2(1, 1);
+
     KVLayout kv10(16), kv11(16), kv12(16), kv13(16), kv14(16), kv15(16), kv16(16);
+    tx1.insertWriteSet(&kv10, 0);
+    tx1.insertWriteSet(&kv11, 1);
+    tx1.insertWriteSet(&kv12, 2);
+    tx1.insertWriteSet(&kv13, 3);
+    tx1.insertWriteSet(&kv14, 4);
+    tx1.insertWriteSet(&kv15, 5);
+    tx1.insertWriteSet(&kv16, 6);
     tx1.writeSetIndex = 7;
-    KVLayout **writeSet = tx1.getWriteSet().get();
-    writeSet[0] = &kv10;
-    writeSet[1] = &kv11;
-    writeSet[2] = &kv12;
-    writeSet[3] = &kv13;
-    writeSet[4] = &kv14;
-    writeSet[5] = &kv15;
-    writeSet[6] = &kv16;
+
     tx1.txState = TxEntry::TX_PENDING;
     tx1.commitIntentState = TxEntry::TX_CI_SCHEDULED;
 
@@ -88,6 +89,7 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
 
     EXPECT_EQ(tx1.getTxState(), tx2.getTxState());
     EXPECT_EQ(tx1.getTxCIState(), tx2.getTxCIState());
+
 
     KVLayout **writeSet1 = tx1.getWriteSet().get();
     KVLayout **writeSet2 = tx2.getWriteSet().get();
