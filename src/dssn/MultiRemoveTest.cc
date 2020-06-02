@@ -143,6 +143,7 @@ class MultiRemoveTest : public ::testing::Test {
 
     DISALLOW_COPY_AND_ASSIGN(MultiRemoveTest);
 };
+#if 0 //not supported because of using backdoor KV store modification
 
 // Filter out the desired log entries below (skipping log and replicated segment
 // messages made during the multiremove operations).
@@ -266,5 +267,6 @@ TEST_F(MultiRemoveTest, readResponse_shortResponses) {
     EXPECT_EQ(0U, objects[0]->version);
     EXPECT_EQ(0U, objects[1]->version);
 }
+#endif //not supported
 
 }  // namespace RAMCloud
