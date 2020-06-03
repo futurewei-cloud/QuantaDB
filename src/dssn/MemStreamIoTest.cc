@@ -6,6 +6,7 @@
 #include "MemStreamIo.h"
 #include "KVStore.h"
 #include "TxEntry.h"
+#include "HashmapKVStore.h"
 
 #define GTEST_COUT  std::cerr << "[ INFO ] "
 
@@ -20,11 +21,11 @@ class MemStreamIoTest : public ::testing::Test {
 
   uint8_t buf[1024*1024];
 
+  HashmapKVStore kvStore;   // needto borrow the preput()
 
   DISALLOW_COPY_AND_ASSIGN(MemStreamIoTest);
 };
 
-#if (0)
 TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
 {
     // KLayout test
@@ -65,17 +66,24 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
     EXPECT_EQ(strncmp((const char*)kv1.v.valuePtr, (const char*)kv2.v.valuePtr, kv1.v.valueLength), 0);
 
     // TxEntry
-    TxEntry tx1(10, 10), tx2(1, 1);
+    #define WRITESET_SIZE 7
+    TxEntry tx1(1, WRITESET_SIZE), tx2(1, 1);
 
-    KVLayout kv10(16), kv11(16), kv12(16), kv13(16), kv14(16), kv15(16), kv16(16);
-    tx1.insertWriteSet(&kv10, 0);
-    tx1.insertWriteSet(&kv11, 1);
-    tx1.insertWriteSet(&kv12, 2);
-    tx1.insertWriteSet(&kv13, 3);
-    tx1.insertWriteSet(&kv14, 4);
-    tx1.insertWriteSet(&kv15, 5);
-    tx1.insertWriteSet(&kv16, 6);
-    tx1.writeSetIndex = 7;
+    char kbuf[30];
+    // KVLayout **writeSet = tx1.getWriteSet().get();
+    for (uint32_t idx = 0; idx < WRITESET_SIZE; idx++) {
+        KVLayout kvbuf(30);
+        sprintf(kbuf, "MemStreamIoTestKey-%d", idx);
+        memcpy(kvbuf.k.key.get(), kbuf, strlen(kbuf));
+        kvbuf.v.valuePtr = valstr;
+        kvbuf.v.valueLength = strlen((char *)valstr);
+
+        KVLayout *kv = kvStore.preput(kvbuf);
+
+        tx1.insertWriteSet(kv, tx1.writeSetIndex++);
+    }
+
+    EXPECT_EQ(tx1.writeSetIndex, (uint32_t)WRITESET_SIZE);
 
     tx1.txState = TxEntry::TX_PENDING;
     tx1.commitIntentState = TxEntry::TX_CI_SCHEDULED;
@@ -90,6 +98,7 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
 
     EXPECT_EQ(tx1.getTxState(), tx2.getTxState());
     EXPECT_EQ(tx1.getTxCIState(), tx2.getTxCIState());
+    EXPECT_EQ(tx1.writeSetIndex, tx2.writeSetIndex);
 
 
     KVLayout **writeSet1 = tx1.getWriteSet().get();
@@ -107,6 +116,5 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
 
     EXPECT_EQ(tx1.getPeerSet(), tx2.getPeerSet());
 }
-#endif
 
 }  // namespace RAMCloud
