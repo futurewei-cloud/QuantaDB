@@ -48,11 +48,11 @@ Transaction::commit()
 {
     ClientTransactionTask* task = taskPtr.get();
 
-    if (!task->isTxValid()) {
+/*    if (!task->isTxValid()) {
         //This is not a valid transaction. return failure
         return false;
     }
-
+*/
     if (!commitStarted) {
         commitStarted = true;
         ramcloud->transactionManager->startTransactionTask(taskPtr);
