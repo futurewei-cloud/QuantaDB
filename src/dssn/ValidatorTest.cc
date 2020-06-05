@@ -444,14 +444,19 @@ TEST_F(ValidatorTest, BATLateDistributedTxs) {
 
     //schedule a younger tx first
     validator.insertTxEntry(txEntry[1]);
+    EXPECT_EQ(TxEntry::TX_PENDING, txEntry[1]->getTxState());
     validator.testRun();
 
     //then schedule an older tx
     validator.insertTxEntry(txEntry[0]);
+    EXPECT_EQ(TxEntry::TX_PENDING, txEntry[0]->getTxState());
     validator.testRun();
 
+    //the older tx is aborted
     EXPECT_EQ(TxEntry::TX_ABORT, txEntry[0]->getTxState());
-    EXPECT_EQ(TxEntry::TX_PENDING, txEntry[1]->getTxState());
+
+    //the younger tx taking too long to complete is put in ALERT state
+    EXPECT_EQ(TxEntry::TX_ALERT, txEntry[1]->getTxState());
 
     freeTxEntry(size);
 }

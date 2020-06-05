@@ -612,7 +612,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             if (nkv == NULL) {
                 respHdr->common.status = STATUS_NO_TABLE_SPACE;
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
-                //Fixme: validator->counters.preputErrors++; Better to encapsulate kv store using validator API
+                //validator->counters.preputErrors++; //Fixme: Better to encapsulate kv store using validator API
                 break;
             }
             txEntry->insertReadSet(nkv, readSetIdx++);
@@ -778,12 +778,7 @@ DSSNService::sendDSSNInfo(uint64_t cts, uint8_t txState, TxEntry *txEntry, bool 
         assert(cts == req.cts);
         req.pstamp = txEntry->getPStamp();
         req.sstamp = txEntry->getSStamp();
-
-        //report ABORT/COMMIT only if the conclusion has been logged
-        if (txEntry->getTxCIState() >= TxEntry::TX_CI_SEALED)
-            req.txState = txEntry->getTxState();
-        else
-            req.txState = TxEntry::TX_PENDING;
+        req.txState = txEntry->getTxState();
     } else {
         req.cts = cts;
         req.pstamp = 0;
@@ -814,11 +809,7 @@ DSSNService::requestDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
     req.pstamp = txEntry->getPStamp();
     req.sstamp = txEntry->getSStamp();;
     req.senderPeerId = getServerId();
-    //report ABORT/COMMIT only if the conclusion is logged
-    if (txEntry->getTxCIState() >= TxEntry::TX_CI_SEALED)
-        req.txState = txEntry->getTxState();
-    else
-        req.txState = TxEntry::TX_PENDING;
+    req.txState = txEntry->getTxState();
 
     char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
     uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);

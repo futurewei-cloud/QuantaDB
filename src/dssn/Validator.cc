@@ -238,14 +238,19 @@ Validator::validateLocalTx(TxEntry& txEntry) {
 
 void
 Validator::scheduleDistributedTxs() {
-    //Move commit intents from reorder queue when they are due in view of local clock
-    //During testing, ignore the timing constraint imposed by the local clock
+    //Move commit intents from reorder queue when they are due in view of local clock,
+    //expressed in the cluster time unit (due to current sequencer implementation).
+    //During testing, ignore the timing constraint imposed by the local clock.
     TxEntry *txEntry;
     do {
-        if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (uint64_t)-1 : clock.getLocalTime()))) {
-            if (txEntry->getCTS() < lastScheduledTxCTS) {
-                //abort this CI, which has arrived later than a processed CI
+        if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (uint64_t)-1 : clock.getClusterTime(0)))) {
+            if (txEntry->getCTS() <= lastScheduledTxCTS) {
+                assert(txEntry->getCTS() != lastScheduledTxCTS); //no duplicate CTS from sequencer
+
+                //abort this CI, which has arrived later than a scheduled CI
+                //aborting is fine because its SSN info has never been sent to its peers
                 txEntry->setTxState(TxEntry::TX_ABORT);
+                txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
                 sendTxCommitReply(txEntry);
                 counters.lateScheduleErrors++;
                 continue;
@@ -334,28 +339,8 @@ Validator::conclude(TxEntry& txEntry) {
 void
 Validator::peer() {
     PeerInfoIterator it;
-    TxEntry *txEntry;
     do {
-        if (rpcService) {
-            txEntry = peerInfo.getFirst(it);
-            while (txEntry) {
-                //make long-standing commit intent into nervous state
-                if (txEntry->getCTS() - clock.getLocalTime() > alertThreshold) {
-                    txEntry->setTxState(TxEntry::TX_ALERT);
-                }
-
-                if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED
-                        && txEntry->getTxState() != TxEntry::TX_ALERT) { //Fixme: not to send upon ALERT???
-                    //log CI before sending
-                    //Fixme: txLog.add(txEntry);
-                    rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry->getTxState(), txEntry);
-                    txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
-                }
-
-
-                txEntry = peerInfo.getNext(it);
-            }
-        }
+        peerInfo.send(this);
         peerInfo.sweep();
         this_thread::yield();
     } while (!isUnderTest);
@@ -383,13 +368,26 @@ Validator::insertTxEntry(TxEntry *txEntry) {
     return true;
 }
 
+uint64_t
+Validator::getClockValue() {
+    //due to current clock service implementation, need conversion into ns unit.
+    return clock.getClusterTime(0);
+}
+
+uint64_t
+Validator::convertStampToClockValue(uint64_t timestamp) {
+    //due to current clock service implementation, need conversion into ns unit.
+    return clock.Cluster2Local(timestamp);
+}
+
 TxEntry*
 Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
-    //Fixme: if tx is already conlcuded and logged, ignore the received info
-
     TxEntry *txEntry = NULL;
     if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this)) {
-        //Peer info is received before its tx commit intent is received
+        //Handle the fact that peer info is received before its tx commit intent is received,
+        //hence not finding an existing peer entry,
+        //by creating a peer entry without commit intent txEntry
+        //and then updating the peer entry.
         peerInfo.add(cts, NULL, this); //create a peer entry without commit intent txEntry
         peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this);
         counters.earlyPeers++;
@@ -413,6 +411,18 @@ Validator::replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t
     }
 
     rpcService->sendDSSNInfo(cts, txState, txEntry, true, peerId);
+}
+
+void
+Validator::sendSSNInfo(TxEntry *txEntry) {
+    if (rpcService)
+        rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry->getTxState(), txEntry);
+}
+
+void
+Validator::requestSSNInfo(TxEntry *txEntry, uint64_t targetPeerId) {
+    if (rpcService)
+        rpcService->requestDSSNInfo(txEntry, true, targetPeerId);
 }
 
 void

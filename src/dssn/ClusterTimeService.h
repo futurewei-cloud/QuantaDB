@@ -80,6 +80,12 @@ class ClusterTimeService {
         return (cluster_ts >> 10);
     }
 
+    // Convert a local time stamp to cluster clock time stamp
+    inline uint64_t Local2Cluster(uint64_t local_ts)
+    {
+        return (local_ts << 10);
+    }
+
     private:
 
     static void* update_ts_tracker(void *);

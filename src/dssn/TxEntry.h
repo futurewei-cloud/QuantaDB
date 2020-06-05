@@ -148,6 +148,7 @@ class TxEntry {
     bool insertReadSet(KVLayout* kv, uint32_t i);
     inline void insertWriteSetInStore(KVLayout* kv, uint32_t i) { writeSetInStore[i] = kv; }
     inline void insertReadSetInStore(KVLayout* kv, uint32_t i) { readSetInStore[i] = kv; }
+
     //Fixme: move these functions into TxLog.cc to hide implementation details from TxEntry
     uint32_t serializeSize();
     void serialize( outMemStream& out );

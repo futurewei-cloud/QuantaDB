@@ -72,7 +72,6 @@ class Validator {
     ActiveTxSet &activeTxSet;
     PeerInfo &peerInfo;
 	ConcludeQueue &concludeQueue;
-    uint64_t alertThreshold = 1000; //LATER
     ClusterTimeService clock;
     uint64_t lastScheduledTxCTS = 0;
     //LATER DependencyMatrix blockedTxSet;
@@ -115,7 +114,7 @@ class Validator {
 	Validator(HashmapKVStore &kvStore, DSSNService *rpcService = NULL, bool isTesting = false);
 	~Validator();
 
-    // used for tx RPC handlers
+    // used by tx RPC handlers
     /* The current design does not expect a write to reach the validator.
      * SSN validation still works properly as the serialize() would go through the
      * write set to retrieve the latest committed version for its sstamp and pstamp.
@@ -140,6 +139,14 @@ class Validator {
     TxEntry* receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
     void replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
     void sendTxCommitReply(TxEntry *txEntry);
+
+    // used for invoking RPCs
+    void sendSSNInfo(TxEntry *txEntry);
+    void requestSSNInfo(TxEntry *txEntry, uint64_t targetPeerId);
+
+    // used for obtaining clock value in nanosecond unit
+    uint64_t getClockValue();
+    uint64_t convertStampToClockValue(uint64_t timestamp);
 
     // for unit testing, triggering a run of functions without using threads
     bool testRun();
