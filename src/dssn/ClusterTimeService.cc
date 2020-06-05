@@ -112,27 +112,20 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
 
     // Init
     tp->nt[0].last_nsec = tp->nt[1].last_nsec = getnsec();
-    tp->nt[0].last_tsc  = tp->nt[1].last_tsc  = __rdtsc();
+    tp->nt[0].ctr       = tp->nt[1].ctr       = 0;
     tp->idx = 0;
-    tp->stat_nt_switch = 0;
-    tp->stat_nt_skip = 0;
     ctsp->tracker_init = true;
 
     while (ctsp->thread_run_run) {
-        uint64_t ntsc = __rdtsc();
+        nt_pair_t *ntp = &tp->nt[tp->idx];
         uint64_t nsec = getnsec();
-        uint64_t old_nsec = tp->nt[tp->idx].last_nsec + Cycles::toNanoseconds(ntsc - tp->nt[tp->idx].last_tsc);
 
-        if (nsec >= old_nsec) {
+        if (nsec > ntp->last_nsec + ntp->ctr) {
             int nidx = 1 - tp->idx;
             tp->nt[nidx].last_nsec = nsec;
-            tp->nt[nidx].last_tsc  = ntsc;
+            tp->nt[nidx].ctr = 0;
             tp->idx = nidx;
-
-            tp->stat_nt_switch++;
-        } else
-            tp->stat_nt_skip++;
-
+        }
         usleep(2);
     }
 
@@ -187,8 +180,6 @@ ClusterTimeService::~ClusterTimeService()
         void * ret;
         thread_run_run = false;
 	    pthread_join(tid, &ret);
-        // std::cout << "ClusterTimeService: nt switch ctr: " << tp->stat_nt_switch
-                  // << " skip ctr:" << tp->stat_nt_skip << std::endl;
     }
     munmap(tp, sizeof(ts_tracker_t));
 }

@@ -35,17 +35,29 @@ namespace DSSN {
  * maximum of 1024 nodes can be supported. 
  *
  * Node id must be unique and is automatically assigned at ClusterTimeService class instantiation time.
- * A formal approach to obtain a unique node id could be using a cluster management service such as zookeeper.
- * In this implementation, a light-weight approach is used by picking up the last number of the IP address of
- * the PTP interface port.
+ * Ina production system, node id assignment could be done in an automated fashion (such as plug-in to a
+ * cluster node management sw like zookeeper).  In this POC implementation, a light-weight approach is used
+ * by picking up the last number of the IP address of the PTP interface port.
  *
- * This implementation uses PTP and gettimeofday(2) to get synchronized micro-second precision system time.
- * Sub-microsecond precision is simulated using a call counter. Monotonic increasing property is preserved.
+ * This implementation depends on PTP to synchronize system closks of all nodes in a cluster.
  *
- * Extra Note:
- * Using __rdtsc() and Cycles::toNanoseconds() to calculate nanosecond precision would be fairer than
- * using a call counter. But it adds about 15ns to latency. This implementation trades speed with ignorable
- * inter-node timestamp fairness.
+ * There are two linux/unix system library functions to get the system time. One is gettimeofday(3) which is 
+ * fast (about ~25ns) but only returns micro-second precision. The other  is clock_gettime(3) which returns
+ * nanoseconds time stamp, yet could take ~500ns per call.
+ *
+ * To generate fast nanosecond time stamps, ClusterTimeService uses a background deamon process (or can also be
+ * a background thread which is easier for deployment and testing purpose). The background thread maintais a
+ * shared memory area which holds a nano-seond system timestamp along with a TSC counter which notes the cputime
+ * when the system timestamp was last updated. The ClusterTimeService library reads the nano-second system
+ * timestamp on the shared memory and uses TSC to calculate how much time had passed since the last update to
+ * get the current time.
+ *
+ * EXTRA NOTE.
+ * Using TSC to calculate time is hard to be reliable.
+ * ref: http://oliveryang.net/2015/09/pitfalls-of-TSC-usage/#312-tsc-sync-behaviors-on-smp-system. 
+ *
+ * An alternative way to use an atomic counter to replace the TSC counter. This way could generate reliable
+ * monotonically increasing timestamps.
  */
 
 
@@ -71,7 +83,7 @@ class ClusterTimeService {
     inline uint64_t getLocalTime()
     {
         nt_pair_t *ntp = &tp->nt[tp->idx];
-        return ntp->last_nsec + Cycles::toNanoseconds(__rdtsc() - ntp->last_tsc);
+        return ntp->last_nsec + ntp->ctr++;
     }
 
     // Convert a cluster time stamp to local clock time stamp
@@ -90,7 +102,7 @@ class ClusterTimeService {
 
     static void* update_ts_tracker(void *);
 
-    // This is fast (~25ns) about only at usec precision
+    // Fast (~25ns) about only at usec precision
     static inline uint64_t getusec()
     {
 	    struct timeval tv;
@@ -98,26 +110,23 @@ class ClusterTimeService {
 	    return (uint64_t)(1000000*tv.tv_sec) + tv.tv_usec;
     }
 
-    // this is slow (~500ns) about at nsec precision
+    // Slow (~500ns) about at nsec precision
     static inline uint64_t getnsec()
     {
         timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
         return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
-        // return getusec() * 1000;
     }
 
     #define TS_TRACKER_NAME  "DSSN_TS_Tracker"
     typedef struct {
         uint64_t last_nsec;           // nano-sec from the last update
-        uint64_t last_tsc;            // TSC from the last update
+        std::atomic<uint32_t> ctr;
     } nt_pair_t;
 
     typedef struct {
         uint32_t idx;                 // Ping-pong index. Eiter 0 or 1.
         nt_pair_t nt[2];
-        uint64_t stat_nt_skip,
-                 stat_nt_switch;  // Statistics
     } ts_tracker_t;
 
     // 
