@@ -353,6 +353,11 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         //single-shard tx
         if (!localTxQueue.add(txEntry))
             return false;
+        if (txEntry->getCTS() == 0) {
+            //This feature may allow tx client to do without a clock
+            txEntry->setCTS(clock.getClusterTime());
+            counters.ctsSets++;
+        }
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
         counters.queuedLocalTxs++;
     } else {

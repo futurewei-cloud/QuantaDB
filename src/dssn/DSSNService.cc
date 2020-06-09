@@ -499,9 +499,38 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     // std::string v((const char*)pVal, (uint32_t)pValLen);
     // std::cout << "write: key: " << k << " vallen: " << pValLen << " val: " << v << std::endl; 
 
+#if 0
     if (!validator->initialWrite(pkv)) {
         respHdr->common.status = STATUS_INTERNAL_ERROR;
     }
+    rpc->enableAsync();
+    rpc->getReplyHandle()->sendReply();
+#else
+    //prepare a single write local tx
+    TxEntry *txEntry = new TxEntry(0, 1);
+    txEntry->setRpcHandle(rpc);
+    if (pValLen == 0) {
+        pkv.getVLayout().isTombstone = true;
+    } else {
+        pkv.getVLayout().valueLength = pValLen;
+        pkv.getVLayout().valuePtr = (uint8_t*)const_cast<void*>(pVal);
+    }
+    KVLayout *nkv = kvStore->preput(pkv);
+    if (nkv != NULL) {
+        txEntry->insertWriteSet(nkv, 0);
+        validator->insertTxEntry(txEntry);
+        rpc->enableAsync();
+
+        while (validator->testRun()) {
+            delete txEntry;
+            break;
+        }
+    } else {
+        delete txEntry;
+        respHdr->common.status = STATUS_INTERNAL_ERROR;
+        rpc->sendReply();
+    }
+#endif
 }
 
 void
@@ -556,7 +585,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     txEntry->setCTS(reqHdr->meta.cstamp);
     txEntry->setPStamp(reqHdr->meta.pstamp);
     txEntry->setSStamp(reqHdr->meta.sstamp);
-    txEntry->setRpcHandle(rpc->getReplyHandle());
+    //txEntry->setRpcHandle(rpc->getReplyHandle()); //Fixme: store Rpc or ServerRpc???
+    txEntry->setRpcHandle(rpc); //Fixme: store Rpc or ServerRpc???
     for (uint32_t i = 0; i < participantCount; i++) {
         if (participants[i].dssnServerId != getServerId())
             txEntry->insertPeerSet(participants[i].dssnServerId);
@@ -729,7 +759,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
         }
     } else {
         delete txEntry;
-        rpc->sendReply();
+        rpc->sendReply(); //optional but can make send quicker
     }
 }
 
@@ -746,11 +776,26 @@ DSSNService::txDecision(const WireFormat::TxDecisionDSSN::Request* reqHdr,
 bool
 DSSNService::sendTxCommitReply(TxEntry *txEntry)
 {
-    Transport::ServerRpc *rpc = (Transport::ServerRpc *)txEntry->getRpcHandle();
+    //Transport::ServerRpc *rpc = (Transport::ServerRpc *)txEntry->getRpcHandle();
+    Rpc *rpc = (Rpc *)txEntry->getRpcHandle();
     if (rpc == NULL)
         return false; //this may be the case during Validator unit test
+
+    const WireFormat::RequestCommon* header = rpc->requestPayload->getStart<WireFormat::RequestCommon>();
+    WireFormat::Opcode opcode = WireFormat::Opcode(header->opcode);
+    if (opcode == WireFormat::WriteDSSN::opcode) {
+        //The RC write is treated as a single-write transaction
+        if (txEntry->getTxState() != TxEntry::TX_COMMIT) {
+            WireFormat::WriteDSSN::Response* respHdr =
+                    rpc->replyPayload->getStart<WireFormat::WriteDSSN::Response>();
+            respHdr->common.status = STATUS_INTERNAL_ERROR;
+        }
+        rpc->getReplyHandle()->sendReply();
+        return true;
+    }
+
     WireFormat::TxCommitDSSN::Response* respHdr =
-            rpc->replyPayload.getStart<WireFormat::TxCommitDSSN::Response>();
+            rpc->replyPayload->getStart<WireFormat::TxCommitDSSN::Response>();
     if (txEntry->getTxState() == TxEntry::TX_COMMIT)
         respHdr->vote = WireFormat::TxPrepare::COMMITTED;
     else if (txEntry->getTxState() == TxEntry::TX_ABORT)
@@ -762,7 +807,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
         assert(0);
         respHdr->vote = WireFormat::TxPrepare::ABORT_REQUESTED;
     }
-    rpc->sendReply();
+    rpc->getReplyHandle()->sendReply();
     return true;
 }
 

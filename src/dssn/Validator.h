@@ -41,6 +41,7 @@ struct Counters {
     uint64_t precommitReads = 0;
     uint64_t precommitWrites = 0;
     uint64_t commitIntents = 0;
+    uint64_t ctsSets = 0;
     uint64_t earlyPeers = 0;
     uint64_t queuedDistributedTxs = 0;
     uint64_t queuedLocalTxs = 0;
