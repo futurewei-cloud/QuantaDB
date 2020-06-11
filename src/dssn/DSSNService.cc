@@ -360,6 +360,8 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
     uint32_t numRequests = reqHdr->count;
     uint32_t reqOffset = sizeof32(*reqHdr);
     respHdr->count = numRequests;
+    TxEntry* txEntry = NULL;
+    uint32_t writeSetIndex = 0;
 
     // Each iteration extracts one request from the rpc, writes the object
     // if possible, and appends a status and version to the response buffer.
@@ -379,6 +381,7 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
             respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
             break;
         }
+
         WireFormat::MultiOp::Response::WritePart* currentResp =
                 rpc->replyPayload->emplaceAppend<
                 WireFormat::MultiOp::Response::WritePart>();
@@ -399,11 +402,36 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
         pkv.v.valueLength = pValLen;
         pkv.v.valuePtr = (uint8_t*)const_cast<void*>(pVal);
 
+#if 0 //to be removed during clean-up
         if (validator->initialWrite(pkv)) {
             currentResp->status = STATUS_OK;
         } else {
             currentResp->status = STATUS_INTERNAL_ERROR;
         }
+#else
+        //prepare one multi-write local tx
+        if (txEntry == NULL) {
+            txEntry = new TxEntry(0, numRequests);
+            txEntry->setRpcHandle(rpc->getReplyHandle());
+        }
+        if (pValLen == 0) {
+            pkv.getVLayout().isTombstone = true;
+        } else {
+            pkv.getVLayout().valueLength = pValLen;
+            pkv.getVLayout().valuePtr = (uint8_t*)const_cast<void*>(pVal);
+        }
+        KVLayout *nkv = kvStore->preput(pkv);
+        if (nkv != NULL) {
+            txEntry->insertWriteSet(nkv, writeSetIndex++);
+            currentResp->status = STATUS_OK;
+        } else {
+            delete txEntry;
+            respHdr->common.status = STATUS_INTERNAL_ERROR;
+            rpc->sendReply();
+            return;
+        }
+#endif
+
         // ---- write one object done ----
 
         reqOffset += currentReq->length;
@@ -413,7 +441,22 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
     // that the response can go back in a single RPC.
     assert(rpc->replyPayload->size() <= Transport::MAX_RPC_LEN);
 
+#if 0 //to be removed during clean-up
     rpc->sendReply();
+#else
+    if (validator->insertTxEntry(txEntry)) {
+        rpc->enableAsync();
+
+        while (validator->testRun()) {
+            delete txEntry;
+            break;
+        }
+        return; //delay reply
+    }
+    delete txEntry;
+    respHdr->common.status = STATUS_INTERNAL_ERROR;
+    rpc->sendReply();
+#endif
 }
 
 void
@@ -499,12 +542,10 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     // std::string v((const char*)pVal, (uint32_t)pValLen);
     // std::cout << "write: key: " << k << " vallen: " << pValLen << " val: " << v << std::endl; 
 
-#if 0
+#if 0 //to be removed during clean-up
     if (!validator->initialWrite(pkv)) {
         respHdr->common.status = STATUS_INTERNAL_ERROR;
     }
-    rpc->enableAsync();
-    rpc->getReplyHandle()->sendReply();
 #else
     //prepare a single write local tx
     TxEntry *txEntry = new TxEntry(0, 1);
@@ -518,18 +559,19 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     KVLayout *nkv = kvStore->preput(pkv);
     if (nkv != NULL) {
         txEntry->insertWriteSet(nkv, 0);
-        validator->insertTxEntry(txEntry);
-        rpc->enableAsync();
+        if (validator->insertTxEntry(txEntry)) {
+            rpc->enableAsync();
 
-        while (validator->testRun()) {
-            delete txEntry;
-            break;
+            while (validator->testRun()) {
+                delete txEntry;
+                break;
+            }
+            return; //delay reply
         }
-    } else {
-        delete txEntry;
-        respHdr->common.status = STATUS_INTERNAL_ERROR;
-        rpc->sendReply();
     }
+    delete txEntry;
+    respHdr->common.status = STATUS_INTERNAL_ERROR;
+    rpc->sendReply();
 #endif
 }
 
@@ -748,18 +790,21 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     }
 
     if (respHdr->common.status == STATUS_OK) {
-        validator->insertTxEntry(txEntry);
-        rpc->enableAsync();
+        if (validator->insertTxEntry(txEntry)) {
+            rpc->enableAsync();
 
-        while (validator->testRun()) {
-            delete txEntry;
-            //Fixme: deal with cross-shard tx unit test later with conditional break
-            break;
+            while (validator->testRun()) {
+                delete txEntry;
+                //Fixme: deal with cross-shard tx unit test later with conditional break
+                break;
+            }
+
+            return; //delay reply
         }
-    } else {
-        delete txEntry;
-        rpc->sendReply(); //optional but can make send quicker
+        respHdr->vote = WireFormat::TxPrepare::ABORT;
     }
+    delete txEntry;
+    rpc->sendReply(); //optional but can make send quicker
 }
 
 void
@@ -782,10 +827,19 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
     const WireFormat::RequestCommon* header = rpc->requestPayload.getStart<WireFormat::RequestCommon>();
     WireFormat::Opcode opcode = WireFormat::Opcode(header->opcode);
     if (opcode == WireFormat::WriteDSSN::opcode) {
-        //The RC write is treated as a single-write transaction
+        //The RC write is treated as a single-write local transaction
         if (txEntry->getTxState() != TxEntry::TX_COMMIT) {
             WireFormat::WriteDSSN::Response* respHdr =
                     rpc->replyPayload.getStart<WireFormat::WriteDSSN::Response>();
+            respHdr->common.status = STATUS_INTERNAL_ERROR;
+        }
+        rpc->sendReply();
+        return true;
+    } else if (opcode == WireFormat::MultiOp::opcode) {
+        //The RC multi-write is treated as one multi-write local transaction
+        if (txEntry->getTxState() != TxEntry::TX_COMMIT) {
+            WireFormat::MultiOp::Response* respHdr =
+                    rpc->replyPayload.getStart<WireFormat::MultiOp::Response>();
             respHdr->common.status = STATUS_INTERNAL_ERROR;
         }
         rpc->sendReply();

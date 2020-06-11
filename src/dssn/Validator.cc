@@ -349,10 +349,21 @@ Validator::peer() {
 bool
 Validator::insertTxEntry(TxEntry *txEntry) {
     counters.commitIntents++;
+
+    if ((txEntry->getPStamp() >= txEntry->getSStamp())
+            && (txEntry->getPStamp() >= txEntry->getCTS() &&  txEntry->getCTS() != 0)) {
+        //Clearly the commit intent will be aborted -- the client should not even have
+        //initiated, and we should not further burden the pipeline.
+        counters.trivialAborts++;
+        return false;
+    }
+
     if (txEntry->getPeerSet().size() == 0) {
         //single-shard tx
-        if (!localTxQueue.add(txEntry))
+        if (!localTxQueue.add(txEntry)) {
+            counters.busyAborts++;
             return false;
+        }
         if (txEntry->getCTS() == 0) {
             //This feature may allow tx client to do without a clock
             txEntry->setCTS(clock.getClusterTime());
@@ -362,8 +373,10 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         counters.queuedLocalTxs++;
     } else {
         //cross-shard tx
-        if (!reorderQueue.insert(txEntry->getCTS(), txEntry))
+        if (!reorderQueue.insert(txEntry->getCTS(), txEntry)) {
+            counters.busyAborts++;
             return false;
+        }
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
         counters.queuedDistributedTxs++;
 
