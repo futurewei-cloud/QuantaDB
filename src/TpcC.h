@@ -473,7 +473,7 @@ struct InputOrderStatus {
     bool byLastName;
     char lastName[17];
 
-    void generate();
+    void generate(uint32_t W_ID);
 };
 
 struct InputDelivery {

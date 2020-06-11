@@ -24,6 +24,20 @@
 namespace RAMCloud { namespace TPCC {
 
 uint64_t tableId[100];
+std::unordered_map<uint64_t, std::string> lastNameTable;
+struct lastNameKey {
+      uint64_t w_id  : 32;
+      uint64_t d_id  : 16;
+      uint64_t index : 16;
+};
+
+struct lastNameTableKey {
+    union {
+        uint64_t key;
+        struct lastNameKey attr;
+    };
+};
+
 
 Driver::Driver(RamCloud* ramcloud, uint32_t numWarehouse, int serverSpan, bool isMaster)
     : ramcloud(ramcloud)
@@ -94,9 +108,42 @@ genLastName(char* target, int rand)
         {"BAR", "OUGHT", "ABLE", "PRI", "PRES",
          "ESE", "ANTI", "CALLY", "ATION", "EING"};
     assert(rand < 1000);
+    memset(target, 0, 17);
     strncpy(target, names[rand / 100], 6);
     strncat(target, names[(rand / 10) % 10], 6);
     strncat(target, names[rand % 10], 6);
+}
+
+void
+putLastName(uint32_t W_ID, uint32_t D_ID, int index, char* target)
+{
+    lastNameTableKey k;
+    k.attr.w_id = W_ID;
+    k.attr.d_id = D_ID;
+    k.attr.index = index;
+    if (lastNameTable.find(k.key) == lastNameTable.end()) {
+        lastNameTable[k.key] = std::string(target);
+	//printf("put W_ID=%u, D_ID=%u, index=%d, name=%s\n", W_ID, D_ID, index, target);
+    }
+}
+
+void
+getLastName(uint32_t W_ID, uint32_t D_ID, int index, char* target)
+{
+    int i = index;
+    lastNameTableKey k;
+    k.attr.w_id = W_ID;
+    k.attr.d_id = D_ID;
+    std::unordered_map<uint64_t, string>::iterator iter;
+    assert(index < 1000);
+    memset(target, 0, 17);
+    do {
+        k.attr.index = i;
+        iter = lastNameTable.find(k.key);
+	i = (i+1)%1000;
+    } while (iter == lastNameTable.end());
+    strncpy(target, iter->second.c_str(), 17);
+    //printf("get W_ID=%u, D_ID=%u, index=%d, name=%s, length=%u\n", W_ID, D_ID, i, target, strlen(target));
 }
 
 uint32_t
@@ -205,10 +252,13 @@ Driver::addCustomer(uint32_t C_ID, uint32_t D_ID, uint32_t W_ID,
                     std::string* lastName)
 {
     Customer c(C_ID, D_ID, W_ID);
+    uint32_t index;
     if (C_ID <= 1000) {
-        genLastName(c.data.C_LAST, rand() % 1000);
+        index = rand() % 1000;
+        genLastName(c.data.C_LAST, index);
     } else {
-        genLastName(c.data.C_LAST, NURand(255, 0, 999));
+        index = NURand(255, 0, 999);
+        genLastName(c.data.C_LAST, index);
     }
     c.data.C_MIDDLE[0] = 'O';
     c.data.C_MIDDLE[1] = 'E';
@@ -236,8 +286,7 @@ Driver::addCustomer(uint32_t C_ID, uint32_t D_ID, uint32_t W_ID,
     write(tableId[W_ID], c);
 
     lastName->append(c.data.C_LAST);
-
-    // TODO(seojin): Add last name to id table row.
+    putLastName(W_ID, D_ID, index, c.data.C_LAST);
 }
 
 void
@@ -620,7 +669,7 @@ InputNewOrder::generate(int W_ID, int numWarehouse)
 {
     std::unordered_set<uint32_t> items;
     std::unordered_set<uint32_t>::iterator iter;
-    uint16_t I_ID;
+    uint32_t I_ID;
     D_ID = random(1, 10);
     C_ID = NURand(1023, 1, 3000);
     O_OL_CNT = random8(5, 15);
@@ -789,12 +838,10 @@ InputPayment::generate(int W_ID, int numWarehouse)
     }
     if (rand() % 100 < 60) {
         byLastName = true;
-        genLastName(lastName, NURand(255, 0, 999));
-	//Generate a C_ID in case the generated last name doesn't exist
-	C_ID = NURand(1023, 1, 3000);
+        getLastName(C_W_ID, C_D_ID, NURand(255, 0, 999), lastName);
     } else {
         byLastName = false;
-        C_ID = NURand(1023, 1, 3000);
+	C_ID = NURand(1023, 1, 3000);
     }
     H_AMOUNT = (double)random(100, 500000) / 100.0;
 }
@@ -835,7 +882,7 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
 
     if (byLastName) {
         t.read(tableId[W_ID], &nameKey, static_cast<uint16_t>(sizeof(nameKey)),
-               &buf_cid, &isObjectExist);
+	       &buf_cid, &isObjectExist);
 
 	if (isObjectExist) {
 	    numCustomer = *(buf_cid.getStart<uint32_t>());
@@ -921,7 +968,7 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
 }
 
 void
-InputOrderStatus::generate()
+InputOrderStatus::generate(uint32_t W_ID)
 {
     D_ID = random(1, 10);
     C_ID = 0;
@@ -929,12 +976,10 @@ InputOrderStatus::generate()
 
     if (rand() % 100 < 60) {
         byLastName = true;
-        genLastName(lastName, NURand(255, 0, 999));
-	//Generate a C_ID in case the generated last name doesn't exist
-	C_ID = NURand(1023, 1, 3000);
+	getLastName(W_ID, D_ID, NURand(255, 0, 999), lastName);
     } else {
         byLastName = false;
-        C_ID = NURand(1023, 1, 3000);
+	C_ID = NURand(1023, 1, 3000);
     }
 }
 
@@ -948,7 +993,7 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
     bool isObjectExist = false;
     if (!in) {
         realInput.construct();
-        realInput->generate();
+        realInput->generate(W_ID);
         in = realInput.get();
     }
     uint32_t D_ID = in->D_ID;
@@ -970,7 +1015,7 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
     uint32_t buf_idx = 0;
     if (byLastName) {
         t.read(tableId[W_ID], &nameKey, static_cast<uint16_t>(sizeof(nameKey)),
-               &buf_cid, &isObjectExist);
+	       &buf_cid, &isObjectExist);
 	if (isObjectExist) {
 	    numCustomer = *(buf_cid.getStart<uint32_t>());
 	    buf_idx += sizeof32(numCustomer);
@@ -981,8 +1026,8 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
 	    uint32_t* cids;
 	    cids = static_cast<uint32_t*>(buf_cid.getRange(buf_idx, numCustomer*4));
 	    in->C_ID = cids[(int)((numCustomer - 1) / 2)];
+	    C_ID = in->C_ID;
 	}
-        C_ID = in->C_ID;
     }
     assert(C_ID);
 
