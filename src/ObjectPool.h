@@ -18,6 +18,7 @@
 
 #include "Common.h"
 #include "Memory.h"
+#include <mutex>
 
 /*
  * Notes on performance and efficiency:
@@ -106,22 +107,27 @@ class ObjectPool
     construct(Args&&... args)
     {
         void* backing = NULL;
+	mtx.lock();
         if (pool.size() == 0) {
             backing = Memory::xmalloc(HERE, sizeof(T));
         } else {
             backing = pool.back();
             pool.pop_back();
         }
+	outstandingObjects++;
+	mtx.unlock();
 
         T* object = NULL;
         try {
             object = new(backing) T(static_cast<Args&&>(args)...);
         } catch (...) {
+	    mtx.lock();
             pool.push_back(backing);
+	    outstandingObjects--;
+	    mtx.unlock();
             throw;
         }
 
-        outstandingObjects++;
         return object;
     }
 
@@ -133,8 +139,10 @@ class ObjectPool
     {
         assert(outstandingObjects > 0);
         object->~T();
+	mtx.lock();
         pool.push_back(static_cast<void*>(object));
-        outstandingObjects--;
+	outstandingObjects--;
+	mtx.unlock();
     }
 
   PRIVATE:
@@ -144,6 +152,8 @@ class ObjectPool
 
     /// Pool of backing memory from previously destroyed objects.
     vector<void*> pool;
+    /// Todo: Replace the pool with lockfree datastructure if necessary
+    std::mutex mtx;
 };
 
 } // end RAMCloud
