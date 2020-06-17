@@ -412,7 +412,8 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
         //prepare one multi-write local tx
         if (txEntry == NULL) {
             txEntry = new TxEntry(0, numRequests);
-            txEntry->setRpcHandle(rpc->getReplyHandle());
+	    RpcHandle* handle = rpc->enableAsync();
+            txEntry->setRpcHandle(handle);
         }
         if (pValLen == 0) {
             pkv.getVLayout().isTombstone = true;
@@ -427,7 +428,8 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
         } else {
             delete txEntry;
             respHdr->common.status = STATUS_INTERNAL_ERROR;
-            rpc->sendReply();
+	    RpcHandle *handle = static_cast<RpcHandle *>(txEntry->getRpcHandle());
+            handle->sendReplyAsync();
             return;
         }
 #endif
@@ -445,7 +447,6 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
     rpc->sendReply();
 #else
     if (validator->insertTxEntry(txEntry)) {
-        rpc->enableAsync();
 
         while (validator->testRun()) {
             delete txEntry;
@@ -455,7 +456,8 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
     }
     delete txEntry;
     respHdr->common.status = STATUS_INTERNAL_ERROR;
-    rpc->sendReply();
+    RpcHandle *handle = static_cast<RpcHandle *>(txEntry->getRpcHandle());
+    handle->sendReplyAsync();
 #endif
 }
 
@@ -549,7 +551,8 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
 #else
     //prepare a single write local tx
     TxEntry *txEntry = new TxEntry(0, 1);
-    txEntry->setRpcHandle(rpc->getReplyHandle());
+    RpcHandle* handle = rpc->enableAsync();
+    txEntry->setRpcHandle(handle);
     if (pValLen == 0) {
         pkv.getVLayout().isTombstone = true;
     } else {
@@ -560,7 +563,6 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     if (nkv != NULL) {
         txEntry->insertWriteSet(nkv, 0);
         if (validator->insertTxEntry(txEntry)) {
-            rpc->enableAsync();
 
             while (validator->testRun()) {
                 delete txEntry;
@@ -571,7 +573,7 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     }
     delete txEntry;
     respHdr->common.status = STATUS_INTERNAL_ERROR;
-    rpc->sendReply();
+    handle->sendReplyAsync();
 #endif
 }
 
@@ -624,10 +626,11 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     }*/
 
     TxEntry *txEntry = new TxEntry(numReadRequests, numRequests - numReadRequests);
+    RpcHandle* handle = rpc->enableAsync();
     txEntry->setCTS(reqHdr->meta.cstamp);
     txEntry->setPStamp(reqHdr->meta.pstamp);
     txEntry->setSStamp(reqHdr->meta.sstamp);
-    txEntry->setRpcHandle(rpc->getReplyHandle());
+    txEntry->setRpcHandle(handle);
     for (uint32_t i = 0; i < participantCount; i++) {
         if (participants[i].dssnServerId != getServerId())
             txEntry->insertPeerSet(participants[i].dssnServerId);
@@ -791,7 +794,6 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 
     if (respHdr->common.status == STATUS_OK) {
         if (validator->insertTxEntry(txEntry)) {
-            rpc->enableAsync();
 
             while (validator->testRun()) {
                 delete txEntry;
@@ -804,7 +806,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
         respHdr->vote = WireFormat::TxPrepare::ABORT;
     }
     delete txEntry;
-    rpc->sendReply(); //optional but can make send quicker
+    handle->sendReplyAsync(); //optional but can make send quicker
 }
 
 void
@@ -820,10 +822,11 @@ DSSNService::txDecision(const WireFormat::TxDecisionDSSN::Request* reqHdr,
 bool
 DSSNService::sendTxCommitReply(TxEntry *txEntry)
 {
-  Transport::ServerRpc *rpc = static_cast<Transport::ServerRpc *>(txEntry->getRpcHandle());
-    if (rpc == NULL)
+    RpcHandle *handle = static_cast<RpcHandle *>(txEntry->getRpcHandle());
+    if (handle == NULL)
         return false; //this may be the case during Validator unit test
-
+    Transport::ServerRpc* rpc = handle->getServerRpc();
+ 
     const WireFormat::RequestCommon* header = rpc->requestPayload.getStart<WireFormat::RequestCommon>();
     WireFormat::Opcode opcode = WireFormat::Opcode(header->opcode);
     if (opcode == WireFormat::WriteDSSN::opcode) {
@@ -833,7 +836,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
                     rpc->replyPayload.getStart<WireFormat::WriteDSSN::Response>();
             respHdr->common.status = STATUS_INTERNAL_ERROR;
         }
-        rpc->sendReply();
+        handle->sendReplyAsync();
         return true;
     } else if (opcode == WireFormat::MultiOp::opcode) {
         //The RC multi-write is treated as one multi-write local transaction
@@ -842,7 +845,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
                     rpc->replyPayload.getStart<WireFormat::MultiOp::Response>();
             respHdr->common.status = STATUS_INTERNAL_ERROR;
         }
-        rpc->sendReply();
+        handle->sendReplyAsync();
         return true;
     }
 
@@ -859,7 +862,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
         assert(0);
         respHdr->vote = WireFormat::TxPrepare::ABORT_REQUESTED;
     }
-    rpc->sendReply();
+    handle->sendReplyAsync();
     return true;
 }
 

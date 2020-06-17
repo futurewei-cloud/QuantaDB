@@ -133,11 +133,12 @@ struct BindTransport : public Transport {
             // real call to Service method, since they are public members of
             // their respective classes.
             ServerRpc* serverRpc = transport.serverRpcPool.construct();
+	    RpcHandle RpcHandle(serverRpc);
             ServerRpcPoolGuard<ServerRpc> serverRpcKiller(
                     transport.serverRpcPool, serverRpc);
             Worker w(NULL);
 	    serverRpc->clear();
-            w.rpc = serverRpc;
+            w.rpc = &RpcHandle;
 	    // Transfer the request buffer to serverRpc
 	    Buffer* req = &serverRpc->requestPayload;
 	    Buffer* rsp = &serverRpc->replyPayload;
@@ -161,7 +162,7 @@ struct BindTransport : public Transport {
             }
             Service::handleRpc(context, &rpc);
 	    //For async processing, wait for processing function to generate reply
-	    if (rpc.isAsync()) {
+	    if (RpcHandle.isAsyncEnabled()) {
 	        while (!serverRpc->isReplySent());
 	    }
 

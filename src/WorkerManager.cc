@@ -76,7 +76,7 @@ Syscall* WorkerManager::sys = &defaultSyscall;
 int WorkerManager::pollMicros = 10000;
 // The following constant is used to signal a worker thread that
 // it should exit.
-#define WORKER_EXIT reinterpret_cast<Transport::ServerRpc*>(1)
+#define WORKER_EXIT reinterpret_cast<RpcHandle*>(1)
 
 /**
  * Construct a WorkerManager.
@@ -133,6 +133,16 @@ WorkerManager::~WorkerManager()
     foreach (Worker* worker, idleThreads) {
         worker->exit();
         delete worker;
+    }
+    while (!mRpcReply.empty()) {
+        RpcHandle* handle = mRpcReply.front();
+	mRpcReply.pop();
+	delete handle;
+    }
+    while (mFreeRpcHandlePool.size()) {
+        RpcHandle* handle = mFreeRpcHandlePool.back();
+	mFreeRpcHandlePool.pop_back();
+	delete handle;
     }
 }
 
@@ -248,9 +258,13 @@ WorkerManager::handleRpc(Transport::ServerRpc* rpc)
     assert(!idleThreads.empty());
     Worker* worker = idleThreads.back();
     idleThreads.pop_back();
+    RpcHandle* rpcHandle = getRpcHandle(rpc);
+    assert(rpcHandle);
     worker->opcode = WireFormat::Opcode(header->opcode);
     worker->level = level;
-    worker->handoff(rpc);
+    /*    RAMCLOUD_LOG(DEBUG, "handleRpc: worker id=%d, opcode=%d, rpcHandle=%lx", worker->threadId,
+	  worker->opcode, (uint64_t)rpcHandle);*/
+    worker->handoff(rpcHandle);
     worker->busyIndex = downCast<int>(busyThreads.size());
     busyThreads.push_back(worker);
 }
@@ -275,7 +289,6 @@ int
 WorkerManager::poll()
 {
     int foundWork = 0;
-
     // Each iteration of the following loop checks the status of one active
     // worker. The order of iteration is crucial, since it allows us to
     // remove a worker from busyThreads in the middle of the loop without
@@ -295,7 +308,7 @@ WorkerManager::poll()
         // The worker is either post-processing or idle; in either case,
         // there may be an RPC that we have to respond to. Save the RPC
         // information for now.
-        Transport::ServerRpc* rpc = worker->rpc;
+        RpcHandle* rpc = worker->rpc;
         worker->rpc = NULL;
 
         // Highest priority: if there are pending requests that are waiting
@@ -330,8 +343,10 @@ WorkerManager::poll()
                     rpcsWaiting--;
                     level->requestsRunning++;
                     worker->level = i;
-                    worker->handoff(level->waitingRpcs.front());
-                    level->waitingRpcs.pop();
+		    RpcHandle *rpcHandle = getRpcHandle(level->waitingRpcs.front());
+		    assert(rpcHandle);
+		    level->waitingRpcs.pop();
+                    worker->handoff(rpcHandle);
                     startedNewRpc = true;
                     break;
                 }
@@ -339,17 +354,20 @@ WorkerManager::poll()
         }
 
         // Now send the response, if any.
-        if (rpc != NULL) {
+        if (rpc != NULL && rpc != WORKER_EXIT) {
+	    if (!rpc->isAsyncEnabled()) {
 #ifdef LOG_RPCS
-            LOG(NOTICE, "Sending reply for %s at %lu with %u bytes",
-                    WireFormat::opcodeSymbol(&rpc->requestPayload),
-                    reinterpret_cast<uint64_t>(rpc),
-                    rpc->replyPayload.size());
+	        LOG(NOTICE, "Sending reply for %s at %lu with %u bytes",
+		    WireFormat::opcodeSymbol(&rpc->getServerRpc()->requestPayload),
+		    reinterpret_cast<uint64_t>(rpc->getServerRpc()),
+		    rpc->getServerRpc()->replyPayload.size());
 #endif
-            rpc->sendReply();
-            timeTrace("sent reply for opcode %d, thread %d",
-                    worker->threadId, worker->opcode);
-
+		rpc->getServerRpc()->sendReply();
+		timeTrace("sent reply for opcode %d, thread %d",
+			  worker->threadId, worker->opcode);
+		freeRpcHandle(rpc);
+		rpc = NULL;
+	    }
         }
 
         // If the worker is idle, remove it from busyThreads (fill its
@@ -365,6 +383,8 @@ WorkerManager::poll()
             idleThreads.push_back(worker);
         }
     }
+    // Send out all async RPC reply
+    sendAsyncRpcReply();
     return foundWork;
 }
 
@@ -457,16 +477,14 @@ WorkerManager::workerMain(Worker* worker)
                 break;
             timeTrace("worker thread %d received opcode %d", worker->threadId,
                     worker->opcode);
-
-            worker->rpc->epoch = LogProtector::getCurrentEpoch();
-            Service::Rpc rpc(worker, &worker->rpc->requestPayload,
-                    &worker->rpc->replyPayload);
+	    /*RAMCLOUD_LOG(DEBUG, "workerMain: worker id=%d, opcode=%d, rpcHandle=%lx", worker->threadId,
+	      worker->opcode, (uint64_t)worker->rpc);*/
+            worker->getServerRpc()->epoch = LogProtector::getCurrentEpoch();
+            Service::Rpc rpc(worker, &worker->getServerRpc()->requestPayload,
+			     &worker->getServerRpc()->replyPayload);
             Service::handleRpc(worker->context, &rpc);
-	    if (rpc.isAsync()) {
-	        // Worker thread has handed off to other thread for async processing
-	        // The new thread should have cached the transport rpc handler
-	        worker->rpc = NULL;
-	    }
+	    /*RAMCLOUD_LOG(DEBUG, "workerMain completed: worker id=%d, opcode=%d. rpc=%lx", worker->threadId,
+	      worker->opcode, (uint64_t)worker->rpc);*/
 
             // Pass the RPC back to the dispatch thread for completion.
             Fence::leave();
@@ -489,7 +507,45 @@ WorkerManager::workerMain(Worker* worker)
         throw; // will likely call std::terminate()
     }
 }
+RpcHandle*
+WorkerManager::getRpcHandle(Transport::ServerRpc* rpc)
+{
+    RpcHandle* handle = NULL;
+    if(mFreeRpcHandlePool.size() == 0) {
+        handle = new RpcHandle(rpc, this);
+    } else {
+        handle = mFreeRpcHandlePool.back();
+	mFreeRpcHandlePool.pop_back();
+	handle->init(rpc, this);
+    }
+    return handle;
+}
 
+void
+WorkerManager::freeRpcHandle(RpcHandle* handle) {
+    handle->clear();
+    mFreeRpcHandlePool.push_back(handle);
+}
+
+void
+WorkerManager::sendAsyncRpcReply() {
+    RpcHandle* handle = NULL;
+    do {
+        handle = NULL;
+        rpcReplyQueueMutex.lock();
+	if (!mRpcReply.empty()) {
+	    handle = mRpcReply.front();
+	    mRpcReply.pop();
+	}
+	rpcReplyQueueMutex.unlock();
+	if (handle) {
+	    handle->getServerRpc()->sendReply();
+	    freeRpcHandle(handle);
+	} else {
+	    break;
+	}
+    } while (1);
+}
 /**
  * Force this worker's thread to exit (and don't return until it has exited).
  * This method is only used during testing and WorkerManager destruction.
@@ -532,7 +588,7 @@ Worker::exit()
  *      indicates that the worker thread should exit.
  */
 void
-Worker::handoff(Transport::ServerRpc* newRpc)
+Worker::handoff(RpcHandle* newRpc)
 {
     assert(rpc == NULL);
     rpc = newRpc;
@@ -571,6 +627,10 @@ void
 Worker::sendReply()
 {
     Fence::leave();
+    //Make sure the ownership hasn't been transferred as in async RPC.
+    if (!rpc) {
+        assert(!"Asynchronous RPC is enabled.  Please use the RpcHandle to reply");
+    }
     state.store(POSTPROCESSING);
     WorkerManager::timeTrace("worker thread %d postprocesing opcode %d; "
             "reply signaled to dispatch", threadId, opcode);
@@ -585,6 +645,12 @@ bool
 Worker::replySent()
 {
     return (state == POSTPROCESSING);
+}
+
+Transport::ServerRpc*
+Worker::getServerRpc()
+{
+    return rpc->getServerRpc();
 }
 
 } // namespace RAMCloud
