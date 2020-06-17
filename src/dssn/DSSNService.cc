@@ -834,7 +834,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
         if (txEntry->getTxState() != TxEntry::TX_COMMIT) {
             WireFormat::WriteDSSN::Response* respHdr =
                     rpc->replyPayload.getStart<WireFormat::WriteDSSN::Response>();
-            respHdr->common.status = STATUS_INTERNAL_ERROR;
+            respHdr->common.status = STATUS_TX_WRITE_ABORT;
         }
         handle->sendReplyAsync();
         return true;
@@ -843,7 +843,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
         if (txEntry->getTxState() != TxEntry::TX_COMMIT) {
             WireFormat::MultiOp::Response* respHdr =
                     rpc->replyPayload.getStart<WireFormat::MultiOp::Response>();
-            respHdr->common.status = STATUS_INTERNAL_ERROR;
+            respHdr->common.status = STATUS_TX_WRITE_ABORT;
         }
         handle->sendReplyAsync();
         return true;
