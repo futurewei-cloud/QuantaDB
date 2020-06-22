@@ -48,6 +48,9 @@ class TxLog {
     // Return data size of TxLog
     size_t size() { return log->size(); }
 
+    // For debugging. Dump log content to file descriptor 'fd'
+    void dump(int fd);
+
     private:
     // private struct
     typedef struct TxLogMarker {

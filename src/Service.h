@@ -69,11 +69,14 @@ class Service {
         /// Information about the worker thread that is executing
         /// this request.
         Worker* worker;
-	/// Get the Transport RPC handler for the async processing
-	Transport::ServerRpc* getReplyHandle() { return worker->rpc; }
-	/// Enable this rpc process for async response;
-	void enableAsync() { async = true; }
-	bool isAsync() { return async; }
+	/// Enable this rpc processing to async mode;  Once this function is called, the rpc
+	/// handle ownership is transferred to the caller
+	RpcHandle* enableAsync() {
+	    RpcHandle* handle = worker->rpc;
+	    handle->enableAsync();
+	    worker->rpc = NULL;
+	    return handle;
+	}
       private:
 	/// Enable this flag for async processing
 	bool async;

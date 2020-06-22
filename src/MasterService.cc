@@ -1092,7 +1092,7 @@ MasterService::migrateTablet(const WireFormat::MigrateTablet::Request* reqHdr,
 
     // Mark this request as read-only, to avoid deadlock when performing
     // epoch-related waits below.
-    rpc->worker->rpc->activities = Transport::ServerRpc::READ_ACTIVITY;
+    rpc->worker->getServerRpc()->activities = Transport::ServerRpc::READ_ACTIVITY;
 
     // Find the tablet we're trying to move. We only support migration
     // when the tablet to be migrated consists of a range within a single,
@@ -2270,7 +2270,7 @@ MasterService::splitAndMigrateIndexlet(
 
     // Mark this request as read-only, to avoid deadlock when performing
     // epoch-related waits below.
-    rpc->worker->rpc->activities = Transport::ServerRpc::READ_ACTIVITY;
+    rpc->worker->getServerRpc()->activities = Transport::ServerRpc::READ_ACTIVITY;
 
     if (splitKey == NULL) {
         throw FatalError(HERE, "Ill-formed RPC in splitAndMigrateIndexlet.");

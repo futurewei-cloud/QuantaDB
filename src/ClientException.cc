@@ -146,6 +146,8 @@ ClientException::throwException(const CodeLocation& where, Status status)
             throw ExpiredLeaseException(where);
         case STATUS_TX_OP_AFTER_COMMIT:
             throw TxOpAfterCommit(where);
+        case STATUS_TX_WRITE_ABORT:
+	    throw TxWriteAbort(where);
         default:
             throw InternalError(where, status);
     }

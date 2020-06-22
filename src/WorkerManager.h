@@ -36,6 +36,7 @@ namespace RAMCloud {
  * server and runs Transport code) and the worker threads.
  */
 class Worker;
+class RpcHandle;
 
 class WorkerManager : Dispatch::Poller {
   public:
@@ -49,6 +50,12 @@ class WorkerManager : Dispatch::Poller {
     int poll();
     void setServerId(ServerId serverId);
     Transport::ServerRpc* waitForRpc(double timeoutSeconds);
+    void enqueueRpcReply(RpcHandle* rpc) {
+        //TODO: replace this with lockless multi producers single consumer queue if necessary
+        rpcReplyQueueMutex.lock();
+        mRpcReply.push(rpc);
+	rpcReplyQueueMutex.unlock();
+    }
 
   PROTECTED:
   static inline void timeTrace(const char* format,
@@ -81,6 +88,10 @@ class WorkerManager : Dispatch::Poller {
             , waitingRpcs()
         {}
     };
+    inline RpcHandle* getRpcHandle(Transport::ServerRpc* rpc);
+    inline void freeRpcHandle(RpcHandle* handle);
+    inline void sendAsyncRpcReply();
+    std::mutex rpcReplyQueueMutex;
     std::vector<Level> levels;
 
     // Worker threads that are currently executing RPCs (no particular order).
@@ -107,7 +118,9 @@ class WorkerManager : Dispatch::Poller {
     // Used for testing: if testingSaveRpcs is set, incoming RPCs are
     // queued here, not sent to workers.
     std::queue<Transport::ServerRpc*> testRpcs;
-
+    std::vector<RpcHandle*> mFreeRpcHandlePool;
+    // Store the list of rpc to be sent out
+    std::queue<RpcHandle*> mRpcReply;
     static void workerMain(Worker* worker);
     static Syscall *sys;
 
@@ -130,6 +143,7 @@ class Worker {
   public:
     bool replySent();
     void sendReply();
+    Transport::ServerRpc* getServerRpc();
 
   PRIVATE:
     Context* context;                  /// Shared RAMCloud information.
@@ -141,7 +155,7 @@ class Worker {
                                        /// then.
     WireFormat::Opcode opcode;         /// Opcode value from most recent RPC.
     int level;                         /// RpcLevel of most recent RPC.
-    Transport::ServerRpc* rpc;         /// RPC being serviced by this worker.
+    RpcHandle* rpc;                    /// RPC being serviced by this worker.
                                        /// NULL means the last RPC given to
                                        /// the worker has been finished and a
                                        /// response sent (but the worker may
@@ -200,7 +214,7 @@ class Worker {
             threadWork(&ReadThreadingCost_MetricSet::threadWork, false)
         {}
     void exit();
-    void handoff(Transport::ServerRpc* rpc);
+    void handoff(RpcHandle* rpc);
 
   public:
     ReadThreadingCost_MetricSet::Interval threadWork;
@@ -210,6 +224,50 @@ class Worker {
     DISALLOW_COPY_AND_ASSIGN(Worker);
 };
 
+class RpcHandle {
+  public:
+    RpcHandle(Transport::ServerRpc* rpc)
+        : mServerRpc(rpc)
+        , mWorkerManager(NULL)
+        , isAsync(false)
+    {}
+    RpcHandle(Transport::ServerRpc* rpc, WorkerManager* wm)
+        : mServerRpc(rpc)
+        , mWorkerManager(wm)
+        , isAsync(false)
+    {
+    }
+    void init(Transport::ServerRpc * rpc, WorkerManager* wm) {
+        //TODO: explore the possibility of using the allocator and construct mechanism
+        mServerRpc = rpc;
+	mWorkerManager = wm;
+	isAsync = false;
+    }
+
+    inline void enableAsync() { isAsync = true; }
+    inline bool isAsyncEnabled() { return isAsync; }
+    void sendReplyAsync() {
+        //Enqueue this RPC on WorkerManager's queue
+        if (mWorkerManager) {
+	    mWorkerManager->enqueueRpcReply(this);
+	} else {
+#if TESTING
+	    //This only happens in the unit test mode
+	    mServerRpc->sendReply();
+#endif
+	}
+    }
+    void clear() {
+        mServerRpc = NULL;
+	mWorkerManager = NULL;
+	isAsync = false;
+    }
+    inline Transport::ServerRpc* getServerRpc() { return mServerRpc; }
+    private:
+      Transport::ServerRpc* mServerRpc;
+      WorkerManager* mWorkerManager;
+      bool isAsync;
+};
 }  // namespace RAMCloud
 
 #endif  // RAMCLOUD_WORKERMANAGER_H

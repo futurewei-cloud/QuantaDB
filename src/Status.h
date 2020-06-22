@@ -142,7 +142,9 @@ typedef enum Status {
     /// Indicates that a client tried to perform transaction operations after
     /// the transaction commit had already started.
     STATUS_TX_OP_AFTER_COMMIT           = 33,
-    STATUS_MAX_VALUE                    = 33,
+    /// Write request is aborted by DSSN
+    STATUS_TX_WRITE_ABORT               = 34,
+    STATUS_MAX_VALUE                    = 34,
 
     // Note: if you add a new status value you must make the following
     // additional updates:
