@@ -54,9 +54,10 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
         TxEntry tx(1,1);
         tx.deSerialize( in );
         if (tx.getTxState() == TxEntry::TX_PENDING) {
-            idOut = off; 
+            idOut = off;
             meta.pStamp = tx.getPStamp();
             meta.sStamp = tx.getSStamp();
+            meta.cStamp = tx.getCTS();
             peerSet =   tx.getPeerSet();
             writeSet.reset(new KVLayout*[tx.getWriteSetIndex()]);
             memcpy(writeSet.get(), tx.getWriteSet().get(), sizeof(KVLayout*) * tx.getWriteSetIndex()); 
