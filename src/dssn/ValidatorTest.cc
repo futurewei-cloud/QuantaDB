@@ -461,6 +461,19 @@ TEST_F(ValidatorTest, BATLateDistributedTxs) {
     freeTxEntry(size);
 }
 
+TEST_F(ValidatorTest, BATRecover) {
+    int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
+    size = 20;
+
+    fillTxEntry(size, 20, 3); //3 participants
+
+    validator.recover();
+    EXPECT_EQ(0UL, validator.counters.recovers);
+
+    freeTxEntry(size);
+}
+
+
 /*
 TEST_F(ValidatorTest, BATDependencyMatrix) {
 	fillTxEntry(35, 20, 2); //35 txs of 20 keys and 2 peers
