@@ -131,6 +131,8 @@ TxLog::dump(int fd)
             }
             dprintf(fd, "\n");
         }
+
+        dprintf(fd, "\n");
     }
 }
 
