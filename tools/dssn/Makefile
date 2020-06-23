@@ -1,6 +1,6 @@
 TOP = ../..
 
-CFLAGS = -I$(TOP)/src/dssn -I$(TOP)/src -I$(TOP)/install/include/ramcloud
+CFLAGS = -I$(TOP)/src/dssn -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TOP)/obj.master
 
 %.o:$(TOP)/src/%.cc
 	g++ -c $(CFLAGS) $< -o $@

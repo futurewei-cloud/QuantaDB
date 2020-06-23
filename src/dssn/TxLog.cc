@@ -97,7 +97,6 @@ TxLog::dump(int fd)
     TxLogTailer_t * tal;
     size_t hdrsz = sizeof(TxLogTailer_t) + sizeof(TxLogHeader_t);
     std::set<uint64_t> peerSet;
-    // boost::scoped_array<KVLayout*> writeSet;
 
     dprintf(fd, "Dumping TxLog backward\n\n");
 
@@ -108,30 +107,27 @@ TxLog::dump(int fd)
         assert(tal->sig == TX_LOG_TAIL_SIG);
 
         inMemStream in((uint8_t*)tal - tal->length + hdrsz, dlen + tal->length - hdrsz);
-        TxEntry tx(1,1);
-        tx.deSerialize_common( in );
+        TxEntry tx(0,0);
+        tx.deSerialize( in );
 
-        peerSet =   tx.getPeerSet();
         dprintf(fd, "CTS: %ld, TxState: %d, pStamp: %ld, sStamp: %ld\n", tx.getCTS(), tx.getTxState(), tx.getPStamp(), tx.getSStamp());
 
         dprintf(fd, "\tpeerSet: ");
+        peerSet =   tx.getPeerSet();
         for(std::set<uint64_t>::iterator it = peerSet.begin(); it != peerSet.end(); it++) {
             uint64_t peer = *it;
             dprintf(fd, "%ld, ", peer);
         }
         dprintf(fd, "\n");
 
-        // writeSet.reset(new KVLayout*[tx.getWriteSetIndex()]);
-        // memcpy(writeSet.get(), tx.getWriteSet().get(), sizeof(KVLayout*) * tx.getWriteSetIndex()); 
-
-        uint32_t writeSetSize = tx.getWriteSetIndex();
         KVLayout **writeSet = tx.getWriteSet().get();
-        dprintf(fd, "\twriteSet: %d entries\n", writeSetSize);
-        for (uint32_t widx = 0; widx < writeSetSize; widx++) {
+        dprintf(fd, "\twriteSet: %d entries\n", tx.getWriteSetSize());
+        for (uint32_t widx = 0; widx < tx.getWriteSetSize(); widx++) {
             KVLayout *kv = writeSet[widx];
-            dprintf(fd, "\t\t%d key: ", widx+1);
+            assert(kv);
+            dprintf(fd, "\t  key%02d: ", widx+1);
             for (uint32_t kidx = 0; kidx < kv->k.keyLength; kidx++) { 
-                dprintf(fd, "%02X ", kv->k.key[kidx]);
+                dprintf(fd, "%02X ", kv->k.key.get()[kidx]);
             }
             dprintf(fd, "\n");
         }

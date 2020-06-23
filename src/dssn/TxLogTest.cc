@@ -2,6 +2,7 @@
  * Copyright (c) 2020  Futurewei Technologies, Inc.
  */
 #include "TestUtil.h"
+#include "HashmapKVStore.h"
 #include "TxLog.h"
 #include "Cycles.h"
 
@@ -15,6 +16,8 @@ class TxLogTest : public ::testing::Test {
   public:
   TxLogTest() {};
   ~TxLogTest() {};
+
+  HashmapKVStore kvStore;
 
   TxLog txlog;
 
@@ -35,12 +38,20 @@ TEST_F(TxLogTest, TxLogUnitTest)
 {
     EXPECT_EQ(txlog.size(), (size_t)0);
 
+    KVLayout kv(32);
+    snprintf((char *)kv.getKey().key.get(), 32, "txlog-dump-key");
+
     for (uint64_t idx = 0; idx < 100; idx++) {
         TxEntry tx(10,10);
         tx.setCTS(idx);
         tx.setPStamp(idx);
         tx.setSStamp(idx);
         tx.setTxState(((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT); 
+        tx.insertPeerSet(idx);
+
+        KVLayout *kv2 = kvStore.preput(kv);
+        tx.insertWriteSet(kv2, 0);
+
         txlog.add(&tx);
     }
 
