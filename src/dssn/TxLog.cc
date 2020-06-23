@@ -90,6 +90,19 @@ TxLog::getTxState(uint64_t cts)
     return TxEntry::TX_ALERT; // indicating not found here
 }
 
+static const char *txStateToStr(uint32_t txState)
+{
+    switch(txState) {
+    case TxEntry::TX_ALERT: return (const char*)"TX_ALERT";
+    case TxEntry::TX_PENDING: return (const char*)"TX_PENDING";
+    case TxEntry::TX_COMMIT: return (char const *)"TX_COMMIT";
+    case TxEntry::TX_CONFLICT: return (const char*)"TX_CONFLICT";
+    case TxEntry::TX_ABORT: return (const char*)"TX_ABORT";
+    }
+    assert(0);
+    return (const char*)"TX_UNKNOWN";
+}
+
 void
 TxLog::dump(int fd)
 {
@@ -110,7 +123,8 @@ TxLog::dump(int fd)
         TxEntry tx(0,0);
         tx.deSerialize( in );
 
-        dprintf(fd, "CTS: %ld, TxState: %d, pStamp: %ld, sStamp: %ld\n", tx.getCTS(), tx.getTxState(), tx.getPStamp(), tx.getSStamp());
+        dprintf(fd, "CTS: %ld, TxState: %s, pStamp: %ld, sStamp: %ld\n",
+            tx.getCTS(), txStateToStr(tx.getTxState()), tx.getPStamp(), tx.getSStamp());
 
         dprintf(fd, "\tpeerSet: ");
         peerSet =   tx.getPeerSet();

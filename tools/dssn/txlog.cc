@@ -11,11 +11,15 @@ TxLog *txlog;
 void Usage(char *prog)
 {
     printf("Usage %s [-dump|-clear]\n", prog);
+    exit (1);
 }
 
 int main(int ac, char *av[])
 {
     txlog = new TxLog(true);
+
+    if (ac == 1)
+        Usage(av[0]);
 
     for (uint32_t idx = 1; idx < ac; idx++) {
         if (strcmp(av[idx], "-dump") == 0) {
