@@ -428,7 +428,7 @@ void TpcCTest::txOrderStatus() {
     bool outcome;
     TPCC::InputOrderStatus in;
     uint32_t W_ID = 1;
-    in.generate(W_ID);
+    in.generate();
     // Overrides the generated input to use C_ID instead of last name.
     in.byLastName = false;
     in.C_ID = TPCC::NURand(1023, 1, 3000);
@@ -451,7 +451,7 @@ void TpcCTest::txOrderStatus_byLastName() {
     bool outcome;
     TPCC::InputOrderStatus in;
     uint32_t W_ID = 1;
-    in.generate(W_ID);
+    in.generate();
     // Overrides the generated input to use lastName instead of C_ID.
     in.byLastName = true;
     genLastName(in.lastName, 0); //BARBARBAR
