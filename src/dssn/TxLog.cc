@@ -54,9 +54,10 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
         TxEntry tx(1,1);
         tx.deSerialize( in );
         if (tx.getTxState() == TxEntry::TX_PENDING) {
-            idOut = off; 
+            idOut = off;
             meta.pStamp = tx.getPStamp();
             meta.sStamp = tx.getSStamp();
+            meta.cStamp = tx.getCTS();
             peerSet =   tx.getPeerSet();
             writeSet.reset(new KVLayout*[tx.getWriteSetIndex()]);
             memcpy(writeSet.get(), tx.getWriteSet().get(), sizeof(KVLayout*) * tx.getWriteSetIndex()); 
@@ -87,6 +88,66 @@ TxLog::getTxState(uint64_t cts)
         }
     }
     return TxEntry::TX_ALERT; // indicating not found here
+}
+
+static const char *txStateToStr(uint32_t txState)
+{
+    switch(txState) {
+    case TxEntry::TX_ALERT: return (const char*)"TX_ALERT";
+    case TxEntry::TX_PENDING: return (const char*)"TX_PENDING";
+    case TxEntry::TX_COMMIT: return (char const *)"TX_COMMIT";
+    case TxEntry::TX_CONFLICT: return (const char*)"TX_CONFLICT";
+    case TxEntry::TX_ABORT: return (const char*)"TX_ABORT";
+    }
+    assert(0);
+    return (const char*)"TX_UNKNOWN";
+}
+
+void
+TxLog::dump(int fd)
+{
+    uint32_t dlen;
+    TxLogTailer_t * tal;
+    size_t hdrsz = sizeof(TxLogTailer_t) + sizeof(TxLogHeader_t);
+    std::set<uint64_t> peerSet;
+
+    dprintf(fd, "Dumping TxLog backward\n\n");
+
+    // Search backward to find the latest matching Tx
+    size_t tail_off = size() - sizeof(TxLogTailer_t);;
+    while ((tail_off > 0) && (tal = (TxLogTailer_t*)log->getaddr (tail_off, &dlen))) {
+        tail_off -= tal->length; // next tail
+        assert(tal->sig == TX_LOG_TAIL_SIG);
+
+        inMemStream in((uint8_t*)tal - tal->length + hdrsz, dlen + tal->length - hdrsz);
+        TxEntry tx(0,0);
+        tx.deSerialize( in );
+
+        dprintf(fd, "CTS: %ld, TxState: %s, pStamp: %ld, sStamp: %ld\n",
+            tx.getCTS(), txStateToStr(tx.getTxState()), tx.getPStamp(), tx.getSStamp());
+
+        dprintf(fd, "\tpeerSet: ");
+        peerSet =   tx.getPeerSet();
+        for(std::set<uint64_t>::iterator it = peerSet.begin(); it != peerSet.end(); it++) {
+            uint64_t peer = *it;
+            dprintf(fd, "%ld, ", peer);
+        }
+        dprintf(fd, "\n");
+
+        KVLayout **writeSet = tx.getWriteSet().get();
+        dprintf(fd, "\twriteSet: %d entries\n", tx.getWriteSetSize());
+        for (uint32_t widx = 0; widx < tx.getWriteSetSize(); widx++) {
+            KVLayout *kv = writeSet[widx];
+            assert(kv);
+            dprintf(fd, "\t  key%02d: ", widx+1);
+            for (uint32_t kidx = 0; kidx < kv->k.keyLength; kidx++) { 
+                dprintf(fd, "%02X ", kv->k.key.get()[kidx]);
+            }
+            dprintf(fd, "\n");
+        }
+
+        dprintf(fd, "\n");
+    }
 }
 
 };

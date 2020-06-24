@@ -125,7 +125,7 @@ class ClusterTimeService {
     } nt_pair_t;
 
     typedef struct {
-        uint32_t idx;                 // Ping-pong index. Eiter 0 or 1.
+        volatile uint32_t idx;        // Ping-pong index. Eiter 0 or 1.
         nt_pair_t nt[2];
     } ts_tracker_t;
 

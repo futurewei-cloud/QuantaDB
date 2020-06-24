@@ -22,7 +22,12 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
   distributedTxSet(*new DistributedTxSet()),
   activeTxSet(*new ActiveTxSet()),
   peerInfo(*new PeerInfo()),
-  concludeQueue(*new ConcludeQueue()) {
+  concludeQueue(*new ConcludeQueue()),
+#ifdef  DSSNTXRECOVERY
+  txLog(*new TxLog(true)) {
+#else
+  txLog(*new TxLog(false)) {
+#endif
     // Fixme: may need to use TBB to pin the threads to specific cores LATER
     if (!isUnderTest) {
         serializeThread = std::thread(&Validator::serialize, this);
@@ -281,6 +286,12 @@ Validator::serialize() {
                  * task, then we should add tx to active tx set here.
                  */
 
+                if (txEntry->getCTS() == 0) {
+                    //This feature may allow tx client to do without a clock
+                    txEntry->setCTS(clock.getClusterTime());
+                    counters.ctsSets++;
+                }
+
                 validateLocalTx(*txEntry);
 
                 if (conclude(*txEntry)) {
@@ -355,6 +366,8 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         //Clearly the commit intent will be aborted -- the client should not even have
         //initiated, and we should not further burden the pipeline.
         counters.trivialAborts++;
+        txEntry->setTxState(TxEntry::TX_ABORT);
+        txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
         return false;
     }
 
@@ -362,12 +375,9 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         //single-shard tx
         if (!localTxQueue.add(txEntry)) {
             counters.busyAborts++;
+            txEntry->setTxState(TxEntry::TX_ABORT);
+            txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
             return false;
-        }
-        if (txEntry->getCTS() == 0) {
-            //This feature may allow tx client to do without a clock
-            txEntry->setCTS(clock.getClusterTime());
-            counters.ctsSets++;
         }
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
         counters.queuedLocalTxs++;
@@ -375,6 +385,8 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         //cross-shard tx
         if (!reorderQueue.insert(txEntry->getCTS(), txEntry)) {
             counters.busyAborts++;
+            txEntry->setTxState(TxEntry::TX_ABORT);
+            txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
             return false;
         }
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
@@ -447,6 +459,33 @@ void
 Validator::sendTxCommitReply(TxEntry *txEntry) {
     if (rpcService)
         rpcService->sendTxCommitReply(txEntry);
+}
+
+bool
+Validator::log(TxEntry *txEntry) {
+    return txLog.add(txEntry);
+}
+
+bool
+Validator::recover() {
+    uint64_t it = 0;
+    DSSNMeta meta;
+    TxEntry *txEntry = new TxEntry(0, 0);
+    if (txLog.getFirstPendingTx(it, meta, txEntry->getPeerSet(),
+            txEntry->getWriteSet())) {
+        insertTxEntry(txEntry);
+        counters.recovers++;
+        txEntry = new TxEntry(0, 0);
+        while (txLog.getNextPendingTx(it, it, meta, txEntry->getPeerSet(),
+                txEntry->getWriteSet())) {
+            insertTxEntry(txEntry);
+            counters.recovers++;
+            txEntry = new TxEntry(0, 0);
+        }
+    }
+    delete txEntry;
+
+    return true;
 }
 
 } // end Validator class

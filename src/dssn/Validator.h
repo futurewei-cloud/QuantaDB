@@ -19,6 +19,7 @@
 #include "ClusterTimeService.h"
 #include "DistributedTxSet.h"
 #include "DSSNService.h"
+#include "TxLog.h"
 
 namespace DSSN {
 
@@ -41,6 +42,7 @@ struct Counters {
     uint64_t precommitReads = 0;
     uint64_t precommitWrites = 0;
     uint64_t commitIntents = 0;
+    uint64_t recovers = 0;
     uint64_t trivialAborts = 0;
     uint64_t busyAborts = 0;
     uint64_t ctsSets = 0;
@@ -75,6 +77,7 @@ class Validator {
     ActiveTxSet &activeTxSet;
     PeerInfo &peerInfo;
 	ConcludeQueue &concludeQueue;
+	TxLog &txLog;
     ClusterTimeService clock;
     uint64_t lastScheduledTxCTS = 0;
     //LATER DependencyMatrix blockedTxSet;
@@ -111,6 +114,9 @@ class Validator {
 
     // handle garbage collection
     void peer();
+
+    // reconstruct meta data from tx log
+    bool recover();
 
     PUBLIC:
 
@@ -150,6 +156,9 @@ class Validator {
     // used for obtaining clock value in nanosecond unit
     uint64_t getClockValue();
     uint64_t convertStampToClockValue(uint64_t timestamp);
+
+    // used for logging commit intents
+    bool log(TxEntry *txEntry);
 
     // for unit testing, triggering a run of functions without using threads
     bool testRun();

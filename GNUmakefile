@@ -24,6 +24,9 @@ ONLOAD_DIR ?= /usr/local/openonload-201405
 #set to yes to enable DSSN style of transaction
 DSSNTX ?= yes
 
+# set to yes to enable DSSN start in recovery mode
+DSSNTXRECOVERY ?= no
+
 ## Create a separate build directory for each git branch and for each arch
 OBJSUFFIX := $(shell git symbolic-ref -q HEAD | \
 	       sed -e s,refs/heads/,.,)
@@ -80,6 +83,10 @@ endif
 
 ifeq ($(DSSNTX), yes)
 COMFLAGS += -DDSSNTX
+endif
+
+ifeq ($(DSSNTXRECOVERY), yes)
+COMFLAGS += -DDSSNTXRECOVERY
 endif
 
 # Google sanitizers are not compatible with each other, so only apply one at a
