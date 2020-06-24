@@ -168,7 +168,11 @@ class RamCloud {
 
     void poll();
     uint64_t getCTS() {
-        return sequencer.getCTS();
+        uint64_t cts = 0;
+#if DSSNTX
+        cts = sequencer.getCTS();
+#endif
+	return cts;
     }
     explicit RamCloud(CommandLineOptions* options);
     explicit RamCloud(Context* context);
@@ -195,7 +199,9 @@ class RamCloud {
      * DSSN Sequencer.
      * It is used to assign the commit transaction timestamp (CTS)
      */
+#if DSSNTX
     DSSN::Sequencer sequencer;
+#endif
 
   public:
     /**

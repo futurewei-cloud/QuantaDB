@@ -297,7 +297,7 @@ TEST_F(ServiceTest, sendReply) {
         }
         usleep(1000);
     }
-    EXPECT_EQ((Transport::ServerRpc*) NULL, manager->busyThreads[0]->rpc);
+    EXPECT_EQ((RpcHandle*) NULL, manager->busyThreads[0]->rpc);
     EXPECT_EQ(Worker::POSTPROCESSING, manager->busyThreads[0]->state.load());
     EXPECT_EQ("serverReply: 0x10009 4 5", transport.outputLog);
     service.gate = 3;

@@ -425,7 +425,7 @@ TEST_F(WorkerManagerTest, workerMain_goToSleep) {
     EXPECT_EQ(Worker::SLEEPING, worker->state.load());
 
     // Make sure that the worker can be woken up.
-    EXPECT_EQ(static_cast<Transport::ServerRpc*>(NULL), worker->rpc);
+    EXPECT_EQ(static_cast<RpcHandle*>(NULL), worker->rpc);
     manager2->handleRpc(new MockTransport::MockServerRpc(
             &transport, "0x10000 3 4"));
     manager2.destroy();

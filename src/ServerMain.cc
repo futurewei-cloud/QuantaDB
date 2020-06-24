@@ -270,17 +270,28 @@ main(int argc, char *argv[])
             DIE("Can't specify both -B and -M options");
 
         if (masterOnly) {
+#if DSSNTX
             config.services = {WireFormat::MASTER_SERVICE,
                                WireFormat::ADMIN_SERVICE,
 			       WireFormat::DSSN_SERVICE};
+#else
+	    config.services = {WireFormat::MASTER_SERVICE,
+                               WireFormat::ADMIN_SERVICE};
+#endif
         } else if (backupOnly) {
             config.services = {WireFormat::BACKUP_SERVICE,
                                WireFormat::ADMIN_SERVICE};
         } else {
+#if DSSNTX
             config.services = {WireFormat::MASTER_SERVICE,
                                WireFormat::BACKUP_SERVICE,
                                WireFormat::ADMIN_SERVICE,
 	                       WireFormat::DSSN_SERVICE};
+#else
+	    config.services = {WireFormat::MASTER_SERVICE,
+                               WireFormat::BACKUP_SERVICE,
+                               WireFormat::ADMIN_SERVICE};
+#endif
         }
 
         const string localLocator = optionParser.options.getLocalLocator();

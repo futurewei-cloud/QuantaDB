@@ -54,8 +54,13 @@ struct ServerConfig {
         : coordinatorLocator()
         , localLocator()
         , clusterName("__unnamed__")
+#if DSSNTX
         , services{WireFormat::MASTER_SERVICE, WireFormat::BACKUP_SERVICE,
                    WireFormat::ADMIN_SERVICE, WireFormat::DSSN_SERVICE}
+#else
+        , services{WireFormat::MASTER_SERVICE, WireFormat::BACKUP_SERVICE,
+                   WireFormat::ADMIN_SERVICE}
+#endif
         , preferredIndex(0)
         , detectFailures(false)
         , pinMemory(false)
@@ -78,8 +83,13 @@ struct ServerConfig {
         : coordinatorLocator()
         , localLocator()
         , clusterName("__unnamed__")
+#if DSSNTX
         , services{WireFormat::MASTER_SERVICE, WireFormat::BACKUP_SERVICE,
 	           WireFormat::ADMIN_SERVICE, WireFormat::DSSN_SERVICE}
+#else
+        , services{WireFormat::MASTER_SERVICE, WireFormat::BACKUP_SERVICE,
+	           WireFormat::ADMIN_SERVICE}
+#endif
         , preferredIndex(0)
         , detectFailures(true)
         , pinMemory(true)
