@@ -239,10 +239,12 @@ class DLog {
             remain -= tmp->hdr->dsize;
             tmp = tmp->next;
         }
-        if (!tmp) {
+
+        if (!tmp || (size() == 0)) {
             *len = 0;
-            return NULL; // off is beyond the log size
+            return NULL; // log is empty or off is beyond the log size
         }
+
         *len = tmp->hdr->dsize - remain;
         return (char *)tmp->maddr + tmp->hdr->offset + remain;  
     }
