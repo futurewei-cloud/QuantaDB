@@ -36,7 +36,16 @@ class TxLogRecoveryTest : public ::testing::Test {
 
 TEST_F(TxLogTest, TxLogUnitTest)
 {
+    uint64_t idOut;
+    DSSNMeta meta;
+    std::set<uint64_t> peerSet;
+    boost::scoped_array<KVLayout*> writeSet;
+
     EXPECT_EQ(txlog.size(), (size_t)0);
+
+    bool ret = txlog.getFirstPendingTx(idOut, meta, peerSet, writeSet);
+
+    EXPECT_EQ(ret, false);
 
     KVLayout kv(32);
     snprintf((char *)kv.getKey().key.get(), 32, "txlog-dump-key");
@@ -63,11 +72,7 @@ TEST_F(TxLogTest, TxLogUnitTest)
         EXPECT_EQ(txlog.getTxState(idx), tx_state);
     }
 
-    uint64_t idOut;
-    DSSNMeta meta;
-    std::set<uint64_t> peerSet;
-    boost::scoped_array<KVLayout*> writeSet;
-    bool ret = txlog.getFirstPendingTx(idOut, meta, peerSet, writeSet);
+    ret = txlog.getFirstPendingTx(idOut, meta, peerSet, writeSet);
 
     EXPECT_EQ(ret, true);
     EXPECT_EQ(meta.pStamp, (uint64_t)0);
