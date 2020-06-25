@@ -23,7 +23,11 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
   activeTxSet(*new ActiveTxSet()),
   peerInfo(*new PeerInfo()),
   concludeQueue(*new ConcludeQueue()),
-  txLog(*new TxLog()) {
+#ifdef  DSSNTXRECOVERY
+  txLog(*new TxLog(true)) {
+#else
+  txLog(*new TxLog(false)) {
+#endif
     // Fixme: may need to use TBB to pin the threads to specific cores LATER
     if (!isUnderTest) {
         serializeThread = std::thread(&Validator::serialize, this);

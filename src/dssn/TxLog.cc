@@ -46,6 +46,9 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
     uint64_t off = idIn;
     TxLogHeader_t * hdr;
 
+    if (log->size() == 0)
+        return false;
+
     while ((hdr = (TxLogHeader_t*)log->getaddr (off, &dlen))) {
         assert(hdr->sig == TX_LOG_HEAD_SIG);
         off += hdr->length;
@@ -104,6 +107,20 @@ TxLog::fabricate(uint64_t cts, uint8_t *key, uint32_t keyLength, uint8_t *value,
     return add(&txEntry);
 }
 
+static const char *txStateToStr(uint32_t txState)
+{
+    switch(txState) {
+    case TxEntry::TX_ALERT: return (const char*)"TX_ALERT";
+    case TxEntry::TX_PENDING: return (const char*)"TX_PENDING";
+    case TxEntry::TX_COMMIT: return (char const *)"TX_COMMIT";
+    case TxEntry::TX_CONFLICT: return (const char*)"TX_CONFLICT";
+    case TxEntry::TX_ABORT: return (const char*)"TX_ABORT";
+    case TxEntry::TX_FABRICATED: return (const char*)"TX_FABRICATED";
+    }
+    assert(0);
+    return (const char*)"TX_UNKNOWN";
+}
+
 void
 TxLog::dump(int fd)
 {
@@ -111,7 +128,6 @@ TxLog::dump(int fd)
     TxLogTailer_t * tal;
     size_t hdrsz = sizeof(TxLogTailer_t) + sizeof(TxLogHeader_t);
     std::set<uint64_t> peerSet;
-    // boost::scoped_array<KVLayout*> writeSet;
 
     dprintf(fd, "Dumping TxLog backward\n\n");
 
@@ -122,33 +138,33 @@ TxLog::dump(int fd)
         assert(tal->sig == TX_LOG_TAIL_SIG);
 
         inMemStream in((uint8_t*)tal - tal->length + hdrsz, dlen + tal->length - hdrsz);
-        TxEntry tx(1,1);
-        tx.deSerialize_common( in );
+        TxEntry tx(0,0);
+        tx.deSerialize( in );
 
-        peerSet =   tx.getPeerSet();
-        dprintf(fd, "CTS: %ld, TxState: %d, pStamp: %ld, sStamp: %ld\n", tx.getCTS(), tx.getTxState(), tx.getPStamp(), tx.getSStamp());
+        dprintf(fd, "CTS: %ld, TxState: %s, pStamp: %ld, sStamp: %ld\n",
+            tx.getCTS(), txStateToStr(tx.getTxState()), tx.getPStamp(), tx.getSStamp());
 
         dprintf(fd, "\tpeerSet: ");
+        peerSet =   tx.getPeerSet();
         for(std::set<uint64_t>::iterator it = peerSet.begin(); it != peerSet.end(); it++) {
             uint64_t peer = *it;
             dprintf(fd, "%ld, ", peer);
         }
         dprintf(fd, "\n");
 
-        // writeSet.reset(new KVLayout*[tx.getWriteSetIndex()]);
-        // memcpy(writeSet.get(), tx.getWriteSet().get(), sizeof(KVLayout*) * tx.getWriteSetIndex()); 
-
-        uint32_t writeSetSize = tx.getWriteSetIndex();
         KVLayout **writeSet = tx.getWriteSet().get();
-        dprintf(fd, "\twriteSet: %d entries\n", writeSetSize);
-        for (uint32_t widx = 0; widx < writeSetSize; widx++) {
+        dprintf(fd, "\twriteSet: %d entries\n", tx.getWriteSetSize());
+        for (uint32_t widx = 0; widx < tx.getWriteSetSize(); widx++) {
             KVLayout *kv = writeSet[widx];
-            dprintf(fd, "\t\t%d key: ", widx+1);
+            assert(kv);
+            dprintf(fd, "\t  key%02d: ", widx+1);
             for (uint32_t kidx = 0; kidx < kv->k.keyLength; kidx++) { 
-                dprintf(fd, "%02X ", kv->k.key[kidx]);
+                dprintf(fd, "%02X ", kv->k.key.get()[kidx]);
             }
             dprintf(fd, "\n");
         }
+
+        dprintf(fd, "\n");
     }
 }
 

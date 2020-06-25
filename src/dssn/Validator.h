@@ -79,7 +79,7 @@ static const uint32_t LOG_ERROR = 1u;
 static const uint32_t LOG_WARN = 2u;
 static const uint32_t LOG_INFO = 3u;
 static const uint32_t LOG_DEBUG = 4u;
-static const uint32_t LOG_ALWAYS = 5u;
+static const uint32_t LOG_ALWAYS = LOG_NONE;
 
 class Validator {
     PROTECTED:
@@ -99,7 +99,7 @@ class Validator {
     uint64_t lastScheduledTxCTS = 0;
     //LATER DependencyMatrix blockedTxSet;
     Counters counters;
-    uint32_t logLevel = LOG_DEBUG;
+    uint32_t logLevel = LOG_NONE;
 
     // threads
     std::thread schedulingThread;
@@ -188,7 +188,7 @@ class Validator {
     bool logTx(uint32_t currentLevel, TxEntry *txEntry);
 
     // used for setting debug logging level
-    void setLogLevel(uint32_t level) {logLevel = (level < LOG_ALWAYS) ? level : LOG_ALWAYS;}
+    void setLogLevel(uint32_t level) {logLevel = (level < LOG_DEBUG) ? level : LOG_DEBUG;}
 
     // for unit testing, triggering a run of functions without using threads
     bool testRun();

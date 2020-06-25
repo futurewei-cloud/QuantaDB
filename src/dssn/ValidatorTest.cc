@@ -460,7 +460,7 @@ TEST_F(ValidatorTest, BATLateDistributedTxs) {
 
     freeTxEntry(size);
 }
-/*
+
 TEST_F(ValidatorTest, BATRecover) {
     int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     size = 20;
@@ -473,8 +473,7 @@ TEST_F(ValidatorTest, BATRecover) {
     freeTxEntry(size);
 }
 
-
-
+/*
 TEST_F(ValidatorTest, BATDependencyMatrix) {
 	fillTxEntry(35, 20, 2); //35 txs of 20 keys and 2 peers
 

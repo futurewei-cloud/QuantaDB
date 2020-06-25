@@ -2,8 +2,7 @@
  *
  * All rights are reserved.
  */
-
-
+#include <iostream>
 #include "TxEntry.h"
 #include "MurmurHash3.h"
 
@@ -74,10 +73,10 @@ TxEntry::serializeSize()
         sz += sizeof(commitIntentState);
 
         // writeSet
-        sz += sizeof(writeSetSize);
-        for (uint32_t i = 0; i < writeSetSize; i++) {
-    	    assert (writeSet[i]);
-            sz += writeSet[i]->serializeSize();
+        sz += sizeof(uint32_t);
+        for (uint32_t i = 0; i < getWriteSetSize(); i++) {
+            if (writeSet[i])
+                sz += writeSet[i]->serializeSize();
         }
 
         // peerSet
@@ -97,10 +96,16 @@ TxEntry::serialize( outMemStream& out )
     if(txState == TX_PENDING) {
         out.write(&commitIntentState, sizeof(commitIntentState));
 
+        // count writeSet #entry
+        uint32_t nWriteSet = 0;
+        for (uint32_t i = 0; i < getWriteSetSize(); i++) {
+            if (writeSet[i])
+                nWriteSet++;
+        }
+
         // writeSet
-        out.write(&writeSetIndex, sizeof(writeSetSize));
-        for (uint32_t i = 0; i < writeSetSize; i++) {
-            //KVLayout *kv = writeSet[i];
+        out.write(&nWriteSet, sizeof(nWriteSet));
+        for (uint32_t i = 0; i < nWriteSet; i++) {
             assert (writeSet[i]);
             writeSet[i]->serialize(out);
         }
@@ -127,13 +132,16 @@ TxEntry::deSerialize_common( inMemStream& in )
 void
 TxEntry::deSerialize_additional( inMemStream& in )
 {
+    uint32_t nWriteSet;
+
     in.read(&commitIntentState, sizeof(commitIntentState));
 
     // writeSet
-    in.read(&writeSetIndex, sizeof(writeSetIndex));
-    writeSetSize = writeSetIndex;
-	writeSet.reset(new KVLayout *[writeSetIndex]);
-    for (uint32_t i = 0; i < writeSetIndex; i++) {
+    in.read(&nWriteSet, sizeof(nWriteSet));
+    writeSetSize = nWriteSet;
+    writeSetIndex = nWriteSet;
+	writeSet.reset(new KVLayout *[nWriteSet]);
+    for (uint32_t i = 0; i < nWriteSet; i++) {
     	KVLayout* kv = new KVLayout(0);
         kv->deSerialize(in);
         writeSet[i] = kv;
