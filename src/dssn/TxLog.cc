@@ -46,9 +46,6 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
     uint64_t off = idIn;
     TxLogHeader_t * hdr;
 
-    if (log->size() == 0)
-        return false;
-
     while ((hdr = (TxLogHeader_t*)log->getaddr (off, &dlen))) {
         assert(hdr->sig == TX_LOG_HEAD_SIG);
         off += hdr->length;
