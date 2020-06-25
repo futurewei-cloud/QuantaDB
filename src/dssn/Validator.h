@@ -20,6 +20,7 @@
 #include "DistributedTxSet.h"
 #include "DSSNService.h"
 #include "TxLog.h"
+#include <stdarg.h>
 
 namespace DSSN {
 
@@ -64,6 +65,22 @@ struct Counters {
     uint64_t commitDeletes = 0;
 };
 
+/*enum LogLevel {
+    LOG_NONE = 0u,
+    LOG_ERROR = 1u,
+    LOG_WARN,
+    LOG_INFO,
+    LOG_DEBUG,
+    LOG_ALWAYS = 5u,
+};*/
+
+static const uint32_t LOG_NONE = 0u;
+static const uint32_t LOG_ERROR = 1u;
+static const uint32_t LOG_WARN = 2u;
+static const uint32_t LOG_INFO = 3u;
+static const uint32_t LOG_DEBUG = 4u;
+static const uint32_t LOG_ALWAYS = 5u;
+
 class Validator {
     PROTECTED:
 
@@ -82,6 +99,7 @@ class Validator {
     uint64_t lastScheduledTxCTS = 0;
     //LATER DependencyMatrix blockedTxSet;
     Counters counters;
+    uint32_t logLevel = LOG_DEBUG;
 
     // threads
     std::thread schedulingThread;
@@ -89,7 +107,6 @@ class Validator {
     std::thread peeringThread;
 
     // all SSN data maintenance operations
-    bool updateTxPStampSStamp(TxEntry& txEntry); //Fixme: to be called by peer info sender also
     bool updateKVReadSetPStamp(TxEntry& txEntry);
     bool updateKVWriteSet(TxEntry& txEntry);
 
@@ -117,6 +134,13 @@ class Validator {
 
     // reconstruct meta data from tx log
     bool recover();
+
+    // put counters values into tx log, depending on log level
+    bool logCounters();
+
+    // put arbitrary message into tx log, depending on log level
+    /// (3,4) is used because there is implicit 'this' parameter in argument list
+    bool logMessage(uint32_t level, const char* fmt, ...) __attribute__ ((format (gnu_printf, 3, 4)));
 
     PUBLIC:
 
@@ -149,6 +173,9 @@ class Validator {
     void replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
     void sendTxCommitReply(TxEntry *txEntry);
 
+    // calculate sstamp and pstamp using local read/write sets
+    bool updateTxPStampSStamp(TxEntry& txEntry);
+
     // used for invoking RPCs
     void sendSSNInfo(TxEntry *txEntry);
     void requestSSNInfo(TxEntry *txEntry, uint64_t targetPeerId);
@@ -157,8 +184,11 @@ class Validator {
     uint64_t getClockValue();
     uint64_t convertStampToClockValue(uint64_t timestamp);
 
-    // used for logging commit intents
-    bool log(TxEntry *txEntry);
+    // put commit intent into tx log, depending on log level
+    bool logTx(uint32_t currentLevel, TxEntry *txEntry);
+
+    // used for setting debug logging level
+    void setLogLevel(uint32_t level) {logLevel = (level < LOG_ALWAYS) ? level : LOG_ALWAYS;}
 
     // for unit testing, triggering a run of functions without using threads
     bool testRun();

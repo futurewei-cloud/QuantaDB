@@ -114,7 +114,10 @@ class TxEntry {
         /// Transaction has inconsistent commit and abort decisions among the peers.
         /// It is supposed to expose software bugs and require manual recovery because
         /// no new transactions involving its read/write sets can/should proceed.
-        TX_CONFLICT = 5
+        TX_CONFLICT = 5,
+
+        /// Indicator of a fabricated tx entry for logging purpose
+        TX_FABRICATED = 99
     };
 
     TxEntry(uint32_t readSetSize, uint32_t writeSetSize);

@@ -17,7 +17,7 @@ TxEntry::TxEntry(uint32_t _readSetSize, uint32_t _writeSetSize) {
 	cts = 0;
 	writeSetSize = _writeSetSize;
 	readSetSize = _readSetSize;
-	readSetIndex = this->writeSetIndex = 0;
+	readSetIndex = writeSetIndex = 0;
 	writeSet.reset(new KVLayout *[writeSetSize]);
 	writeSetHash.reset(new uint64_t[writeSetSize]);
 	writeSetInStore.reset(new KVLayout *[writeSetSize]);
@@ -74,8 +74,8 @@ TxEntry::serializeSize()
         sz += sizeof(commitIntentState);
 
         // writeSet
-        sz += sizeof(writeSetIndex);
-        for (uint32_t i = 0; i < writeSetIndex; i++) {
+        sz += sizeof(writeSetSize);
+        for (uint32_t i = 0; i < writeSetSize; i++) {
     	    assert (writeSet[i]);
             sz += writeSet[i]->serializeSize();
         }
@@ -98,8 +98,8 @@ TxEntry::serialize( outMemStream& out )
         out.write(&commitIntentState, sizeof(commitIntentState));
 
         // writeSet
-        out.write(&writeSetIndex, sizeof(writeSetIndex));
-        for (uint32_t i = 0; i < writeSetIndex; i++) {
+        out.write(&writeSetIndex, sizeof(writeSetSize));
+        for (uint32_t i = 0; i < writeSetSize; i++) {
             //KVLayout *kv = writeSet[i];
             assert (writeSet[i]);
             writeSet[i]->serialize(out);

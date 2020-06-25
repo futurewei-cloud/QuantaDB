@@ -90,6 +90,20 @@ TxLog::getTxState(uint64_t cts)
     return TxEntry::TX_ALERT; // indicating not found here
 }
 
+bool
+TxLog::fabricate(uint64_t cts, uint8_t *key, uint32_t keyLength, uint8_t *value, uint32_t valueLength)
+{
+    TxEntry txEntry(0,1);
+    txEntry.setCTS(cts);
+    txEntry.setTxState(TxEntry::TX_FABRICATED);
+    KVLayout kvLayout(keyLength);
+    std::memcpy(kvLayout.getKey().key.get(), key, keyLength);
+    kvLayout.v.valuePtr = value;
+    kvLayout.v.valueLength = valueLength;
+    txEntry.insertWriteSet(&kvLayout, 0);
+    return add(&txEntry);
+}
+
 void
 TxLog::dump(int fd)
 {

@@ -23,7 +23,7 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
   activeTxSet(*new ActiveTxSet()),
   peerInfo(*new PeerInfo()),
   concludeQueue(*new ConcludeQueue()),
-  txLog(*new TxLog(true)) {
+  txLog(*new TxLog()) {
     // Fixme: may need to use TBB to pin the threads to specific cores LATER
     if (!isUnderTest) {
         serializeThread = std::thread(&Validator::serialize, this);
@@ -260,6 +260,11 @@ Validator::scheduleDistributedTxs() {
             lastScheduledTxCTS = txEntry->getCTS();
         }
     } while (!isUnderTest);
+
+    //log counters every 10s
+    if ((clock.getLocalTime() / 1000000000) % 10 == 0) {
+        logCounters();
+    }
 }
 
 void
@@ -291,6 +296,7 @@ Validator::serialize() {
                 validateLocalTx(*txEntry);
 
                 if (conclude(*txEntry)) {
+                    logTx(LOG_DEBUG, txEntry); //for debugging only, not for recovery
                     localTxQueue.remove(it);
                 }
             }
@@ -458,11 +464,6 @@ Validator::sendTxCommitReply(TxEntry *txEntry) {
 }
 
 bool
-Validator::log(TxEntry *txEntry) {
-    return txLog.add(txEntry);
-}
-
-bool
 Validator::recover() {
     uint64_t it = 0;
     DSSNMeta meta;
@@ -482,6 +483,64 @@ Validator::recover() {
     delete txEntry;
 
     return true;
+}
+
+bool
+Validator::logCounters() {
+    if (logLevel < LOG_INFO)
+        return false;
+    char key[] = {1};
+    char val[2048];
+    int c = 0;
+    int s = sizeof(val);
+    c += snprintf(val + c, s - c, "initialWrites:%lu, ", counters.initialWrites);
+    c += snprintf(val + c, s - c, "rejectedWrites:%lu, ", counters.rejectedWrites);
+    c += snprintf(val + c, s - c, "precommitReads:%lu, ", counters.precommitReads);
+    c += snprintf(val + c, s - c, "commitIntents:%lu, ", counters.commitIntents);
+    c += snprintf(val + c, s - c, "recovers:%lu, ", counters.recovers);
+    c += snprintf(val + c, s - c, "trivialAborts:%lu, ", counters.trivialAborts);
+    c += snprintf(val + c, s - c, "busyAborts:%lu, ", counters.busyAborts);
+    c += snprintf(val + c, s - c, "ctsSets:%lu, ", counters.ctsSets);
+    c += snprintf(val + c, s - c, "earlyPeers:%lu, ", counters.earlyPeers);
+    c += snprintf(val + c, s - c, "queuedDistributedTxs:%lu, ", counters.queuedDistributedTxs);
+    c += snprintf(val + c, s - c, "queuedLocalTxs:%lu, ", counters.queuedLocalTxs);
+    c += snprintf(val + c, s - c, "precommitReadErrors:%lu, ", counters.precommitReadErrors);
+    c += snprintf(val + c, s - c, "precommitWriteErrors:%lu, ", counters.precommitWriteErrors);
+    c += snprintf(val + c, s - c, "preputErrors:%lu, ", counters.preputErrors);
+    c += snprintf(val + c, s - c, "lateScheduleErrors:%lu, ", counters.lateScheduleErrors);
+    c += snprintf(val + c, s - c, "readVersionErrors:%lu, ", counters.readVersionErrors);
+    c += snprintf(val + c, s - c, "concludeErrors:%lu, ", counters.concludeErrors);
+    c += snprintf(val + c, s - c, "commitMetaErrors:%lu, ", counters.commitMetaErrors);
+    c += snprintf(val + c, s - c, "commits:%lu, ", counters.commits);
+    c += snprintf(val + c, s - c, "aborts:%lu, ", counters.aborts);
+    c += snprintf(val + c, s - c, "commitReads:%lu, ", counters.commitReads);
+    c += snprintf(val + c, s - c, "commitWrites:%lu, ", counters.commitWrites);
+    c += snprintf(val + c, s - c, "commitOverwrites:%lu, ", counters.commitOverwrites);
+    c += snprintf(val + c, s - c, "commitDeletes:%lu, ", counters.commitDeletes);
+
+    return txLog.fabricate(clock.getClusterTime(), (uint8_t *)key, (uint32_t)sizeof(key),
+            (uint8_t *)val, (uint32_t)strlen(val) + 1);
+}
+
+bool
+Validator::logTx(uint32_t currentLevel, TxEntry *txEntry) {
+    if (logLevel < currentLevel)
+        return false;
+    return txLog.add(txEntry);
+}
+
+bool
+Validator::logMessage(uint32_t currentLevel, const char* fmt, ...) {
+    if (logLevel < currentLevel)
+        return false;
+    char key[] = {2};
+    char val[2048];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(val, sizeof(val), fmt, args);
+    va_end(args);
+    return txLog.fabricate(clock.getClusterTime(), (uint8_t *)key, (uint32_t)sizeof(key),
+            (uint8_t *)val, (uint32_t)strlen(val) + 1);
 }
 
 } // end Validator class

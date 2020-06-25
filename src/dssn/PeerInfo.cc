@@ -104,7 +104,7 @@ PeerInfo::evaluate(PeerEntry *peerEntry, uint8_t peerTxState, TxEntry *txEntry, 
     //By now the tuples should have successfully been preput into the KV store, so
     //logging the CI conclusion is considered sealing a tx commit.
     if (txEntry->getTxCIState() == TxEntry::TX_CI_CONCLUDED
-            && validator->log(txEntry)) {
+            && validator->logTx(LOG_ALWAYS, txEntry)) {
         txEntry->setTxCIState(TxEntry::TX_CI_SEALED);
         assert(validator->insertConcludeQueue(txEntry));
         validator->sendTxCommitReply(txEntry);
@@ -161,8 +161,10 @@ PeerInfo::send(Validator *validator) {
         if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
             std::lock_guard<std::mutex> lock(peerEntry->mutexForPeerUpdate);
 
+            validator->updateTxPStampSStamp(*txEntry);
+
             //log CI before sending
-            if (validator->log(txEntry)) {
+            if (validator->logTx(LOG_ALWAYS, txEntry)) {
                 assert(txEntry->getTxState() == TxEntry::TX_PENDING);
                 validator->sendSSNInfo(txEntry);
                 txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
