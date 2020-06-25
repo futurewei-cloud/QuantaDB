@@ -34,7 +34,7 @@ TEST_F(StatusTest, statusToString) {
             statusToString(STATUS_WRONG_VERSION));
     EXPECT_TRUE(statusToString(Status(STATUS_MAX_VALUE)) !=
                     statusToString(Status(STATUS_MAX_VALUE + 1)));
-    EXPECT_STREQ("unrecognized Status (34)",
+    EXPECT_STREQ("unrecognized Status (35)",
             statusToString(Status(STATUS_MAX_VALUE+1)));
 }
 
