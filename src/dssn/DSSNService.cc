@@ -360,8 +360,10 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
     uint32_t numRequests = reqHdr->count;
     uint32_t reqOffset = sizeof32(*reqHdr);
     respHdr->count = numRequests;
-    TxEntry* txEntry = NULL;
-    uint32_t writeSetIndex = 0;
+    uint32_t index = 0;
+    TxEntry* txEntry = new TxEntry(0, numRequests);
+    RpcHandle* handle = rpc->enableAsync();
+    txEntry->setRpcHandle(handle);
 
     // Each iteration extracts one request from the rpc, writes the object
     // if possible, and appends a status and version to the response buffer.
@@ -372,14 +374,18 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
 
         if (currentReq == NULL) {
             respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
-            break;
+            handle->sendReplyAsync();
+            delete txEntry;
+            return;
         }
 
         reqOffset += sizeof32(WireFormat::MultiOp::Request::WritePart);
 
         if (rpc->requestPayload->size() < reqOffset + currentReq->length) {
             respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
-            break;
+            handle->sendReplyAsync();
+            delete txEntry;
+            return;
         }
 
         WireFormat::MultiOp::Response::WritePart* currentResp =
@@ -396,25 +402,12 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
         const void* pVal = object.getValue(&pValLen);
         const void* pKey = object.getKey(0, &pKeyLen);
 
-        KVLayout pkv(pKeyLen + sizeof(tableId)); //make room composite key in KVStore
+        KVLayout pkv(pKeyLen + sizeof(tableId)); //make room for composite key in KVStore
         std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
         std::memcpy(pkv.getKey().key.get() + sizeof(tableId), pKey, pKeyLen);
         pkv.v.valueLength = pValLen;
         pkv.v.valuePtr = (uint8_t*)const_cast<void*>(pVal);
 
-#if 0 //to be removed during clean-up
-        if (validator->initialWrite(pkv)) {
-            currentResp->status = STATUS_OK;
-        } else {
-            currentResp->status = STATUS_INTERNAL_ERROR;
-        }
-#else
-        //prepare one multi-write local tx
-        if (txEntry == NULL) {
-            txEntry = new TxEntry(0, numRequests);
-	    RpcHandle* handle = rpc->enableAsync();
-            txEntry->setRpcHandle(handle);
-        }
         if (pValLen == 0) {
             pkv.getVLayout().isTombstone = true;
         } else {
@@ -423,16 +416,14 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
         }
         KVLayout *nkv = kvStore->preput(pkv);
         if (nkv != NULL) {
-            txEntry->insertWriteSet(nkv, writeSetIndex++);
+            txEntry->insertWriteSet(nkv, index++);
             currentResp->status = STATUS_OK;
         } else {
-            delete txEntry;
             respHdr->common.status = STATUS_INTERNAL_ERROR;
-	    RpcHandle *handle = static_cast<RpcHandle *>(txEntry->getRpcHandle());
             handle->sendReplyAsync();
+            delete txEntry;
             return;
         }
-#endif
 
         // ---- write one object done ----
 
@@ -443,9 +434,6 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
     // that the response can go back in a single RPC.
     assert(rpc->replyPayload->size() <= Transport::MAX_RPC_LEN);
 
-#if 0 //to be removed during clean-up
-    rpc->sendReply();
-#else
     if (validator->insertTxEntry(txEntry)) {
 
         while (validator->testRun()) {
@@ -454,11 +442,9 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
         }
         return; //delay reply
     }
-    delete txEntry;
     respHdr->common.status = STATUS_INTERNAL_ERROR;
-    RpcHandle *handle = static_cast<RpcHandle *>(txEntry->getRpcHandle());
     handle->sendReplyAsync();
-#endif
+    delete txEntry;
 }
 
 void
@@ -544,11 +530,6 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     // std::string v((const char*)pVal, (uint32_t)pValLen);
     // std::cout << "write: key: " << k << " vallen: " << pValLen << " val: " << v << std::endl; 
 
-#if 0 //to be removed during clean-up
-    if (!validator->initialWrite(pkv)) {
-        respHdr->common.status = STATUS_INTERNAL_ERROR;
-    }
-#else
     //prepare a single write local tx
     TxEntry *txEntry = new TxEntry(0, 1);
     RpcHandle* handle = rpc->enableAsync();
@@ -571,10 +552,9 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
             return; //delay reply
         }
     }
-    delete txEntry;
     respHdr->common.status = STATUS_INTERNAL_ERROR;
     handle->sendReplyAsync();
-#endif
+    delete txEntry;
 }
 
 void
@@ -805,8 +785,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
         }
         respHdr->vote = WireFormat::TxPrepare::ABORT;
     }
-    delete txEntry;
     handle->sendReplyAsync(); //optional but can make send quicker
+    delete txEntry;
 }
 
 void

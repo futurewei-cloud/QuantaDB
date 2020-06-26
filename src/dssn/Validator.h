@@ -74,12 +74,12 @@ struct Counters {
     LOG_ALWAYS = 5u,
 };*/
 
-static const uint32_t LOG_NONE = 0u;
+static const uint32_t LOG_BASELINE = 0u;
 static const uint32_t LOG_ERROR = 1u;
 static const uint32_t LOG_WARN = 2u;
 static const uint32_t LOG_INFO = 3u;
 static const uint32_t LOG_DEBUG = 4u;
-static const uint32_t LOG_ALWAYS = LOG_NONE;
+static const uint32_t LOG_ALWAYS = LOG_BASELINE;
 
 class Validator {
     PROTECTED:
@@ -99,7 +99,7 @@ class Validator {
     uint64_t lastScheduledTxCTS = 0;
     //LATER DependencyMatrix blockedTxSet;
     Counters counters;
-    uint32_t logLevel = LOG_NONE;
+    uint32_t logLevel = LOG_BASELINE;
 
     // threads
     std::thread schedulingThread;

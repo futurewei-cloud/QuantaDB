@@ -522,8 +522,10 @@ Validator::logCounters() {
     c += snprintf(val + c, s - c, "commitOverwrites:%lu, ", counters.commitOverwrites);
     c += snprintf(val + c, s - c, "commitDeletes:%lu, ", counters.commitDeletes);
 
+    assert(s >= c);
+    assert(strlen(val) < sizeof(val));
     return txLog.fabricate(clock.getClusterTime(), (uint8_t *)key, (uint32_t)sizeof(key),
-            (uint8_t *)val, (uint32_t)strlen(val) + 1);
+            (uint8_t *)val, sizeof(val) /*(uint32_t)strlen(val) + 1*/);
 }
 
 bool

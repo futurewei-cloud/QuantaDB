@@ -17,16 +17,21 @@ TxEntry::TxEntry(uint32_t _readSetSize, uint32_t _writeSetSize) {
 	writeSetSize = _writeSetSize;
 	readSetSize = _readSetSize;
 	readSetIndex = writeSetIndex = 0;
-	writeSet.reset(new KVLayout *[writeSetSize]);
-	writeSetHash.reset(new uint64_t[writeSetSize]);
-	writeSetInStore.reset(new KVLayout *[writeSetSize]);
-	readSet.reset(new KVLayout *[readSetSize]);
-	readSetHash.reset(new uint64_t[readSetSize]);
-	readSetInStore.reset(new KVLayout *[readSetSize]);
-	for (uint32_t i = 0; i < writeSetSize; i++)
-		writeSet[i] = writeSetInStore[i] = NULL;
-	for (uint32_t i = 0; i < readSetSize; i++)
-		readSet[i] = readSetInStore[i] = NULL;
+	if (writeSetSize > 0) {
+	    writeSet.reset(new KVLayout *[writeSetSize]);
+	    writeSetHash.reset(new uint64_t[writeSetSize]);
+	    writeSetInStore.reset(new KVLayout *[writeSetSize]);
+	    for (uint32_t i = 0; i < writeSetSize; i++)
+	        writeSet[i] = writeSetInStore[i] = NULL;
+	}
+	if (readSetSize > 0) {
+	    readSet.reset(new KVLayout *[readSetSize]);
+	    readSetHash.reset(new uint64_t[readSetSize]);
+	    readSetInStore.reset(new KVLayout *[readSetSize]);
+	    for (uint32_t i = 0; i < readSetSize; i++)
+	        readSet[i] = readSetInStore[i] = NULL;
+	}
+
 	rpcHandle = NULL;
 }
 
@@ -49,6 +54,7 @@ TxEntry::~TxEntry() {
 
 bool
 TxEntry::insertReadSet(KVLayout* kv, uint32_t i) {
+    assert(i < readSetSize);
 	readSet[i] = kv;
 	uint64_t indexes[2];
 	RAMCloud::MurmurHash3_x64_128(kv->k.key.get(), kv->k.keyLength, 0, indexes);
@@ -58,6 +64,7 @@ TxEntry::insertReadSet(KVLayout* kv, uint32_t i) {
 
 bool
 TxEntry::insertWriteSet(KVLayout* kv, uint32_t i) {
+    assert(i < writeSetSize);
 	writeSet[i] = kv;
 	uint64_t indexes[2];
 	RAMCloud::MurmurHash3_x64_128(kv->k.key.get(), kv->k.keyLength, 0, indexes);
@@ -69,7 +76,7 @@ uint32_t
 TxEntry::serializeSize()
 {
     uint32_t sz = sizeof(cts) + sizeof(txState) + sizeof(pstamp) + sizeof(sstamp);
-    if (txState == TX_PENDING) {
+    if (txState == TX_PENDING || txState == TX_FABRICATED) {
         sz += sizeof(commitIntentState);
 
         // writeSet
@@ -93,7 +100,7 @@ TxEntry::serialize( outMemStream& out )
     out.write(&txState, sizeof(txState));
     out.write(&pstamp,  sizeof(pstamp));
     out.write(&sstamp,  sizeof(sstamp));
-    if(txState == TX_PENDING) {
+    if (txState == TX_PENDING || txState == TX_FABRICATED) {
         out.write(&commitIntentState, sizeof(commitIntentState));
 
         // count writeSet #entry
@@ -139,7 +146,6 @@ TxEntry::deSerialize_additional( inMemStream& in )
     // writeSet
     in.read(&nWriteSet, sizeof(nWriteSet));
     writeSetSize = nWriteSet;
-    writeSetIndex = nWriteSet;
 	writeSet.reset(new KVLayout *[nWriteSet]);
     for (uint32_t i = 0; i < nWriteSet; i++) {
     	KVLayout* kv = new KVLayout(0);
@@ -162,7 +168,7 @@ void
 TxEntry::deSerialize( inMemStream& in )
 {
     deSerialize_common( in );
-    if (txState == TX_PENDING) {
+    if (txState == TX_PENDING || txState == TX_FABRICATED) {
         deSerialize_additional( in );
     }
 }

@@ -138,19 +138,19 @@ TxLog::dump(int fd)
         TxEntry tx(0,0);
         tx.deSerialize( in );
 
-        dprintf(fd, "CTS: %ld, TxState: %s, pStamp: %ld, sStamp: %ld\n",
+        dprintf(fd, "CTS: %lu, TxState: %s, pStamp: %lu, sStamp: %lu\n",
             tx.getCTS(), txStateToStr(tx.getTxState()), tx.getPStamp(), tx.getSStamp());
 
         dprintf(fd, "\tpeerSet: ");
         peerSet =   tx.getPeerSet();
         for(std::set<uint64_t>::iterator it = peerSet.begin(); it != peerSet.end(); it++) {
             uint64_t peer = *it;
-            dprintf(fd, "%ld, ", peer);
+            dprintf(fd, "%lu, ", peer);
         }
         dprintf(fd, "\n");
 
         KVLayout **writeSet = tx.getWriteSet().get();
-        dprintf(fd, "\twriteSet: %d entries\n", tx.getWriteSetSize());
+        dprintf(fd, "\twriteSet:\n");
         for (uint32_t widx = 0; widx < tx.getWriteSetSize(); widx++) {
             KVLayout *kv = writeSet[widx];
             assert(kv);
@@ -159,6 +159,9 @@ TxLog::dump(int fd)
                 dprintf(fd, "%02X ", kv->k.key.get()[kidx]);
             }
             dprintf(fd, "\n");
+            if (tx.getTxState() == TxEntry::TX_FABRICATED) {
+                dprintf(fd, "%s\n", kv->v.valuePtr);
+            }
         }
 
         dprintf(fd, "\n");
