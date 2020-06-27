@@ -360,14 +360,13 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
     uint32_t numRequests = reqHdr->count;
     uint32_t reqOffset = sizeof32(*reqHdr);
     respHdr->count = numRequests;
-    uint32_t index = 0;
     TxEntry* txEntry = new TxEntry(0, numRequests);
     RpcHandle* handle = rpc->enableAsync();
     txEntry->setRpcHandle(handle);
 
     // Each iteration extracts one request from the rpc, writes the object
     // if possible, and appends a status and version to the response buffer.
-    for (uint32_t i = 0; i < numRequests; i++) {
+    for (uint32_t index = 0; index < numRequests; index++) {
         const WireFormat::MultiOp::Request::WritePart *currentReq =
                 rpc->requestPayload->getOffset<
                 WireFormat::MultiOp::Request::WritePart>(reqOffset);
@@ -416,7 +415,7 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
         }
         KVLayout *nkv = kvStore->preput(pkv);
         if (nkv != NULL) {
-            txEntry->insertWriteSet(nkv, index++);
+            txEntry->insertWriteSet(nkv, index);
             currentResp->status = STATUS_OK;
         } else {
             respHdr->common.status = STATUS_INTERNAL_ERROR;
@@ -435,12 +434,13 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
     assert(rpc->replyPayload->size() <= Transport::MAX_RPC_LEN);
 
     if (validator->insertTxEntry(txEntry)) {
-
-        while (validator->testRun()) {
+        if (validator->testRun()) {
+            //reply already sent in testRun(), free memory now
             delete txEntry;
-            break;
+            return;
         }
-        return; //delay reply
+
+        return; //delay reply and freeing memory
     }
     respHdr->common.status = STATUS_INTERNAL_ERROR;
     handle->sendReplyAsync();
@@ -544,12 +544,13 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     if (nkv != NULL) {
         txEntry->insertWriteSet(nkv, 0);
         if (validator->insertTxEntry(txEntry)) {
-
-            while (validator->testRun()) {
+            if (validator->testRun()) {
+                //reply already sent in testRun(), free memory now
                 delete txEntry;
-                break;
+                return;
             }
-            return; //delay reply
+
+            return; //delay reply and freeing memory
         }
     }
     respHdr->common.status = STATUS_INTERNAL_ERROR;
@@ -774,14 +775,13 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 
     if (respHdr->common.status == STATUS_OK) {
         if (validator->insertTxEntry(txEntry)) {
-
-            while (validator->testRun()) {
+            if (validator->testRun()) {
+                //reply already sent in testRun(), free memory now
                 delete txEntry;
-                //Fixme: deal with cross-shard tx unit test later with conditional break
-                break;
+                return;
             }
 
-            return; //delay reply
+            return; //delay reply and freeing memory
         }
         respHdr->vote = WireFormat::TxPrepare::ABORT;
     }

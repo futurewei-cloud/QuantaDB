@@ -99,7 +99,7 @@ class Validator {
     uint64_t lastScheduledTxCTS = 0;
     //LATER DependencyMatrix blockedTxSet;
     Counters counters;
-    uint32_t logLevel = LOG_BASELINE;
+    uint32_t logLevel = LOG_DEBUG;
 
     // threads
     std::thread schedulingThread;
