@@ -46,10 +46,13 @@ class TxLog {
     bool getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet, boost::scoped_array<KVLayout*> &writeSet);
 
     // Return data size of TxLog
-    size_t size() { return log->size(); }
+    inline size_t size() { return log->size(); }
 
-    // Clear TxLog
-    void clear() { log->trim(0); }
+    // Clear TxLog. Remove all chunk files.
+    inline void clear() { log->cleanup(); }
+
+    // Trim
+    inline void trim(size_t off = 0) { log->trim(off); }
 
     // For debugging. Dump log content to file descriptor 'fd'
     void dump(int fd);
