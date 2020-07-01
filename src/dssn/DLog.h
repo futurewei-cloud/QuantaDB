@@ -187,7 +187,7 @@ class DLog {
     // Trim Log content from the beginning for length bytes. 
     // If length == 0, trim all.
     // Return trim'ed size.
-    uint64_t trim (uint64_t length)
+    uint64_t trim (uint64_t length = 0)
     {
         mtx.lock();
         if (length == 0)

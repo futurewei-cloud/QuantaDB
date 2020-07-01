@@ -12,7 +12,7 @@ namespace DSSN {
  * Logged data can later be referenced by its <logid, offset>.
  */
 class DataLog {
-    private:
+  private:
     // private struct
     typedef struct DataLogMarker {
         #define LOG_HEAD_SIG 0xA5A5F0F0
@@ -29,7 +29,7 @@ class DataLog {
     DLog<DATALOG_CHUNK_SIZE> *log;
     uint32_t datalog_id;
 
-    public:
+  public:
     DataLog(uint32_t logid = 0) : datalog_id(logid)
     {
         char logdir[strlen(DATALOG_DIR)];
@@ -40,7 +40,7 @@ class DataLog {
     }
 
     // Add data blob to the log.
-    // // Return log offset
+    // Return log offset of the data
     uint64_t add(const void* dblob, size_t dlen)
     {
         uint64_t logoff;
@@ -56,6 +56,12 @@ class DataLog {
         return logoff + sizeof(TxLogHeader_t);
     }
 
+    uint64_t add(std::string& str)
+    {
+        return add(str.data(), str.length());
+    }
+
+    // Given an offset (which was return by add()), return the memory address of the data.
     void* getdata(uint64_t offset, uint32_t *len /*Out*/)
     {
         TxLogHeader_t *hdr = (TxLogHeader_t*)log->getaddr(offset - sizeof(TxLogHeader_t), len);
@@ -73,16 +79,16 @@ class DataLog {
     }
 
     // Return logid
-    uint32_t logid() { return datalog_id; }
+    inline uint32_t logid() { return datalog_id; }
 
     // Return data size of DataLog
-    size_t size() { return log->size(); }
+    inline size_t size() { return log->size(); }
 
-    // Clear TxLog
-    void clear() { log->cleanup(); }
+    // Cleanup (remove) DataLog
+    inline void clear() { log->cleanup(); }
 
     // Trim
-    void trim(size_t off) { log->trim(off); }
+    inline void trim(size_t off = 0) { log->trim(off); }
 
 }; // DataLog
 
