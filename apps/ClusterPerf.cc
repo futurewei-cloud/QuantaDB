@@ -5956,7 +5956,7 @@ tpcc()
             }
 
             RAMCLOUD_LOG(NOTICE, "== Result of client %d ==", i);
-            RAMCLOUD_LOG(NOTICE, "type  latency  committed   aborted");
+            RAMCLOUD_LOG(NOTICE, "type  latency(usec)  committed   aborted");
             for (int t = 0; t < 5; ++t) {
                 RAMCLOUD_LOG(NOTICE, "[%d] %7.2f | %5d (%2.2f) | %5d",
                     t,
@@ -5980,7 +5980,7 @@ tpcc()
 	for (int t = 0; t < 5; ++t) {
 	    RAMCLOUD_LOG(NOTICE, "[%d]   %6d     |    %2.2f    |     %7.2f",
 			 t,
-			 (txDone[t] + txAbort[t]) / period,
+			 static_cast<int32_t>(txDone[t] / (txTotalLatency[t]/(1e6))),
 			 static_cast<double>(100 * txDone[t]) / (txDone[t] + txAbort[t]),
 			 txTotalLatency[t] / txDone[t]);
 	    allTxDone += txDone[t];
@@ -5991,7 +5991,7 @@ tpcc()
 	RAMCLOUD_LOG(NOTICE, "======== Total TPCC Transaction Rate =========");
 	RAMCLOUD_LOG(NOTICE, "tx_rate     committed(%%)   latency");
 	RAMCLOUD_LOG(NOTICE, "  %6d     |    %2.2f       |   %7.2f   ",
-		     (allTxDone + allTxAbort) / period,
+		     static_cast<int32_t>(allTxDone / (allLatencyTotal/1e6)),
 		     static_cast<double>(100 * allTxDone) / (allTxDone + allTxAbort),
 		     allLatencyTotal/allTxDone);
 
@@ -6002,7 +6002,7 @@ tpcc()
         printf("%5d  %8d      %8.3f ",
                 //numServers,
                 numClients-1,
-                allNewOrderTxDone / period,
+	        static_cast<int32_t>(allNewOrderTxDone / (allNewOrderLatencyTotal/1e6)),
                 allNewOrderLatencyTotal / allNewOrderTxDone);
         for (int i = 0; i < numTlbNodes; ++i) {
             if (i > 0) {

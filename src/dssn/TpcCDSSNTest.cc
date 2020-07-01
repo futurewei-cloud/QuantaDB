@@ -660,13 +660,15 @@ void TpcCTest::simulate() {
         sum += txPerformedCount[i];
     }
 
+    printf("type | tx_rate(tx/sec)  | committed (%) | latency (usec) | Number of TXs (%) \n");
     for (int i = 0; i < 5; ++i) {
-        printf("[%d] %7.2f | %5d (%2.2f) | %5d\n",
-                i,
-                cumulativeLatency[i] / txPerformedCount[i],
-                txPerformedCount[i],
-                static_cast<double>(100 * txPerformedCount[i]) / sum,
-                txAbortCount[i]);
+        printf("[%d]  |   %7.2f         |   %2.2f       |  %7.2f         | %7d (%2.2f)\n",
+	       i,
+	       static_cast<double>(txPerformedCount[i]*1e06)/cumulativeLatency[i],
+	       100.0 - static_cast<double>(txAbortCount[i]*100)/txPerformedCount[i],
+	       cumulativeLatency[i] / txPerformedCount[i],
+	       txPerformedCount[i],
+	       static_cast<double>(txPerformedCount[i]*100)/sum);
     }
 }
 
