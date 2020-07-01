@@ -23,7 +23,7 @@ TxLog::add(TxEntry *txEntry)
     TxLogHeader_t hdr = {TX_LOG_HEAD_SIG, totalsz};
     TxLogTailer_t tal = {TX_LOG_TAIL_SIG, totalsz};
 
-    void *dst = log->reserve(totalsz, NULL);
+    void *dst = log->reserve(totalsz);
     outMemStream out((uint8_t*)dst, totalsz);
     out.write(&hdr, sizeof(hdr));
     txEntry->serialize( out );
