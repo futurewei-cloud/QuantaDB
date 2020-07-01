@@ -231,7 +231,7 @@ class DLog {
 
     // Return log buffer address at offset 'off'.
     // The output argument 'len' stores continuous buffer length
-    void * getaddr (uint64_t off, uint32_t *len)
+    void * getaddr (uint64_t off, uint32_t *len = NULL)
     {
         chunk_t * tmp = chunk_head;
         uint64_t remain = off;
@@ -248,7 +248,8 @@ class DLog {
             return NULL; // log is empty or off is beyond the log size
         }
 
-        *len = tmp->hdr->dsize - remain;
+        if (len)
+            *len = tmp->hdr->dsize - remain;
         return (char *)tmp->maddr + tmp->hdr->bgn_off + remain;
     }
 
