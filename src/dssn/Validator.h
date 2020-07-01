@@ -57,6 +57,7 @@ struct Counters {
     uint64_t readVersionErrors = 0;
     uint64_t concludeErrors = 0;
     uint64_t commitMetaErrors = 0;
+    uint64_t alertRequests = 0;
     uint64_t commits = 0;
     uint64_t aborts = 0;
     uint64_t commitReads = 0;
