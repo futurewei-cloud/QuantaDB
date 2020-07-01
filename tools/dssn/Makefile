@@ -8,7 +8,8 @@ CFLAGS = -I$(TOP)/src/dssn -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TO
 %.o:$(TOP)/src/dssn/%.cc
 	g++ -c $(CFLAGS) $< -o $@
 
-all: txlog datalog
+TARGETS = txlog datalog
+all: $(TARGETS)
 
 txlog.o: txlog.cc
 	g++ -c $(CFLAGS) $< -o $@
@@ -23,4 +24,4 @@ datalog: datalog.o
 	g++ -o $@ $^
 
 clean:
-	rm -rf txlog_dumper *.o core
+	rm -rf txlog_dumper *.o core $(TARGETS)
