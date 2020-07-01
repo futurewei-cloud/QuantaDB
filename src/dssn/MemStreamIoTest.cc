@@ -80,10 +80,10 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
 
         KVLayout *kv = kvStore.preput(kvbuf);
 
-        tx1.insertWriteSet(kv, tx1.writeSetIndex++);
+        tx1.insertWriteSet(kv, idx);
     }
 
-    EXPECT_EQ(tx1.writeSetIndex, (uint32_t)WRITESET_SIZE);
+    EXPECT_EQ(tx1.getWriteSetSize(), (uint32_t)WRITESET_SIZE);
 
     tx1.txState = TxEntry::TX_PENDING;
     tx1.commitIntentState = TxEntry::TX_CI_SCHEDULED;
@@ -98,13 +98,13 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
 
     EXPECT_EQ(tx1.getTxState(), tx2.getTxState());
     EXPECT_EQ(tx1.getTxCIState(), tx2.getTxCIState());
-    EXPECT_EQ(tx1.writeSetIndex, tx2.writeSetIndex);
+    EXPECT_EQ(tx1.getWriteSetSize(), tx2.getWriteSetSize());
 
 
     KVLayout **writeSet1 = tx1.getWriteSet().get();
     KVLayout **writeSet2 = tx2.getWriteSet().get();
 
-    for(uint32_t idx = 0; idx < tx2.getWriteSetIndex(); idx++) {
+    for(uint32_t idx = 0; idx < tx2.getWriteSetSize(); idx++) {
         KVLayout *kv1 = writeSet1[idx],
                  *kv2 = writeSet2[idx];
         EXPECT_EQ(kv1->k, kv2->k);

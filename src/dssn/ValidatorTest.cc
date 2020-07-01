@@ -465,6 +465,8 @@ TEST_F(ValidatorTest, BATRecover) {
     int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     size = 20;
 
+    validator.txLog.clear();
+
     fillTxEntry(size, 20, 3); //3 participants
 
     validator.recover();
@@ -472,7 +474,6 @@ TEST_F(ValidatorTest, BATRecover) {
 
     freeTxEntry(size);
 }
-
 
 /*
 TEST_F(ValidatorTest, BATDependencyMatrix) {

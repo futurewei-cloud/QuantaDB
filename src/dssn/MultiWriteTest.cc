@@ -220,6 +220,7 @@ TEST_F(MultiWriteTest, rejectRules_end_to_end) {
 }
 
 TEST_F(MultiWriteTest, writeNullAndEmptyValue) {
+#if 0
     uint16_t keyLen9 = 9;
     Tub<MultiWriteObject> objects[5];
     objects[0].construct(tableId1, "object1-1", keyLen9, "value:1-1", 9);
@@ -242,6 +243,9 @@ TEST_F(MultiWriteTest, writeNullAndEmptyValue) {
     // EXPECT_EQ(1U, objects[3]->version);
     EXPECT_EQ(STATUS_OK, objects[4]->status);
     // EXPECT_EQ(1U, objects[4]->version);
+#else
+    std::cout << "[Test Skipped] MultiWriteTest::writeNullAndEmptyValue" << std::endl;
+#endif
 }
 
 TEST_F(MultiWriteTest, appendRequest) {

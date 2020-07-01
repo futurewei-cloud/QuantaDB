@@ -46,9 +46,6 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
     uint64_t off = idIn;
     TxLogHeader_t * hdr;
 
-    if (log->size() == 0)
-        return false;
-
     while ((hdr = (TxLogHeader_t*)log->getaddr (off, &dlen))) {
         assert(hdr->sig == TX_LOG_HEAD_SIG);
         off += hdr->length;
@@ -93,6 +90,22 @@ TxLog::getTxState(uint64_t cts)
     return TxEntry::TX_ALERT; // indicating not found here
 }
 
+bool
+TxLog::fabricate(uint64_t cts, uint8_t *key, uint32_t keyLength, uint8_t *value, uint32_t valueLength)
+{
+    TxEntry *txEntry = new TxEntry(0,1);
+    txEntry->setCTS(cts);
+    txEntry->setTxState(TxEntry::TX_FABRICATED);
+    KVLayout *kvLayout = new KVLayout(keyLength);
+    std::memcpy(kvLayout->getKey().key.get(), key, keyLength);
+    kvLayout->v.valuePtr = value;
+    kvLayout->v.valueLength = valueLength;
+    txEntry->insertWriteSet(kvLayout, 0);
+    add(txEntry);
+    delete txEntry;
+    return true;
+}
+
 static const char *txStateToStr(uint32_t txState)
 {
     switch(txState) {
@@ -101,6 +114,7 @@ static const char *txStateToStr(uint32_t txState)
     case TxEntry::TX_COMMIT: return (char const *)"TX_COMMIT";
     case TxEntry::TX_CONFLICT: return (const char*)"TX_CONFLICT";
     case TxEntry::TX_ABORT: return (const char*)"TX_ABORT";
+    case TxEntry::TX_FABRICATED: return (const char*)"TX_FABRICATED";
     }
     assert(0);
     return (const char*)"TX_UNKNOWN";
@@ -126,19 +140,19 @@ TxLog::dump(int fd)
         TxEntry tx(0,0);
         tx.deSerialize( in );
 
-        dprintf(fd, "CTS: %ld, TxState: %s, pStamp: %ld, sStamp: %ld\n",
+        dprintf(fd, "CTS: %lu, TxState: %s, pStamp: %lu, sStamp: %lu\n",
             tx.getCTS(), txStateToStr(tx.getTxState()), tx.getPStamp(), tx.getSStamp());
 
         dprintf(fd, "\tpeerSet: ");
         peerSet =   tx.getPeerSet();
         for(std::set<uint64_t>::iterator it = peerSet.begin(); it != peerSet.end(); it++) {
             uint64_t peer = *it;
-            dprintf(fd, "%ld, ", peer);
+            dprintf(fd, "%lu, ", peer);
         }
         dprintf(fd, "\n");
 
         KVLayout **writeSet = tx.getWriteSet().get();
-        dprintf(fd, "\twriteSet: %d entries\n", tx.getWriteSetSize());
+        dprintf(fd, "\twriteSet:\n");
         for (uint32_t widx = 0; widx < tx.getWriteSetSize(); widx++) {
             KVLayout *kv = writeSet[widx];
             assert(kv);
@@ -147,6 +161,9 @@ TxLog::dump(int fd)
                 dprintf(fd, "%02X ", kv->k.key.get()[kidx]);
             }
             dprintf(fd, "\n");
+            if (tx.getTxState() == TxEntry::TX_FABRICATED) {
+                dprintf(fd, "%s\n", kv->v.valuePtr);
+            }
         }
 
         dprintf(fd, "\n");
