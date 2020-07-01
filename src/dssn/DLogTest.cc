@@ -75,6 +75,7 @@ TEST_F(DLogTest, DLogUnitTest)
     }
 
     log->trim(0); // trim all
+    EXPECT_EQ(log->size(), (uint64_t)0);
 }
 
 TEST_F(DLogBench, DLogBench) {
