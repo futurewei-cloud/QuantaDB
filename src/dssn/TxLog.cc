@@ -131,7 +131,7 @@ TxLog::dump(int fd)
     dprintf(fd, "Dumping TxLog backward\n\n");
 
     // Search backward to find the latest matching Tx
-    size_t tail_off = size() - sizeof(TxLogTailer_t);;
+    int64_t tail_off = size() - sizeof(TxLogTailer_t);;
     while ((tail_off > 0) && (tal = (TxLogTailer_t*)log->getaddr (tail_off, &dlen))) {
         tail_off -= tal->length; // next tail
         assert(tal->sig == TX_LOG_TAIL_SIG);
