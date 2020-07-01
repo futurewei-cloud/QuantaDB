@@ -3,6 +3,8 @@
  */
 #pragma once
 
+#include <iostream>
+#include "MemStreamIo.h"
 #include "Common.h"
 #include "DLog.h"
 
@@ -18,8 +20,8 @@ class DataLog {
         #define LOG_HEAD_SIG 0xA5A5F0F0
         #define LOG_TAIL_SIG 0xF0F0A5A5
         uint32_t sig;   // signature
-        uint32_t length;// Tx log record size, include header and tailer
-    } TxLogHeader_t, TxLogTailer_t;
+        uint32_t length;// log record size, include header and tailer
+    } LogHeader_t, LogTailer_t;
 
     // Defines 
     #define DATALOG_DIR   "/dev/shm/datalog-%03d"
@@ -44,16 +46,16 @@ class DataLog {
     uint64_t add(const void* dblob, size_t dlen)
     {
         uint64_t logoff;
-        uint32_t totalsz = dlen + sizeof(TxLogHeader_t) + sizeof(TxLogTailer_t);
-        TxLogHeader_t hdr = {LOG_HEAD_SIG, totalsz};
-        TxLogTailer_t tal = {LOG_TAIL_SIG, totalsz};
+        uint32_t totalsz = dlen + sizeof(LogHeader_t) + sizeof(LogTailer_t);
+        LogHeader_t hdr = {LOG_HEAD_SIG, totalsz};
+        LogTailer_t tal = {LOG_TAIL_SIG, totalsz};
         
         void *dst = log->reserve(totalsz, &logoff);
         outMemStream out((uint8_t*)dst, totalsz);
         out.write(&hdr, sizeof(hdr));
         out.write(dblob, dlen);
         out.write(&tal, sizeof(tal));
-        return logoff + sizeof(TxLogHeader_t);
+        return logoff + sizeof(LogHeader_t);
     }
 
     uint64_t add(std::string& str)
@@ -64,7 +66,7 @@ class DataLog {
     // Given an offset (which was return by add()), return the memory address of the data.
     void* getdata(uint64_t offset, uint32_t *len /*Out*/)
     {
-        TxLogHeader_t *hdr = (TxLogHeader_t*)log->getaddr(offset - sizeof(TxLogHeader_t), len);
+        LogHeader_t *hdr = (LogHeader_t*)log->getaddr(offset - sizeof(LogHeader_t), len);
         if (!hdr) {
             *len = 0;
             return NULL;
@@ -74,7 +76,7 @@ class DataLog {
             *(int*)0 = 0;
 
         assert(hdr->length <= *len);
-        *len = hdr->length - sizeof(TxLogHeader_t) - sizeof(TxLogTailer_t);
+        *len = hdr->length - sizeof(LogHeader_t) - sizeof(LogTailer_t);
         return &hdr[1];
     }
 
@@ -84,12 +86,43 @@ class DataLog {
     // Return data size of DataLog
     inline size_t size() { return log->size(); }
 
-    // Cleanup (remove) DataLog
+    // Cleanup DataLog. Remove all chunk files.
     inline void clear() { log->cleanup(); }
 
     // Trim
     inline void trim(size_t off = 0) { log->trim(off); }
 
+    // For debugging. Dump log content to file descriptor 'fd'
+    void dump(int fd)
+    {
+        uint32_t dlen, ditem = 0;
+        LogTailer_t * tal;
+        size_t hdrsz = sizeof(LogTailer_t) + sizeof(LogHeader_t);
+
+        dprintf(fd, "Dumping DataLog backward. Log id: %d\n\n", datalog_id);
+
+        // Search backward to find the latest matching 
+        int64_t tail_off = size() - sizeof(LogTailer_t);;
+        while ((tail_off > 0) && (tal = (LogTailer_t*)log->getaddr ((uint64_t)tail_off))) {
+            assert(tal->sig == LOG_TAIL_SIG);
+
+            uint32_t data_len = tal->length - hdrsz;
+            uint64_t data_off = tail_off - data_len;
+            tail_off -= tal->length; // next tail
+
+            char *data = (char *)getdata(data_off, &dlen);
+            assert(dlen == data_len);
+
+            dprintf(fd, "%d. length: %d\n", ditem++, data_len);
+            dprintf(fd, "\t  Hex: ");
+            for (uint32_t ii = 0; ii < data_len && ii < 24; ii++) { dprintf(fd, "%02X ", data[ii]); }
+            dprintf(fd, "\n");
+
+            dprintf(fd, "\tAscii: ");
+            for (uint32_t ii = 0; ii < data_len && ii < 24; ii++) { dprintf(fd, "%c  ", data[ii]); }
+            dprintf(fd, "\n\n");
+        }
+    }
 }; // DataLog
 
 } // end namespace DSSN
