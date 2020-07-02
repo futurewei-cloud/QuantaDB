@@ -19,7 +19,7 @@ class DataLogTest : public ::testing::Test {
 
   HashmapKVStore kvStore;
 
-  DataLog *dlog = new DataLog(999);;
+  DataLog *dlog = new DataLog(0);;
 
   DISALLOW_COPY_AND_ASSIGN(DataLogTest);
 };

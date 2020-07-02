@@ -10,32 +10,52 @@
 
 namespace DSSN {
 /**
- * This class provides data logging service.
- * Logged data can later be referenced by its <logid, offset>.
+ * This class provides data logging services.
+ * Logged data can later be referenced by its address, i.e., <logid, offset>.
+ * Multiple instances of DataLog supported. Each instance is identified by a unique logid.
+ *
+ * Class constructor function takes an optional 'logid' argument. By default, logid is 1.
+ * Note that, logid 0 is reserved for unit test only.
+ *
+ * API Description
+ *
+ * uint64_t add (const void *blob, size_t len)
+ *      Add data 'blob' of size 'len' to the log.
+ *      Return offset to the log device where the data begins.
+ *
+ * uint64_t add (std::string& str)
+ *      String variation of the blob add.
+ *
+ * void * getdata(uint64_t offset, uint32_t *len = NULL)
+ *      Return the memory address of logged data. The 'offset' is what was returned by the add()
+ *      when data was logged via the add() API.
+ *      The 'len' argument, if not NULL, is where data length is returned.
+ *
+ * void clear()
+ *      Cleanup (remove) all data log files.
+ *
+ * void trim(uint64_t off)
+ *      Trim the log from the begining to 'off'.
+ *
+ * void dump(int fd)
+ *      Debugging dump to file descriptor 'fd'
  */
 class DataLog {
   private:
-    // private struct
-    typedef struct DataLogMarker {
-        #define LOG_HEAD_SIG 0xA5A5F0F0
-        #define LOG_TAIL_SIG 0xF0F0A5A5
-        uint32_t sig;   // signature
-        uint32_t length;// log record size, include header and tailer
-    } LogHeader_t, LogTailer_t;
-
     // Defines 
     #define DATALOG_DIR   "/dev/shm/datalog-%03d"
     #define DATALOG_CHUNK_SIZE (1024*1024*1024)
 
-    // private variables
-    DLog<DATALOG_CHUNK_SIZE> *log;
-    uint32_t datalog_id;
+    #define LOG_HEAD_SIG 0xA5A5F0F0
+    #define LOG_TAIL_SIG 0xF0F0A5A5
 
   public:
-    DataLog(uint32_t logid = 0) : datalog_id(logid)
+    DataLog(uint32_t logid = 1) : datalog_id(logid)
     {
         char logdir[strlen(DATALOG_DIR)];
-        assert(logid < 1000);
+        #ifndef  TESTING
+        assert(logid != 0); // logid 0 reserved for testing only
+        #endif
         sprintf(logdir, DATALOG_DIR, logid);
         std::string s(logdir);
         log = new DLog<DATALOG_CHUNK_SIZE>(s, true);
@@ -123,6 +143,18 @@ class DataLog {
             dprintf(fd, "\n\n");
         }
     }
+
+  private:
+    // private struct
+    typedef struct DataLogMarker {
+        uint32_t sig;   // signature
+        uint32_t length;// log record size, include header and tailer
+    } LogHeader_t, LogTailer_t;
+
+    // private variables
+    DLog<DATALOG_CHUNK_SIZE> *log;
+    uint32_t datalog_id;
+
 }; // DataLog
 
 } // end namespace DSSN
