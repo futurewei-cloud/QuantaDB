@@ -619,7 +619,7 @@ void TpcCTest::simulate() {
 
     for (int i = 0; i < 10000; ++i) {
         bool outcome = false;
-        int randNum = rand() % 100;
+        int randNum = 56;//rand() % 100;
         double latency = 0;
         int txType;
         try {
@@ -697,7 +697,9 @@ TEST_F(TpcCTest, runAllTests) {
     txDelivery();
     txStockLevel();
     //basic();
+    session1->clearStats();
     simulate();
+    session1->dumpStats();
 }
 
 }} // namespace TPCC namespace RAMCloud
