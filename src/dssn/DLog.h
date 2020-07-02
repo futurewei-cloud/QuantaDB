@@ -63,7 +63,7 @@ class DLog {
         uint8_t     version;// header version
         uint8_t     sealed; // bool
         uint32_t    fsize;  // chunk file size
-        uint32_t    offset; // data offset
+        uint32_t    bgn_off;// beginning offset of data
         uint32_t    dsize;  // data size
         uint32_t    seqno;
     } chunk_hdr_t;
@@ -133,14 +133,14 @@ class DLog {
     {
         uint64_t free_size = 0;
         for (chunk_t *tmp = chunk_tail; tmp; tmp = tmp->next) {
-            free_size += tmp->hdr->fsize - tmp->hdr->dsize - tmp->hdr->offset;
+            free_size += tmp->hdr->fsize - tmp->hdr->dsize - tmp->hdr->bgn_off;
         }
         return free_size;
     }
 
     // Reserve 'len' bytes append space in log.
     // Return starting address of the reserved (continuous) space.
-    void * reserve(uint32_t len, /* out */ uint64_t * offset = NULL )
+    void * reserve(uint32_t len, /* log offset out */ uint64_t * offset = NULL )
     {
         uint32_t oldsize;
         chunk_t * chunk;
@@ -152,20 +152,26 @@ class DLog {
                 } else {
                     add_new_chunk_file();
                 }
-            } else {
-                uint64_t max_oldsize = chunk->hdr->fsize - (len + sizeof(chunk_hdr_t));
-                if ((oldsize = chunk->hdr->dsize) > max_oldsize) {
-                    chunk->hdr->sealed = true; // insufficient space, sealed it.
-                } else if (__sync_bool_compare_and_swap(&chunk->hdr->dsize, oldsize, oldsize+len)) {
+                continue;
+            }
+
+            // If chunk free space too small, seal the chunk
+            uint64_t free_space = chunk->hdr->fsize - chunk->hdr->bgn_off - chunk->hdr->dsize;
+            if (free_space < len) {
+                chunk->hdr->sealed = true; // insufficient space, sealed it.
+                continue;
+            }
+
+            oldsize = chunk->hdr->dsize;;
+            if (__sync_bool_compare_and_swap(&chunk->hdr->dsize, oldsize, oldsize+len)) {
                     break; // done
-                }
             }
         } while (true);
 
         if (offset)
             *offset = chunk_offset(chunk) + oldsize;
 
-        return (char *)chunk->maddr + sizeof(chunk_hdr_t) + oldsize; 
+        return (char *)chunk->maddr + chunk->hdr->bgn_off + oldsize; 
     }
 
     // Append to log. Return log offset of the appended data.
@@ -181,7 +187,7 @@ class DLog {
     // Trim Log content from the beginning for length bytes. 
     // If length == 0, trim all.
     // Return trim'ed size.
-    uint64_t trim (uint64_t length)
+    uint64_t trim (uint64_t length = 0)
     {
         mtx.lock();
         if (length == 0)
@@ -190,16 +196,13 @@ class DLog {
         chunk_t * tmp, * old_head;
         tmp = old_head = chunk_head;
         while (tmp) {
-            if (!tmp->hdr->sealed) {
-                // can not trim unsealed chunk
-                break;
-            }
-            if (tmp->hdr->dsize > remain) {
-                tmp->hdr->offset += remain;
-                tmp->hdr->dsize  -= remain;
+            if (tmp->hdr->dsize >= remain) {
+                tmp->hdr->dsize -= remain;
+                tmp->hdr->bgn_off = (tmp->hdr->dsize == 0)? sizeof(chunk_hdr_t) : tmp->hdr->bgn_off + remain;
                 remain = 0;
                 break;
             }
+            assert(tmp->hdr->sealed);
             remain -= tmp->hdr->dsize;
             tmp = tmp->next;
         }
@@ -228,7 +231,7 @@ class DLog {
 
     // Return log buffer address at offset 'off'.
     // The output argument 'len' stores continuous buffer length
-    void * getaddr (uint64_t off, uint32_t *len)
+    void * getaddr (uint64_t off, uint32_t *len = NULL)
     {
         chunk_t * tmp = chunk_head;
         uint64_t remain = off;
@@ -245,8 +248,9 @@ class DLog {
             return NULL; // log is empty or off is beyond the log size
         }
 
-        *len = tmp->hdr->dsize - remain;
-        return (char *)tmp->maddr + tmp->hdr->offset + remain;  
+        if (len)
+            *len = tmp->hdr->dsize - remain;
+        return (char *)tmp->maddr + tmp->hdr->bgn_off + remain;
     }
 
     uint32_t read (uint64_t off, void *obuf, uint32_t len)
@@ -300,7 +304,7 @@ class DLog {
         hdr->seqno =    seqno;
         hdr->sealed =   false;
         hdr->dsize =    0;
-        hdr->offset =   sizeof(chunk_hdr_t);
+        hdr->bgn_off =  sizeof(chunk_hdr_t);
         hdr->fsize =    current_chunk_size;
 
         // Setup chunk_t
@@ -402,7 +406,7 @@ class DLog {
         mtx.unlock();
     }
 
-    // return starting offset of the chunk
+    // Return starting log offset of the chunk
     inline uint64_t chunk_offset(chunk_t *c)
     {
         chunk_t * tmp = chunk_head;

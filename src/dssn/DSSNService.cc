@@ -871,7 +871,7 @@ DSSNService::sendDSSNInfo(uint64_t cts, uint8_t txState, TxEntry *txEntry, bool 
     if (isSpecific) {
         Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
                 msg, length, *new ServerId(target));
-    } else {
+    } else if (txEntry != NULL) {
         std::set<uint64_t>::iterator it;
         for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
             Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,

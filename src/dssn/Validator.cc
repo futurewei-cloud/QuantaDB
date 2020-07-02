@@ -426,6 +426,7 @@ Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64
         //and then updating the peer entry.
         peerInfo.add(cts, NULL, this); //create a peer entry without commit intent txEntry
         peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this);
+        assert(txEntry == NULL);
         counters.earlyPeers++;
     }
     return txEntry;
@@ -439,14 +440,14 @@ Validator::replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t
     if (rpcService == NULL) //unit test may make rpcService NULL
         return;
 
-    //Fixme: if tx is already conlcuded and logged, provide the logged state
-    uint8_t txState = TxEntry::TX_ALERT;
+    //Fixme: if tx is already concluded and logged, provide the logged state
     TxEntry *txEntry = receiveSSNInfo(peerId, cts, pstamp, sstamp, peerTxState);
     if (txEntry) {
-        txState = txEntry->getTxState();
+        rpcService->sendDSSNInfo(cts, txEntry->getTxState(), txEntry, true, peerId);
+    } else {
+        //This is the case when the local CI has not been created or has been removed
+        rpcService->sendDSSNInfo(cts, TxEntry::TX_ALERT, NULL, true, peerId);
     }
-
-    rpcService->sendDSSNInfo(cts, txState, txEntry, true, peerId);
 }
 
 void
@@ -457,6 +458,7 @@ Validator::sendSSNInfo(TxEntry *txEntry) {
 
 void
 Validator::requestSSNInfo(TxEntry *txEntry, uint64_t targetPeerId) {
+    counters.alertRequests++;
     if (rpcService)
         rpcService->requestDSSNInfo(txEntry, true, targetPeerId);
 }
@@ -515,6 +517,7 @@ Validator::logCounters() {
     c += snprintf(val + c, s - c, "readVersionErrors:%lu, ", counters.readVersionErrors);
     c += snprintf(val + c, s - c, "concludeErrors:%lu, ", counters.concludeErrors);
     c += snprintf(val + c, s - c, "commitMetaErrors:%lu, ", counters.commitMetaErrors);
+    c += snprintf(val + c, s - c, "alertRequests:%lu, ", counters.alertRequests);
     c += snprintf(val + c, s - c, "commits:%lu, ", counters.commits);
     c += snprintf(val + c, s - c, "aborts:%lu, ", counters.aborts);
     c += snprintf(val + c, s - c, "commitReads:%lu, ", counters.commitReads);

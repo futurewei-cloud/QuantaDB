@@ -3,6 +3,10 @@
  */
 #pragma once
 
+#include <string.h>
+#include <assert.h>
+#include <vector>
+
 namespace DSSN {
 
 class inMemStream {

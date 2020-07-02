@@ -55,7 +55,7 @@ class PeerInfo {
     tbb::concurrent_unordered_map<CTS, PeerEntry *> peerInfo;
     std::mutex mutexForPeerAdd;
     uint64_t lastTick = 0;
-    uint64_t tickUnit = 10000000; //10ms per tick
+    uint64_t tickUnit = 1000000; //1ms per tick
     uint64_t alertThreshold = tickUnit; //arbitrary
 
     //evaluate the new states of the commit intent; caller is supposed to hold the mutex

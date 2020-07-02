@@ -353,6 +353,14 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 	freeTxEntry(5);
 }
 
+TEST_F(ValidatorTest, BATPeerInfoReceivedEarly) {
+    TxEntry *txEntry = validator.receiveSSNInfo(1 /*peerId*/,
+            123 /*CTS*/,
+            0, 0xfffffff, /*pstamp, sstamp*/
+            TxEntry::TX_PENDING);
+    EXPECT_EQ(true, txEntry == NULL);
+}
+
 TEST_F(ValidatorTest, BATValidateDistributedTxs) {
     int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     size = 20;

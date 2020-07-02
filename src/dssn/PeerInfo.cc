@@ -38,7 +38,7 @@ TxEntry*
 PeerInfo::getFirst(PeerInfoIterator &it) {
     it = peerInfo.begin();
     if (it != peerInfo.end()) {
-        return it->second->txEntry;
+        return it->second->txEntry; //this may or may not be NULL
     }
     return NULL;
 }
@@ -47,7 +47,7 @@ TxEntry*
 PeerInfo::getNext(PeerInfoIterator &it) {
     it++;
     if (it != peerInfo.end()) {
-        return it->second->txEntry;
+        return it->second->txEntry; //this may or may not be NULL
     }
     return NULL;
 }
@@ -125,19 +125,20 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp,
     it = peerInfo.find(cts);
     if (it != peerInfo.end()) {
         std::lock_guard<std::mutex> lock(it->second->mutexForPeerUpdate);
-        PeerEntry* entry = it->second;
-        entry->meta.pStamp = std::max(entry->meta.pStamp, pstamp);
-        entry->meta.sStamp = std::max(entry->meta.sStamp, sstamp);
-        entry->peerSeenSet.insert(peerId);
+        PeerEntry* peerEntry = it->second;
+        assert(peerEntry != NULL);
+        peerEntry->meta.pStamp = std::max(peerEntry->meta.pStamp, pstamp);
+        peerEntry->meta.sStamp = std::min(peerEntry->meta.sStamp, sstamp);
+        peerEntry->peerSeenSet.insert(peerId);
         if (peerTxState == TxEntry::TX_ALERT)
-            entry->peerAlertSet.insert(peerId);
+            peerEntry->peerAlertSet.insert(peerId);
         else
-            entry->peerAlertSet.erase(peerId);
+            peerEntry->peerAlertSet.erase(peerId);
         txEntry = it->second->txEntry;
         if (txEntry != NULL) {
-            txEntry->setPStamp(std::max(txEntry->getPStamp(), entry->meta.pStamp));
-            txEntry->setSStamp(std::min(txEntry->getSStamp(), entry->meta.sStamp));
-            evaluate(entry, peerTxState, txEntry, validator);
+            txEntry->setPStamp(std::max(txEntry->getPStamp(), peerEntry->meta.pStamp));
+            txEntry->setSStamp(std::min(txEntry->getSStamp(), peerEntry->meta.sStamp));
+            evaluate(peerEntry, peerTxState, txEntry, validator);
         }
         return true;
     }
@@ -151,12 +152,6 @@ PeerInfo::send(Validator *validator) {
     std::for_each(peerInfo.begin(), peerInfo.end(), [&] (const std::pair<CTS, PeerEntry *>& pr) {
         PeerEntry *peerEntry = pr.second;
         TxEntry* txEntry = pr.second->txEntry;
-        if ((txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING)
-                && ((nsTime - validator->convertStampToClockValue(txEntry->getCTS()))  > alertThreshold)) {
-            //make long-standing commit intent pursue recovery
-            std::lock_guard<std::mutex> lock(peerEntry->mutexForPeerUpdate);
-            txEntry->setTxState(TxEntry::TX_ALERT);
-        }
 
         if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
             std::lock_guard<std::mutex> lock(peerEntry->mutexForPeerUpdate);
@@ -169,6 +164,13 @@ PeerInfo::send(Validator *validator) {
                 validator->sendSSNInfo(txEntry);
                 txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
             }
+        }
+
+        if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING
+                && txEntry->getTxState() != TxEntry::TX_ALERT
+                && nsTime - validator->convertStampToClockValue(txEntry->getCTS()) > alertThreshold) {
+            std::lock_guard<std::mutex> lock(peerEntry->mutexForPeerUpdate);
+            txEntry->setTxState(TxEntry::TX_ALERT);
         }
 
         if (txEntry->getTxState() == TxEntry::TX_ALERT) {
