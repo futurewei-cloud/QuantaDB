@@ -57,7 +57,7 @@ struct BindTransport : public Transport {
 
     explicit BindTransport(Context* context)
         : context(context), servers(), abortCounter(0), errorMessage(),
-          serverRpcPool()
+          cRpcProcCpuCycle{0}, totalRpcs{0}, serverRpcPool()
     { }
 
     string
@@ -139,6 +139,11 @@ struct BindTransport : public Transport {
             Worker w(NULL);
 	    serverRpc->clear();
             w.rpc = &RpcHandle;
+	    const WireFormat::RequestCommon* header = request->getStart<WireFormat::RequestCommon>();
+	    uint32_t opcode = WireFormat::ILLEGAL_RPC_TYPE;
+	    if (header && header->opcode < WireFormat::ILLEGAL_RPC_TYPE) {
+	        opcode = header->opcode;
+	    }
 	    // Transfer the request buffer to serverRpc
 	    Buffer* req = &serverRpc->requestPayload;
 	    Buffer* rsp = &serverRpc->replyPayload;
@@ -160,12 +165,14 @@ struct BindTransport : public Transport {
                 transport.errorMessage = "";
                 return;
             }
+	    uint64_t start = Cycles::rdtsc();
             Service::handleRpc(context, &rpc);
 	    //For async processing, wait for processing function to generate reply
 	    if (RpcHandle.isAsyncEnabled()) {
 	        while (!serverRpc->isReplySent());
 	    }
-
+	    transport.cRpcProcCpuCycle[opcode] += Cycles::rdtsc() - start;
+	    transport.totalRpcs[opcode]++;
 	    // Transfer from the serverRpc buffer to app buffer
 	    response->appendCopy(rsp->getRange(0, rsp->size()),
 				rsp->size());
@@ -174,6 +181,26 @@ struct BindTransport : public Transport {
                 lastNotifier = NULL;
             }
         }
+	void clearStats()
+	{
+	    for (uint32_t i = 0; i < WireFormat::totalOps; i++)
+	    {
+	        transport.cRpcProcCpuCycle[i] = 0;
+		transport.totalRpcs[i] = 0;
+	    }
+	}
+
+	void dumpStats()
+	{
+	    printf("=============Rpc Processing Latency================\n");
+	    printf("%-32s    %-9s  %s\n", "Type", "latency(usec)", "count");
+	    for (uint32_t i = 0; i < WireFormat::totalOps; i++)
+	    {
+	        if (transport.totalRpcs[i]) {
+		    printf("%-32s : %7.2f         %-8lu\n", WireFormat::opcodeSymbol(i), static_cast<double>(Cycles::toNanoseconds(transport.cRpcProcCpuCycle[i]/transport.totalRpcs[i]))/1000, transport.totalRpcs[i]); 
+		}
+	    }
+	}
         BindTransport& transport;
 
         // Context to use for dispatching RPCs sent to this session.
@@ -214,7 +241,12 @@ struct BindTransport : public Transport {
      * fail immediately.
      */
     string errorMessage;
-
+    /**
+     * The following counters track the RPC processing latency for a given message type
+     *
+     */
+    uint64_t cRpcProcCpuCycle[WireFormat::totalOps];
+    uint64_t totalRpcs[WireFormat::totalOps];
     /**
      * This is used to create mock subclasses of Transport::ServerRpc.
      */
