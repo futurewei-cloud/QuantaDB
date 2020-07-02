@@ -712,7 +712,9 @@ TEST_F(TpcCTest, runAllTests) {
     txStockLevel();
     //basic();
     txVerify();
+    session1->clearStats();
     simulate();
+    session1->dumpStats();
 }
 
 }} // namespace TPCC namespace RAMCloud

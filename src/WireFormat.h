@@ -137,7 +137,7 @@ enum Opcode {
     DSSN_REQUEST_INFO_ASYNC      = 84,
     ILLEGAL_RPC_TYPE            = 85, // 1 + the highest legitimate Opcode
 };
-
+const int totalOps = ILLEGAL_RPC_TYPE + 1;
 /**
  * This enum defines the different types of control operations
  * that could be used with SERVER_CONTROL RPC. Any new control
