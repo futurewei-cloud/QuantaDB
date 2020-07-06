@@ -59,8 +59,6 @@ class DistributedTxSet {
 
 	//for performance optimization
 	uint64_t activitySignature = -1;
-	uint64_t addedTxCount = 0;
-	uint64_t removedTxCount = 0;
 
 	template <class T> inline bool dependsOnEarlierTxs(T &cbf, TxEntry *txEntry, uint32_t &count);
 	template <class T> inline bool dependsOnEarlierTxs(T &cbf, TxEntry *txEntry);
@@ -70,6 +68,9 @@ class DistributedTxSet {
 	inline bool addToIndependentTxs(TxEntry *txEntry);
 
     PUBLIC:
+    uint64_t addedTxCount = 0;
+    uint64_t removedTxCount = 0;
+
     // return true if the CI is added successfully
     bool add(TxEntry *txEntry);
 
