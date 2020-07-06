@@ -49,7 +49,10 @@ struct Counters {
     uint64_t ctsSets = 0;
     uint64_t earlyPeers = 0;
     uint64_t queuedDistributedTxs = 0;
-    uint64_t queuedLocalTxs = 0;
+    // scheduledDistributedTxs tracked by distributedTxSet
+    // evaluatedDistributedTxs tracked bydistributedT
+    // queuedLocalTxs tracked by localTxQueue
+    // evaluatedLocalTxs tracked by localTxQueue
     uint64_t precommitReadErrors = 0;
     uint64_t precommitWriteErrors = 0;
     uint64_t preputErrors = 0;
@@ -100,7 +103,7 @@ class Validator {
     uint64_t lastScheduledTxCTS = 0;
     //LATER DependencyMatrix blockedTxSet;
     Counters counters;
-    uint32_t logLevel = LOG_DEBUG;
+    uint32_t logLevel = LOG_INFO;
 
     // threads
     std::thread schedulingThread;

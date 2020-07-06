@@ -148,7 +148,7 @@ Validator::updateKVWriteSet(TxEntry &txEntry) {
                 counters.commitDeletes++;
             else
                 counters.commitOverwrites++;
-            //No need to nullify writeSet[i] so that txEntry desutrctor would free KVLayout memory
+            //No need to nullify writeSet[i] so that txEntry destructor would free KVLayout memory
         } else {
             kvStore.putNew(writeSet[i], txEntry.getCTS(), txEntry.getSStamp());
             counters.commitWrites++;
@@ -247,6 +247,7 @@ Validator::scheduleDistributedTxs() {
     //expressed in the cluster time unit (due to current sequencer implementation).
     //During testing, ignore the timing constraint imposed by the local clock.
     TxEntry *txEntry;
+    uint64_t lastTick = 0;
     do {
         if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (uint64_t)-1 : clock.getClusterTime(0)))) {
             if (txEntry->getCTS() <= lastScheduledTxCTS) {
@@ -263,12 +264,17 @@ Validator::scheduleDistributedTxs() {
             while (!distributedTxSet.add(txEntry));
             lastScheduledTxCTS = txEntry->getCTS();
         }
-    } while (!isUnderTest);
 
-    //log counters every 10s
-    if ((clock.getLocalTime() / 1000000000) % 10 == 0) {
-        logCounters();
-    }
+        //log counters every 10s
+        if (logLevel >= LOG_INFO) {
+            uint64_t nsTime = getClockValue();
+            uint64_t currentTick = nsTime / 10000000000;
+            if (lastTick < currentTick) {
+                logCounters();
+                lastTick = currentTick;
+            }
+        }
+    } while (!isUnderTest);
 }
 
 void
@@ -386,7 +392,6 @@ Validator::insertTxEntry(TxEntry *txEntry) {
             return false;
         }
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
-        counters.queuedLocalTxs++;
     } else {
         //cross-shard tx
         if (!reorderQueue.insert(txEntry->getCTS(), txEntry)) {
@@ -509,7 +514,10 @@ Validator::logCounters() {
     c += snprintf(val + c, s - c, "ctsSets:%lu, ", counters.ctsSets);
     c += snprintf(val + c, s - c, "earlyPeers:%lu, ", counters.earlyPeers);
     c += snprintf(val + c, s - c, "queuedDistributedTxs:%lu, ", counters.queuedDistributedTxs);
-    c += snprintf(val + c, s - c, "queuedLocalTxs:%lu, ", counters.queuedLocalTxs);
+    c += snprintf(val + c, s - c, "scheduledDistributedTxs:%lu, ", distributedTxSet.addedTxCount);
+    c += snprintf(val + c, s - c, "evaluatedDistributedTxs:%lu, ", distributedTxSet.removedTxCount);
+    c += snprintf(val + c, s - c, "queuedLocalTxs:%lu, ", localTxQueue.addedTxCount.load());
+    c += snprintf(val + c, s - c, "evaluatedLocalTxs:%lu, ", localTxQueue.removedTxCount);
     c += snprintf(val + c, s - c, "precommitReadErrors:%lu, ", counters.precommitReadErrors);
     c += snprintf(val + c, s - c, "precommitWriteErrors:%lu, ", counters.precommitWriteErrors);
     c += snprintf(val + c, s - c, "preputErrors:%lu, ", counters.preputErrors);

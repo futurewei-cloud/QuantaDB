@@ -434,7 +434,9 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
     assert(rpc->replyPayload->size() <= Transport::MAX_RPC_LEN);
 
     if (validator->insertTxEntry(txEntry)) {
-        if (validator->testRun()) {
+        while (validator->testRun()) {
+            if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED)
+                continue;
             //reply already sent in testRun(), free memory now
             delete txEntry;
             return;
@@ -544,7 +546,9 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     if (nkv != NULL) {
         txEntry->insertWriteSet(nkv, 0);
         if (validator->insertTxEntry(txEntry)) {
-            if (validator->testRun()) {
+            while (validator->testRun()) {
+                if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED)
+                    continue;
                 //reply already sent in testRun(), free memory now
                 delete txEntry;
                 return;
@@ -775,7 +779,9 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 
     if (respHdr->common.status == STATUS_OK) {
         if (validator->insertTxEntry(txEntry)) {
-            if (validator->testRun()) {
+            while (validator->testRun()) {
+                if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED)
+                    continue;
                 //reply already sent in testRun(), free memory now
                 delete txEntry;
                 return;

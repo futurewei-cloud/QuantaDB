@@ -82,12 +82,25 @@ class WaitList {
         assert(txs[it] != NULL);
         assert(it != tail);
         txs[it] = NULL;
-        while (head != tail) {
-            if (txs[head] != NULL)
-                break;
-            head = (head + 1) % size; //Fixme?
-        }
         removedTxCount++;
+
+        uint32_t currentHead = head.load();
+        if (it == currentHead) {
+            uint32_t currentTail = tail.load();
+            uint32_t newHead = (currentHead + 1) % size;
+            do {
+                if (head.compare_exchange_strong(currentHead, newHead))
+                    break;
+                currentHead = newHead;
+                newHead = (currentHead + 1) % size;
+                //Because add() advances tail before populating txs[oldTail],
+                //there is a small chance that here txs[oldTail] is mistaken
+                //to be available. Therefore, check TWO slots ahead so as
+                //not to overtake the tail
+                if (currentHead == currentTail || newHead == currentTail)
+                    break;
+            } while (txs[currentHead] == NULL);
+        }
         return true;
     }
 
