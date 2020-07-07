@@ -80,10 +80,17 @@ class WaitList {
     }
 
     // return true if the CI is removed successfully
-    bool remove(uint64_t &it) {
-        assert(txs[it] != NULL && txs[it] != MARK);
+    bool remove(uint64_t &it, const TxEntry *target) {
+        assert(txs[it] == target);
+        //assert(txs[it] != NULL);
+        //assert(txs[it] != MARK);
         txs[it] = NULL;
         removedTxCount++;
+        while (head != tail) {
+            if (txs[head] != NULL) break;
+            if (++head == size) head = 0;
+        }
+#if 0
         uint32_t currentHead = head.load();
         if (it == currentHead) {
             uint32_t currentTail = tail.load();
@@ -96,13 +103,14 @@ class WaitList {
                     break;
             } while (txs[currentHead] == NULL);
         }
+#endif
         return true;
     }
 
     bool pop(TxEntry *&txEntry) {
         uint64_t it;
         if ((txEntry = findFirst(it)))
-            return remove(it);
+            return remove(it, txEntry);
         return false;
     }
 

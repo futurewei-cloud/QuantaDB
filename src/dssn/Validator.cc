@@ -307,7 +307,7 @@ Validator::serialize() {
 
                 if (conclude(*txEntry)) {
                     logTx(LOG_DEBUG, txEntry); //for debugging only, not for recovery
-                    localTxQueue.remove(it);
+                    localTxQueue.remove(it, txEntry);
                 }
             }
             hasEvent = true;

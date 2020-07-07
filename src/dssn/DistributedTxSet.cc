@@ -141,7 +141,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 			&& (!txCold || txHot->getCTS() < txCold->getCTS())
 			&& (!txIndepend || txHot->getCTS() < txIndepend->getCTS())
 			&& !activeTxSet.blocks(txHot)) {
-		hotDependQueue.remove(itHot);
+		hotDependQueue.remove(itHot, txHot);
 		removedTxCount++;
 		return txHot;
 	}
@@ -149,7 +149,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 	if (txCold
 			&& (!txIndepend || txCold->getCTS() < txIndepend->getCTS())
 			&& !activeTxSet.blocks(txCold)) {
-		coldDependQueue.remove(itCold);
+		coldDependQueue.remove(itCold, txCold);
 		removedTxCount++;
 		return txCold;
 	}
@@ -157,7 +157,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 	if (txIndepend) {
 		do {
 			if (!activeTxSet.blocks(txIndepend)) {
-				independentQueue.remove(itIndepend);
+				independentQueue.remove(itIndepend, txIndepend);
 				removedTxCount++;
 				return txIndepend;
 			}
