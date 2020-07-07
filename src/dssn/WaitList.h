@@ -9,6 +9,8 @@
 
 #include "TxEntry.h"
 
+#define MARK (TxEntry *)1
+
 namespace DSSN {
 
 /*
@@ -45,8 +47,8 @@ class WaitList {
         uint32_t oldTail = tail.load();
         if ((oldTail + 1) % size == head)
             return false; //because there is no room
+        txs[oldTail] = MARK; //to avoid seeing tail advanced while txs[oldTail] has not been populated
         if (tail.compare_exchange_strong(oldTail, (oldTail + 1) % size)) {
-            assert(txs[oldTail] == NULL);
             txs[oldTail] = txEntry;
             addedTxCount++;
             return true;
@@ -58,7 +60,7 @@ class WaitList {
     TxEntry* findFirst(uint64_t &it) {
         it = head;
         while (it != tail) {
-            if (txs[it]) {
+            if (txs[it] != NULL && txs[it] != MARK) {
                 return txs[it];
             }
             it = (it + 1) % size;
@@ -69,7 +71,7 @@ class WaitList {
     // return NULL if iteration stops or fails to find a valid entry
     TxEntry* findNext(uint64_t &it) {
         while (it != tail) {
-            if (txs[it]) {
+            if (txs[it] != NULL && txs[it] != MARK) {
                 return txs[it];
             }
             it = (it + 1) % size;
@@ -79,25 +81,18 @@ class WaitList {
 
     // return true if the CI is removed successfully
     bool remove(uint64_t &it) {
-        assert(txs[it] != NULL);
-        assert(it != tail);
+        assert(txs[it] != NULL && txs[it] != MARK);
         txs[it] = NULL;
         removedTxCount++;
-
         uint32_t currentHead = head.load();
         if (it == currentHead) {
             uint32_t currentTail = tail.load();
-            uint32_t newHead = (currentHead + 1) % size;
             do {
+                uint32_t newHead = (currentHead + 1) % size;
                 if (head.compare_exchange_strong(currentHead, newHead))
                     break;
                 currentHead = newHead;
-                newHead = (currentHead + 1) % size;
-                //Because add() advances tail before populating txs[oldTail],
-                //there is a small chance that here txs[oldTail] is mistaken
-                //to be available. Therefore, check TWO slots ahead so as
-                //not to overtake the tail
-                if (currentHead == currentTail || newHead == currentTail)
+                if (currentHead == currentTail)
                     break;
             } while (txs[currentHead] == NULL);
         }
