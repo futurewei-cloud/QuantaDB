@@ -91,9 +91,7 @@ class DataLog {
             *len = 0;
             return NULL;
         }
-        // assert(hdr->sig == LOG_HEAD_SIG);
-        if (hdr->sig != LOG_HEAD_SIG)
-            *(int*)0 = 0;
+        assert(hdr->sig == LOG_HEAD_SIG);
 
         assert(hdr->length <= *len);
         *len = hdr->length - sizeof(LogHeader_t) - sizeof(LogTailer_t);
