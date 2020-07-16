@@ -411,8 +411,8 @@ Validator::insertTxEntry(TxEntry *txEntry) {
 
 uint64_t
 Validator::getClockValue() {
-    //due to current clock service implementation, need conversion into ns unit.
-    return clock.getClusterTime(0);
+    //time in ns unit.
+    return clock.getLocalTime();
 }
 
 uint64_t
