@@ -1883,7 +1883,7 @@ struct TxPrepare {
     /// Note: Make sure INVALID is always last.
     /// A client may change opType of ReadOp from READ to READONLY
     /// to use read-only transaction optimization.
-    enum OpType { READ, READONLY, REMOVE, WRITE, INVALID };
+    enum OpType { READ, READONLY, REMOVE, WRITE, READ_MODIFY_WRITE, INVALID };
 
     /// Possible participant server responses to the request to prepare the
     /// included transaction operations for commit.
@@ -1986,8 +1986,8 @@ struct TxPrepare {
 
             // In buffer: KeysAndValue follow immediately after this
             WriteOp(uint64_t tableId, uint64_t rpcId, uint32_t length,
-                        RejectRules rejectRules)
-                : type(OpType::WRITE)
+		      RejectRules rejectRules, bool isRMW = false)
+	        : type(isRMW ? OpType::READ_MODIFY_WRITE : OpType::WRITE)
                 , tableId(tableId)
                 , rpcId(rpcId)
                 , length(length)

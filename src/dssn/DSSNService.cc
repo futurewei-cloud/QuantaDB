@@ -717,7 +717,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             }
             txEntry->insertWriteSet(nkv, writeSetIdx++);
             assert(writeSetIdx <= (numRequests - numReadRequests));
-        } else if (*type == WireFormat::TxPrepare::WRITE) {
+        } else if (*type == WireFormat::TxPrepare::WRITE ||
+		   *type == WireFormat::TxPrepare::READ_MODIFY_WRITE) { //TODO: read_modify_write handling required
             const WireFormat::TxPrepare::Request::WriteOp *currentReq =
                     rpc->requestPayload->getOffset<
                     WireFormat::TxPrepare::Request::WriteOp>(reqOffset);

@@ -781,6 +781,12 @@ ClientTransactionTask::PrepareRpc::appendOp(CommitCacheMap::iterator opEntry)
                     entry->objectBuf.size(), entry->rejectRules);
             request.appendExternal(&entry->objectBuf);
             break;
+        case CacheEntry::READ_MODIFY_WRITE:
+            request.emplaceAppend<WireFormat::TxPrepare::Request::WriteOp>(
+                    key->tableId, entry->rpcId,
+                    entry->objectBuf.size(), entry->rejectRules, true);
+            request.appendExternal(&entry->objectBuf);
+            break;
         default:
             RAMCLOUD_LOG(ERROR, "Unknown transaction op type found for "
                     "CacheEntry (%lu : %lu) while attempting to prepare "

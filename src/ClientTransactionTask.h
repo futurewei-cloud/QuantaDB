@@ -39,7 +39,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
      * Structure to define the contents of the CommitCache.
      */
     struct CacheEntry {
-        enum Type { READ, REMOVE, WRITE, INVALID };
+        enum Type { READ, REMOVE, WRITE, READ_MODIFY_WRITE, INVALID };
         /// Type of the cached object entry.  Used to specify what kind of
         /// transaction operation needs to be performed during commit.
         Type type;

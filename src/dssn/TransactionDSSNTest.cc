@@ -425,7 +425,7 @@ TEST_F(TransactionTest, write) {
 
     transaction->write(1, "test", 4, "goodbye", 7);
 
-    EXPECT_EQ(ClientTransactionTask::CacheEntry::WRITE, entry->type);
+    EXPECT_EQ(ClientTransactionTask::CacheEntry::READ_MODIFY_WRITE, entry->type);
     EXPECT_EQ(42U, entry->rejectRules.givenVersion);
     str = reinterpret_cast<const char*>(
             entry->objectBuf.getValue(&dataLength));
