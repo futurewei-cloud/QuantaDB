@@ -9,8 +9,6 @@
 
 #include "TxEntry.h"
 
-#define MARK (TxEntry *)1
-
 namespace DSSN {
 
 /*
@@ -47,7 +45,6 @@ class WaitList {
         uint32_t oldTail = tail.load();
         if ((oldTail + 1) % size == head)
             return false; //because there is no room
-        txs[oldTail] = MARK; //to avoid seeing tail advanced while txs[oldTail] has not been populated
         if (tail.compare_exchange_strong(oldTail, (oldTail + 1) % size)) {
             txs[oldTail] = txEntry;
             addedTxCount++;
@@ -60,7 +57,7 @@ class WaitList {
     TxEntry* findFirst(uint64_t &it) {
         it = head;
         while (it != tail) {
-            if (txs[it] != NULL && txs[it] != MARK) {
+            if (txs[it] != NULL) {
                 return txs[it];
             }
             it = (it + 1) % size;
@@ -71,7 +68,7 @@ class WaitList {
     // return NULL if iteration stops or fails to find a valid entry
     TxEntry* findNext(uint64_t &it) {
         while (it != tail) {
-            if (txs[it] != NULL && txs[it] != MARK) {
+            if (txs[it] != NULL) {
                 return txs[it];
             }
             it = (it + 1) % size;
@@ -82,28 +79,18 @@ class WaitList {
     // return true if the CI is removed successfully
     bool remove(uint64_t &it, const TxEntry *target) {
         assert(txs[it] == target);
-        //assert(txs[it] != NULL);
-        //assert(txs[it] != MARK);
+        assert(txs[it] != NULL);
         txs[it] = NULL;
         removedTxCount++;
-        while (head != tail) {
-            if (txs[head] != NULL) break;
-            if (++head == size) head = 0;
+        while (txs[head] == NULL) {
+            uint32_t oldHead = head;
+            if (oldHead == (size - 1))
+                head = 0;
+            else
+                head++;
+            if (oldHead == it)
+                break;
         }
-#if 0
-        uint32_t currentHead = head.load();
-        if (it == currentHead) {
-            uint32_t currentTail = tail.load();
-            do {
-                uint32_t newHead = (currentHead + 1) % size;
-                if (head.compare_exchange_strong(currentHead, newHead))
-                    break;
-                currentHead = newHead;
-                if (currentHead == currentTail)
-                    break;
-            } while (txs[currentHead] == NULL);
-        }
-#endif
         return true;
     }
 
