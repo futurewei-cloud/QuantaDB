@@ -215,8 +215,10 @@ Transaction::write(uint64_t tableId, const void* key, uint16_t keyLength,
         Object::appendKeysAndValueToBuffer(
                 keyObj, buf, length, &entry->objectBuf, true);
 #ifdef DSSNTX
-	entry->type = ClientTransactionTask::CacheEntry::READ_MODIFY_WRITE;
-	return;
+	if (entry->type == ClientTransactionTask::CacheEntry::READ) {
+	    entry->type = ClientTransactionTask::CacheEntry::READ_MODIFY_WRITE;
+	    return;
+	}
 #endif
     }
 
