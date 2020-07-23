@@ -218,6 +218,8 @@ Transaction::write(uint64_t tableId, const void* key, uint16_t keyLength,
 	if (entry->type == ClientTransactionTask::CacheEntry::READ) {
 	    entry->type = ClientTransactionTask::CacheEntry::READ_MODIFY_WRITE;
 	    return;
+	} else if (entry->type == ClientTransactionTask::CacheEntry::READ_MODIFY_WRITE) {
+	  return;
 	}
 #endif
     }

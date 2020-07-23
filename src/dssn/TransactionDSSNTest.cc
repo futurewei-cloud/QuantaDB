@@ -373,6 +373,35 @@ TEST_F(TransactionTest, read_modify_Write) {
     EXPECT_TRUE(transaction->commit());
 }
 
+TEST_F(TransactionTest, read_modify_Write2) {
+    uint32_t dataLength = 0;
+    const char* str;
+
+    Transaction t0(ramcloud.get());
+    Key key(1, "test_rmw2", 9);
+
+    t0.write(1, "test_rmw2", 9, "hello", 5);
+    EXPECT_TRUE(t0.commit());
+
+    // Make sure the read, reads the last write.
+    Buffer value;
+    transaction->read(1, "test_rmw2", 9, &value);
+    EXPECT_EQ("hello", string(reinterpret_cast<const char*>(
+                        value.getRange(0, value.size())),
+                        value.size()));
+
+    transaction->write(1, "test_rmw2", 9, "hello2", 6);
+    transaction->write(1, "test_rmw2", 9, "hello3", 6);
+    // Make sure the operations is cached as a read_modify_write.
+    ClientTransactionTask::CacheEntry* entry = task->findCacheEntry(key);
+    EXPECT_TRUE(entry != NULL);
+    EXPECT_EQ(ClientTransactionTask::CacheEntry::READ_MODIFY_WRITE, entry->type);
+    str = reinterpret_cast<const char*>(
+            entry->objectBuf.getValue(&dataLength));
+    EXPECT_EQ("hello3", string(str, dataLength));
+    EXPECT_TRUE(transaction->commit());
+}
+
 TEST_F(TransactionTest, remove) {
     EXPECT_TRUE(task->readOnly);
     Key key(1, "test", 4);
