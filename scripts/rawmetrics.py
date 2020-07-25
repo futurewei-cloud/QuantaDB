@@ -384,6 +384,9 @@ definitions.metric('processSystemTicks', 'time spent by the entire process in us
 definitions.metric('processUserTicks', 'time spent by the entire process in kernel code according to the kernel')
 definitions.metric('uptimeTicks', 'time elapsed since the process was started')
 
+if len(sys.argv) > 1:
+    obj_dir = sys.argv[1]
+    
 def writeBuildFiles(definitions):
     counter = Counter()
     cc = Out(open('%s/RawMetrics.in.cc' % obj_dir, 'w'))

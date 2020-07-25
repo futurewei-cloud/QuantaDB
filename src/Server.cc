@@ -40,7 +40,9 @@ Server::Server(Context* context, const ServerConfig* config)
     , serverList(NULL)
     , failureDetector()
     , master()
+#ifdef DSSNTX
     , dssnMaster()
+#endif
     , backup()
     , adminService()
     , enlistTimer()
@@ -146,14 +148,14 @@ Server::createAndRegisterServices()
     if (context->serverList == NULL) {
         serverList = new ServerList(context);
     }
-
+#ifdef DSSNTX
     if (config.services.has(WireFormat::DSSN_SERVICE)) {
         LOG(NOTICE, "Master is using %u backups", config.master.numReplicas);
         dssnMaster.construct(context,
 			     static_cast<ServerList*>(context->serverList),
 			     &config);
     }
-
+#endif
     if (config.services.has(WireFormat::MASTER_SERVICE)) {
         LOG(NOTICE, "Master is using %u backups", config.master.numReplicas);
         master.construct(context, &config);

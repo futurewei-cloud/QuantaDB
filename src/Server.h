@@ -97,11 +97,13 @@ class Server {
      * See config.services.
      */
     Tub<MasterService> master;
+#ifdef DSSNTX
     /**
      * The DSSNService running on this Server, if requested, else empty.
      * See config.services.
      */
     Tub<DSSN::DSSNService> dssnMaster;
+#endif
     /**
      * The BackupService running on this Server, if requested, else empty.
      * See config.services.
