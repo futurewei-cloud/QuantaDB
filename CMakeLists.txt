@@ -15,7 +15,7 @@ find_library(ZOOKEEPER zookeeper)
 find_library(INIFIBAND verbs)
 
 
-option(DSSNTX "DSSNTX" OFF)
+option(DSSNTX "DSSNTX" ON)
 option(DEBUG "DEBUG" ON)
 option(DEBUG_OPT "DEBUG_OPT" OFF)
 option(YIELD "YIELD" OFF)
@@ -38,6 +38,10 @@ else()
   set(CXX_OPT_FLAGS "${CXX_OPT_FLAGS} -O3")
 endif(DEBUG)
 
+if(DSSNTX)
+  set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DDSSNTX")
+endif(DSSNTX)
+
 #All compilation warming flags here
 set(CXX_WARN_FLAGS "-Wall -Wformat=2 -Wextra -Wwrite-strings -Wno-unused-parameter -Wmissing-format-attribute -Wno-non-template-friend -Woverloaded-virtual -Wcast-qual -Wcast-align -Wno-deprecated-declarations -Wall -Wfatal-errors")
 
@@ -54,6 +58,7 @@ include_directories(hot/libs/hot/commons/include)
 include_directories(hot/libs/idx/content-helpers/include)
 include_directories(hot/third-party/tbb/include)
 include_directories(pmemhash/internal)
+include_directories(pmemhash/utils)
 include_directories(src)
 include_directories(src/dssn)
 

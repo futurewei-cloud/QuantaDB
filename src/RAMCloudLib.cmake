@@ -141,3 +141,5 @@ target_sources(ramcloud
   WorkerSession.cc
   WorkerTimer.cc
   ${PROTO_SRCS}${PROTO_HDRS})
+
+target_link_libraries(ramcloud dssn)

@@ -1,3 +1,5 @@
+ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/dssn)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/RAMCloudLib.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/RAMCloudCoord.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/RAMCloudServer.cmake)
@@ -6,6 +8,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/unittest.cmake)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../gtest)
+
 
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDS
   CoordinatorClusterClock.proto
