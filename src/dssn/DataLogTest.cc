@@ -15,7 +15,7 @@ using namespace DSSN;
 class DataLogTest : public ::testing::Test {
   public:
   DataLogTest() {};
-  ~DataLogTest() { delete dlog; };
+  ~DataLogTest() { dlog->clear(); delete dlog; };
 
   HashmapKVStore kvStore;
 
@@ -29,16 +29,40 @@ TEST_F(DataLogTest, DataLogUnitTest)
     #define LOOP 1024*4
     uint64_t off[LOOP];
 
-    dlog->trim(0);
-
+    // Verify initial value
     EXPECT_EQ(dlog->size(), (size_t)0);
 
+    // Simple test
     uint64_t doff = dlog->add("test", 4);
     uint32_t dlen;
     char* data = (char*)dlog->getdata(doff, &dlen);
 
     EXPECT_EQ(dlen, (uint32_t)4);
     EXPECT_EQ(strncmp(data, "test", 4), 0);
+
+    uint64_t doff_1 = dlog->add("test-1", 6);
+    data = (char*)dlog->getdata(doff_1, &dlen);
+    EXPECT_EQ(strncmp(data, "test-1", 6), 0);
+    EXPECT_EQ(dlen, (uint32_t)6);
+
+    uint64_t doff_2 = dlog->add("test-2", 6);
+    data = (char*)dlog->getdata(doff_2, &dlen);
+    EXPECT_EQ(strncmp(data, "test-2", 6), 0);
+    EXPECT_EQ(dlen, (uint32_t)6);
+
+    bool ret = dlog->trim(1);
+    EXPECT_EQ(ret, false);
+    
+    ret = dlog->trim(doff_1);
+    EXPECT_EQ(ret, true);
+
+    // Verify old data after a trim
+    data = (char*)dlog->getdata(doff, &dlen);
+    EXPECT_EQ(data, (char *)NULL);
+
+    data = (char*)dlog->getdata(doff_2, &dlen);
+    EXPECT_EQ(strncmp(data, "test-2", 6), 0);
+    EXPECT_EQ(dlen, (uint32_t)6);
 
     for (uint32_t idx = 0; idx < LOOP; idx++) {
         char dbuf[32];
