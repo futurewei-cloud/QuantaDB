@@ -34,8 +34,10 @@ if(DSSNTX)
     MockCluster.cc
     MockDriver.cc
     MockExternalStorage.cc
-    MockExternalStorageTest.cc
     MockTransport.cc
+    TestLog.cc
+    TestLog.h
+    TestRunner.cc
     TestUtil.cc
     TestUtil.h
     )
@@ -222,6 +224,6 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hot/build/tbb_cmake_build/tbb_cm
 
 add_executable(test ${unittest})
 
-list(APPEND LIBS ramcloud Message ramcloudcoord ramcloudserver gtest pcrecpp boost_program_options protobuf rt boost_filesystem boost_system pthread ssl crypto tbb)
+list(APPEND LIBS ramcloud Message ramcloudcoord ramcloudserver gtest "${CMAKE_SHARED_LINKER_FLAGS}")
 
 target_link_libraries(test ${LIBS})

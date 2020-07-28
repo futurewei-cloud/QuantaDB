@@ -16,6 +16,7 @@ find_library(INIFIBAND verbs)
 
 
 option(DSSNTX "DSSNTX" ON)
+option(DSSNTX "DSSNTXRECOVERY" OFF)
 option(DEBUG "DEBUG" ON)
 option(DEBUG_OPT "DEBUG_OPT" OFF)
 option(YIELD "YIELD" OFF)
@@ -28,9 +29,11 @@ set(CXX_APP_FLAGS "")
 # List of optimization flags
 set(CXX_OPT_FLAGS "")
 
+set(CMAKE_SHARED_LINKER_FLAGS "-lpcrecpp -lboost_program_options -lprotobuf -lrt -lboost_filesystem -lboost_system -lpthread -lssl -lcrypto -ltbb -ljemalloc")
+
 if(DEBUG)
-  set(CXX_DEBUG_FLAGS "${CXX_DEBUG_FLAGS} -rdynamic")
-  set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DTESTING")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic")
+  set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DTESTING=1")
   if (DEBUG_OPT)
     set(CXX_OPT_FLAGS "${CXX_OPT_FLAGS} -O0")
   endif(DEBUG_OPT)
@@ -40,7 +43,12 @@ endif(DEBUG)
 
 if(DSSNTX)
   set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DDSSNTX")
+  if(DSSNTXRECOVERY)
+    set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DDSSNTXRECOVERY")
+  endif(DSSNTXRECOVERY)
 endif(DSSNTX)
+
+
 
 #All compilation warming flags here
 set(CXX_WARN_FLAGS "-Wall -Wformat=2 -Wextra -Wwrite-strings -Wno-unused-parameter -Wmissing-format-attribute -Wno-non-template-friend -Woverloaded-virtual -Wcast-qual -Wcast-align -Wno-deprecated-declarations -Wall -Wfatal-errors")
