@@ -210,7 +210,7 @@ class DLog {
 
         // Remove trim'ed chunks
         tmp = old_head;
-        while (tmp != chunk_head) {
+        while (tmp && (tmp != chunk_head)) {
             tmp->remove();
             tmp = tmp->next;
         }

@@ -93,6 +93,13 @@ levels = {}
 # Read in WireFormat.h to get a list of valid RPC names and their opcodes.
 foundEnum = False
 foundEnd = False
+
+outFile = sys.stdout
+requireClose = False;
+if (len(sys.argv) > 1):
+    outFile = open(sys.argv[1], 'w')
+    requireClose = True
+
 for line in open("src/WireFormat.h"):
     # Strip newline
     line = line[0:-1]
@@ -181,9 +188,8 @@ if not finished:
 
 # Finally, generate output, consisting of the guts of a C++ array
 # (everything between the '[' and the ']').
-
-print("// This file was generated automatically by genLevels.py.")
-print("// Do not modify by hand.")
+print("// This file was generated automatically by genLevels.py.", file=outFile)
+print("// Do not modify by hand.", file=outFile)
 outputInfo = []
 for op in levels:
     outputInfo.append([op, opcodes[op], levels[op]])
@@ -191,7 +197,10 @@ outputInfo.sort(key=lambda item: item[1]);
 nextOp = 0
 for info in outputInfo:
     while info[1] > nextOp:
-        print("NO_LEVEL,   // undefined RPC")
+        print("NO_LEVEL,   // undefined RPC", file=outFile)
         nextOp += 1
-    print("%8d,   // %s" % (info[2], info[0]))
+    print("%8d,   // %s" % (info[2], info[0]), file=outFile)
     nextOp += 1
+
+if requireClose:
+    outFile.close()
