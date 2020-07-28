@@ -53,29 +53,32 @@ class DataLog {
     DataLog(uint32_t logid = 1) : datalog_id(logid)
     {
         char logdir[strlen(DATALOG_DIR)];
-        #ifndef  TESTING
+        #if (TESTING == false)
         assert(logid != 0); // logid 0 reserved for testing only
         #endif
         sprintf(logdir, DATALOG_DIR, logid);
         std::string s(logdir);
         log = new DLog<DATALOG_CHUNK_SIZE>(s, true);
+
+        bgn_off = (size() > 0)?  ((LogHeader_t*)log->getaddr(0))->doff - sizeof(LogHeader_t) : 0;
     }
 
     // Add data blob to the log.
     // Return log offset of the data
     uint64_t add(const void* dblob, size_t dlen)
     {
-        uint64_t logoff;
         uint32_t totalsz = dlen + sizeof(LogHeader_t) + sizeof(LogTailer_t);
-        LogHeader_t hdr = {LOG_HEAD_SIG, totalsz};
+        LogHeader_t hdr = {LOG_HEAD_SIG, 0, totalsz};
         LogTailer_t tal = {LOG_TAIL_SIG, totalsz};
         
-        void *dst = log->reserve(totalsz, &logoff);
+        void *dst = log->reserve(totalsz, &hdr.doff);
+        hdr.doff += bgn_off + sizeof(LogHeader_t);
+
         outMemStream out((uint8_t*)dst, totalsz);
         out.write(&hdr, sizeof(hdr));
         out.write(dblob, dlen);
         out.write(&tal, sizeof(tal));
-        return logoff + sizeof(LogHeader_t);
+        return hdr.doff;
     }
 
     uint64_t add(std::string& str)
@@ -86,13 +89,11 @@ class DataLog {
     // Given an offset (which was return by add()), return the memory address of the data.
     void* getdata(uint64_t offset, uint32_t *len /*Out*/)
     {
-        LogHeader_t *hdr = (LogHeader_t*)log->getaddr(offset - sizeof(LogHeader_t), len);
+        LogHeader_t *hdr = get_hdr_and_len_from_offset(offset, len);
         if (!hdr) {
             *len = 0;
             return NULL;
         }
-        assert(hdr->sig == LOG_HEAD_SIG);
-
         assert(hdr->length <= *len);
         *len = hdr->length - sizeof(LogHeader_t) - sizeof(LogTailer_t);
         return &hdr[1];
@@ -107,8 +108,19 @@ class DataLog {
     // Cleanup DataLog. Remove all chunk files.
     inline void clear() { log->cleanup(); }
 
-    // Trim
-    inline void trim(size_t off = 0) { log->trim(off); }
+    // Trim data up until, but exclude, the data associated to doff. 
+    // off' must be a valid data offset (i.e., an offset returned by add())
+    inline bool trim(size_t doff)
+    {
+        LogHeader_t *hdr = get_hdr_and_len_from_offset(doff, NULL);
+        if (!hdr)
+            return false;
+        uint64_t trim_off = doff - bgn_off - sizeof(LogHeader_t);
+        if (trim_off > 0)
+            log->trim(trim_off);
+        bgn_off = doff - sizeof(LogHeader_t);
+        return true;
+    }
 
     // For debugging. Dump log content to file descriptor 'fd'
     void dump(int fd)
@@ -142,16 +154,37 @@ class DataLog {
         }
     }
 
+    inline uint64_t bgn_offset() { return bgn_off; }
+
   private:
     // private struct
-    typedef struct DataLogMarker {
+    typedef struct {
+        uint32_t sig;   // signature
+        uint64_t doff;  // data id (offset before trim)
+        uint32_t length;// log record size, include header and tailer
+    } LogHeader_t;
+
+    typedef struct {
         uint32_t sig;   // signature
         uint32_t length;// log record size, include header and tailer
-    } LogHeader_t, LogTailer_t;
+    } LogTailer_t;
 
     // private variables
     DLog<DATALOG_CHUNK_SIZE> *log;
     uint32_t datalog_id;
+    uint64_t bgn_off;
+
+    // Returns NULL if offset is invalid.
+    inline LogHeader_t * get_hdr_and_len_from_offset(uint64_t offset, uint32_t *len/*out*/)
+    {
+        if (offset < bgn_off)
+            return NULL;
+
+        uint64_t phyoff = offset - bgn_off;
+        LogHeader_t *hdr = (LogHeader_t*)log->getaddr(phyoff - sizeof(LogHeader_t), len);
+
+        return (hdr && (hdr->sig == LOG_HEAD_SIG) && (hdr->doff == offset))? hdr : NULL;
+    }
 
 }; // DataLog
 

@@ -244,7 +244,8 @@ class DLog {
         }
 
         if (!tmp || (size() == 0)) {
-            *len = 0;
+            if (len)
+                *len = 0;
             return NULL; // log is empty or off is beyond the log size
         }
 
