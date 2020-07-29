@@ -497,6 +497,224 @@ TEST_F(TransactionTest, write_afterCommit) {
                  TxOpAfterCommit);
 }
 
+TEST_F(TransactionTest, write_skew) {
+
+    // set the data for running the transactions
+    Buffer value,value1,value2,value3;
+
+    // write initial items for the table
+    ramcloud->write(tableId1, "X", 1, "30", 2);
+    ramcloud->write(tableId1, "Y", 1, "10", 2);
+
+    // Transaction t1 BEGIN
+    Transaction t1(ramcloud.get());
+
+    t1.read(tableId1, "X", 1, &value);
+    EXPECT_EQ("30", string(reinterpret_cast<const char*>(value.getRange(0, value.size())),value.size()));
+
+    // Transaction t2 BEGIN
+    Transaction t2(ramcloud.get());
+
+    t2.read(tableId1, "Y", 1, &value1);
+    EXPECT_EQ("10", string(reinterpret_cast<const char*>(value1.getRange(0, value1.size())),value1.size()));
+
+    t1.write(tableId1, "Y", 1, "60", 2);
+
+    EXPECT_TRUE(t1.commit());
+
+    // Transaction t1 END
+
+    t2.write(tableId1, "X", 1, "50", 2);
+
+    EXPECT_FALSE(t2.commit());
+
+    // Transaction t2 END
+
+    ramcloud->read(tableId1, "X", 1, &value2);
+    EXPECT_EQ("30", string(reinterpret_cast<const char*>(value2.getRange(0, value2.size())),value2.size()));
+
+    ramcloud->read(tableId1, "Y", 1, &value3);
+    EXPECT_EQ("60", string(reinterpret_cast<const char*>(value3.getRange(0, value3.size())),value3.size()));
+}
+
+TEST_F(TransactionTest, read_skew) {
+    printf("READ_SKEW BEGIN\n");
+
+    // set the data for running the transactions
+    Buffer value,value1,value2,value3;
+
+    // write initial items for the table
+    ramcloud->write(tableId1, "X", 1, "50", 2);
+    ramcloud->write(tableId1, "Y", 1, "50", 2);
+
+    // Transaction t1 BEGIN
+    Transaction t1(ramcloud.get());
+
+    t1.read(tableId1, "X", 1, &value);
+    EXPECT_EQ("50", string(reinterpret_cast<const char*>(value.getRange(0, value.size())),value.size()));
+
+    // Transaction t2 BEGIN
+    Transaction t2(ramcloud.get());
+
+    t2.write(tableId1, "X", 1, "25", 2);
+    t2.write(tableId1, "Y", 1, "75", 2);
+
+    EXPECT_TRUE(t2.commit());
+    // Transaction t2 END
+
+    t1.read(tableId1, "Y", 1, &value1);
+    EXPECT_EQ("75", string(reinterpret_cast<const char*>(value1.getRange(0, value1.size())),value1.size()));
+
+    EXPECT_FALSE(t1.commit());
+    // Transaction t1 END
+
+    // result from the KVstore
+    ramcloud->read(tableId1, "X", 1, &value2);
+    EXPECT_EQ("25", string(reinterpret_cast<const char*>(value2.getRange(0, value2.size())),value2.size()));
+
+    ramcloud->read(tableId1, "Y", 1, &value3);
+    EXPECT_EQ("75", string(reinterpret_cast<const char*>(value3.getRange(0, value3.size())),value3.size()));
+}
+
+TEST_F(TransactionTest, lost_update) {
+    // set the data for running the transactions
+    Buffer value,value1;
+
+    // write initial items for the table
+    ramcloud->write(tableId1, "X", 1, "10", 2);
+
+    // Transaction t1 BEGIN
+    Transaction t1(ramcloud.get());
+
+    t1.read(tableId1, "X", 1, &value);
+    EXPECT_EQ("10", string(reinterpret_cast<const char*>(value.getRange(0, value.size())),value.size()));
+
+    // Transaction t2 BEGIN
+    Transaction t2(ramcloud.get());
+
+    t2.read(tableId1, "X", 1, &value1);
+    EXPECT_EQ("10", string(reinterpret_cast<const char*>(value1.getRange(0, value1.size())),value1.size()));
+
+    t2.write(tableId1, "X", 1, "20", 2);
+
+    EXPECT_TRUE(t2.commit());
+    // Transaction t2 END
+
+    t1.write(tableId1, "X", 1, "30", 2);
+
+    EXPECT_FALSE(t1.commit());
+    // Transaction t1 END
+}
+
+TEST_F(TransactionTest, fuzzy_read) {
+    // set the data for running the transactions
+    Buffer value,value1,value2,value3;
+
+    // write initial items for the table
+    ramcloud->write(tableId1, "X", 1, "50", 2);
+    ramcloud->write(tableId1, "Y", 1, "50", 2);
+
+    // Transaction t1 BEGIN
+    Transaction t1(ramcloud.get());
+
+    t1.read(tableId1, "X", 1, &value);
+
+    // Transaction t2 BEGIN
+    Transaction t2(ramcloud.get());
+
+    t2.read(tableId1, "X", 1, &value1);
+    EXPECT_EQ("50", string(reinterpret_cast<const char*>(value1.getRange(0, value1.size())),value1.size()));
+
+    t2.write(tableId1, "X", 1, "10", 2);
+
+    t2.read(tableId1, "Y", 1, &value2);
+    EXPECT_EQ("50", string(reinterpret_cast<const char*>(value2.getRange(0, value2.size())),value2.size()));
+
+    t2.write(tableId1, "Y", 1, "90", 2);
+
+    EXPECT_TRUE(t2.commit());
+    // Transaction t2 END
+
+    t1.read(tableId1, "Y", 1, &value3);
+    EXPECT_EQ("90", string(reinterpret_cast<const char*>(value3.getRange(0, value3.size())),value3.size()));
+
+    EXPECT_FALSE(t1.commit());
+    // Transaction t1 END
+}
+
+TEST_F(TransactionTest, dirty_write) {
+
+    // set the data for running the transactions
+    Buffer value1,value2;
+
+    // write initial items for the table
+    ramcloud->write(tableId1, "X", 1, "50", 2);
+    ramcloud->write(tableId1, "Y", 1, "50", 2);
+
+    // Transaction t1 BEGIN
+    Transaction t1(ramcloud.get());
+
+    t1.write(tableId1, "X", 1, "10", 2);
+
+    // Transaction t2 BEGIN
+    Transaction t2(ramcloud.get());
+    t2.write(tableId1, "X", 1, "20", 2);
+    t2.write(tableId1, "Y", 1, "20", 2);
+    EXPECT_TRUE(t2.commit());
+    // Transaction t2 END
+
+    t1.write(tableId1, "Y", 1, "10", 2);
+    EXPECT_TRUE(t1.commit());
+    // Transaction t1 END
+
+    ramcloud->read(tableId1, "X", 1, &value1);
+    EXPECT_EQ("10", string(reinterpret_cast<const char*>(value1.getRange(0, value1.size())),value1.size()));
+
+    ramcloud->read(tableId1, "Y", 1, &value2);
+    EXPECT_EQ("10", string(reinterpret_cast<const char*>(value2.getRange(0, value2.size())),value2.size()));
+}
+
+TEST_F(TransactionTest, dirty_read) {
+    // set the data for running the transactions
+    Buffer value,value1,value2,value3,value4,value5;
+
+    // write initial items for the table
+    ramcloud->write(tableId1, "X", 1, "50", 2);
+    ramcloud->write(tableId1, "Y", 1, "50", 2);
+
+    // Transaction t1 BEGIN
+    Transaction t1(ramcloud.get());
+    t1.read(tableId1, "X", 1, &value);
+    EXPECT_EQ("50", string(reinterpret_cast<const char*>(value.getRange(0, value.size())),value.size()));
+
+    t1.write(tableId1, "X", 1, "10", 2);
+
+    // Transaction t2 BEGIN
+    Transaction t2(ramcloud.get());
+    t2.read(tableId1, "X", 1, &value1);
+    EXPECT_EQ("50", string(reinterpret_cast<const char*>(value1.getRange(0, value1.size())),value1.size()));
+
+    t2.read(tableId1, "Y", 1, &value2);
+    EXPECT_EQ("50", string(reinterpret_cast<const char*>(value2.getRange(0, value2.size())),value2.size()));
+
+    EXPECT_TRUE(t2.commit());
+    // Transaction t2 END
+
+    t1.read(tableId1, "Y", 1, &value3);
+    EXPECT_EQ("50", string(reinterpret_cast<const char*>(value3.getRange(0, value3.size())),value3.size()));
+
+    t1.write(tableId1, "Y", 1, "90", 2);
+
+    EXPECT_TRUE(t1.commit());
+
+    // read the final result
+    ramcloud->read(tableId1, "X", 1, &value4);
+    EXPECT_EQ("10", string(reinterpret_cast<const char*>(value4.getRange(0, value4.size())),value4.size()));
+
+    ramcloud->read(tableId1, "Y", 1, &value5);
+    EXPECT_EQ("90", string(reinterpret_cast<const char*>(value5.getRange(0, value5.size())),value5.size()));
+}
+
 TEST_F(TransactionTest, ReadOp_constructor_noCache) {
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
 
