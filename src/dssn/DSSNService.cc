@@ -790,6 +790,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             if (*type == WireFormat::TxPrepare::READ_MODIFY_WRITE) {
                 txEntry->insertReadSet(nkv, readSetIdx++);
                 assert(readSetIdx <= numRequests);
+                nkv->meta().cStamp = currentReq->GetCStamp();
             }
         } else {
             respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
