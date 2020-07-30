@@ -8,3 +8,6 @@
 [submodule "hot"]
 	path = hot
 	url = https://github.com/tonykm/hot.git
+[submodule "opencensus-cpp"]
+	path = opencensus-cpp
+	url = https://github.com/census-instrumentation/opencensus-cpp.git
