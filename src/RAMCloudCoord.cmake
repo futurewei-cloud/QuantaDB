@@ -1,6 +1,4 @@
-add_library(ramcloudcoord SHARED "")
-target_sources(ramcloudcoord
-  PRIVATE
+add_library(ramcloudcoord SHARED
   ClientLeaseAuthority.cc
   CoordinatorClusterClock.cc
   CoordinatorServerList.cc
@@ -15,7 +13,8 @@ target_sources(ramcloudcoord
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-list(APPEND LIBS ramcloud ramcloudcoord ramcloudserver Message pcrecpp boost_program_options protobuf rt tbb pthread)
+list(APPEND LIBS ramcloud ramcloudcoord ramcloudserver Message)
 
 add_executable(coordinator CoordinatorMain.cc)
-target_link_libraries(coordinator ${LIBS})
+target_link_libraries(coordinator PUBLIC ${ramcloud}
+                      ${LIBS})
