@@ -17,4 +17,4 @@ add_library(dssn SHARED "")
     Validator.cc
     )
 
-target_link_libraries(dssn rt)
+target_link_libraries(dssn)

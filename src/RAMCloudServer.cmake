@@ -1,6 +1,4 @@
-add_library(ramcloudserver SHARED "")
-target_sources(ramcloudserver
-  PRIVATE
+add_library(ramcloudserver SHARED
   AdminService.cc
   BackupMasterRecovery.cc
   BackupService.cc
@@ -18,7 +16,8 @@ target_sources(ramcloudserver
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-list(APPEND LIBS ramcloud ramcloudserver Message pcrecpp boost_program_options protobuf rt tbb pthread)
+list(APPEND LIBS ramcloudserver Message)
 
 add_executable(server ServerMain.cc OptionParser.cc)
-target_link_libraries(server ${LIBS})
+target_link_libraries(server PUBLIC ${ramcloud}
+                     ${LIBS})

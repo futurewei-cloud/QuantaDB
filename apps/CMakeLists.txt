@@ -1,6 +1,6 @@
 link_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-list(APPEND LIBS ramcloud Message pcrecpp boost_program_options protobuf rt tbb pthread)
+list(APPEND LIBS ramcloud Message "${CMAKE_SHARED_LINKER_FLAGS}")
 
 add_executable(backuprecovery BackupRecoveryMain.cc)
 target_link_libraries(backuprecovery ${LIBS})

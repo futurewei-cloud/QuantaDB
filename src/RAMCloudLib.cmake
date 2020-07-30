@@ -1,6 +1,4 @@
-add_library(ramcloud SHARED "")
-target_sources(ramcloud
-  PRIVATE
+add_library(ramcloud SHARED
   AbstractLog.cc
   AbstractServerList.cc
   AdminClient.cc
@@ -142,4 +140,12 @@ target_sources(ramcloud
   WorkerTimer.cc
   ${PROTO_SRCS}${PROTO_HDRS})
 
-target_link_libraries(ramcloud dssn)
+if(INFINIBAND)
+  target_sources(ramcloud
+    PRIVATE
+    Infiniband.cc
+    InfRcTransport.cc
+    InfUdDriver.cc)
+endif(INFINIBAND)
+
+target_link_libraries(ramcloud dssn "${CMAKE_SHARED_LINKER_FLAGS}")
