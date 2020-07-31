@@ -81,7 +81,7 @@ Validator::updateTxPStampSStamp(TxEntry &txEntry) {
     //update sstamp of transaction
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
-        if(readSet[i] == NULL) continue;
+        if (readSet[i] == NULL) continue; //the array may be over-provisioned
 
         KVLayout *kv = kvStore.fetch(readSet[i]->k);
         if (kv) {

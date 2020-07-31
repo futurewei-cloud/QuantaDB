@@ -609,13 +609,10 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
         rpc->sendReply();
         return;
     }*/
-    /*
-     * For the transaction containing the read-modify-write (rmw) actions, the
-     * validator needs the entry to be in both readset and write set.
-     * To account for the worst case, passing numRequests instead of
-     * numReadRequests to the txEntry's readset allocation.
-     */
+
+    //We are over-provisioning the read set to accommodate the potential RMWs
     TxEntry *txEntry = new TxEntry(numRequests, numRequests - numReadRequests);
+
     RpcHandle* handle = rpc->enableAsync();
     txEntry->setCTS(reqHdr->meta.cstamp);
     txEntry->setPStamp(reqHdr->meta.pstamp);
@@ -680,7 +677,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
                 break;
             }
             txEntry->insertReadSet(nkv, readSetIdx++);
-            assert(readSetIdx <= numReadRequests);
+            assert(readSetIdx <= numRequests);
 
         } else if (*type == WireFormat::TxPrepare::REMOVE) {
             const WireFormat::TxPrepare::Request::RemoveOp *currentReq =
@@ -723,7 +720,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             txEntry->insertWriteSet(nkv, writeSetIdx++);
             assert(writeSetIdx <= (numRequests - numReadRequests));
         } else if (*type == WireFormat::TxPrepare::WRITE ||
-		   *type == WireFormat::TxPrepare::READ_MODIFY_WRITE) { //TODO: read_modify_write handling required
+		   *type == WireFormat::TxPrepare::READ_MODIFY_WRITE) {
             const WireFormat::TxPrepare::Request::WriteOp *currentReq =
                     rpc->requestPayload->getOffset<
                     WireFormat::TxPrepare::Request::WriteOp>(reqOffset);
@@ -775,6 +772,27 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             }
             txEntry->insertWriteSet(nkv, writeSetIdx++);
             assert(writeSetIdx <= (numRequests - numReadRequests));
+
+            /*
+             * The SSN paper presents an algorithm that is based on the
+             * the SSN theorem and the assumption of an ERMIA-like version chain,
+             * which contains both the committed versions and the pending versions.
+             * Because of that, it can and needs to detect read-modify-write RMW
+             * transaction and remove RMW tuples from the read set to avoid
+             * its implementation-specific self-inflicted pi equal to eta violation.
+             * In our case, we have the coordinator tracking the pending versions
+             * and validator tracking only the committed versions. The coordinator
+             * identifies the RMW tuples and signals them to the validator, like here.
+             * The validator can simply add these RMW tuples to both the write set
+             * and the read set. As the validator uses only the committed versions
+             * to do validation, there will not be self-inflicted pi equal to eta violation.
+             */
+            /* Fixme
+            if (*type == WireFormat::TxPrepare::READ_MODIFY_WRITE) {
+                txEntry->insertReadSet(nkv, readSetIdx++);
+                assert(readSetIdx <= numRequests);
+                //Fixme: nkv->meta().cStamp = currentReq->GetCStamp();
+            }*/
         } else {
             respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
             respHdr->vote = WireFormat::TxPrepare::ABORT;
