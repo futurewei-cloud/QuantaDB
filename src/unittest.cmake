@@ -34,8 +34,10 @@ if(DSSNTX)
     MockCluster.cc
     MockDriver.cc
     MockExternalStorage.cc
-    MockExternalStorageTest.cc
     MockTransport.cc
+    TestLog.cc
+    TestLog.h
+    TestRunner.cc
     TestUtil.cc
     TestUtil.h
     )
@@ -92,9 +94,6 @@ else()
     IndexletManagerTest.cc
     IndexLookupTest.cc
     IndexRpcWrapperTest.cc
-    #InfAddressTest.cc
-    #InfRcTransportTest.cc
-    #InfUdDriverTest.cc
     InitializeTest.cc
     InMemoryStorageTest.cc
     IpAddressTest.cc
@@ -216,12 +215,20 @@ else()
     )
 endif(DSSNTX)
 
+if(INFINIBAND)
+  file(GLOB ibtransporttest
+    InfAddressTest.cc
+    InfRcTransportTest.cc
+    InfUdDriverTest.cc
+    )
+endif(INFINIBAND)
 
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/../gtest/ ${CMAKE_CURRENT_BINARY_DIR}/)
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../hot/build/tbb_cmake_build/tbb_cmake_build_subdir_release)
 
-add_executable(test ${unittest})
+add_executable(test ${unittest} ${ibtransporttest})
 
-list(APPEND LIBS ramcloud Message ramcloudcoord ramcloudserver gtest pcrecpp boost_program_options protobuf rt boost_filesystem boost_system pthread ssl crypto tbb)
+list(APPEND LIBS gtest "${CMAKE_SHARED_LINKER_FLAGS}")
 
-target_link_libraries(test ${LIBS})
+target_link_libraries(test PUBLIC ${ramcloud}
+                     ${LIBS})

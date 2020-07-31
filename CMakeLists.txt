@@ -12,10 +12,11 @@ find_package(PythonInterp 2.7 REQUIRED)
 find_package(Protobuf REQUIRED)
 
 find_library(ZOOKEEPER zookeeper)
-find_library(INIFIBAND verbs)
 
+find_program(INFINIBAND NAMES ibv_devices)
 
 option(DSSNTX "DSSNTX" ON)
+option(DSSNTX "DSSNTXRECOVERY" OFF)
 option(DEBUG "DEBUG" ON)
 option(DEBUG_OPT "DEBUG_OPT" OFF)
 option(YIELD "YIELD" OFF)
@@ -28,9 +29,11 @@ set(CXX_APP_FLAGS "")
 # List of optimization flags
 set(CXX_OPT_FLAGS "")
 
+set(CMAKE_SHARED_LINKER_FLAGS "-lpcrecpp -lboost_program_options -lprotobuf -lrt -lboost_filesystem -lboost_system -lpthread -lssl -lcrypto -ltbb -ljemalloc")
+
 if(DEBUG)
-  set(CXX_DEBUG_FLAGS "${CXX_DEBUG_FLAGS} -rdynamic")
-  set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DTESTING")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic")
+  set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DTESTING=1 -fno-builtin")
   if (DEBUG_OPT)
     set(CXX_OPT_FLAGS "${CXX_OPT_FLAGS} -O0")
   endif(DEBUG_OPT)
@@ -40,13 +43,23 @@ endif(DEBUG)
 
 if(DSSNTX)
   set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DDSSNTX")
+  if(DSSNTXRECOVERY)
+    set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DDSSNTXRECOVERY")
+  endif(DSSNTXRECOVERY)
 endif(DSSNTX)
+
+
+if(INFINIBAND)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -libverbs")
+  set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DINFINIBAND")
+endif(INFINIBAND)
 
 #All compilation warming flags here
 set(CXX_WARN_FLAGS "-Wall -Wformat=2 -Wextra -Wwrite-strings -Wno-unused-parameter -Wmissing-format-attribute -Wno-non-template-friend -Woverloaded-virtual -Wcast-qual -Wcast-align -Wno-deprecated-declarations -Wall -Wfatal-errors")
 
 #All compilation option flags here
 set(CXX_OPTION_FLAGS "-fno-strict-aliasing -MD -msse4.2 -march=native -mavx -mavx2 -mbmi2 -mlzcnt -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -faligned-new")
+#set(CXX_OPTION_FLAGS "-fno-strict-aliasing -MD -msse4.2 -march=native -faligned-new")
 
 #Aggregate of all compilation flags
 set(CMAKE_CXX_FLAGS "${CXX_DEBUG_FLAGS} ${CXX_OPT_FLAGS} ${CXX_WARN_FLAGS} ${CXX_OPTION_FLAGS} ${CXX_APP_FLAGS}")
@@ -64,8 +77,6 @@ include_directories(src/dssn)
 
 #TODO: Fix the package dependencies
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/hot/build/tbb_cmake_build/tbb_cmake_build_subdir_release)
-
-message(${CMAKE_ROOT})
 
 ADD_SUBDIRECTORY(apps)
 ADD_SUBDIRECTORY(nanobenchmarks)

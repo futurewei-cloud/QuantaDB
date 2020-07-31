@@ -1,6 +1,6 @@
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/../src)
 
-list(APPEND LIBS ramcloud ramcloudserver Message pcrecpp boost_program_options protobuf rt tbb pthread)
+list(APPEND LIBS ramcloud ramcloudserver Message "${CMAKE_SHARED_LINKER_FLAGS}")
   
 add_executable(CleanerCompactionBenchmark CleanerCompactionBenchmark.cc)
 target_link_libraries(CleanerCompactionBenchmark ${LIBS})

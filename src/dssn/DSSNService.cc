@@ -609,8 +609,13 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
         rpc->sendReply();
         return;
     }*/
-
-    TxEntry *txEntry = new TxEntry(numReadRequests, numRequests - numReadRequests);
+    /*
+     * For the transaction containing the read-modify-write (rmw) actions, the
+     * validator needs the entry to be in both readset and write set.
+     * To account for the worst case, passing numRequests instead of
+     * numReadRequests to the txEntry's readset allocation.
+     */
+    TxEntry *txEntry = new TxEntry(numRequests, numRequests - numReadRequests);
     RpcHandle* handle = rpc->enableAsync();
     txEntry->setCTS(reqHdr->meta.cstamp);
     txEntry->setPStamp(reqHdr->meta.pstamp);
