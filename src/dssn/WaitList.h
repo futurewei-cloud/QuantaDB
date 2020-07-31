@@ -35,17 +35,27 @@ class WaitList {
     //for performance optimization
     uint64_t activitySignature = -1;
 
+    std::mutex mutexForAdd;
+
     PUBLIC:
     std::atomic<uint64_t> addedTxCount{0};
     uint64_t removedTxCount = 0;
 
     // return true if the CI is added successfully
     bool add(TxEntry *txEntry) {
+        /*
+         * The use of mutex is safeguard a race condition that multiple
+         * callers have advanced the tail but are populating txs[] at different
+         * time out of order, giving a chance for the remove() to advance the
+         * head beyond a txs[] that would have been populated later.
+         */
         assert(txEntry != NULL);
+        std::lock_guard<std::mutex> lock(mutexForAdd);
         uint32_t oldTail = tail.load();
         if ((oldTail + 1) % size == head)
             return false; //because there is no room
         if (tail.compare_exchange_strong(oldTail, (oldTail + 1) % size)) {
+            assert(txs[oldTail] == 0);
             txs[oldTail] = txEntry;
             addedTxCount++;
             return true;

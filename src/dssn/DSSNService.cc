@@ -787,11 +787,12 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
              * and the read set. As the validator uses only the committed versions
              * to do validation, there will not be self-inflicted pi equal to eta violation.
              */
+            /* Fixme
             if (*type == WireFormat::TxPrepare::READ_MODIFY_WRITE) {
                 txEntry->insertReadSet(nkv, readSetIdx++);
                 assert(readSetIdx <= numRequests);
-                nkv->meta().cStamp = currentReq->GetCStamp();
-            }
+                //Fixme: nkv->meta().cStamp = currentReq->GetCStamp();
+            }*/
         } else {
             respHdr->common.status = STATUS_REQUEST_FORMAT_ERROR;
             respHdr->vote = WireFormat::TxPrepare::ABORT;
