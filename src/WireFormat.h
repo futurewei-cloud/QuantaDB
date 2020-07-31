@@ -1994,6 +1994,11 @@ struct TxPrepare {
                 , rejectRules(rejectRules)
             {
             }
+	    // DSSN specific: cts of the KV
+	    uint64_t GetCStamp() const
+	    {
+	        return rejectRules.cstamp;
+	    }
         } __attribute__((packed));
     } __attribute__((packed));
 
