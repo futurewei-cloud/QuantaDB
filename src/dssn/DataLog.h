@@ -89,9 +89,9 @@ class DataLog {
     // Given an offset (which was return by add()), return the memory address of the data.
     void* getdata(uint64_t offset, uint32_t *len /*Out*/)
     {
-        LogHeader_t *hdr = get_hdr_and_len_from_offset(offset, len);
-        if (!hdr) {
-            *len = 0;
+        LogHeader_t *hdr;
+        if (!valid_offset(offset, &hdr, len)) {
+            if (len) *len = 0;
             return NULL;
         }
         assert(hdr->length <= *len);
@@ -112,9 +112,9 @@ class DataLog {
     // off' must be a valid data offset (i.e., an offset returned by add())
     inline bool trim(size_t doff)
     {
-        LogHeader_t *hdr = get_hdr_and_len_from_offset(doff, NULL);
-        if (!hdr)
+        if (!valid_offset(doff)) {
             return false;
+        }
         uint64_t trim_off = doff - bgn_off - sizeof(LogHeader_t);
         if (trim_off > 0)
             log->trim(trim_off);
@@ -175,7 +175,7 @@ class DataLog {
     uint64_t bgn_off;
 
     // Returns NULL if offset is invalid.
-    inline LogHeader_t * get_hdr_and_len_from_offset(uint64_t offset, uint32_t *len/*out*/)
+    inline bool valid_offset(uint64_t offset, LogHeader_t **hdrpp = NULL/*out*/, uint32_t *len = NULL/*out*/)
     {
         if (offset < bgn_off)
             return NULL;
@@ -183,7 +183,12 @@ class DataLog {
         uint64_t phyoff = offset - bgn_off;
         LogHeader_t *hdr = (LogHeader_t*)log->getaddr(phyoff - sizeof(LogHeader_t), len);
 
-        return (hdr && (hdr->sig == LOG_HEAD_SIG) && (hdr->doff == offset))? hdr : NULL;
+        if (hdr && (hdr->sig == LOG_HEAD_SIG)) {
+            assert (hdr->doff == offset);
+            if (hdrpp) *hdrpp = hdr;
+            return true;
+        }
+        return false;
     }
 
 }; // DataLog
