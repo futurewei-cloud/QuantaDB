@@ -40,6 +40,8 @@ TxEntry::~TxEntry() {
     //Free KVLayout allocated in txCommit RPC handler
     for (uint32_t i = 0; i < writeSetSize; i++) {
         if (writeSet[i]) {
+            if (writeSet[i]->meta().cStamp > 0)
+                continue; //a RMW - let it be free from read set
             delete writeSet[i];
             writeSet[i] = NULL;
         }
