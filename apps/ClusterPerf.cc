@@ -5901,14 +5901,14 @@ tpcc()
                  Cycles::toSeconds(initElapsed) *1e03);
 
         //Benchmark period in seconds.
-        int period = 30;
+        int period = seconds;
         sendCommand("run", "running", 1, numClients-1);
 
         PerfStats startStats[numTlbNodes];
         PerfStats finishStats[numTlbNodes];
         Buffer statsBuffer;
 
-        RAMCLOUD_LOG(NOTICE, "Started Clients");
+        RAMCLOUD_LOG(NOTICE, "Started Clients to run for %d seconds", period);
 
         for (int i = 1; i < numTlbNodes; ++i) {
             cluster->objectServerControl(TPCC::tableId[i], "not-used", 3,
@@ -6130,7 +6130,7 @@ tpccLatency()
     getPerfStats(startStats);
 
     //Benchmark period in seconds.
-    int period = 60;
+    int period = seconds;
     TPCC::TpccStat tpccStat = tpcc_oneClient(period, &driver, true);
 
     getPerfStats(finishStats);
