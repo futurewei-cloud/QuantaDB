@@ -153,6 +153,9 @@ PeerInfo::send(Validator *validator) {
         PeerEntry *peerEntry = pr.second;
         TxEntry* txEntry = pr.second->txEntry;
 
+        if (txEntry == NULL)
+            return;
+
         if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
             std::lock_guard<std::mutex> lock(peerEntry->mutexForPeerUpdate);
 
