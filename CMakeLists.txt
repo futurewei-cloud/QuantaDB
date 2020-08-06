@@ -3,6 +3,18 @@ cmake_minimum_required(VERSION 2.8)
 # set the project name
 project(DSSN)
 
+include(ExternalProject)
+ExternalProject_Add(prometheus
+  PREFIX prometheus
+  SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../prometheus-cpp
+  BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/prometheus/build
+
+  STEP_TARGETS build
+  CMAKE_ARGS -D BUILD_SHARED_LIBS=ON
+  EXCLUDE_FROM_ALL TRUE
+  )
+
+
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -17,6 +29,7 @@ find_program(INFINIBAND NAMES ibv_devices)
 
 option(DSSNTX "DSSNTX" ON)
 option(DSSNTX "DSSNTXRECOVERY" OFF)
+option(MONITOR "MONITOR" OFF)
 option(DEBUG "DEBUG" ON)
 option(DEBUG_OPT "DEBUG_OPT" OFF)
 option(YIELD "YIELD" OFF)
@@ -48,6 +61,9 @@ if(DSSNTX)
   endif(DSSNTXRECOVERY)
 endif(DSSNTX)
 
+if(MONITOR)
+  set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DMONITOR")
+endif(MONITOR)
 
 if(INFINIBAND)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -libverbs")
@@ -77,6 +93,7 @@ include_directories(src/dssn)
 
 #TODO: Fix the package dependencies
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/hot/build/tbb_cmake_build/tbb_cmake_build_subdir_release)
+link_directories(${CMAKE_BINARY_DIR}/prometheus/build/lib/)
 
 ADD_SUBDIRECTORY(apps)
 ADD_SUBDIRECTORY(nanobenchmarks)
