@@ -23,7 +23,7 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
             entry->meta.sStamp = txEntry->getSStamp();
         }
         peerInfo.insert(std::make_pair(cts, entry));
-    } else {
+    } else if (txEntry != NULL) {
         PeerEntry* existing = it->second;
         std::lock_guard<std::mutex> lock(existing->mutexForPeerUpdate);
         existing->txEntry = txEntry;
