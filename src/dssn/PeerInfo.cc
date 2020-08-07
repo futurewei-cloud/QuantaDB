@@ -23,7 +23,7 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
             entry->meta.sStamp = txEntry->getSStamp();
         }
         peerInfo.insert(std::make_pair(cts, entry));
-    } else {
+    } else if (txEntry != NULL) {
         PeerEntry* existing = it->second;
         std::lock_guard<std::mutex> lock(existing->mutexForPeerUpdate);
         existing->txEntry = txEntry;
@@ -152,6 +152,9 @@ PeerInfo::send(Validator *validator) {
     std::for_each(peerInfo.begin(), peerInfo.end(), [&] (const std::pair<CTS, PeerEntry *>& pr) {
         PeerEntry *peerEntry = pr.second;
         TxEntry* txEntry = pr.second->txEntry;
+
+        if (txEntry == NULL)
+            return;
 
         if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
             std::lock_guard<std::mutex> lock(peerEntry->mutexForPeerUpdate);
