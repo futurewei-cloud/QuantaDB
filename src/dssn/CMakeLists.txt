@@ -17,4 +17,8 @@ add_library(dssn SHARED "")
     Validator.cc
     )
 
-target_link_libraries(dssn)
+install(TARGETS dssn
+  PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+              GROUP_EXECUTE GROUP_READ GROUP_WRITE
+	      WORLD_EXECUTE
+  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX})
