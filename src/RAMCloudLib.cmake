@@ -136,6 +136,7 @@ add_library(ramcloud SHARED
   WallTime.cc
   WireFormat.cc
   WorkerManager.cc
+#  WorkerManagerMetrics.cc
   WorkerSession.cc
   WorkerTimer.cc
   ${PROTO_SRCS}${PROTO_HDRS})
@@ -148,4 +149,5 @@ if(INFINIBAND)
     InfUdDriver.cc)
 endif(INFINIBAND)
 
-target_link_libraries(ramcloud dssn "${CMAKE_SHARED_LINKER_FLAGS}")
+target_link_libraries(ramcloud dssn "${CMAKE_SHARED_LINKER_FLAGS}" prometheus-cpp-pull)
+add_dependencies(ramcloud prometheus-build)

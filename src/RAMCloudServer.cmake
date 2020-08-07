@@ -16,8 +16,8 @@ add_library(ramcloudserver SHARED
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-list(APPEND LIBS ramcloudserver Message)
+list(APPEND LIBS ramcloudserver message)
 
 add_executable(server ServerMain.cc OptionParser.cc)
 target_link_libraries(server PUBLIC ${ramcloud}
-                     ${LIBS})
+                      ${LIBS})

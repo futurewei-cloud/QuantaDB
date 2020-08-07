@@ -1,6 +1,6 @@
 link_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-list(APPEND LIBS ramcloud Message "${CMAKE_SHARED_LINKER_FLAGS}")
+list(APPEND LIBS ramcloud message "${CMAKE_SHARED_LINKER_FLAGS}")
 
 add_executable(backuprecovery BackupRecoveryMain.cc)
 target_link_libraries(backuprecovery ${LIBS})
@@ -25,3 +25,8 @@ target_link_libraries(recovery ${LIBS})
 
 add_executable(dumpPerfStats DumpPerfStats.cc)
 target_link_libraries(dumpPerfStats ${LIBS})
+
+install(TARGETS backuprecovery client ClusterPerf
+  CoordinatorCrashRecovery ensureServers migrateTablet
+  recovery dumpPerfStats
+RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/apps)

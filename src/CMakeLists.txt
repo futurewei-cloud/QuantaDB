@@ -32,11 +32,18 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDS
   Tablets.proto)
 
 
-add_library(Message SHARED "")
-target_sources(Message
+add_library(message SHARED "")
+target_sources(message
   PRIVATE
   ${PROTO_SRCS} ${PROTO_HDRS})
 
 
-  
+install(TARGETS coordinator server test
+RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+install(TARGETS message ramcloud ramcloudcoord ramcloudserver
+  PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+              GROUP_EXECUTE GROUP_READ GROUP_WRITE
+	      WORLD_EXECUTE
+  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX})
 

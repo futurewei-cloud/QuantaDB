@@ -10,17 +10,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # List of packages
 find_package(PythonInterp 2.7 REQUIRED)
 find_package(Protobuf REQUIRED)
-
 find_library(ZOOKEEPER zookeeper)
 
 find_program(INFINIBAND NAMES ibv_devices)
 
 option(DSSNTX "DSSNTX" ON)
 option(DSSNTX "DSSNTXRECOVERY" OFF)
+option(MONITOR "MONITOR" OFF)
 option(DEBUG "DEBUG" ON)
 option(DEBUG_OPT "DEBUG_OPT" OFF)
 option(YIELD "YIELD" OFF)
 option(VALGRIND "VALGRIND" OFF)
+
+#Installation TARGET directory
+set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/obj.master")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}")
 
 # List of debug flags
 set(CXX_DEBUG_FLAGS "-g")
@@ -48,6 +53,9 @@ if(DSSNTX)
   endif(DSSNTXRECOVERY)
 endif(DSSNTX)
 
+if(MONITOR)
+  set(CXX_APP_FLAGS "${CXX_APP_FLAGS} -DMONITOR")
+endif(MONITOR)
 
 if(INFINIBAND)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -libverbs")
@@ -74,9 +82,11 @@ include_directories(pmemhash/internal)
 include_directories(pmemhash/utils)
 include_directories(src)
 include_directories(src/dssn)
+include_directories(prometheus-cpp/core/include)
 
 #TODO: Fix the package dependencies
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/hot/build/tbb_cmake_build/tbb_cmake_build_subdir_release)
+link_directories(${CMAKE_BINARY_DIR}/prometheus/build/lib/)
 
 ADD_SUBDIRECTORY(apps)
 ADD_SUBDIRECTORY(nanobenchmarks)
@@ -106,4 +116,18 @@ add_custom_target(
 #  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 #  DEPENDS ramcloud
 #)
+
+include(ExternalProject)
+ExternalProject_Add(prometheus
+  PREFIX prometheus
+  SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/../prometheus-cpp
+  BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/prometheus/build
+  STEP_TARGETS build
+  CMAKE_ARGS -D BUILD_SHARED_LIBS=ON -D CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+  EXCLUDE_FROM_ALL TRUE
+  )
+
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/prometheus/build/lib/
+  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  USE_SOURCE_PERMISSIONS)
 
