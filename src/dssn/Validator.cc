@@ -76,7 +76,7 @@ Validator::updateTxPStampSStamp(TxEntry &txEntry) {
      * is to pass the write set (and read set) through the commit-intent.
      */
 
-    txEntry.setSStamp(std::min(txEntry.getSStamp(), txEntry.getCTS()));
+    txEntry.setSStamp(std::min(txEntry.getSStamp(), uint64_t(txEntry.getCTS() >> 64)));
 
     //update sstamp of transaction
     auto &readSet = txEntry.getReadSet();
@@ -125,7 +125,7 @@ Validator::updateKVReadSetPStamp(TxEntry &txEntry) {
     auto &readSet = txEntry.getReadSetInStore();
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
         if (readSet[i]) {
-            readSet[i]->meta().pStamp = std::max(txEntry.getCTS(), readSet[i]->meta().pStamp);
+            readSet[i]->meta().pStamp = std::max(uint64_t(txEntry.getCTS() >> 64), readSet[i]->meta().pStamp);
             counters.commitReads++;
         } else {
             counters.commitMetaErrors++;
@@ -301,7 +301,7 @@ Validator::serialize() {
 
                 if (txEntry->getCTS() == 0) {
                     //This feature may allow tx client to do without a clock
-                    txEntry->setCTS(clock.getClusterTime());
+                    txEntry->setCTS(clock.getClusterTime128(0));
                     counters.ctsSets++;
                 }
 
@@ -376,7 +376,7 @@ Validator::insertTxEntry(TxEntry *txEntry) {
     counters.commitIntents++;
 
     if ((txEntry->getPStamp() >= txEntry->getSStamp())
-            && (txEntry->getPStamp() >= txEntry->getCTS() &&  txEntry->getCTS() != 0)) {
+            && (txEntry->getPStamp() >= (txEntry->getCTS() >> 64) &&  txEntry->getCTS() != 0)) {
         //Clearly the commit intent will be aborted -- the client should not even have
         //initiated, and we should not further burden the pipeline.
         counters.trivialAborts++;

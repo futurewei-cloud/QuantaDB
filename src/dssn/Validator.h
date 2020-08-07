@@ -61,6 +61,7 @@ struct Counters {
     uint64_t concludeErrors = 0;
     uint64_t commitMetaErrors = 0;
     uint64_t alertRequests = 0;
+    uint64_t alertAborts = 0;
     uint64_t commits = 0;
     uint64_t aborts = 0;
     uint64_t commitReads = 0;
@@ -100,7 +101,7 @@ class Validator {
 	ConcludeQueue &concludeQueue;
 	TxLog &txLog;
     ClusterTimeService clock;
-    uint64_t lastScheduledTxCTS = 0;
+    __uint128_t lastScheduledTxCTS = 0;
     //LATER DependencyMatrix blockedTxSet;
     Counters counters;
     uint32_t logLevel = LOG_INFO;
@@ -187,6 +188,9 @@ class Validator {
     // used for obtaining clock value in nanosecond unit
     uint64_t getClockValue();
     uint64_t convertStampToClockValue(uint64_t timestamp);
+
+    // used for updating counters
+    Counters& getCounters() {return counters;}
 
     // put commit intent into tx log, depending on log level
     bool logTx(uint32_t currentLevel, TxEntry *txEntry);

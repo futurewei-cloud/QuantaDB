@@ -614,7 +614,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     TxEntry *txEntry = new TxEntry(numRequests, numRequests - numReadRequests);
 
     RpcHandle* handle = rpc->enableAsync();
-    txEntry->setCTS(reqHdr->meta.cts>>64); //TODO: Henry, please change
+    txEntry->setCTS(reqHdr->meta.cts);
     txEntry->setPStamp(reqHdr->meta.pstamp);
     txEntry->setSStamp(reqHdr->meta.sstamp);
     txEntry->setRpcHandle(handle);

@@ -16,9 +16,9 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
     if (it == peerInfo.end()) {
         PeerEntry* entry = new PeerEntry();
         entry->txEntry = txEntry;
-        entry->meta.cStamp = cts;
+        entry->meta.cStamp = cts >> 64;
         if (txEntry != NULL) {
-            assert(entry->meta.cStamp == txEntry->getCTS());
+            assert(entry->meta.cStamp == txEntry->getCTS() >> 64);
             entry->meta.pStamp = txEntry->getPStamp();
             entry->meta.sStamp = txEntry->getSStamp();
         }
@@ -51,7 +51,7 @@ PeerInfo::getNext(PeerInfoIterator &it) {
     }
     return NULL;
 }
-
+/*
 bool
 PeerInfo::sweep() {
     //delete peerInfo entry no longer needed
@@ -72,6 +72,20 @@ PeerInfo::sweep() {
         delete prev;
     }
     return true;
+}*/
+
+bool
+PeerInfo::sweep() {
+    //delete peerInfo entry no longer needed
+    ///further reference to the swept tx should be using CTS into the tx log
+    std::for_each(peerInfo.begin(), peerInfo.end(), [&] (const std::pair<CTS, PeerEntry *>& pr) {
+        PeerEntry *peerEntry = pr.second;
+        if (peerEntry->txEntry && peerEntry->txEntry->getTxCIState() >= TxEntry::TX_CI_SEALED) {
+                peerInfo.unsafe_erase(pr.first);
+                delete peerEntry;
+        }
+    });
+    return true;
 }
 
 bool
@@ -90,6 +104,7 @@ PeerInfo::evaluate(PeerEntry *peerEntry, uint8_t peerTxState, TxEntry *txEntry, 
                         || peerEntry->peerAlertSet == txEntry->getPeerSet())) {
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
+            validator->getCounters().alertAborts++;
         } else if (txEntry->getPeerSet() == peerEntry->peerSeenSet
                 && peerEntry->peerAlertSet.empty()) {
             txEntry->setTxState(TxEntry::TX_COMMIT);
@@ -171,7 +186,7 @@ PeerInfo::send(Validator *validator) {
 
         if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING
                 && txEntry->getTxState() != TxEntry::TX_ALERT
-                && nsTime - validator->convertStampToClockValue(txEntry->getCTS()) > alertThreshold) {
+                && nsTime - (txEntry->getCTS() >> 64) > alertThreshold) {
             std::lock_guard<std::mutex> lock(peerEntry->mutexForPeerUpdate);
             txEntry->setTxState(TxEntry::TX_ALERT);
         }

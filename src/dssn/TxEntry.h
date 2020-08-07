@@ -31,9 +31,9 @@ class TxEntry {
     PROTECTED:
 
     //DSSN data
-    uint64_t cts; //commit time-stamp, globally unique
-    uint64_t pstamp;
-    uint64_t sstamp;
+    __uint128_t cts; //commit time-stamp, globally unique, upper 64b with ns precision
+    uint64_t pstamp; //with ns precision
+    uint64_t sstamp; //with ns precision
 
     //DSSN tx states
     uint32_t txState;
@@ -122,7 +122,7 @@ class TxEntry {
 
     TxEntry(uint32_t readSetSize, uint32_t writeSetSize);
     ~TxEntry();
-    inline uint64_t getCTS() { return cts; }
+    inline __uint128_t getCTS() { return cts; }
     inline uint64_t getPStamp() { return pstamp; }
     inline uint64_t getSStamp() { return sstamp; }
     inline uint32_t getTxState() { return txState; }
@@ -140,7 +140,7 @@ class TxEntry {
     inline boost::scoped_array<KVLayout *>& getReadSetInStore() { return readSetInStore; }
     inline uint32_t& getWriteSetIndex() { return writeSetIndex; }
     inline uint32_t& getReadSetIndex() { return readSetIndex; }
-    inline void setCTS(uint64_t val) { cts = val; }
+    inline void setCTS(__uint128_t val) { cts = val; }
     inline void setSStamp(uint64_t val) { sstamp = val; }
     inline void setPStamp(uint64_t val) { pstamp = val; }
     inline void setTxState(uint32_t val) { txState = val; }

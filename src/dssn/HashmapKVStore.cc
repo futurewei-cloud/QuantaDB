@@ -33,9 +33,9 @@ KVLayout* HashmapKVStore::preput(KVLayout &kvIn)
     return kvOut;
 }
 
-bool HashmapKVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
+bool HashmapKVStore::putNew(KVLayout *kv, __uint128_t cts, uint64_t pi)
 {
-    kv->meta().cStamp = kv->meta().pStamp = cts;
+    kv->meta().cStamp = kv->meta().pStamp = cts >> 64;
     kv->meta().pStampPrev = 0;
     kv->meta().sStampPrev = pi;
     kv->meta().sStamp = (uint64_t) -1; //not overwritten yet
@@ -45,9 +45,9 @@ bool HashmapKVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi)
     return lptr.ptr_ != NULL;
 }
 
-bool HashmapKVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength)
+bool HashmapKVStore::put(KVLayout *kv, __uint128_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength)
 {
-    kv->meta().cStamp = kv->meta().pStamp = cts;
+    kv->meta().cStamp = kv->meta().pStamp = cts >> 64;
     kv->meta().pStampPrev = kv->meta().pStamp;
     kv->meta().sStampPrev = pi;
     kv->meta().sStamp = (uint64_t) -1; //not overwritten yet

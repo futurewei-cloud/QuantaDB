@@ -43,7 +43,7 @@ class ValidatorTest : public ::testing::Test {
 
     void fillTxEntry(int noEntries, int noKeys = 1, int noOfPeers = 0) {
     	//prepare batches of 10 CIs of the same keys
-        static uint64_t ctsBase = 10;
+        static __uint128_t ctsBase = 10;
     	uint32_t batchSize = 10;
     	uint32_t keySize = 32;
         for (int i = 0; i < noEntries; i++) {
@@ -281,15 +281,12 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf2) {
     for (int i = 0; i < size; i++) {
     	validator.localTxQueue.add(txEntry[i]);
     }
-    //validator.localTxQueue.schedule(true);
 
-    //uint64_t lastCTS = 1234;
     start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
     	TxEntry *tmp;
     	validator.localTxQueue.pop(tmp);
     	validator.activeTxSet.blocks(tmp);
-    	//tmp->setCTS(++lastCTS);
     	validator.validateLocalTx(*tmp);
     	validator.conclude(*tmp);
     }
@@ -355,7 +352,7 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 
 TEST_F(ValidatorTest, BATPeerInfoReceivedEarly) {
     TxEntry *txEntry = validator.receiveSSNInfo(1 /*peerId*/,
-            123 /*CTS*/,
+            (123 << 64) /*CTS*/,
             0, 0xfffffff, /*pstamp, sstamp*/
             TxEntry::TX_PENDING);
     EXPECT_EQ(true, txEntry == NULL);
@@ -423,7 +420,7 @@ TEST_F(ValidatorTest, BATDistributedTxSetPerf) {
 
     TxEntry *txEntry;
     uint64_t total = 0;
-    uint64_t lastCTS = 0;
+    __uint128_t lastCTS = 0;
     uint32_t count = 0;
 	start = Cycles::rdtscp();
     for (int i = 0; i < size; i++) {
