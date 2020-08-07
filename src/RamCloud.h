@@ -167,10 +167,10 @@ class RamCloud {
             uint64_t* version = NULL, bool async = false);
 
     void poll();
-    uint64_t getCTS() {
-        uint64_t cts = 0;
+    __uint128_t getCTS() {
+        __uint128_t cts = 0;
 #if DSSNTX
-        cts = sequencer.getCTS();
+        cts = sequencer.getCTS128();
 #endif
 	return cts;
     }

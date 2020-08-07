@@ -733,8 +733,9 @@ ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
     reqHdr->readOpCount = 0;
     request.appendExternal(&task->participantList);
 #ifdef DSSNTX
-    reqHdr->meta = task->mMeta;
-    reqHdr->meta.cstamp = ramcloud->getCTS();
+    reqHdr->meta.pstamp = task->mMeta.pstamp;
+    reqHdr->meta.sstamp = task->mMeta.sstamp;
+    reqHdr->meta.cts = ramcloud->getCTS();
 #else
     reqHdr->lease = task->lease;
 #endif

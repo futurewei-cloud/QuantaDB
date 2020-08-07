@@ -70,7 +70,8 @@ class ClusterTimeService {
     // return a cluster unique logical time stamp
     inline uint64_t getClusterTime()   	         
     {
-        return (getLocalTime() << 10) + node_id;
+        //TODO: Please remove 
+        return getLocalTime();
     }
 
     // return a cluster unique logical time stamp
