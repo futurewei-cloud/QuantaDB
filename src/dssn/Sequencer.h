@@ -26,7 +26,8 @@ namespace DSSN {
 class Sequencer {
     public:
     Sequencer ();
-    uint64_t getCTS();    	     // return CTS
+    uint64_t    getCTS();    	     // return CTS
+    __uint128_t   getCTS128();    	     // return CTS
 
     private:
     // ClusterTimeClient clock;

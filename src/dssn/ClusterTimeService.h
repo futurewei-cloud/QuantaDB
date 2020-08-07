@@ -73,6 +73,12 @@ class ClusterTimeService {
         return (getLocalTime() << 10) + node_id;
     }
 
+    // return a cluster unique logical time stamp
+    inline __uint128_t getClusterTime128(uint32_t delta /* nanosec */)   	         
+    {
+        return ((__uint128_t)getLocalTime() << 64) + node_id;
+    }
+
     // cluster unique time stamp that is local clock + delta
     inline uint64_t getClusterTime(uint32_t delta /* nanosec */)
     {
