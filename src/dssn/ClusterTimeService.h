@@ -70,7 +70,7 @@ class ClusterTimeService {
     // return a cluster unique logical time stamp
     inline uint64_t getClusterTime()   	         
     {
-        //TODO: Please remove 
+        //TODO: Please remove for Mike
         return getLocalTime();
     }
 
