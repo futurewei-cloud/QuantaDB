@@ -1,0 +1,3472 @@
+4	:invoke	:txn	[[:r 11 nil] [:r 10 nil] [:r 10 nil] [:append 11 1]]
+4	:fail	:txn	[[:r 11 nil] [:r 10 nil] [:r 10 nil] [:append 11 1]]	:moved
+0	:invoke	:txn	[[:append 11 2] [:r 11 nil] [:r 10 nil] [:r 11 nil]]
+2	:invoke	:txn	[[:r 11 nil] [:r 11 nil]]
+2	:fail	:txn	[[:r 11 nil] [:r 11 nil]]	:moved
+4	:invoke	:txn	[[:r 10 nil] [:append 11 3] [:append 8 1]]
+4	:fail	:txn	[[:r 10 nil] [:append 11 3] [:append 8 1]]	:moved
+2	:invoke	:txn	[[:append 9 1] [:append 9 2] [:r 10 nil]]
+3	:invoke	:txn	[[:r 11 nil] [:r 11 nil]]
+1	:invoke	:txn	[[:append 6 1] [:append 11 4]]
+0	:ok	:txn	[[:append 11 2] [:r 11 [2]] [:r 10 []] [:r 11 [2]]]
+1	:fail	:txn	[[:append 6 1] [:append 11 4]]	:moved
+3	:fail	:txn	[[:r 11 nil] [:r 11 nil]]	:moved
+2	:fail	:txn	[[:append 9 1] [:append 9 2] [:r 10 nil]]	:moved
+0	:invoke	:txn	[[:append 11 5] [:r 11 nil]]
+2	:invoke	:txn	[[:append 10 1]]
+3	:invoke	:txn	[[:r 11 nil] [:append 11 6] [:r 11 nil] [:append 11 7]]
+4	:invoke	:txn	[[:append 11 8] [:append 11 9]]
+0	:ok	:txn	[[:append 11 5] [:r 11 [2 5]]]
+2	:fail	:txn	[[:append 10 1]]	:moved
+4	:fail	:txn	[[:append 11 8] [:append 11 9]]	:moved
+3	:fail	:txn	[[:r 11 nil] [:append 11 6] [:r 11 nil] [:append 11 7]]	:moved
+4	:invoke	:txn	[[:r 11 nil] [:r 11 nil] [:r 11 nil] [:append 10 2]]
+4	:fail	:txn	[[:r 11 nil] [:r 11 nil] [:r 11 nil] [:append 10 2]]	:moved
+1	:invoke	:txn	[[:r 11 nil]]
+1	:fail	:txn	[[:r 11 nil]]	:moved
+3	:invoke	:txn	[[:r 8 nil]]
+3	:fail	:txn	[[:r 8 nil]]	:moved
+0	:invoke	:txn	[[:r 10 nil] [:r 10 nil] [:r 11 nil]]
+1	:invoke	:txn	[[:r 10 nil]]
+1	:fail	:txn	[[:r 10 nil]]	:moved
+4	:invoke	:txn	[[:r 10 nil] [:r 8 nil] [:append 11 10] [:append 9 3]]
+4	:fail	:txn	[[:r 10 nil] [:r 8 nil] [:append 11 10] [:append 9 3]]	:moved
+2	:invoke	:txn	[[:r 11 nil] [:append 11 11]]
+0	:ok	:txn	[[:r 10 []] [:r 10 []] [:r 11 [2 5]]]
+2	:fail	:txn	[[:r 11 nil] [:append 11 11]]	:moved
+4	:invoke	:txn	[[:append 11 12]]
+4	:fail	:txn	[[:append 11 12]]	:moved
+3	:invoke	:txn	[[:append 10 3]]
+3	:fail	:txn	[[:append 10 3]]	:moved
+3	:invoke	:txn	[[:append 10 4] [:r 11 nil] [:append 11 13]]
+3	:fail	:txn	[[:append 10 4] [:r 11 nil] [:append 11 13]]	:moved
+4	:invoke	:txn	[[:append 11 14] [:append 9 4] [:r 9 nil]]
+4	:fail	:txn	[[:append 11 14] [:append 9 4] [:r 9 nil]]	:moved
+3	:invoke	:txn	[[:append 6 2] [:append 11 15]]
+3	:fail	:txn	[[:append 6 2] [:append 11 15]]	:moved
+3	:invoke	:txn	[[:append 11 16] [:r 10 nil] [:r 10 nil]]
+3	:fail	:txn	[[:append 11 16] [:r 10 nil] [:r 10 nil]]	:moved
+1	:invoke	:txn	[[:append 11 17] [:r 11 nil] [:append 11 18] [:r 11 nil]]
+1	:fail	:txn	[[:append 11 17] [:r 11 nil] [:append 11 18] [:r 11 nil]]	:moved
+1	:invoke	:txn	[[:r 11 nil]]
+2	:invoke	:txn	[[:r 8 nil]]
+1	:fail	:txn	[[:r 11 nil]]	:moved
+2	:fail	:txn	[[:r 8 nil]]	:moved
+0	:invoke	:txn	[[:append 11 19] [:r 11 nil]]
+3	:invoke	:txn	[[:r 10 nil] [:append 8 2] [:r 11 nil] [:append 7 1]]
+3	:fail	:txn	[[:r 10 nil] [:append 8 2] [:r 11 nil] [:append 7 1]]	:moved
+1	:invoke	:txn	[[:r 11 nil] [:append 11 20] [:r 10 nil]]
+3	:invoke	:txn	[[:append 7 2] [:r 11 nil] [:r 11 nil] [:r 11 nil]]
+2	:invoke	:txn	[[:r 10 nil] [:append 11 21]]
+4	:invoke	:txn	[[:append 10 5]]
+1	:fail	:txn	[[:r 11 nil] [:append 11 20] [:r 10 nil]]	:moved
+4	:fail	:txn	[[:append 10 5]]	:moved
+0	:ok	:txn	[[:append 11 19] [:r 11 [2 5 19]]]
+2	:fail	:txn	[[:r 10 nil] [:append 11 21]]	:moved
+3	:fail	:txn	[[:append 7 2] [:r 11 nil] [:r 11 nil] [:r 11 nil]]	:moved
+1	:invoke	:txn	[[:append 11 22] [:r 11 nil]]
+1	:fail	:txn	[[:append 11 22] [:r 11 nil]]	:moved
+0	:invoke	:txn	[[:append 8 3] [:r 11 nil]]
+4	:invoke	:txn	[[:r 10 nil] [:append 9 5]]
+3	:invoke	:txn	[[:append 11 23] [:r 10 nil] [:append 11 24]]
+0	:ok	:txn	[[:append 8 3] [:r 11 [2 5 19]]]
+3	:fail	:txn	[[:append 11 23] [:r 10 nil] [:append 11 24]]	:moved
+4	:fail	:txn	[[:r 10 nil] [:append 9 5]]	:moved
+2	:invoke	:txn	[[:append 7 3] [:append 9 6] [:r 11 nil] [:append 11 25]]
+2	:fail	:txn	[[:append 7 3] [:append 9 6] [:r 11 nil] [:append 11 25]]	:moved
+0	:invoke	:txn	[[:r 11 nil] [:append 11 26]]
+1	:invoke	:txn	[[:append 9 7] [:r 4 nil]]
+1	:fail	:txn	[[:append 9 7] [:r 4 nil]]	:moved
+1	:invoke	:txn	[[:r 11 nil]]
+1	:fail	:txn	[[:r 11 nil]]	:moved
+2	:invoke	:txn	[[:append 11 27] [:append 11 28] [:append 11 29]]
+0	:ok	:txn	[[:r 11 [2 5 19]] [:append 11 26]]
+2	:fail	:txn	[[:append 11 27] [:append 11 28] [:append 11 29]]	:moved
+1	:invoke	:txn	[[:append 11 30] [:r 11 nil] [:append 8 4]]
+1	:fail	:txn	[[:append 11 30] [:r 11 nil] [:append 8 4]]	:moved
+4	:invoke	:txn	[[:r 4 nil] [:append 11 31]]
+4	:fail	:txn	[[:r 4 nil] [:append 11 31]]	:moved
+3	:invoke	:txn	[[:append 8 5] [:r 10 nil]]
+3	:fail	:txn	[[:append 8 5] [:r 10 nil]]	:moved
+2	:invoke	:txn	[[:r 11 nil] [:append 7 4]]
+2	:fail	:txn	[[:r 11 nil] [:append 7 4]]	:moved
+4	:invoke	:txn	[[:append 8 6]]
+4	:fail	:txn	[[:append 8 6]]	:moved
+4	:invoke	:txn	[[:r 11 nil] [:append 11 32] [:r 10 nil]]
+4	:fail	:txn	[[:r 11 nil] [:append 11 32] [:r 10 nil]]	:moved
+1	:invoke	:txn	[[:append 11 33] [:r 11 nil]]
+1	:fail	:txn	[[:append 11 33] [:r 11 nil]]	:moved
+3	:invoke	:txn	[[:append 11 34] [:append 11 35] [:r 7 nil] [:r 8 nil]]
+3	:fail	:txn	[[:append 11 34] [:append 11 35] [:r 7 nil] [:r 8 nil]]	:moved
+0	:invoke	:txn	[[:append 11 36] [:append 11 37] [:append 10 6] [:append 11 38]]
+2	:invoke	:txn	[[:r 11 nil] [:r 11 nil] [:r 10 nil] [:append 11 39]]
+2	:fail	:txn	[[:r 11 nil] [:r 11 nil] [:r 10 nil] [:append 11 39]]	:moved
+4	:invoke	:txn	[[:r 11 nil] [:r 11 nil] [:r 11 nil]]
+4	:fail	:txn	[[:r 11 nil] [:r 11 nil] [:r 11 nil]]	:moved
+1	:invoke	:txn	[[:append 10 7] [:append 9 8] [:append 11 40] [:append 11 41]]
+1	:fail	:txn	[[:append 10 7] [:append 9 8] [:append 11 40] [:append 11 41]]	:moved
+1	:invoke	:txn	[[:append 10 8] [:r 11 nil]]
+2	:invoke	:txn	[[:r 10 nil] [:append 11 42]]
+0	:ok	:txn	[[:append 11 36] [:append 11 37] [:append 10 6] [:append 11 38]]
+1	:fail	:txn	[[:append 10 8] [:r 11 nil]]	:moved
+2	:fail	:txn	[[:r 10 nil] [:append 11 42]]	:moved
+3	:invoke	:txn	[[:append 11 43] [:r 11 nil] [:r 10 nil]]
+3	:fail	:txn	[[:append 11 43] [:r 11 nil] [:r 10 nil]]	:moved
+2	:invoke	:txn	[[:append 9 9] [:append 11 44] [:r 11 nil]]
+2	:fail	:txn	[[:append 9 9] [:append 11 44] [:r 11 nil]]	:moved
+2	:invoke	:txn	[[:r 10 nil] [:append 11 45] [:append 11 46]]
+2	:fail	:txn	[[:r 10 nil] [:append 11 45] [:append 11 46]]	:moved
+2	:invoke	:txn	[[:append 11 47] [:append 10 9]]
+2	:fail	:txn	[[:append 11 47] [:append 10 9]]	:moved
+4	:invoke	:txn	[[:r 10 nil]]
+4	:fail	:txn	[[:r 10 nil]]	:moved
+4	:invoke	:txn	[[:r 11 nil] [:r 11 nil]]
+4	:fail	:txn	[[:r 11 nil] [:r 11 nil]]	:moved
+0	:invoke	:txn	[[:r 10 nil] [:append 11 48] [:append 10 10]]
+2	:invoke	:txn	[[:append 10 11]]
+2	:fail	:txn	[[:append 10 11]]	:moved
+1	:invoke	:txn	[[:r 11 nil] [:append 8 7] [:append 11 49] [:r 11 nil]]
+1	:fail	:txn	[[:r 11 nil] [:append 8 7] [:append 11 49] [:r 11 nil]]	:moved
+3	:invoke	:txn	[[:r 11 nil] [:r 11 nil] [:r 11 nil] [:r 7 nil]]
+3	:fail	:txn	[[:r 11 nil] [:r 11 nil] [:r 11 nil] [:r 7 nil]]	:moved
+2	:invoke	:txn	[[:r 10 nil]]
+1	:invoke	:txn	[[:append 11 50] [:append 11 51]]
+4	:invoke	:txn	[[:append 11 52] [:r 9 nil]]
+2	:fail	:txn	[[:r 10 nil]]	:moved
+0	:ok	:txn	[[:r 10 [6]] [:append 11 48] [:append 10 10]]
+4	:fail	:txn	[[:append 11 52] [:r 9 nil]]	:moved
+1	:fail	:txn	[[:append 11 50] [:append 11 51]]	:moved
+4	:invoke	:txn	[[:append 11 53] [:r 11 nil] [:r 10 nil] [:r 9 nil]]
+4	:fail	:txn	[[:append 11 53] [:r 11 nil] [:r 10 nil] [:r 9 nil]]	:moved
+3	:invoke	:txn	[[:r 11 nil]]
+3	:fail	:txn	[[:r 11 nil]]	:moved
+4	:invoke	:txn	[[:append 11 54] [:r 11 nil] [:append 8 8] [:r 11 nil]]
+4	:fail	:txn	[[:append 11 54] [:r 11 nil] [:append 8 8] [:r 11 nil]]	:moved
+1	:invoke	:txn	[[:r 11 nil] [:r 10 nil]]
+1	:fail	:txn	[[:r 11 nil] [:r 10 nil]]	:moved
+0	:invoke	:txn	[[:r 9 nil]]
+0	:ok	:txn	[[:r 9 []]]
+3	:invoke	:txn	[[:r 10 nil] [:r 11 nil]]
+3	:fail	:txn	[[:r 10 nil] [:r 11 nil]]	:moved
+2	:invoke	:txn	[[:append 7 5] [:append 7 6] [:r 11 nil]]
+2	:fail	:txn	[[:append 7 5] [:append 7 6] [:r 11 nil]]	:moved
+2	:invoke	:txn	[[:r 10 nil] [:r 11 nil] [:r 8 nil] [:append 9 10]]
+2	:fail	:txn	[[:r 10 nil] [:r 11 nil] [:r 8 nil] [:append 9 10]]	:moved
+3	:invoke	:txn	[[:r 11 nil]]
+3	:fail	:txn	[[:r 11 nil]]	:moved
+1	:invoke	:txn	[[:append 7 7] [:r 7 nil] [:append 10 12] [:r 9 nil]]
+1	:fail	:txn	[[:append 7 7] [:r 7 nil] [:append 10 12] [:r 9 nil]]	:moved
+2	:invoke	:txn	[[:append 10 13] [:append 11 55] [:append 11 56]]
+2	:fail	:txn	[[:append 10 13] [:append 11 55] [:append 11 56]]	:moved
+4	:invoke	:txn	[[:append 11 57] [:append 11 58]]
+4	:fail	:txn	[[:append 11 57] [:append 11 58]]	:moved
+1	:invoke	:txn	[[:r 11 nil] [:r 8 nil]]
+1	:fail	:txn	[[:r 11 nil] [:r 8 nil]]	:moved
+0	:invoke	:txn	[[:r 11 nil]]
+0	:ok	:txn	[[:r 11 [2 5 19 26 36 37 38 48]]]
+3	:invoke	:txn	[[:r 10 nil] [:r 8 nil] [:append 11 59]]
+3	:fail	:txn	[[:r 10 nil] [:r 8 nil] [:append 11 59]]	:moved
+4	:invoke	:txn	[[:r 11 nil] [:r 11 nil] [:r 10 nil]]
+4	:fail	:txn	[[:r 11 nil] [:r 11 nil] [:r 10 nil]]	:moved
+3	:invoke	:txn	[[:r 9 nil] [:r 11 nil]]
+3	:fail	:txn	[[:r 9 nil] [:r 11 nil]]	:moved
+0	:invoke	:txn	[[:r 11 nil]]
+0	:ok	:txn	[[:r 11 [2 5 19 26 36 37 38 48]]]
+3	:invoke	:txn	[[:append 9 11] [:append 11 60]]
+3	:fail	:txn	[[:append 9 11] [:append 11 60]]	:moved
+3	:invoke	:txn	[[:append 5 1] [:r 11 nil] [:append 11 61] [:append 9 12]]
+3	:fail	:txn	[[:append 5 1] [:r 11 nil] [:append 11 61] [:append 9 12]]	:moved
+0	:invoke	:txn	[[:r 11 nil] [:r 11 nil] [:r 9 nil] [:r 11 nil]]
+1	:invoke	:txn	[[:r 10 nil] [:r 9 nil] [:append 10 14] [:append 11 62]]
+1	:fail	:txn	[[:r 10 nil] [:r 9 nil] [:append 10 14] [:append 11 62]]	:moved
+4	:invoke	:txn	[[:r 10 nil]]
+4	:fail	:txn	[[:r 10 nil]]	:moved
+2	:invoke	:txn	[[:append 3 1]]
+2	:fail	:txn	[[:append 3 1]]	:moved
+1	:invoke	:txn	[[:r 7 nil] [:append 10 15] [:append 11 63]]
+1	:fail	:txn	[[:r 7 nil] [:append 10 15] [:append 11 63]]	:moved
+1	:invoke	:txn	[[:r 10 nil]]
+4	:invoke	:txn	[[:append 9 13] [:append 10 16]]
+1	:fail	:txn	[[:r 10 nil]]	:moved
+0	:ok	:txn	[[:r 11 [2 5 19 26 36 37 38 48]] [:r 11 [2 5 19 26 36 37 38 48]] [:r 9 []] [:r 11 [2 5 19 26 36 37 38 48]]]
+4	:fail	:txn	[[:append 9 13] [:append 10 16]]	:moved
+3	:invoke	:txn	[[:r 10 nil] [:append 11 64] [:append 9 14]]
+3	:fail	:txn	[[:r 10 nil] [:append 11 64] [:append 9 14]]	:moved
+1	:invoke	:txn	[[:append 9 15]]
+1	:fail	:txn	[[:append 9 15]]	:moved
+3	:invoke	:txn	[[:append 8 9] [:append 11 65] [:append 10 17] [:append 11 66]]
+3	:fail	:txn	[[:append 8 9] [:append 11 65] [:append 10 17] [:append 11 66]]	:moved
+2	:invoke	:txn	[[:append 11 67] [:append 9 16] [:append 6 3]]
+2	:fail	:txn	[[:append 11 67] [:append 9 16] [:append 6 3]]	:moved
+0	:invoke	:txn	[[:append 11 68] [:r 11 nil] [:r 10 nil] [:append 10 18]]
+1	:invoke	:txn	[[:r 11 nil] [:r 11 nil] [:append 11 69] [:r 11 nil]]
+1	:fail	:txn	[[:r 11 nil] [:r 11 nil] [:append 11 69] [:r 11 nil]]	:moved
+4	:invoke	:txn	[[:r 10 nil] [:r 9 nil] [:append 11 70]]
+0	:ok	:txn	[[:append 11 68] [:r 11 [2 5 19 26 36 37 38 48 68]] [:r 10 [6 10]] [:append 10 18]]
+4	:fail	:txn	[[:r 10 nil] [:r 9 nil] [:append 11 70]]	:moved
+3	:invoke	:txn	[[:append 10 19]]
+3	:fail	:txn	[[:append 10 19]]	:moved
+1	:invoke	:txn	[[:r 11 nil] [:append 11 71] [:r 11 nil] [:r 11 nil]]
+1	:fail	:txn	[[:r 11 nil] [:append 11 71] [:r 11 nil] [:r 11 nil]]	:moved
+2	:invoke	:txn	[[:append 11 72] [:r 10 nil] [:r 11 nil] [:r 11 nil]]
+2	:fail	:txn	[[:append 11 72] [:r 10 nil] [:r 11 nil] [:r 11 nil]]	:moved
+2	:invoke	:txn	[[:append 10 20] [:r 11 nil]]
+2	:fail	:txn	[[:append 10 20] [:r 11 nil]]	:moved
+0	:invoke	:txn	[[:append 11 73] [:r 11 nil] [:r 10 nil]]
+2	:invoke	:txn	[[:r 11 nil] [:r 7 nil]]
+2	:fail	:txn	[[:r 11 nil] [:r 7 nil]]	:moved
+4	:invoke	:txn	[[:r 11 nil]]
+4	:fail	:txn	[[:r 11 nil]]	:moved
+1	:invoke	:txn	[[:r 10 nil] [:append 6 4] [:r 10 nil] [:append 11 74]]
+1	:fail	:txn	[[:r 10 nil] [:append 6 4] [:r 10 nil] [:append 11 74]]	:moved
+0	:ok	:txn	[[:append 11 73] [:r 11 [2 5 19 26 36 37 38 48 68 73]] [:r 10 [6 10 18]]]
+4	:invoke	:txn	[[:r 11 nil] [:r 10 nil]]
+4	:fail	:txn	[[:r 11 nil] [:r 10 nil]]	:moved
+2	:invoke	:txn	[[:r 11 nil]]
+2	:fail	:txn	[[:r 11 nil]]	:moved
+4	:invoke	:txn	[[:append 8 10]]
+4	:fail	:txn	[[:append 8 10]]	:moved
+1	:invoke	:txn	[[:r 11 nil]]
+1	:fail	:txn	[[:r 11 nil]]	:moved
+1	:invoke	:txn	[[:r 10 nil]]
+1	:fail	:txn	[[:r 10 nil]]	:moved
+3	:invoke	:txn	[[:r 9 nil] [:append 10 21] [:append 9 17]]
+3	:fail	:txn	[[:r 9 nil] [:append 10 21] [:append 9 17]]	:moved
+0	:invoke	:txn	[[:r 11 nil]]
+0	:ok	:txn	[[:r 11 [2 5 19 26 36 37 38 48 68 73]]]
+3	:invoke	:txn	[[:append 11 75] [:r 9 nil] [:r 11 nil]]
+3	:fail	:txn	[[:append 11 75] [:r 9 nil] [:r 11 nil]]	:moved
+1	:invoke	:txn	[[:r 11 nil] [:append 11 76] [:append 11 77]]
+1	:fail	:txn	[[:r 11 nil] [:append 11 76] [:append 11 77]]	:moved
+4	:invoke	:txn	[[:append 9 18] [:r 11 nil] [:append 11 78] [:r 11 nil]]
+4	:fail	:txn	[[:append 9 18] [:r 11 nil] [:append 11 78] [:r 11 nil]]	:moved
+3	:invoke	:txn	[[:append 11 79] [:r 11 nil]]
+3	:fail	:txn	[[:append 11 79] [:r 11 nil]]	:moved
+0	:invoke	:txn	[[:r 11 nil] [:r 11 nil] [:r 11 nil]]
+2	:invoke	:txn	[[:r 9 nil] [:append 11 80]]
+2	:fail	:txn	[[:r 9 nil] [:append 11 80]]	:moved
+1	:invoke	:txn	[[:append 11 81] [:append 10 22] [:r 10 nil] [:append 11 82]]
+1	:fail	:txn	[[:append 11 81] [:append 10 22] [:r 10 nil] [:append 11 82]]	:moved
+3	:invoke	:txn	[[:r 10 nil] [:append 11 83] [:r 11 nil] [:r 10 nil]]
+0	:ok	:txn	[[:r 11 [2 5 19 26 36 37 38 48 68 73]] [:r 11 [2 5 19 26 36 37 38 48 68 73]] [:r 11 [2 5 19 26 36 37 38 48 68 73]]]
+3	:fail	:txn	[[:r 10 nil] [:append 11 83] [:r 11 nil] [:r 10 nil]]	:moved
+4	:invoke	:txn	[[:append 9 19] [:append 10 23] [:append 11 84] [:append 11 85]]
+4	:fail	:txn	[[:append 9 19] [:append 10 23] [:append 11 84] [:append 11 85]]	:moved
+2	:invoke	:txn	[[:r 10 nil]]
+2	:fail	:txn	[[:r 10 nil]]	:moved
+2	:invoke	:txn	[[:r 11 nil] [:append 10 24] [:r 10 nil] [:append 9 20]]
+2	:fail	:txn	[[:r 11 nil] [:append 10 24] [:r 10 nil] [:append 9 20]]	:moved
+1	:invoke	:txn	[[:append 10 25] [:append 11 86] [:append 8 11] [:append 11 87]]
+1	:fail	:txn	[[:append 10 25] [:append 11 86] [:append 8 11] [:append 11 87]]	:moved
+3	:invoke	:txn	[[:r 11 nil] [:r 11 nil] [:append 11 88]]
+3	:fail	:txn	[[:r 11 nil] [:r 11 nil] [:append 11 88]]	:moved
+4	:invoke	:txn	[[:r 8 nil] [:r 9 nil]]
+4	:fail	:txn	[[:r 8 nil] [:r 9 nil]]	:moved
+0	:invoke	:txn	[[:append 11 89] [:r 8 nil] [:append 10 26]]
+0	:ok	:txn	[[:append 11 89] [:r 8 [3]] [:append 10 26]]
+1	:invoke	:txn	[[:r 9 nil] [:r 9 nil] [:append 11 90]]
+1	:fail	:txn	[[:r 9 nil] [:r 9 nil] [:append 11 90]]	:moved
+2	:invoke	:txn	[[:r 11 nil] [:r 8 nil] [:append 9 21]]
+2	:fail	:txn	[[:r 11 nil] [:r 8 nil] [:append 9 21]]	:moved
+4	:invoke	:txn	[[:r 11 nil] [:r 11 nil] [:append 10 27]]
+4	:fail	:txn	[[:r 11 nil] [:r 11 nil] [:append 10 27]]	:moved
+:nemesis	:info	:leave	"n3"
+3	:invoke	:txn	[[:r 10 nil]]
+3	:fail	:txn	[[:r 10 nil]]	:moved
+4	:invoke	:txn	[[:r 10 nil] [:append 11 91] [:r 6 nil] [:append 10 28]]
+4	:fail	:txn	[[:r 10 nil] [:append 11 91] [:r 6 nil] [:append 10 28]]	:moved
+3	:invoke	:txn	[[:append 5 2] [:r 11 nil] [:append 8 12]]
+3	:fail	:txn	[[:append 5 2] [:r 11 nil] [:append 8 12]]	:moved
+4	:invoke	:txn	[[:append 11 92] [:r 10 nil]]
+4	:fail	:txn	[[:append 11 92] [:r 10 nil]]	:moved
+2	:invoke	:txn	[[:r 11 nil]]
+2	:fail	:txn	[[:r 11 nil]]	:moved
+3	:invoke	:txn	[[:append 8 13]]
+3	:fail	:txn	[[:append 8 13]]	:moved
+0	:invoke	:txn	[[:append 11 93] [:append 11 94] [:append 10 29] [:r 11 nil]]
+1	:invoke	:txn	[[:append 10 30] [:append 11 95] [:append 11 96] [:r 11 nil]]
+0	:ok	:txn	[[:append 11 93] [:append 11 94] [:append 10 29] [:r 11 [2 5 19 26 36 37 38 48 68 73 89 93 94]]]
+1	:fail	:txn	[[:append 10 30] [:append 11 95] [:append 11 96] [:r 11 nil]]	:moved
+2	:invoke	:txn	[[:append 10 31] [:append 11 97]]
+2	:fail	:txn	[[:append 10 31] [:append 11 97]]	:moved
+4	:invoke	:txn	[[:append 10 32] [:r 11 nil]]
+4	:fail	:txn	[[:append 10 32] [:r 11 nil]]	:moved
+1	:invoke	:txn	[[:r 10 nil]]
+1	:fail	:txn	[[:r 10 nil]]	:moved
+0	:invoke	:txn	[[:r 10 nil] [:r 11 nil] [:append 11 98] [:append 9 22]]
+1	:invoke	:txn	[[:r 10 nil] [:r 10 nil]]
+1	:fail	:txn	[[:r 10 nil] [:r 10 nil]]	:moved
+3	:invoke	:txn	[[:r 11 nil]]
+3	:fail	:txn	[[:r 11 nil]]	:moved
+4	:invoke	:txn	[[:append 10 33] [:append 11 99]]
+4	:fail	:txn	[[:append 10 33] [:append 11 99]]	:moved
+0	:ok	:txn	[[:r 10 [6 10 18 26 29]] [:r 11 [2 5 19 26 36 37 38 48 68 73 89 93 94]] [:append 11 98] [:append 9 22]]
+1	:invoke	:txn	[[:r 7 nil] [:append 6 5]]
+:nemesis	:info	:leave	["n3" {"n1" "OK"}]
+2	:invoke	:txn	[[:r 11 nil] [:append 11 100] [:r 10 nil]]
+1	:fail	:txn	[[:r 7 nil] [:append 6 5]]	:moved
+2	:fail	:txn	[[:r 11 nil] [:append 11 100] [:r 10 nil]]	:moved
+3	:invoke	:txn	[[:append 11 101]]
+3	:fail	:txn	[[:append 11 101]]	:moved
+1	:invoke	:txn	[[:append 11 102] [:r 10 nil] [:append 11 103]]
+1	:fail	:txn	[[:append 11 102] [:r 10 nil] [:append 11 103]]	:moved
+4	:invoke	:txn	[[:append 11 104] [:append 11 105] [:append 10 34] [:append 9 23]]
+4	:fail	:txn	[[:append 11 104] [:append 11 105] [:append 10 34] [:append 9 23]]	:moved
+0	:invoke	:txn	[[:append 11 106] [:r 10 nil]]
+1	:invoke	:txn	[[:append 9 24] [:append 11 107] [:append 8 14] [:append 11 108]]
+2	:invoke	:txn	[[:append 7 8] [:r 11 nil] [:append 11 109] [:r 11 nil]]
+2	:info	:txn	[[:append 7 8] [:r 11 nil] [:append 11 109] [:r 11 nil]]	[:socket Broken pipe (Write failed)]
+0	:ok	:txn	[[:append 11 106] [:r 10 [6 10 18 26 29]]]
+1	:fail	:txn	[[:append 9 24] [:append 11 107] [:append 8 14] [:append 11 108]]	:moved
+4	:invoke	:txn	[[:r 11 nil] [:append 11 110] [:r 11 nil] [:append 10 35]]
+4	:fail	:txn	[[:r 11 nil] [:append 11 110] [:r 11 nil] [:append 10 35]]	:moved
+3	:invoke	:txn	[[:append 11 111] [:r 10 nil] [:r 11 nil] [:append 11 112]]
+0	:invoke	:txn	[[:r 11 nil] [:r 11 nil] [:r 11 nil] [:append 8 15]]
+3	:fail	:txn	[[:append 11 111] [:r 10 nil] [:r 11 nil] [:append 11 112]]	:moved
+3	:invoke	:txn	[[:r 10 nil]]
+3	:fail	:txn	[[:r 10 nil]]	:moved
+0	:ok	:txn	[[:r 11 [2 5 19 26 36 37 38 48 68 73 89 93 94 98 106]] [:r 11 [2 5 19 26 36 37 38 48 68 73 89 93 94 98 106]] [:r 11 [2 5 19 26 36 37 38 48 68 73 89 93 94 98 106]] [:append 8 15]]
+0	:invoke	:txn	[[:append 10 36] [:append 10 37] [:r 10 nil] [:r 11 nil]]
+1	:invoke	:txn	[[:r 8 nil] [:append 7 9]]
+4	:invoke	:txn	[[:r 9 nil]]
+4	:fail	:txn	[[:r 9 nil]]	:moved
+0	:ok	:txn	[[:append 10 36] [:append 10 37] [:r 10 [6 10 18 26 29 36 37]] [:r 11 [2 5 19 26 36 37 38 48 68 73 89 93 94 98 106]]]
+1	:fail	:txn	[[:r 8 nil] [:append 7 9]]	:moved
+4	:invoke	:txn	[[:r 9 nil] [:append 9 25]]
+3	:invoke	:txn	[[:r 11 nil]]
+4	:fail	:txn	[[:r 9 nil] [:append 9 25]]	:moved
+3	:fail	:txn	[[:r 11 nil]]	:moved
+1	:invoke	:txn	[[:append 11 113] [:r 11 nil] [:append 10 38] [:r 10 nil]]
+1	:fail	:txn	[[:append 11 113] [:r 11 nil] [:append 10 38] [:r 10 nil]]	:moved
+0	:invoke	:txn	[[:r 11 nil] [:append 11 114] [:r 11 nil] [:r 10 nil]]
+1	:invoke	:txn	[[:append 11 115] [:append 9 26] [:r 8 nil] [:r 10 nil]]
+0	:ok	:txn	[[:r 11 [2 5 19 26 36 37 38 48 68 73 89 93 94 98 106]] [:append 11 114] [:r 11 [2 5 19 26 36 37 38 48 68 73 89 93 94 98 106 114]] [:r 10 [6 10 18 26 29 36 37]]]
+1	:fail	:txn	[[:append 11 115] [:append 9 26] [:r 8 nil] [:r 10 nil]]	:moved
+3	:invoke	:txn	[[:append 9 27] [:r 11 nil] [:append 6 6] [:append 10 39]]
+4	:invoke	:txn	[[:r 7 nil] [:r 10 nil] [:append 10 40] [:r 10 nil]]
+3	:fail	:txn	[[:append 9 27] [:r 11 nil] [:append 6 6] [:append 10 39]]	:moved
+4	:fail	:txn	[[:r 7 nil] [:r 10 nil] [:append 10 40] [:r 10 nil]]	:moved
+4	:invoke	:txn	[[:r 11 nil]]
+4	:fail	:txn	[[:r 11 nil]]	:moved
+4	:invoke	:txn	[[:append 11 116]]
+4	:fail	:txn	[[:append 11 116]]	:moved
+0	:invoke	:txn	[[:r 11 nil] [:append 11 117] [:r 11 nil]]
+4	:invoke	:txn	[[:append 4 1]]
+4	:fail	:txn	[[:append 4 1]]	:moved
+3	:invoke	:txn	[[:append 8 16]]
+3	:fail	:txn	[[:append 8 16]]	:moved
+1	:invoke	:txn	[[:r 10 nil]]
+1	:fail	:txn	[[:r 10 nil]]	:moved
+1	:invoke	:txn	[[:append 11 118] [:append 10 41]]
+0	:ok	:txn	[[:r 11 [2 5 19 26 36 37 38 48 68 73 89 93 94 98 106 114]] [:append 11 117] [:r 11 [2 5 19 26 36 37 38 48 68 73 89 93 94 98 106 114 117]]]
+1	:fail	:txn	[[:append 11 118] [:append 10 41]]	:moved
+4	:invoke	:txn	[[:append 11 119] [:append 5 3]]
+4	:fail	:txn	[[:append 11 119] [:append 5 3]]	:moved
+3	:invoke	:txn	[[:r 11 nil] [:append 9 28] [:append 7 10] [:append 11 120]]
+3	:fail	:txn	[[:r 11 nil] [:append 9 28] [:append 7 10] [:append 11 120]]	:moved
+1	:invoke	:txn	[[:append 11 121]]
+1	:fail	:txn	[[:append 11 121]]	:moved
+0	:invoke	:txn	[[:append 11 122] [:r 7 nil]]
+4	:invoke	:txn	[[:r 9 nil]]
+4	:fail	:txn	[[:r 9 nil]]	:moved
+3	:invoke	:txn	[[:append 10 42]]
+3	:fail	:txn	[[:append 10 42]]	:moved
+4	:invoke	:txn	[[:append 11 123] [:r 9 nil]]
+0	:ok	:txn	[[:append 11 122] [:r 7 []]]
+4	:fail	:txn	[[:append 11 123] [:r 9 nil]]	:moved
+0	:invoke	:txn	[[:append 10 43] [:r 11 nil] [:r 9 nil] [:append 11 124]]
+3	:invoke	:txn	[[:r 8 nil] [:r 10 nil]]
+3	:fail	:txn	[[:r 8 nil] [:r 10 nil]]	:moved
+1	:invoke	:txn	[[:append 11 125] [:append 11 126]]
+1	:fail	:txn	[[:append 11 125] [:append 11 126]]	:moved
+4	:invoke	:txn	[[:append 11 127] [:r 10 nil] [:r 9 nil] [:append 11 128]]
+3	:invoke	:txn	[[:r 11 nil] [:append 12 1] [:r 12 nil] [:append 8 17]]
+0	:ok	:txn	[[:append 10 43] [:r 11 [2 5 19 26 36 37 38 48 68 73 89 93 94 98 106 114 117 122]] [:r 9 [22]] [:append 11 124]]
+4	:fail	:txn	[[:append 11 127] [:r 10 nil] [:r 9 nil] [:append 11 128]]	:moved
+3	:fail	:txn	[[:r 11 nil] [:append 12 1] [:r 12 nil] [:append 8 17]]	:moved
+3	:invoke	:txn	[[:r 10 nil] [:r 12 nil]]
+3	:fail	:txn	[[:r 10 nil] [:r 12 nil]]	:moved
+1	:invoke	:txn	[[:append 9 29] [:r 8 nil] [:append 5 4]]
+1	:fail	:txn	[[:append 9 29] [:r 8 nil] [:append 5 4]]	:moved
+0	:invoke	:txn	[[:r 12 nil]]
+1	:invoke	:txn	[[:r 8 nil] [:append 12 2] [:r 12 nil] [:r 12 nil]]
+0	:ok	:txn	[[:r 12 []]]
+1	:fail	:txn	[[:r 8 nil] [:append 12 2] [:r 12 nil] [:r 12 nil]]	:moved
+3	:invoke	:txn	[[:r 12 nil] [:append 10 44] [:append 10 45] [:append 12 3]]
+3	:fail	:txn	[[:r 12 nil] [:append 10 44] [:append 10 45] [:append 12 3]]	:moved
+4	:invoke	:txn	[[:r 12 nil] [:append 12 4] [:append 12 5] [:append 8 18]]
+4	:fail	:txn	[[:r 12 nil] [:append 12 4] [:append 12 5] [:append 8 18]]	:moved
+3	:invoke	:txn	[[:append 10 46]]
+3	:fail	:txn	[[:append 10 46]]	:moved
+4	:invoke	:txn	[[:append 12 6] [:append 12 7] [:append 10 47] [:append 12 8]]
+4	:fail	:txn	[[:append 12 6] [:append 12 7] [:append 10 47] [:append 12 8]]	:moved
+0	:invoke	:txn	[[:r 10 nil]]
+0	:ok	:txn	[[:r 10 [6 10 18 26 29 36 37 43]]]
+1	:invoke	:txn	[[:r 8 nil] [:append 6 7] [:append 12 9] [:append 12 10]]
+1	:fail	:txn	[[:r 8 nil] [:append 6 7] [:append 12 9] [:append 12 10]]	:moved
+1	:invoke	:txn	[[:append 12 11] [:append 9 30] [:append 12 12]]
+1	:fail	:txn	[[:append 12 11] [:append 9 30] [:append 12 12]]	:moved
+3	:invoke	:txn	[[:append 9 31] [:append 8 19]]
+3	:fail	:txn	[[:append 9 31] [:append 8 19]]	:moved
+4	:invoke	:txn	[[:r 8 nil]]
+4	:fail	:txn	[[:r 8 nil]]	:moved
+0	:invoke	:txn	[[:r 12 nil] [:r 12 nil] [:append 10 48] [:r 12 nil]]
+1	:invoke	:txn	[[:append 12 13] [:r 12 nil] [:r 12 nil] [:r 9 nil]]
+3	:invoke	:txn	[[:r 10 nil] [:append 5 5] [:r 12 nil] [:r 6 nil]]
+0	:ok	:txn	[[:r 12 []] [:r 12 []] [:append 10 48] [:r 12 []]]
+1	:fail	:txn	[[:append 12 13] [:r 12 nil] [:r 12 nil] [:r 9 nil]]	:moved
+3	:fail	:txn	[[:r 10 nil] [:append 5 5] [:r 12 nil] [:r 6 nil]]	:moved
+3	:invoke	:txn	[[:r 12 nil] [:r 12 nil] [:append 12 14] [:r 12 nil]]
+3	:fail	:txn	[[:r 12 nil] [:r 12 nil] [:append 12 14] [:r 12 nil]]	:moved
+4	:invoke	:txn	[[:append 10 49] [:append 9 32] [:r 7 nil] [:r 12 nil]]
+4	:fail	:txn	[[:append 10 49] [:append 9 32] [:r 7 nil] [:r 12 nil]]	:moved
+1	:invoke	:txn	[[:append 12 15] [:append 10 50] [:append 12 16]]
+1	:fail	:txn	[[:append 12 15] [:append 10 50] [:append 12 16]]	:moved
+1	:invoke	:txn	[[:r 12 nil] [:r 5 nil] [:r 12 nil] [:r 12 nil]]
+1	:fail	:txn	[[:r 12 nil] [:r 5 nil] [:r 12 nil] [:r 12 nil]]	:moved
+4	:invoke	:txn	[[:append 9 33] [:append 12 17] [:r 10 nil]]
+4	:fail	:txn	[[:append 9 33] [:append 12 17] [:r 10 nil]]	:moved
+0	:invoke	:txn	[[:r 12 nil] [:r 12 nil] [:append 12 18]]
+4	:invoke	:txn	[[:r 12 nil] [:append 9 34] [:append 12 19] [:r 12 nil]]
+0	:ok	:txn	[[:r 12 []] [:r 12 []] [:append 12 18]]
+4	:fail	:txn	[[:r 12 nil] [:append 9 34] [:append 12 19] [:r 12 nil]]	:moved
+3	:invoke	:txn	[[:r 12 nil] [:r 12 nil] [:append 12 20]]
+3	:fail	:txn	[[:r 12 nil] [:r 12 nil] [:append 12 20]]	:moved
+3	:invoke	:txn	[[:append 10 51] [:append 12 21]]
+3	:fail	:txn	[[:append 10 51] [:append 12 21]]	:moved
+3	:invoke	:txn	[[:r 12 nil] [:append 12 22] [:r 12 nil]]
+3	:fail	:txn	[[:r 12 nil] [:append 12 22] [:r 12 nil]]	:moved
+4	:invoke	:txn	[[:append 9 35] [:append 10 52] [:r 12 nil]]
+4	:fail	:txn	[[:append 9 35] [:append 10 52] [:r 12 nil]]	:moved
+0	:invoke	:txn	[[:r 10 nil] [:r 10 nil] [:r 12 nil] [:r 12 nil]]
+4	:invoke	:txn	[[:r 2 nil] [:append 12 23]]
+4	:fail	:txn	[[:r 2 nil] [:append 12 23]]	:moved
+1	:invoke	:txn	[[:append 9 36] [:r 9 nil]]
+1	:fail	:txn	[[:append 9 36] [:r 9 nil]]	:moved
+3	:invoke	:txn	[[:r 10 nil]]
+4	:invoke	:txn	[[:r 9 nil]]
+3	:fail	:txn	[[:r 10 nil]]	:moved
+4	:fail	:txn	[[:r 9 nil]]	:moved
+0	:ok	:txn	[[:r 10 [6 10 18 26 29 36 37 43 48]] [:r 10 [6 10 18 26 29 36 37 43 48]] [:r 12 [18]] [:r 12 [18]]]
+1	:invoke	:txn	[[:append 12 24] [:append 8 20] [:append 10 53] [:r 10 nil]]
+1	:fail	:txn	[[:append 12 24] [:append 8 20] [:append 10 53] [:r 10 nil]]	:moved
+3	:invoke	:txn	[[:append 12 25]]
+3	:fail	:txn	[[:append 12 25]]	:moved
+4	:invoke	:txn	[[:append 10 54] [:r 12 nil] [:append 12 26]]
+4	:fail	:txn	[[:append 10 54] [:r 12 nil] [:append 12 26]]	:moved
+4	:invoke	:txn	[[:r 9 nil] [:r 10 nil] [:append 12 27] [:r 10 nil]]
+4	:fail	:txn	[[:r 9 nil] [:r 10 nil] [:append 12 27] [:r 10 nil]]	:moved
+3	:invoke	:txn	[[:r 8 nil]]
+3	:fail	:txn	[[:r 8 nil]]	:moved
+0	:invoke	:txn	[[:r 10 nil] [:r 9 nil] [:r 6 nil] [:append 10 55]]
+1	:invoke	:txn	[[:r 9 nil] [:r 8 nil] [:append 12 28]]
+3	:invoke	:txn	[[:append 9 37] [:r 12 nil]]
+0	:ok	:txn	[[:r 10 [6 10 18 26 29 36 37 43 48]] [:r 9 [22]] [:r 6 []] [:append 10 55]]
+3	:fail	:txn	[[:append 9 37] [:r 12 nil]]	:moved
+1	:fail	:txn	[[:r 9 nil] [:r 8 nil] [:append 12 28]]	:moved
+0	:invoke	:txn	[[:append 8 21]]
+4	:invoke	:txn	[[:r 12 nil] [:append 12 29] [:r 12 nil]]
+4	:fail	:txn	[[:r 12 nil] [:append 12 29] [:r 12 nil]]	:moved
+4	:invoke	:txn	[[:r 9 nil] [:append 10 56] [:append 10 57]]
+4	:fail	:txn	[[:r 9 nil] [:append 10 56] [:append 10 57]]	:moved
+1	:invoke	:txn	[[:append 9 38] [:append 10 58] [:append 10 59]]
+0	:ok	:txn	[[:append 8 21]]
+1	:fail	:txn	[[:append 9 38] [:append 10 58] [:append 10 59]]	:moved
+4	:invoke	:txn	[[:r 12 nil] [:r 8 nil] [:r 12 nil]]
+3	:invoke	:txn	[[:append 10 60] [:r 10 nil] [:append 12 30]]
+4	:fail	:txn	[[:r 12 nil] [:r 8 nil] [:r 12 nil]]	:moved
+3	:fail	:txn	[[:append 10 60] [:r 10 nil] [:append 12 30]]	:moved
+1	:invoke	:txn	[[:r 12 nil] [:r 9 nil] [:r 12 nil]]
+1	:fail	:txn	[[:r 12 nil] [:r 9 nil] [:r 12 nil]]	:moved
+0	:invoke	:txn	[[:r 12 nil] [:append 12 31] [:r 12 nil] [:append 9 39]]
+1	:invoke	:txn	[[:append 6 8] [:append 10 61]]
+3	:invoke	:txn	[[:append 12 32] [:append 12 33] [:r 9 nil] [:r 12 nil]]
+1	:fail	:txn	[[:append 6 8] [:append 10 61]]	:moved
+3	:fail	:txn	[[:append 12 32] [:append 12 33] [:r 9 nil] [:r 12 nil]]	:moved
+4	:invoke	:txn	[[:r 10 nil]]
+4	:fail	:txn	[[:r 10 nil]]	:moved
+0	:ok	:txn	[[:r 12 [18]] [:append 12 31] [:r 12 [18 31]] [:append 9 39]]
+3	:invoke	:txn	[[:append 4 2] [:r 9 nil] [:r 9 nil] [:append 9 40]]
+3	:fail	:txn	[[:append 4 2] [:r 9 nil] [:r 9 nil] [:append 9 40]]	:moved
+0	:invoke	:txn	[[:r 12 nil]]
+0	:ok	:txn	[[:r 12 [18 31]]]
+4	:invoke	:txn	[[:r 10 nil] [:append 10 62] [:r 12 nil]]
+4	:fail	:txn	[[:r 10 nil] [:append 10 62] [:r 12 nil]]	:moved
+1	:invoke	:txn	[[:r 10 nil] [:r 12 nil]]
+1	:fail	:txn	[[:r 10 nil] [:r 12 nil]]	:moved
+0	:invoke	:txn	[[:r 12 nil] [:r 12 nil] [:append 12 34]]
+1	:invoke	:txn	[[:append 9 41] [:r 10 nil]]
+1	:fail	:txn	[[:append 9 41] [:r 10 nil]]	:moved
+3	:invoke	:txn	[[:append 12 35] [:append 9 42] [:append 12 36] [:append 9 43]]
+4	:invoke	:txn	[[:append 10 63] [:r 12 nil] [:append 12 37]]
+0	:ok	:txn	[[:r 12 [18 31]] [:r 12 [18 31]] [:append 12 34]]
+4	:fail	:txn	[[:append 10 63] [:r 12 nil] [:append 12 37]]	:moved
+3	:fail	:txn	[[:append 12 35] [:append 9 42] [:append 12 36] [:append 9 43]]	:moved
+1	:invoke	:txn	[[:append 12 38]]
+1	:fail	:txn	[[:append 12 38]]	:moved
+0	:invoke	:txn	[[:r 10 nil] [:append 12 39]]
+3	:invoke	:txn	[[:append 12 40] [:r 10 nil] [:append 12 41] [:append 12 42]]
+3	:fail	:txn	[[:append 12 40] [:r 10 nil] [:append 12 41] [:append 12 42]]	:moved
+4	:invoke	:txn	[[:r 10 nil] [:append 12 43] [:append 12 44] [:append 12 45]]
+4	:fail	:txn	[[:r 10 nil] [:append 12 43] [:append 12 44] [:append 12 45]]	:moved
+:nemesis	:info	:check-clock-offsets	nil
+3	:invoke	:txn	[[:r 9 nil] [:r 12 nil] [:append 10 64] [:r 12 nil]]
+0	:ok	:txn	[[:r 10 [6 10 18 26 29 36 37 43 48 55]] [:append 12 39]]
+3	:fail	:txn	[[:r 9 nil] [:r 12 nil] [:append 10 64] [:r 12 nil]]	:moved
+4	:invoke	:txn	[[:r 12 nil]]
+4	:fail	:txn	[[:r 12 nil]]	:moved
+:nemesis	:info	:check-clock-offsets	nil
+3	:invoke	:txn	[[:r 10 nil] [:append 12 46] [:r 9 nil] [:r 10 nil]]
+3	:fail	:txn	[[:r 10 nil] [:append 12 46] [:r 9 nil] [:r 10 nil]]	:moved
+1	:invoke	:txn	[[:append 9 44] [:r 10 nil] [:r 12 nil] [:append 12 47]]
+1	:fail	:txn	[[:append 9 44] [:r 10 nil] [:r 12 nil] [:append 12 47]]	:moved
+1	:invoke	:txn	[[:append 12 48] [:append 10 65] [:r 12 nil] [:r 9 nil]]
+1	:fail	:txn	[[:append 12 48] [:append 10 65] [:r 12 nil] [:r 9 nil]]	:moved
+4	:invoke	:txn	[[:append 12 49] [:r 8 nil] [:r 12 nil] [:append 12 50]]
+4	:fail	:txn	[[:append 12 49] [:r 8 nil] [:r 12 nil] [:append 12 50]]	:moved
+0	:invoke	:txn	[[:r 9 nil] [:append 12 51] [:append 12 52]]
+4	:invoke	:txn	[[:append 10 66] [:r 9 nil] [:r 8 nil] [:r 12 nil]]
+0	:ok	:txn	[[:r 9 [22 39]] [:append 12 51] [:append 12 52]]
+4	:fail	:txn	[[:append 10 66] [:r 9 nil] [:r 8 nil] [:r 12 nil]]	:moved
+3	:invoke	:txn	[[:append 12 53]]
+3	:fail	:txn	[[:append 12 53]]	:moved
+1	:invoke	:txn	[[:r 8 nil] [:append 4 3] [:r 12 nil] [:r 12 nil]]
+1	:fail	:txn	[[:r 8 nil] [:append 4 3] [:r 12 nil] [:r 12 nil]]	:moved
+1	:invoke	:txn	[[:r 12 nil]]
+1	:fail	:txn	[[:r 12 nil]]	:moved
+1	:invoke	:txn	[[:append 8 22] [:append 10 67]]
+1	:fail	:txn	[[:append 8 22] [:append 10 67]]	:moved
+3	:invoke	:txn	[[:append 12 54] [:append 10 68] [:r 9 nil] [:append 10 69]]
+3	:fail	:txn	[[:append 12 54] [:append 10 68] [:r 9 nil] [:append 10 69]]	:moved
+4	:invoke	:txn	[[:r 12 nil] [:r 10 nil] [:r 12 nil] [:append 10 70]]
+4	:fail	:txn	[[:r 12 nil] [:r 10 nil] [:r 12 nil] [:append 10 70]]	:moved
+3	:invoke	:txn	[[:append 7 11] [:r 9 nil] [:r 12 nil] [:r 12 nil]]
+0	:invoke	:txn	[[:r 12 nil] [:append 12 55]]
+3	:fail	:txn	[[:append 7 11] [:r 9 nil] [:r 12 nil] [:r 12 nil]]	:moved
+0	:ok	:txn	[[:r 12 [18 31 34 39 51 52]] [:append 12 55]]
+1	:invoke	:txn	[[:append 12 56] [:append 10 71] [:r 10 nil] [:r 9 nil]]
+1	:fail	:txn	[[:append 12 56] [:append 10 71] [:r 10 nil] [:r 9 nil]]	:moved
+1	:invoke	:txn	[[:append 12 57] [:append 8 23]]
+1	:fail	:txn	[[:append 12 57] [:append 8 23]]	:moved
+4	:invoke	:txn	[[:r 12 nil] [:r 12 nil] [:append 9 45]]
+4	:fail	:txn	[[:r 12 nil] [:r 12 nil] [:append 9 45]]	:moved
+3	:invoke	:txn	[[:r 10 nil] [:append 10 72] [:r 9 nil]]
+3	:fail	:txn	[[:r 10 nil] [:append 10 72] [:r 9 nil]]	:moved
+1	:invoke	:txn	[[:append 12 58]]
+1	:fail	:txn	[[:append 12 58]]	:moved
+0	:invoke	:txn	[[:append 8 24] [:r 10 nil]]
+4	:invoke	:txn	[[:append 12 59]]
+4	:fail	:txn	[[:append 12 59]]	:moved
+0	:ok	:txn	[[:append 8 24] [:r 10 [6 10 18 26 29 36 37 43 48 55]]]
+3	:invoke	:txn	[[:r 12 nil] [:r 12 nil] [:append 10 73]]
+3	:fail	:txn	[[:r 12 nil] [:r 12 nil] [:append 10 73]]	:moved
+1	:invoke	:txn	[[:append 12 60]]
+1	:fail	:txn	[[:append 12 60]]	:moved
+0	:invoke	:txn	[[:append 9 46] [:r 10 nil] [:r 8 nil] [:append 12 61]]
+3	:invoke	:txn	[[:r 10 nil] [:r 12 nil] [:r 12 nil] [:append 12 62]]
+0	:ok	:txn	[[:append 9 46] [:r 10 [6 10 18 26 29 36 37 43 48 55]] [:r 8 [3 15 21 24]] [:append 12 61]]
+3	:fail	:txn	[[:r 10 nil] [:r 12 nil] [:r 12 nil] [:append 12 62]]	:moved
+4	:invoke	:txn	[[:append 10 74] [:r 12 nil] [:r 12 nil] [:r 6 nil]]
+4	:fail	:txn	[[:append 10 74] [:r 12 nil] [:r 12 nil] [:r 6 nil]]	:moved
+1	:invoke	:txn	[[:r 12 nil]]
+1	:fail	:txn	[[:r 12 nil]]	:moved
+0	:invoke	:txn	[[:r 12 nil]]
+0	:ok	:txn	[[:r 12 [18 31 34 39 51 52 55 61]]]
+3	:invoke	:txn	[[:append 10 75] [:append 12 63] [:r 12 nil] [:r 12 nil]]
+3	:fail	:txn	[[:append 10 75] [:append 12 63] [:r 12 nil] [:r 12 nil]]	:moved
+0	:invoke	:txn	[[:r 12 nil] [:append 12 64]]
+1	:invoke	:txn	[[:append 12 65]]
+4	:invoke	:txn	[[:r 12 nil] [:append 10 76]]
+1	:fail	:txn	[[:append 12 65]]	:moved
+0	:ok	:txn	[[:r 12 [18 31 34 39 51 52 55 61]] [:append 12 64]]
+4	:fail	:txn	[[:r 12 nil] [:append 10 76]]	:moved
+3	:invoke	:txn	[[:append 9 47] [:append 12 66] [:r 12 nil] [:r 12 nil]]
+3	:fail	:txn	[[:append 9 47] [:append 12 66] [:r 12 nil] [:r 12 nil]]	:moved
+0	:invoke	:txn	[[:append 12 67]]
+0	:ok	:txn	[[:append 12 67]]
+3	:invoke	:txn	[[:r 8 nil] [:append 12 68] [:r 9 nil] [:append 12 69]]
+3	:fail	:txn	[[:r 8 nil] [:append 12 68] [:r 9 nil] [:append 12 69]]	:moved
+4	:invoke	:txn	[[:append 10 77]]
+4	:fail	:txn	[[:append 10 77]]	:moved
+1	:invoke	:txn	[[:r 12 nil] [:append 9 48] [:append 5 6]]
+1	:fail	:txn	[[:r 12 nil] [:append 9 48] [:append 5 6]]	:moved
+3	:invoke	:txn	[[:append 12 70] [:r 10 nil] [:r 10 nil] [:r 12 nil]]
+3	:fail	:txn	[[:append 12 70] [:r 10 nil] [:r 10 nil] [:r 12 nil]]	:moved
+1	:invoke	:txn	[[:append 10 78] [:r 10 nil] [:append 12 71] [:append 12 72]]
+1	:fail	:txn	[[:append 10 78] [:r 10 nil] [:append 12 71] [:append 12 72]]	:moved
+3	:invoke	:txn	[[:r 9 nil] [:r 12 nil]]
+3	:fail	:txn	[[:r 9 nil] [:r 12 nil]]	:moved
+0	:invoke	:txn	[[:r 7 nil] [:append 12 73] [:append 12 74]]
+4	:invoke	:txn	[[:append 7 12]]
+4	:fail	:txn	[[:append 7 12]]	:moved
+4	:invoke	:txn	[[:r 12 nil]]
+4	:fail	:txn	[[:r 12 nil]]	:moved
+0	:ok	:txn	[[:r 7 []] [:append 12 73] [:append 12 74]]
+3	:invoke	:txn	[[:r 9 nil]]
+3	:fail	:txn	[[:r 9 nil]]	:moved
+1	:invoke	:txn	[[:append 10 79] [:r 9 nil]]
+1	:fail	:txn	[[:append 10 79] [:r 9 nil]]	:moved
+4	:invoke	:txn	[[:append 12 75] [:append 12 76] [:r 12 nil] [:r 12 nil]]
+4	:fail	:txn	[[:append 12 75] [:append 12 76] [:r 12 nil] [:r 12 nil]]	:moved
+0	:invoke	:txn	[[:append 9 49]]
+3	:invoke	:txn	[[:r 12 nil] [:append 12 77]]
+3	:fail	:txn	[[:r 12 nil] [:append 12 77]]	:moved
+4	:invoke	:txn	[[:append 12 78]]
+4	:fail	:txn	[[:append 12 78]]	:moved
+1	:invoke	:txn	[[:r 10 nil] [:append 10 80] [:r 9 nil]]
+0	:ok	:txn	[[:append 9 49]]
+1	:fail	:txn	[[:r 10 nil] [:append 10 80] [:r 9 nil]]	:moved
+0	:invoke	:txn	[[:r 12 nil]]
+0	:ok	:txn	[[:r 12 [18 31 34 39 51 52 55 61 64 67 73 74]]]
+3	:invoke	:txn	[[:append 10 81] [:r 10 nil]]
+3	:fail	:txn	[[:append 10 81] [:r 10 nil]]	:moved
+4	:invoke	:txn	[[:append 10 82] [:r 12 nil] [:append 12 79] [:append 12 80]]
+4	:fail	:txn	[[:append 10 82] [:r 12 nil] [:append 12 79] [:append 12 80]]	:moved
+1	:invoke	:txn	[[:r 12 nil] [:append 9 50] [:r 10 nil]]
+1	:fail	:txn	[[:r 12 nil] [:append 9 50] [:r 10 nil]]	:moved
+0	:invoke	:txn	[[:r 12 nil] [:append 10 83] [:r 12 nil] [:append 10 84]]
+0	:ok	:txn	[[:r 12 [18 31 34 39 51 52 55 61 64 67 73 74]] [:append 10 83] [:r 12 [18 31 34 39 51 52 55 61 64 67 73 74]] [:append 10 84]]
+4	:invoke	:txn	[[:append 10 85] [:append 12 81] [:r 12 nil] [:r 12 nil]]
+4	:fail	:txn	[[:append 10 85] [:append 12 81] [:r 12 nil] [:r 12 nil]]	:moved
+1	:invoke	:txn	[[:append 9 51] [:r 7 nil] [:r 9 nil] [:append 9 52]]
+1	:fail	:txn	[[:append 9 51] [:r 7 nil] [:r 9 nil] [:append 9 52]]	:moved
+1	:invoke	:txn	[[:append 12 82] [:r 9 nil]]
+1	:fail	:txn	[[:append 12 82] [:r 9 nil]]	:moved
+1	:invoke	:txn	[[:r 12 nil] [:r 8 nil] [:r 9 nil]]
+1	:fail	:txn	[[:r 12 nil] [:r 8 nil] [:r 9 nil]]	:moved
+0	:invoke	:txn	[[:append 8 25] [:append 12 83]]
+3	:invoke	:txn	[[:append 12 84] [:append 12 85] [:append 12 86] [:r 9 nil]]
+3	:fail	:txn	[[:append 12 84] [:append 12 85] [:append 12 86] [:r 9 nil]]	:moved
+0	:ok	:txn	[[:append 8 25] [:append 12 83]]
+4	:invoke	:txn	[[:append 12 87] [:append 12 88] [:r 10 nil] [:append 7 13]]
+4	:fail	:txn	[[:append 12 87] [:append 12 88] [:r 10 nil] [:append 7 13]]	:moved
+4	:invoke	:txn	[[:r 12 nil]]
+4	:fail	:txn	[[:r 12 nil]]	:moved
+0	:invoke	:txn	[[:append 12 89] [:r 9 nil] [:append 12 90] [:r 9 nil]]
+0	:ok	:txn	[[:append 12 89] [:r 9 [22 39 46 49]] [:append 12 90] [:r 9 [22 39 46 49]]]
+1	:invoke	:txn	[[:append 12 91]]
+1	:fail	:txn	[[:append 12 91]]	:moved
+3	:invoke	:txn	[[:append 12 92] [:r 12 nil] [:append 12 93]]
+3	:fail	:txn	[[:append 12 92] [:r 12 nil] [:append 12 93]]	:moved
+4	:invoke	:txn	[[:r 7 nil] [:append 9 53] [:r 12 nil]]
+4	:fail	:txn	[[:r 7 nil] [:append 9 53] [:r 12 nil]]	:moved
+4	:invoke	:txn	[[:append 9 54] [:r 10 nil] [:r 7 nil]]
+4	:fail	:txn	[[:append 9 54] [:r 10 nil] [:r 7 nil]]	:moved
+4	:invoke	:txn	[[:r 9 nil] [:r 9 nil] [:r 12 nil] [:r 12 nil]]
+4	:fail	:txn	[[:r 9 nil] [:r 9 nil] [:r 12 nil] [:r 12 nil]]	:moved
+3	:invoke	:txn	[[:r 12 nil] [:r 10 nil] [:append 10 86]]
+3	:fail	:txn	[[:r 12 nil] [:r 10 nil] [:append 10 86]]	:moved
+3	:invoke	:txn	[[:append 12 94] [:append 10 87] [:append 12 95] [:append 10 88]]
+3	:fail	:txn	[[:append 12 94] [:append 10 87] [:append 12 95] [:append 10 88]]	:moved
+4	:invoke	:txn	[[:append 3 2]]
+4	:fail	:txn	[[:append 3 2]]	:moved
+3	:invoke	:txn	[[:append 12 96] [:append 12 97] [:r 9 nil]]
+3	:fail	:txn	[[:append 12 96] [:append 12 97] [:r 9 nil]]	:moved
+1	:invoke	:txn	[[:append 10 89] [:append 9 55] [:append 12 98] [:r 6 nil]]
+4	:invoke	:txn	[[:append 8 26] [:r 12 nil] [:r 10 nil] [:append 12 99]]
+1	:fail	:txn	[[:append 10 89] [:append 9 55] [:append 12 98] [:r 6 nil]]	:moved
+4	:fail	:txn	[[:append 8 26] [:r 12 nil] [:r 10 nil] [:append 12 99]]	:moved
+3	:invoke	:txn	[[:append 12 100] [:append 4 4] [:r 9 nil]]
+3	:fail	:txn	[[:append 12 100] [:append 4 4] [:r 9 nil]]	:moved
+4	:invoke	:txn	[[:r 12 nil] [:r 9 nil] [:r 10 nil] [:append 12 101]]
+4	:fail	:txn	[[:r 12 nil] [:r 9 nil] [:r 10 nil] [:append 12 101]]	:moved
+0	:invoke	:txn	[[:r 9 nil]]
+0	:ok	:txn	[[:r 9 [22 39 46 49]]]
+1	:invoke	:txn	[[:append 10 90] [:append 12 102] [:append 9 56] [:append 12 103]]
+1	:fail	:txn	[[:append 10 90] [:append 12 102] [:append 9 56] [:append 12 103]]	:moved
+3	:invoke	:txn	[[:r 8 nil] [:append 12 104] [:append 12 105]]
+3	:fail	:txn	[[:r 8 nil] [:append 12 104] [:append 12 105]]	:moved
+3	:invoke	:txn	[[:r 12 nil] [:append 12 106] [:append 7 14] [:r 10 nil]]
+3	:fail	:txn	[[:r 12 nil] [:append 12 106] [:append 7 14] [:r 10 nil]]	:moved
+3	:invoke	:txn	[[:append 7 15] [:append 10 91] [:r 12 nil]]
+3	:fail	:txn	[[:append 7 15] [:append 10 91] [:r 12 nil]]	:moved
+1	:invoke	:txn	[[:r 8 nil] [:append 12 107] [:append 9 57]]
+1	:fail	:txn	[[:r 8 nil] [:append 12 107] [:append 9 57]]	:moved
+4	:invoke	:txn	[[:append 10 92]]
+4	:fail	:txn	[[:append 10 92]]	:moved
+0	:invoke	:txn	[[:append 7 16] [:r 10 nil]]
+4	:invoke	:txn	[[:append 12 108] [:r 8 nil] [:r 10 nil]]
+4	:fail	:txn	[[:append 12 108] [:r 8 nil] [:r 10 nil]]	:moved
+3	:invoke	:txn	[[:r 12 nil] [:r 10 nil]]
+0	:ok	:txn	[[:append 7 16] [:r 10 [6 10 18 26 29 36 37 43 48 55 83 84]]]
+3	:fail	:txn	[[:r 12 nil] [:r 10 nil]]	:moved
+3	:invoke	:txn	[[:r 12 nil]]
+3	:fail	:txn	[[:r 12 nil]]	:moved
+1	:invoke	:txn	[[:append 12 109]]
+1	:fail	:txn	[[:append 12 109]]	:moved
+3	:invoke	:txn	[[:r 12 nil] [:append 12 110]]
+3	:fail	:txn	[[:r 12 nil] [:append 12 110]]	:moved
+3	:invoke	:txn	[[:append 12 111] [:append 12 112] [:append 10 93]]
+3	:fail	:txn	[[:append 12 111] [:append 12 112] [:append 10 93]]	:moved
+3	:invoke	:txn	[[:append 7 17] [:r 12 nil] [:append 10 94] [:append 3 3]]
+3	:fail	:txn	[[:append 7 17] [:r 12 nil] [:append 10 94] [:append 3 3]]	:moved
+3	:invoke	:txn	[[:append 12 113] [:r 9 nil] [:append 7 18]]
+3	:fail	:txn	[[:append 12 113] [:r 9 nil] [:append 7 18]]	:moved
+0	:invoke	:txn	[[:append 7 19] [:append 10 95] [:r 10 nil] [:append 8 27]]
+4	:invoke	:txn	[[:append 12 114] [:r 12 nil]]
+0	:ok	:txn	[[:append 7 19] [:append 10 95] [:r 10 [6 10 18 26 29 36 37 43 48 55 83 84 95]] [:append 8 27]]
+4	:fail	:txn	[[:append 12 114] [:r 12 nil]]	:moved
+7	:invoke	:txn	[[:r 9 nil]]
+7	:fail	:txn	[[:r 9 nil]]	[:no-client Connection refused (Connection refused)]
+0	:invoke	:txn	[[:append 12 115]]
+1	:invoke	:txn	[[:r 10 nil]]
+0	:ok	:txn	[[:append 12 115]]
+1	:fail	:txn	[[:r 10 nil]]	:moved
+3	:invoke	:txn	[[:append 10 96] [:r 2 nil]]
+3	:fail	:txn	[[:append 10 96] [:r 2 nil]]	:moved
+4	:invoke	:txn	[[:append 12 116]]
+4	:fail	:txn	[[:append 12 116]]	:moved
+3	:invoke	:txn	[[:append 6 9] [:r 12 nil]]
+3	:fail	:txn	[[:append 6 9] [:r 12 nil]]	:moved
+0	:invoke	:txn	[[:r 12 nil] [:r 12 nil] [:append 12 119] [:r 12 nil]]
+1	:invoke	:txn	[[:r 12 nil] [:r 10 nil]]
+0	:ok	:txn	[[:r 12 [18 31 34 39 51 52 55 61 64 67 73 74 83 89 90 115]] [:r 12 [18 31 34 39 51 52 55 61 64 67 73 74 83 89 90 115]] [:append 12 119] [:r 12 [18 31 34 39 51 52 55 61 64 67 73 74 83 89 90 115 119]]]
+1	:fail	:txn	[[:r 12 nil] [:r 10 nil]]	:moved
+4	:invoke	:txn	[[:append 12 120] [:r 4 nil] [:append 9 58] [:append 10 97]]
+4	:fail	:txn	[[:append 12 120] [:r 4 nil] [:append 9 58] [:append 10 97]]	:moved
+3	:invoke	:txn	[[:append 12 121] [:r 12 nil] [:append 12 122] [:append 12 123]]
+3	:fail	:txn	[[:append 12 121] [:r 12 nil] [:append 12 122] [:append 12 123]]	:moved
+4	:invoke	:txn	[[:append 12 124] [:r 10 nil] [:r 10 nil] [:append 7 20]]
+4	:fail	:txn	[[:append 12 124] [:r 10 nil] [:r 10 nil] [:append 7 20]]	:moved
+0	:invoke	:txn	[[:append 12 125] [:append 12 126]]
+1	:invoke	:txn	[[:append 10 98]]
+1	:fail	:txn	[[:append 10 98]]	:moved
+3	:invoke	:txn	[[:append 10 99]]
+3	:fail	:txn	[[:append 10 99]]	:moved
+3	:invoke	:txn	[[:append 12 127]]
+3	:fail	:txn	[[:append 12 127]]	:moved
+4	:invoke	:txn	[[:append 10 100]]
+4	:fail	:txn	[[:append 10 100]]	:moved
+4	:invoke	:txn	[[:append 12 128] [:r 12 nil] [:r 10 nil]]
+4	:fail	:txn	[[:append 12 128] [:r 12 nil] [:r 10 nil]]	:moved
+4	:invoke	:txn	[[:append 13 1] [:append 8 28]]
+4	:fail	:txn	[[:append 13 1] [:append 8 28]]	:moved
+1	:invoke	:txn	[[:append 13 2]]
+1	:fail	:txn	[[:append 13 2]]	:moved
+3	:invoke	:txn	[[:r 8 nil] [:append 10 101] [:r 8 nil] [:append 9 59]]
+1	:invoke	:txn	[[:r 13 nil] [:append 13 3] [:r 13 nil]]
+0	:ok	:txn	[[:append 12 125] [:append 12 126]]
+1	:fail	:txn	[[:r 13 nil] [:append 13 3] [:r 13 nil]]	:moved
+3	:fail	:txn	[[:r 8 nil] [:append 10 101] [:r 8 nil] [:append 9 59]]	:moved
+3	:invoke	:txn	[[:r 10 nil] [:append 13 4] [:append 9 60]]
+3	:fail	:txn	[[:r 10 nil] [:append 13 4] [:append 9 60]]	:moved
+1	:invoke	:txn	[[:append 13 5] [:append 13 6]]
+1	:fail	:txn	[[:append 13 5] [:append 13 6]]	:moved
+3	:invoke	:txn	[[:append 13 7] [:r 13 nil] [:r 10 nil] [:r 9 nil]]
+3	:fail	:txn	[[:append 13 7] [:r 13 nil] [:r 10 nil] [:r 9 nil]]	:moved
+4	:invoke	:txn	[[:append 13 8] [:append 9 61] [:r 10 nil]]
+4	:fail	:txn	[[:append 13 8] [:append 9 61] [:r 10 nil]]	:moved
+:nemesis	:info	:reset-clock	("n1" "n5" "n4" "n2")
+0	:invoke	:txn	[[:append 2 1] [:append 13 9]]
+1	:invoke	:txn	[[:r 13 nil] [:r 13 nil] [:append 10 102] [:r 13 nil]]
+1	:fail	:txn	[[:r 13 nil] [:r 13 nil] [:append 10 102] [:r 13 nil]]	:moved
+0	:ok	:txn	[[:append 2 1] [:append 13 9]]
+4	:invoke	:txn	[[:r 13 nil] [:append 13 10] [:r 13 nil] [:r 10 nil]]
+4	:fail	:txn	[[:r 13 nil] [:append 13 10] [:r 13 nil] [:r 10 nil]]	:moved
+3	:invoke	:txn	[[:r 13 nil] [:append 13 11] [:append 13 12] [:append 10 103]]
+3	:fail	:txn	[[:r 13 nil] [:append 13 11] [:append 13 12] [:append 10 103]]	:moved
+1	:invoke	:txn	[[:r 8 nil]]
+1	:fail	:txn	[[:r 8 nil]]	:moved
+3	:invoke	:txn	[[:append 13 13] [:append 13 14] [:r 8 nil]]
+3	:fail	:txn	[[:append 13 13] [:append 13 14] [:r 8 nil]]	:moved
+4	:invoke	:txn	[[:r 10 nil] [:append 9 62]]
+4	:fail	:txn	[[:r 10 nil] [:append 9 62]]	:moved
+3	:invoke	:txn	[[:r 13 nil]]
+3	:fail	:txn	[[:r 13 nil]]	:moved
+0	:invoke	:txn	[[:append 13 15] [:append 10 104] [:append 13 16] [:append 13 17]]
+1	:invoke	:txn	[[:r 6 nil] [:r 10 nil] [:r 9 nil]]
+1	:fail	:txn	[[:r 6 nil] [:r 10 nil] [:r 9 nil]]	:moved
+3	:invoke	:txn	[[:append 13 18]]
+0	:ok	:txn	[[:append 13 15] [:append 10 104] [:append 13 16] [:append 13 17]]
+3	:fail	:txn	[[:append 13 18]]	:moved
+1	:invoke	:txn	[[:r 9 nil] [:r 10 nil] [:append 10 105] [:r 13 nil]]
+1	:fail	:txn	[[:r 9 nil] [:r 10 nil] [:append 10 105] [:r 13 nil]]	:moved
+4	:invoke	:txn	[[:r 13 nil] [:append 9 63] [:r 9 nil]]
+4	:fail	:txn	[[:r 13 nil] [:append 9 63] [:r 9 nil]]	:moved
+0	:invoke	:txn	[[:append 10 106] [:r 13 nil]]
+3	:invoke	:txn	[[:append 13 19]]
+3	:fail	:txn	[[:append 13 19]]	:moved
+0	:ok	:txn	[[:append 10 106] [:r 13 [9 15 16 17]]]
+1	:invoke	:txn	[[:r 13 nil] [:append 13 20] [:r 13 nil]]
+1	:fail	:txn	[[:r 13 nil] [:append 13 20] [:r 13 nil]]	:moved
+0	:invoke	:txn	[[:r 13 nil]]
+0	:ok	:txn	[[:r 13 [9 15 16 17]]]
+4	:invoke	:txn	[[:r 13 nil] [:r 10 nil] [:r 13 nil] [:append 13 21]]
+4	:fail	:txn	[[:r 13 nil] [:r 10 nil] [:r 13 nil] [:append 13 21]]	:moved
+3	:invoke	:txn	[[:append 13 22]]
+3	:fail	:txn	[[:append 13 22]]	:moved
+1	:invoke	:txn	[[:append 9 64] [:append 13 23]]
+1	:fail	:txn	[[:append 9 64] [:append 13 23]]	:moved
+0	:invoke	:txn	[[:r 8 nil] [:append 13 24]]
+4	:invoke	:txn	[[:r 7 nil] [:append 10 107] [:r 13 nil] [:append 13 25]]
+0	:ok	:txn	[[:r 8 [3 15 21 24 25 27]] [:append 13 24]]
+1	:invoke	:txn	[[:append 13 26] [:r 7 nil] [:r 10 nil] [:r 8 nil]]
+4	:fail	:txn	[[:r 7 nil] [:append 10 107] [:r 13 nil] [:append 13 25]]	:moved
+1	:fail	:txn	[[:append 13 26] [:r 7 nil] [:r 10 nil] [:r 8 nil]]	:moved
+3	:invoke	:txn	[[:r 13 nil]]
+3	:fail	:txn	[[:r 13 nil]]	:moved
+4	:invoke	:txn	[[:append 13 27]]
+4	:fail	:txn	[[:append 13 27]]	:moved
+3	:invoke	:txn	[[:r 13 nil] [:r 13 nil] [:r 13 nil]]
+3	:fail	:txn	[[:r 13 nil] [:r 13 nil] [:r 13 nil]]	:moved
+0	:invoke	:txn	[[:append 13 28] [:append 13 29] [:append 13 30]]
+1	:invoke	:txn	[[:r 13 nil] [:append 9 65] [:r 10 nil]]
+0	:ok	:txn	[[:append 13 28] [:append 13 29] [:append 13 30]]
+1	:fail	:txn	[[:r 13 nil] [:append 9 65] [:r 10 nil]]	:moved
+4	:invoke	:txn	[[:r 10 nil] [:append 7 21] [:r 13 nil]]
+4	:fail	:txn	[[:r 10 nil] [:append 7 21] [:r 13 nil]]	:moved
+0	:invoke	:txn	[[:append 13 31] [:r 13 nil] [:append 10 108]]
+4	:invoke	:txn	[[:r 10 nil] [:append 9 66] [:r 8 nil]]
+1	:invoke	:txn	[[:r 10 nil]]
+4	:fail	:txn	[[:r 10 nil] [:append 9 66] [:r 8 nil]]	:moved
+1	:fail	:txn	[[:r 10 nil]]	:moved
+3	:invoke	:txn	[[:append 13 32] [:append 10 109]]
+3	:fail	:txn	[[:append 13 32] [:append 10 109]]	:moved
+4	:invoke	:txn	[[:r 10 nil] [:r 9 nil] [:r 9 nil] [:r 13 nil]]
+0	:ok	:txn	[[:append 13 31] [:r 13 [9 15 16 17 24 28 29 30 31]] [:append 10 108]]
+4	:fail	:txn	[[:r 10 nil] [:r 9 nil] [:r 9 nil] [:r 13 nil]]	:moved
+1	:invoke	:txn	[[:r 13 nil] [:r 13 nil] [:r 13 nil]]
+1	:fail	:txn	[[:r 13 nil] [:r 13 nil] [:r 13 nil]]	:moved
+4	:invoke	:txn	[[:append 13 33] [:append 13 34]]
+4	:fail	:txn	[[:append 13 33] [:append 13 34]]	:moved
+3	:invoke	:txn	[[:r 13 nil] [:r 10 nil] [:r 10 nil]]
+3	:fail	:txn	[[:r 13 nil] [:r 10 nil] [:r 10 nil]]	:moved
+4	:invoke	:txn	[[:r 13 nil] [:r 13 nil] [:append 13 35]]
+1	:invoke	:txn	[[:append 13 36] [:r 13 nil] [:append 9 67]]
+4	:fail	:txn	[[:r 13 nil] [:r 13 nil] [:append 13 35]]	:moved
+1	:fail	:txn	[[:append 13 36] [:r 13 nil] [:append 9 67]]	:moved
+0	:invoke	:txn	[[:r 13 nil] [:append 13 37] [:r 10 nil]]
+4	:invoke	:txn	[[:append 9 68] [:r 9 nil] [:append 10 110]]
+4	:fail	:txn	[[:append 9 68] [:r 9 nil] [:append 10 110]]	:moved
+0	:ok	:txn	[[:r 13 [9 15 16 17 24 28 29 30 31]] [:append 13 37] [:r 10 [6 10 18 26 29 36 37 43 48 55 83 84 95 104 106 108]]]
+4	:invoke	:txn	[[:r 13 nil]]
+4	:fail	:txn	[[:r 13 nil]]	:moved
+3	:invoke	:txn	[[:r 10 nil] [:r 13 nil] [:append 13 38]]
+3	:fail	:txn	[[:r 10 nil] [:r 13 nil] [:append 13 38]]	:moved
+0	:invoke	:txn	[[:r 9 nil] [:r 9 nil] [:append 9 69]]
+1	:invoke	:txn	[[:append 13 39] [:r 10 nil] [:r 10 nil]]
+0	:ok	:txn	[[:r 9 [22 39 46 49]] [:r 9 [22 39 46 49]] [:append 9 69]]
+1	:fail	:txn	[[:append 13 39] [:r 10 nil] [:r 10 nil]]	:moved
+4	:invoke	:txn	[[:append 10 111] [:r 9 nil] [:append 10 112] [:r 13 nil]]
+4	:fail	:txn	[[:append 10 111] [:r 9 nil] [:append 10 112] [:r 13 nil]]	:moved
+4	:invoke	:txn	[[:r 10 nil] [:r 13 nil]]
+4	:fail	:txn	[[:r 10 nil] [:r 13 nil]]	:moved
+1	:invoke	:txn	[[:append 9 70] [:append 9 71] [:r 13 nil]]
+3	:invoke	:txn	[[:append 6 10] [:r 13 nil] [:r 13 nil]]
+1	:fail	:txn	[[:append 9 70] [:append 9 71] [:r 13 nil]]	:moved
+3	:fail	:txn	[[:append 6 10] [:r 13 nil] [:r 13 nil]]	:moved
+0	:invoke	:txn	[[:append 9 72] [:r 10 nil]]
+0	:ok	:txn	[[:append 9 72] [:r 10 [6 10 18 26 29 36 37 43 48 55 83 84 95 104 106 108]]]
+1	:invoke	:txn	[[:append 13 40] [:r 13 nil] [:append 13 41]]
+1	:fail	:txn	[[:append 13 40] [:r 13 nil] [:append 13 41]]	:moved
+3	:invoke	:txn	[[:r 10 nil] [:r 8 nil] [:append 13 42]]
+3	:fail	:txn	[[:r 10 nil] [:r 8 nil] [:append 13 42]]	:moved
+4	:invoke	:txn	[[:r 13 nil] [:r 10 nil]]
+4	:fail	:txn	[[:r 13 nil] [:r 10 nil]]	:moved
+0	:invoke	:txn	[[:append 13 43]]
+3	:invoke	:txn	[[:append 10 113] [:append 13 44] [:r 10 nil] [:r 10 nil]]
+1	:invoke	:txn	[[:r 13 nil] [:append 6 11] [:r 10 nil] [:r 9 nil]]
+0	:ok	:txn	[[:append 13 43]]
+3	:fail	:txn	[[:append 10 113] [:append 13 44] [:r 10 nil] [:r 10 nil]]	:moved
+1	:fail	:txn	[[:r 13 nil] [:append 6 11] [:r 10 nil] [:r 9 nil]]	:moved
+0	:invoke	:txn	[[:r 13 nil] [:r 13 nil] [:append 13 45]]
+4	:invoke	:txn	[[:r 13 nil] [:append 6 12] [:r 13 nil]]
+0	:ok	:txn	[[:r 13 [9 15 16 17 24 28 29 30 31 37 43]] [:r 13 [9 15 16 17 24 28 29 30 31 37 43]] [:append 13 45]]
+4	:fail	:txn	[[:r 13 nil] [:append 6 12] [:r 13 nil]]	:moved
+1	:invoke	:txn	[[:r 13 nil] [:append 8 29] [:append 8 30]]
+1	:fail	:txn	[[:r 13 nil] [:append 8 29] [:append 8 30]]	:moved
+0	:invoke	:txn	[[:r 13 nil] [:r 13 nil] [:append 13 46]]
+3	:invoke	:txn	[[:r 13 nil] [:append 10 114] [:append 13 47]]
+1	:invoke	:txn	[[:r 13 nil] [:r 13 nil] [:append 13 48] [:r 5 nil]]
+0	:ok	:txn	[[:r 13 [9 15 16 17 24 28 29 30 31 37 43 45]] [:r 13 [9 15 16 17 24 28 29 30 31 37 43 45]] [:append 13 46]]
+3	:fail	:txn	[[:r 13 nil] [:append 10 114] [:append 13 47]]	:moved
+1	:fail	:txn	[[:r 13 nil] [:r 13 nil] [:append 13 48] [:r 5 nil]]	:moved
+0	:invoke	:txn	[[:append 9 73]]
+4	:invoke	:txn	[[:append 13 49]]
+0	:ok	:txn	[[:append 9 73]]
+4	:fail	:txn	[[:append 13 49]]	:moved
+1	:invoke	:txn	[[:r 10 nil] [:append 10 115] [:append 13 50] [:append 10 116]]
+1	:fail	:txn	[[:r 10 nil] [:append 10 115] [:append 13 50] [:append 10 116]]	:moved
+0	:invoke	:txn	[[:r 13 nil] [:r 10 nil] [:r 13 nil]]
+1	:invoke	:txn	[[:r 10 nil] [:r 13 nil] [:r 13 nil] [:r 13 nil]]
+0	:ok	:txn	[[:r 13 [9 15 16 17 24 28 29 30 31 37 43 45 46]] [:r 10 [6 10 18 26 29 36 37 43 48 55 83 84 95 104 106 108]] [:r 13 [9 15 16 17 24 28 29 30 31 37 43 45 46]]]
+3	:invoke	:txn	[[:r 9 nil]]
+3	:fail	:txn	[[:r 9 nil]]	:moved
+1	:fail	:txn	[[:r 10 nil] [:r 13 nil] [:r 13 nil] [:r 13 nil]]	:moved
+0	:invoke	:txn	[[:r 13 nil]]
+0	:ok	:txn	[[:r 13 [9 15 16 17 24 28 29 30 31 37 43 45 46]]]
+4	:invoke	:txn	[[:append 10 117] [:r 13 nil]]
+4	:fail	:txn	[[:append 10 117] [:r 13 nil]]	:moved
+1	:invoke	:txn	[[:r 6 nil] [:r 13 nil]]
+1	:fail	:txn	[[:r 6 nil] [:r 13 nil]]	:moved
+3	:invoke	:txn	[[:append 7 22]]
+3	:fail	:txn	[[:append 7 22]]	:moved
+0	:invoke	:txn	[[:append 13 51]]
+4	:invoke	:txn	[[:r 10 nil] [:append 13 52] [:append 13 53] [:r 8 nil]]
+4	:fail	:txn	[[:r 10 nil] [:append 13 52] [:append 13 53] [:r 8 nil]]	:moved
+1	:invoke	:txn	[[:append 10 118] [:r 13 nil] [:r 7 nil]]
+1	:fail	:txn	[[:append 10 118] [:r 13 nil] [:r 7 nil]]	:moved
+3	:invoke	:txn	[[:r 13 nil] [:r 9 nil] [:r 13 nil]]
+4	:invoke	:txn	[[:append 13 54] [:append 8 31]]
+0	:ok	:txn	[[:append 13 51]]
+4	:fail	:txn	[[:append 13 54] [:append 8 31]]	:moved
+3	:fail	:txn	[[:r 13 nil] [:r 9 nil] [:r 13 nil]]	:moved
+3	:invoke	:txn	[[:r 9 nil] [:append 8 32] [:append 13 55] [:r 9 nil]]
+3	:fail	:txn	[[:r 9 nil] [:append 8 32] [:append 13 55] [:r 9 nil]]	:moved
+1	:invoke	:txn	[[:r 10 nil] [:append 13 56] [:append 10 119]]
+1	:fail	:txn	[[:r 10 nil] [:append 13 56] [:append 10 119]]	:moved
+4	:invoke	:txn	[[:append 13 57] [:append 13 58] [:append 10 120] [:append 9 74]]
+4	:fail	:txn	[[:append 13 57] [:append 13 58] [:append 10 120] [:append 9 74]]	:moved
+1	:invoke	:txn	[[:r 13 nil] [:r 13 nil]]
+1	:fail	:txn	[[:r 13 nil] [:r 13 nil]]	:moved
+1	:invoke	:txn	[[:append 13 59] [:r 10 nil]]
+1	:fail	:txn	[[:append 13 59] [:r 10 nil]]	:moved
+0	:invoke	:txn	[[:r 13 nil] [:append 13 60] [:r 9 nil] [:r 13 nil]]
+4	:invoke	:txn	[[:r 13 nil] [:r 10 nil]]
+4	:fail	:txn	[[:r 13 nil] [:r 10 nil]]	:moved
+0	:ok	:txn	[[:r 13 [9 15 16 17 24 28 29 30 31 37 43 45 46 51]] [:append 13 60] [:r 9 [22 39 46 49 69 72 73]] [:r 13 [9 15 16 17 24 28 29 30 31 37 43 45 46 51 60]]]
+3	:invoke	:txn	[[:append 13 61] [:r 13 nil] [:r 9 nil]]
+3	:fail	:txn	[[:append 13 61] [:r 13 nil] [:r 9 nil]]	:moved
+4	:invoke	:txn	[[:r 13 nil] [:append 13 62] [:r 7 nil]]
+4	:fail	:txn	[[:r 13 nil] [:append 13 62] [:r 7 nil]]	:moved
+0	:invoke	:txn	[[:append 9 75] [:append 8 33]]
+1	:invoke	:txn	[[:append 10 121] [:r 9 nil] [:append 9 76]]
+3	:invoke	:txn	[[:r 13 nil] [:append 13 63] [:append 13 64]]
+0	:ok	:txn	[[:append 9 75] [:append 8 33]]
+1	:fail	:txn	[[:append 10 121] [:r 9 nil] [:append 9 76]]	:moved
+3	:fail	:txn	[[:r 13 nil] [:append 13 63] [:append 13 64]]	:moved
+1	:invoke	:txn	[[:append 13 65]]
+1	:fail	:txn	[[:append 13 65]]	:moved
+4	:invoke	:txn	[[:append 10 122] [:r 10 nil]]
+4	:fail	:txn	[[:append 10 122] [:r 10 nil]]	:moved
+0	:invoke	:txn	[[:r 10 nil]]
+0	:ok	:txn	[[:r 10 [6 10 18 26 29 36 37 43 48 55 83 84 95 104 106 108]]]
+1	:invoke	:txn	[[:append 8 34] [:append 9 77] [:append 13 66]]
+1	:fail	:txn	[[:append 8 34] [:append 9 77] [:append 13 66]]	:moved
+0	:invoke	:txn	[[:r 8 nil] [:append 13 67] [:append 10 123] [:r 10 nil]]
+3	:invoke	:txn	[[:append 10 124] [:r 10 nil] [:r 6 nil]]
+1	:invoke	:txn	[[:r 13 nil]]
+1	:fail	:txn	[[:r 13 nil]]	:moved
+0	:ok	:txn	[[:r 8 [3 15 21 24 25 27 33]] [:append 13 67] [:append 10 123] [:r 10 [6 10 18 26 29 36 37 43 48 55 83 84 95 104 106 108 123]]]
+3	:fail	:txn	[[:append 10 124] [:r 10 nil] [:r 6 nil]]	:moved
+4	:invoke	:txn	[[:append 13 68] [:r 9 nil] [:append 10 125]]
+4	:fail	:txn	[[:append 13 68] [:r 9 nil] [:append 10 125]]	:moved
+0	:invoke	:txn	[[:append 6 13]]
+3	:invoke	:txn	[[:r 8 nil]]
+3	:fail	:txn	[[:r 8 nil]]	:moved
+1	:invoke	:txn	[[:r 10 nil] [:r 13 nil]]
+1	:fail	:txn	[[:r 10 nil] [:r 13 nil]]	:moved
+3	:invoke	:txn	[[:r 10 nil]]
+3	:fail	:txn	[[:r 10 nil]]	:moved
+0	:ok	:txn	[[:append 6 13]]
+3	:invoke	:txn	[[:append 13 69] [:r 10 nil] [:append 13 70] [:r 13 nil]]
+3	:fail	:txn	[[:append 13 69] [:r 10 nil] [:append 13 70] [:r 13 nil]]	:moved
+4	:invoke	:txn	[[:r 13 nil] [:append 9 78] [:r 13 nil]]
+4	:fail	:txn	[[:r 13 nil] [:append 9 78] [:r 13 nil]]	:moved
+3	:invoke	:txn	[[:r 13 nil] [:append 10 126]]
+3	:fail	:txn	[[:r 13 nil] [:append 10 126]]	:moved
+4	:invoke	:txn	[[:r 13 nil] [:append 13 71] [:append 13 72]]
+4	:fail	:txn	[[:r 13 nil] [:append 13 71] [:append 13 72]]	:moved
+0	:invoke	:txn	[[:append 10 127] [:r 13 nil]]
+1	:invoke	:txn	[[:append 9 79] [:r 13 nil] [:r 13 nil]]
+1	:fail	:txn	[[:append 9 79] [:r 13 nil] [:r 13 nil]]	:moved
+3	:invoke	:txn	[[:r 10 nil] [:append 10 128] [:append 13 73]]
+0	:ok	:txn	[[:append 10 127] [:r 13 [9 15 16 17 24 28 29 30 31 37 43 45 46 51 60 67]]]
+3	:fail	:txn	[[:r 10 nil] [:append 10 128] [:append 13 73]]	:moved
+1	:invoke	:txn	[[:r 5 nil]]
+1	:fail	:txn	[[:r 5 nil]]	:moved
+4	:invoke	:txn	[[:append 13 74]]
+4	:fail	:txn	[[:append 13 74]]	:moved
+3	:invoke	:txn	[[:r 13 nil] [:r 13 nil] [:append 14 1] [:r 8 nil]]
+3	:fail	:txn	[[:r 13 nil] [:r 13 nil] [:append 14 1] [:r 8 nil]]	:moved
+0	:invoke	:txn	[[:r 14 nil] [:append 13 75]]
+4	:invoke	:txn	[[:r 14 nil] [:r 13 nil] [:append 13 76] [:append 13 77]]
+0	:ok	:txn	[[:r 14 []] [:append 13 75]]
+4	:fail	:txn	[[:r 14 nil] [:r 13 nil] [:append 13 76] [:append 13 77]]	:moved
+4	:invoke	:txn	[[:r 14 nil] [:r 13 nil] [:r 13 nil]]
+4	:fail	:txn	[[:r 14 nil] [:r 13 nil] [:r 13 nil]]	:moved
+1	:invoke	:txn	[[:append 13 78] [:r 13 nil] [:r 14 nil]]
+1	:fail	:txn	[[:append 13 78] [:r 13 nil] [:r 14 nil]]	:moved
+3	:invoke	:txn	[[:r 13 nil] [:r 13 nil] [:r 14 nil] [:append 9 80]]
+3	:fail	:txn	[[:r 13 nil] [:r 13 nil] [:r 14 nil] [:append 9 80]]	:moved
+3	:invoke	:txn	[[:r 13 nil] [:append 9 81] [:append 5 7] [:r 13 nil]]
+3	:fail	:txn	[[:r 13 nil] [:append 9 81] [:append 5 7] [:r 13 nil]]	:moved
+3	:invoke	:txn	[[:r 14 nil] [:append 13 79] [:append 7 23]]
+3	:fail	:txn	[[:r 14 nil] [:append 13 79] [:append 7 23]]	:moved
+4	:invoke	:txn	[[:append 13 80] [:r 13 nil]]
+4	:fail	:txn	[[:append 13 80] [:r 13 nil]]	:moved
+0	:invoke	:txn	[[:r 13 nil] [:r 8 nil] [:r 13 nil] [:r 14 nil]]
+1	:invoke	:txn	[[:append 13 81] [:append 13 82] [:r 13 nil] [:r 8 nil]]
+1	:fail	:txn	[[:append 13 81] [:append 13 82] [:r 13 nil] [:r 8 nil]]	:moved
+3	:invoke	:txn	[[:append 13 83] [:append 9 82] [:r 13 nil] [:append 13 84]]
+4	:invoke	:txn	[[:append 13 85] [:r 13 nil] [:r 9 nil] [:append 13 86]]
+0	:ok	:txn	[[:r 13 [9 15 16 17 24 28 29 30 31 37 43 45 46 51 60 67 75]] [:r 8 [3 15 21 24 25 27 33]] [:r 13 [9 15 16 17 24 28 29 30 31 37 43 45 46 51 60 67 75]] [:r 14 []]]
+3	:fail	:txn	[[:append 13 83] [:append 9 82] [:r 13 nil] [:append 13 84]]	:moved
+4	:fail	:txn	[[:append 13 85] [:r 13 nil] [:r 9 nil] [:append 13 86]]	:moved
+3	:invoke	:txn	[[:append 14 2] [:append 13 87]]
+3	:fail	:txn	[[:append 14 2] [:append 13 87]]	:moved
+4	:invoke	:txn	[[:append 7 24] [:r 13 nil] [:append 8 35] [:append 13 88]]
+4	:fail	:txn	[[:append 7 24] [:r 13 nil] [:append 8 35] [:append 13 88]]	:moved
+1	:invoke	:txn	[[:append 9 83] [:r 14 nil] [:append 13 89] [:r 13 nil]]
+1	:fail	:txn	[[:append 9 83] [:r 14 nil] [:append 13 89] [:r 13 nil]]	:moved
+3	:invoke	:txn	[[:append 13 90] [:r 14 nil] [:append 13 91] [:append 13 92]]
+3	:fail	:txn	[[:append 13 90] [:r 14 nil] [:append 13 91] [:append 13 92]]	:moved
+4	:invoke	:txn	[[:r 14 nil] [:append 6 14] [:append 13 93] [:append 14 3]]
+4	:fail	:txn	[[:r 14 nil] [:append 6 14] [:append 13 93] [:append 14 3]]	:moved
+4	:invoke	:txn	[[:append 13 94]]
+4	:fail	:txn	[[:append 13 94]]	:moved
+1	:invoke	:txn	[[:r 13 nil] [:r 9 nil] [:append 13 95]]
+1	:fail	:txn	[[:r 13 nil] [:r 9 nil] [:append 13 95]]	:moved
+0	:invoke	:txn	[[:r 9 nil]]
+0	:ok	:txn	[[:r 9 [22 39 46 49 69 72 73 75]]]
+4	:invoke	:txn	[[:r 13 nil] [:r 7 nil] [:append 9 84]]
+4	:fail	:txn	[[:r 13 nil] [:r 7 nil] [:append 9 84]]	:moved
+3	:invoke	:txn	[[:r 9 nil] [:r 13 nil] [:r 7 nil]]
+3	:fail	:txn	[[:r 9 nil] [:r 13 nil] [:r 7 nil]]	:moved
+1	:invoke	:txn	[[:r 13 nil] [:append 13 96] [:r 7 nil] [:r 13 nil]]
+1	:fail	:txn	[[:r 13 nil] [:append 13 96] [:r 7 nil] [:r 13 nil]]	:moved
+4	:invoke	:txn	[[:r 9 nil] [:r 14 nil]]
+4	:fail	:txn	[[:r 9 nil] [:r 14 nil]]	:moved
+3	:invoke	:txn	[[:r 14 nil] [:r 13 nil]]
+3	:fail	:txn	[[:r 14 nil] [:r 13 nil]]	:moved
+0	:invoke	:txn	[[:append 13 97] [:r 14 nil] [:r 14 nil] [:append 8 36]]
+1	:invoke	:txn	[[:r 13 nil] [:r 9 nil] [:append 13 98] [:r 9 nil]]
+3	:invoke	:txn	[[:r 13 nil] [:r 14 nil]]
+0	:ok	:txn	[[:append 13 97] [:r 14 []] [:r 14 []] [:append 8 36]]
+3	:fail	:txn	[[:r 13 nil] [:r 14 nil]]	:moved
+1	:fail	:txn	[[:r 13 nil] [:r 9 nil] [:append 13 98] [:r 9 nil]]	:moved
+4	:invoke	:txn	[[:r 9 nil] [:append 13 99] [:append 13 100] [:r 8 nil]]
+4	:fail	:txn	[[:r 9 nil] [:append 13 99] [:append 13 100] [:r 8 nil]]	:moved
+4	:invoke	:txn	[[:append 13 101] [:r 13 nil]]
+4	:fail	:txn	[[:append 13 101] [:r 13 nil]]	:moved
+0	:invoke	:txn	[[:append 14 4]]
+3	:invoke	:txn	[[:r 14 nil] [:append 8 37] [:append 13 102]]
+3	:fail	:txn	[[:r 14 nil] [:append 8 37] [:append 13 102]]	:moved
+1	:invoke	:txn	[[:append 8 38]]
+1	:fail	:txn	[[:append 8 38]]	:moved
+1	:invoke	:txn	[[:append 13 103] [:r 8 nil] [:append 13 104] [:r 14 nil]]
+1	:fail	:txn	[[:append 13 103] [:r 8 nil] [:append 13 104] [:r 14 nil]]	:moved
+4	:invoke	:txn	[[:append 14 5] [:append 9 85] [:r 6 nil]]
+4	:fail	:txn	[[:append 14 5] [:append 9 85] [:r 6 nil]]	:moved
+1	:invoke	:txn	[[:append 14 6]]
+1	:fail	:txn	[[:append 14 6]]	:moved
+3	:invoke	:txn	[[:append 13 105] [:r 14 nil] [:append 9 86] [:r 14 nil]]
+3	:fail	:txn	[[:append 13 105] [:r 14 nil] [:append 9 86] [:r 14 nil]]	:moved
+1	:invoke	:txn	[[:r 13 nil] [:append 14 7] [:append 13 106] [:append 14 8]]
+1	:fail	:txn	[[:r 13 nil] [:append 14 7] [:append 13 106] [:append 14 8]]	:moved
+1	:invoke	:txn	[[:r 13 nil] [:r 9 nil]]
+0	:ok	:txn	[[:append 14 4]]
+1	:fail	:txn	[[:r 13 nil] [:r 9 nil]]	:moved
+3	:invoke	:txn	[[:r 13 nil] [:r 9 nil] [:r 8 nil] [:append 14 9]]
+3	:fail	:txn	[[:r 13 nil] [:r 9 nil] [:r 8 nil] [:append 14 9]]	:moved
+1	:invoke	:txn	[[:append 13 107] [:append 9 87] [:r 7 nil] [:r 13 nil]]
+1	:fail	:txn	[[:append 13 107] [:append 9 87] [:r 7 nil] [:r 13 nil]]	:moved
+4	:invoke	:txn	[[:append 5 8] [:r 13 nil]]
+4	:fail	:txn	[[:append 5 8] [:r 13 nil]]	:moved
+1	:invoke	:txn	[[:r 9 nil]]
+1	:fail	:txn	[[:r 9 nil]]	:moved
+4	:invoke	:txn	[[:r 9 nil] [:r 8 nil] [:append 14 10] [:r 14 nil]]
+4	:fail	:txn	[[:r 9 nil] [:r 8 nil] [:append 14 10] [:r 14 nil]]	:moved
+3	:invoke	:txn	[[:append 7 25]]
+3	:fail	:txn	[[:append 7 25]]	:moved
+3	:invoke	:txn	[[:r 13 nil] [:append 13 108]]
+3	:fail	:txn	[[:r 13 nil] [:append 13 108]]	:moved
+0	:invoke	:txn	[[:append 13 109] [:r 13 nil] [:append 13 110]]
+1	:invoke	:txn	[[:append 14 11] [:append 9 88] [:append 9 89] [:append 13 111]]
+1	:fail	:txn	[[:append 14 11] [:append 9 88] [:append 9 89] [:append 13 111]]	:moved
+7	:invoke	:txn	[[:append 12 117] [:r 8 nil] [:append 12 118]]
+7	:fail	:txn	[[:append 12 117] [:r 8 nil] [:append 12 118]]	[:no-client Connection refused (Connection refused)]
+4	:invoke	:txn	[[:append 14 12] [:append 13 112] [:r 13 nil]]
+0	:ok	:txn	[[:append 13 109] [:r 13 [9 15 16 17 24 28 29 30 31 37 43 45 46 51 60 67 75 97 109]] [:append 13 110]]
+4	:fail	:txn	[[:append 14 12] [:append 13 112] [:r 13 nil]]	:moved
+0	:invoke	:txn	[[:r 9 nil] [:r 13 nil]]
+0	:ok	:txn	[[:r 9 [22 39 46 49 69 72 73 75]] [:r 13 [9 15 16 17 24 28 29 30 31 37 43 45 46 51 60 67 75 97 109 110]]]
+3	:invoke	:txn	[[:append 14 13] [:append 14 14] [:r 7 nil]]
+3	:fail	:txn	[[:append 14 13] [:append 14 14] [:r 7 nil]]	:moved
+0	:invoke	:txn	[[:append 9 90] [:r 14 nil]]
+4	:invoke	:txn	[[:append 14 15] [:append 13 113]]
+4	:fail	:txn	[[:append 14 15] [:append 13 113]]	:moved
+1	:invoke	:txn	[[:r 14 nil] [:r 13 nil] [:r 13 nil]]
+3	:invoke	:txn	[[:r 13 nil] [:r 14 nil] [:append 14 17]]
+0	:ok	:txn	[[:append 9 90] [:r 14 [4]]]
+3	:fail	:txn	[[:r 13 nil] [:r 14 nil] [:append 14 17]]	:moved
+1	:fail	:txn	[[:r 14 nil] [:r 13 nil] [:r 13 nil]]	:moved
+3	:invoke	:txn	[[:append 13 115] [:append 13 116]]
+3	:fail	:txn	[[:append 13 115] [:append 13 116]]	:moved
+4	:invoke	:txn	[[:append 14 18] [:append 9 91] [:r 8 nil] [:r 13 nil]]
+4	:fail	:txn	[[:append 14 18] [:append 9 91] [:r 8 nil] [:r 13 nil]]	:moved
+1	:invoke	:txn	[[:append 9 92] [:append 14 19]]
+1	:fail	:txn	[[:append 9 92] [:append 14 19]]	:moved
+1	:invoke	:txn	[[:r 13 nil] [:append 14 20]]
+1	:fail	:txn	[[:r 13 nil] [:append 14 20]]	:moved
+0	:invoke	:txn	[[:append 13 117] [:append 13 118] [:r 14 nil] [:append 13 119]]
+3	:invoke	:txn	[[:r 8 nil] [:append 9 93]]
+3	:fail	:txn	[[:r 8 nil] [:append 9 93]]	:moved
+4	:invoke	:txn	[[:r 13 nil] [:r 13 nil]]
+0	:ok	:txn	[[:append 13 117] [:append 13 118] [:r 14 [4]] [:append 13 119]]
+4	:fail	:txn	[[:r 13 nil] [:r 13 nil]]	:moved
+1	:invoke	:txn	[[:append 6 15]]
+1	:fail	:txn	[[:append 6 15]]	:moved
+3	:invoke	:txn	[[:append 13 120]]
+3	:fail	:txn	[[:append 13 120]]	:moved
+1	:invoke	:txn	[[:append 13 121] [:append 14 21] [:r 13 nil] [:r 13 nil]]
+3	:invoke	:txn	[[:r 13 nil] [:r 14 nil]]
+1	:fail	:txn	[[:append 13 121] [:append 14 21] [:r 13 nil] [:r 13 nil]]	:moved
+3	:fail	:txn	[[:r 13 nil] [:r 14 nil]]	:moved
+4	:invoke	:txn	[[:append 13 122]]
+4	:fail	:txn	[[:append 13 122]]	:moved
+1	:invoke	:txn	[[:append 13 123]]
+1	:fail	:txn	[[:append 13 123]]	:moved
+0	:invoke	:txn	[[:r 8 nil] [:append 13 124]]
+3	:invoke	:txn	[[:append 13 125] [:r 13 nil] [:append 14 22] [:r 13 nil]]
+3	:fail	:txn	[[:append 13 125] [:r 13 nil] [:append 14 22] [:r 13 nil]]	:moved
+1	:invoke	:txn	[[:append 13 126] [:append 9 94]]
+0	:ok	:txn	[[:r 8 [3 15 21 24 25 27 33 36]] [:append 13 124]]
+1	:fail	:txn	[[:append 13 126] [:append 9 94]]	:moved
+4	:invoke	:txn	[[:r 13 nil] [:append 14 23] [:append 13 127] [:append 13 128]]
+4	:fail	:txn	[[:r 13 nil] [:append 14 23] [:append 13 127] [:append 13 128]]	:moved
+1	:invoke	:txn	[[:r 14 nil] [:r 6 nil] [:r 14 nil]]
+1	:fail	:txn	[[:r 14 nil] [:r 6 nil] [:r 14 nil]]	:moved
+1	:invoke	:txn	[[:r 9 nil] [:append 15 1] [:r 15 nil] [:r 15 nil]]
+1	:fail	:txn	[[:r 9 nil] [:append 15 1] [:r 15 nil] [:r 15 nil]]	:moved
+3	:invoke	:txn	[[:r 15 nil] [:r 9 nil] [:append 14 24] [:append 15 2]]
+3	:fail	:txn	[[:r 15 nil] [:r 9 nil] [:append 14 24] [:append 15 2]]	:moved
+4	:invoke	:txn	[[:r 8 nil] [:append 15 3]]
+4	:fail	:txn	[[:r 8 nil] [:append 15 3]]	:moved
+0	:invoke	:txn	[[:r 15 nil] [:r 15 nil] [:append 7 26] [:append 15 4]]
+3	:invoke	:txn	[[:append 15 5]]
+3	:fail	:txn	[[:append 15 5]]	:moved
+0	:ok	:txn	[[:r 15 []] [:r 15 []] [:append 7 26] [:append 15 4]]
+1	:invoke	:txn	[[:append 15 6] [:append 14 25] [:r 14 nil] [:r 15 nil]]
+1	:fail	:txn	[[:append 15 6] [:append 14 25] [:r 14 nil] [:r 15 nil]]	:moved
+1	:invoke	:txn	[[:r 14 nil]]
+1	:fail	:txn	[[:r 14 nil]]	:moved
+4	:invoke	:txn	[[:r 15 nil] [:append 14 26] [:append 8 39]]
+4	:fail	:txn	[[:r 15 nil] [:append 14 26] [:append 8 39]]	:moved
+1	:invoke	:txn	[[:append 15 7]]
+1	:fail	:txn	[[:append 15 7]]	:moved
+0	:invoke	:txn	[[:r 9 nil] [:append 9 95] [:append 15 8] [:r 15 nil]]
+3	:invoke	:txn	[[:append 15 9] [:r 15 nil]]
+3	:fail	:txn	[[:append 15 9] [:r 15 nil]]	:moved
+3	:invoke	:txn	[[:r 14 nil] [:r 15 nil] [:r 15 nil] [:r 15 nil]]
+0	:ok	:txn	[[:r 9 [22 39 46 49 69 72 73 75 90]] [:append 9 95] [:append 15 8] [:r 15 [4 8]]]
+3	:fail	:txn	[[:r 14 nil] [:r 15 nil] [:r 15 nil] [:r 15 nil]]	:moved
+4	:invoke	:txn	[[:append 14 27]]
+4	:fail	:txn	[[:append 14 27]]	:moved
+3	:invoke	:txn	[[:append 15 10] [:r 14 nil] [:r 9 nil] [:r 15 nil]]
+3	:fail	:txn	[[:append 15 10] [:r 14 nil] [:r 9 nil] [:r 15 nil]]	:moved
+1	:invoke	:txn	[[:r 15 nil] [:r 14 nil] [:append 15 11]]
+1	:fail	:txn	[[:r 15 nil] [:r 14 nil] [:append 15 11]]	:moved
+1	:invoke	:txn	[[:append 14 28] [:r 14 nil] [:r 14 nil] [:r 15 nil]]
+1	:fail	:txn	[[:append 14 28] [:r 14 nil] [:r 14 nil] [:r 15 nil]]	:moved
+0	:invoke	:txn	[[:r 14 nil]]
+0	:ok	:txn	[[:r 14 [4]]]
+1	:invoke	:txn	[[:r 15 nil] [:r 14 nil] [:append 14 29]]
+1	:fail	:txn	[[:r 15 nil] [:r 14 nil] [:append 14 29]]	:moved
+0	:invoke	:txn	[[:append 9 96] [:r 8 nil] [:append 15 12] [:append 8 40]]
+4	:invoke	:txn	[[:r 15 nil] [:r 8 nil] [:r 15 nil] [:r 15 nil]]
+4	:fail	:txn	[[:r 15 nil] [:r 8 nil] [:r 15 nil] [:r 15 nil]]	:moved
+3	:invoke	:txn	[[:append 8 41]]
+3	:fail	:txn	[[:append 8 41]]	:moved
+1	:invoke	:txn	[[:append 15 13] [:append 15 14]]
+0	:ok	:txn	[[:append 9 96] [:r 8 [3 15 21 24 25 27 33 36]] [:append 15 12] [:append 8 40]]
+1	:fail	:txn	[[:append 15 13] [:append 15 14]]	:moved
+3	:invoke	:txn	[[:append 14 30]]
+3	:fail	:txn	[[:append 14 30]]	:moved
+3	:invoke	:txn	[[:append 15 15] [:r 14 nil] [:append 5 9] [:append 15 16]]
+3	:fail	:txn	[[:append 15 15] [:r 14 nil] [:append 5 9] [:append 15 16]]	:moved
+4	:invoke	:txn	[[:append 15 17] [:r 14 nil] [:r 8 nil] [:append 7 27]]
+4	:fail	:txn	[[:append 15 17] [:r 14 nil] [:r 8 nil] [:append 7 27]]	:moved
+0	:invoke	:txn	[[:r 8 nil] [:append 15 18] [:append 15 19] [:r 14 nil]]
+1	:invoke	:txn	[[:r 9 nil] [:append 14 31] [:append 15 20]]
+1	:fail	:txn	[[:r 9 nil] [:append 14 31] [:append 15 20]]	:moved
+0	:ok	:txn	[[:r 8 [3 15 21 24 25 27 33 36 40]] [:append 15 18] [:append 15 19] [:r 14 [4]]]
+0	:invoke	:txn	[[:append 9 97]]
+3	:invoke	:txn	[[:append 15 21] [:r 14 nil]]
+3	:fail	:txn	[[:append 15 21] [:r 14 nil]]	:moved
+4	:invoke	:txn	[[:r 15 nil] [:append 15 22]]
+0	:ok	:txn	[[:append 9 97]]
+4	:fail	:txn	[[:r 15 nil] [:append 15 22]]	:moved
+4	:invoke	:txn	[[:append 15 23] [:append 8 42] [:append 15 24] [:r 9 nil]]
+4	:fail	:txn	[[:append 15 23] [:append 8 42] [:append 15 24] [:r 9 nil]]	:moved
+1	:invoke	:txn	[[:append 14 32]]
+1	:fail	:txn	[[:append 14 32]]	:moved
+4	:invoke	:txn	[[:append 9 98] [:append 15 25] [:r 15 nil] [:r 15 nil]]
+4	:fail	:txn	[[:append 9 98] [:append 15 25] [:r 15 nil] [:r 15 nil]]	:moved
+3	:invoke	:txn	[[:append 14 33] [:append 15 26] [:r 9 nil] [:append 9 99]]
+3	:fail	:txn	[[:append 14 33] [:append 15 26] [:r 9 nil] [:append 9 99]]	:moved
+1	:invoke	:txn	[[:r 9 nil]]
+1	:fail	:txn	[[:r 9 nil]]	:moved
+3	:invoke	:txn	[[:append 14 34] [:append 15 27] [:append 14 35] [:r 2 nil]]
+3	:fail	:txn	[[:append 14 34] [:append 15 27] [:append 14 35] [:r 2 nil]]	:moved
+0	:invoke	:txn	[[:r 9 nil] [:append 15 28]]
+4	:invoke	:txn	[[:append 15 29] [:r 14 nil] [:r 8 nil] [:r 5 nil]]
+0	:ok	:txn	[[:r 9 [22 39 46 49 69 72 73 75 90 95 96 97]] [:append 15 28]]
+4	:fail	:txn	[[:append 15 29] [:r 14 nil] [:r 8 nil] [:r 5 nil]]	:moved
+0	:invoke	:txn	[[:append 15 30] [:append 15 31]]
+4	:invoke	:txn	[[:append 15 32] [:r 14 nil]]
+3	:invoke	:txn	[[:r 15 nil]]
+3	:fail	:txn	[[:r 15 nil]]	:moved
+0	:ok	:txn	[[:append 15 30] [:append 15 31]]
+4	:fail	:txn	[[:append 15 32] [:r 14 nil]]	:moved
+1	:invoke	:txn	[[:append 8 43] [:r 8 nil]]
+1	:fail	:txn	[[:append 8 43] [:r 8 nil]]	:moved
+3	:invoke	:txn	[[:append 6 16] [:r 14 nil]]
+1	:invoke	:txn	[[:r 9 nil] [:r 15 nil]]
+3	:fail	:txn	[[:append 6 16] [:r 14 nil]]	:moved
+1	:fail	:txn	[[:r 9 nil] [:r 15 nil]]	:moved
+1	:invoke	:txn	[[:r 9 nil]]
+1	:fail	:txn	[[:r 9 nil]]	:moved
+1	:invoke	:txn	[[:r 6 nil] [:r 8 nil] [:append 15 33]]
+1	:fail	:txn	[[:r 6 nil] [:r 8 nil] [:append 15 33]]	:moved
+0	:invoke	:txn	[[:r 14 nil] [:r 15 nil] [:append 15 34] [:append 15 35]]
+0	:ok	:txn	[[:r 14 [4]] [:r 15 [4 8 12 18 19 28 30 31]] [:append 15 34] [:append 15 35]]
+1	:invoke	:txn	[[:r 14 nil]]
+1	:fail	:txn	[[:r 14 nil]]	:moved
+3	:invoke	:txn	[[:r 15 nil]]
+3	:fail	:txn	[[:r 15 nil]]	:moved
+4	:invoke	:txn	[[:r 14 nil] [:r 14 nil] [:r 15 nil] [:append 14 36]]
+4	:fail	:txn	[[:r 14 nil] [:r 14 nil] [:r 15 nil] [:append 14 36]]	:moved
+3	:invoke	:txn	[[:append 15 36]]
+3	:fail	:txn	[[:append 15 36]]	:moved
+0	:invoke	:txn	[[:append 15 37] [:r 8 nil]]
+0	:ok	:txn	[[:append 15 37] [:r 8 [3 15 21 24 25 27 33 36 40]]]
+1	:invoke	:txn	[[:r 15 nil]]
+1	:fail	:txn	[[:r 15 nil]]	:moved
+3	:invoke	:txn	[[:r 15 nil] [:r 15 nil] [:r 15 nil] [:append 8 44]]
+3	:fail	:txn	[[:r 15 nil] [:r 15 nil] [:r 15 nil] [:append 8 44]]	:moved
+3	:invoke	:txn	[[:append 14 37] [:r 9 nil] [:r 14 nil] [:r 15 nil]]
+3	:fail	:txn	[[:append 14 37] [:r 9 nil] [:r 14 nil] [:r 15 nil]]	:moved
+4	:invoke	:txn	[[:append 14 38] [:r 15 nil] [:append 15 38]]
+4	:fail	:txn	[[:append 14 38] [:r 15 nil] [:append 15 38]]	:moved
+3	:invoke	:txn	[[:append 14 39] [:append 15 39]]
+3	:fail	:txn	[[:append 14 39] [:append 15 39]]	:moved
+4	:invoke	:txn	[[:append 9 100]]
+4	:fail	:txn	[[:append 9 100]]	:moved
+0	:invoke	:txn	[[:append 14 40]]
+3	:invoke	:txn	[[:r 15 nil] [:append 14 41] [:r 8 nil]]
+4	:invoke	:txn	[[:append 14 42]]
+4	:fail	:txn	[[:append 14 42]]	:moved
+3	:fail	:txn	[[:r 15 nil] [:append 14 41] [:r 8 nil]]	:moved
+1	:invoke	:txn	[[:r 9 nil] [:r 15 nil]]
+4	:invoke	:txn	[[:r 15 nil]]
+0	:ok	:txn	[[:append 14 40]]
+4	:fail	:txn	[[:r 15 nil]]	:moved
+3	:invoke	:txn	[[:r 9 nil] [:append 14 43] [:append 9 101]]
+1	:fail	:txn	[[:r 9 nil] [:r 15 nil]]	:moved
+3	:fail	:txn	[[:r 9 nil] [:append 14 43] [:append 9 101]]	:moved
+1	:invoke	:txn	[[:r 15 nil] [:r 15 nil] [:r 14 nil] [:append 14 44]]
+1	:fail	:txn	[[:r 15 nil] [:r 15 nil] [:r 14 nil] [:append 14 44]]	:moved
+4	:invoke	:txn	[[:r 14 nil] [:append 14 45]]
+4	:fail	:txn	[[:r 14 nil] [:append 14 45]]	:moved
+4	:invoke	:txn	[[:r 14 nil]]
+4	:fail	:txn	[[:r 14 nil]]	:moved
+4	:invoke	:txn	[[:r 15 nil] [:r 15 nil] [:r 14 nil] [:append 15 40]]
+4	:fail	:txn	[[:r 15 nil] [:r 15 nil] [:r 14 nil] [:append 15 40]]	:moved
+0	:invoke	:txn	[[:r 15 nil] [:r 8 nil] [:append 15 41]]
+3	:invoke	:txn	[[:r 14 nil] [:r 14 nil] [:append 15 42] [:append 15 43]]
+3	:fail	:txn	[[:r 14 nil] [:r 14 nil] [:append 15 42] [:append 15 43]]	:moved
+1	:invoke	:txn	[[:append 14 46] [:append 15 44] [:append 15 45]]
+1	:fail	:txn	[[:append 14 46] [:append 15 44] [:append 15 45]]	:moved
+4	:invoke	:txn	[[:append 15 46]]
+0	:ok	:txn	[[:r 15 [4 8 12 18 19 28 30 31 34 35 37]] [:r 8 [3 15 21 24 25 27 33 36 40]] [:append 15 41]]
+4	:fail	:txn	[[:append 15 46]]	:moved
+0	:invoke	:txn	[[:r 14 nil] [:append 14 47]]
+1	:invoke	:txn	[[:append 14 48] [:r 9 nil] [:append 9 102]]
+1	:fail	:txn	[[:append 14 48] [:r 9 nil] [:append 9 102]]	:moved
+3	:invoke	:txn	[[:append 8 45] [:r 14 nil] [:r 14 nil] [:append 15 47]]
+0	:ok	:txn	[[:r 14 [4 40]] [:append 14 47]]
+3	:fail	:txn	[[:append 8 45] [:r 14 nil] [:r 14 nil] [:append 15 47]]	:moved
+4	:invoke	:txn	[[:r 8 nil]]
+4	:fail	:txn	[[:r 8 nil]]	:moved
+1	:invoke	:txn	[[:r 15 nil] [:r 15 nil]]
+1	:fail	:txn	[[:r 15 nil] [:r 15 nil]]	:moved
+4	:invoke	:txn	[[:append 9 103] [:append 15 48]]
+4	:fail	:txn	[[:append 9 103] [:append 15 48]]	:moved
+4	:invoke	:txn	[[:r 15 nil] [:append 14 49] [:r 15 nil]]
+4	:fail	:txn	[[:r 15 nil] [:append 14 49] [:r 15 nil]]	:moved
+3	:invoke	:txn	[[:r 9 nil] [:append 14 50]]
+3	:fail	:txn	[[:r 9 nil] [:append 14 50]]	:moved
+0	:invoke	:txn	[[:append 7 28] [:r 15 nil] [:r 15 nil]]
+1	:invoke	:txn	[[:append 7 29] [:r 8 nil] [:r 15 nil]]
+0	:ok	:txn	[[:append 7 28] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41]] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41]]]
+1	:fail	:txn	[[:append 7 29] [:r 8 nil] [:r 15 nil]]	:moved
+1	:invoke	:txn	[[:r 8 nil] [:append 14 51] [:append 15 49] [:r 7 nil]]
+1	:fail	:txn	[[:r 8 nil] [:append 14 51] [:append 15 49] [:r 7 nil]]	:moved
+3	:invoke	:txn	[[:append 15 50]]
+3	:fail	:txn	[[:append 15 50]]	:moved
+4	:invoke	:txn	[[:append 15 51] [:r 15 nil]]
+4	:fail	:txn	[[:append 15 51] [:r 15 nil]]	:moved
+4	:invoke	:txn	[[:append 14 52] [:append 15 52]]
+4	:fail	:txn	[[:append 14 52] [:append 15 52]]	:moved
+1	:invoke	:txn	[[:append 14 53] [:r 15 nil] [:append 14 54] [:append 14 55]]
+1	:fail	:txn	[[:append 14 53] [:r 15 nil] [:append 14 54] [:append 14 55]]	:moved
+3	:invoke	:txn	[[:r 9 nil]]
+3	:fail	:txn	[[:r 9 nil]]	:moved
+0	:invoke	:txn	[[:append 14 56] [:append 5 10]]
+4	:invoke	:txn	[[:r 14 nil] [:r 9 nil] [:r 15 nil]]
+4	:fail	:txn	[[:r 14 nil] [:r 9 nil] [:r 15 nil]]	:moved
+3	:invoke	:txn	[[:r 9 nil] [:append 1 1]]
+4	:invoke	:txn	[[:r 15 nil] [:r 15 nil] [:append 6 17]]
+0	:ok	:txn	[[:append 14 56] [:append 5 10]]
+3	:fail	:txn	[[:r 9 nil] [:append 1 1]]	:moved
+4	:fail	:txn	[[:r 15 nil] [:r 15 nil] [:append 6 17]]	:moved
+1	:invoke	:txn	[[:r 9 nil] [:r 8 nil] [:append 15 53]]
+1	:fail	:txn	[[:r 9 nil] [:r 8 nil] [:append 15 53]]	:moved
+0	:invoke	:txn	[[:r 15 nil]]
+0	:ok	:txn	[[:r 15 [4 8 12 18 19 28 30 31 34 35 37 41]]]
+1	:invoke	:txn	[[:r 8 nil] [:append 9 104] [:r 15 nil]]
+1	:fail	:txn	[[:r 8 nil] [:append 9 104] [:r 15 nil]]	:moved
+4	:invoke	:txn	[[:r 15 nil]]
+4	:fail	:txn	[[:r 15 nil]]	:moved
+0	:invoke	:txn	[[:r 15 nil] [:r 14 nil]]
+3	:invoke	:txn	[[:r 15 nil] [:r 9 nil]]
+3	:fail	:txn	[[:r 15 nil] [:r 9 nil]]	:moved
+4	:invoke	:txn	[[:append 15 54] [:append 15 55] [:append 15 56] [:append 15 57]]
+0	:ok	:txn	[[:r 15 [4 8 12 18 19 28 30 31 34 35 37 41]] [:r 14 [4 40 47 56]]]
+4	:fail	:txn	[[:append 15 54] [:append 15 55] [:append 15 56] [:append 15 57]]	:moved
+4	:invoke	:txn	[[:append 14 57] [:append 15 58] [:append 14 58] [:r 15 nil]]
+4	:fail	:txn	[[:append 14 57] [:append 15 58] [:append 14 58] [:r 15 nil]]	:moved
+1	:invoke	:txn	[[:append 9 105] [:r 15 nil] [:append 9 106] [:append 15 59]]
+1	:fail	:txn	[[:append 9 105] [:r 15 nil] [:append 9 106] [:append 15 59]]	:moved
+0	:invoke	:txn	[[:append 9 107] [:r 15 nil] [:r 15 nil] [:r 14 nil]]
+0	:ok	:txn	[[:append 9 107] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41]] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41]] [:r 14 [4 40 47 56]]]
+4	:invoke	:txn	[[:r 15 nil] [:r 9 nil] [:append 14 59] [:append 14 60]]
+4	:fail	:txn	[[:r 15 nil] [:r 9 nil] [:append 14 59] [:append 14 60]]	:moved
+1	:invoke	:txn	[[:append 15 60]]
+1	:fail	:txn	[[:append 15 60]]	:moved
+3	:invoke	:txn	[[:append 15 61] [:append 15 62] [:r 14 nil] [:r 14 nil]]
+3	:fail	:txn	[[:append 15 61] [:append 15 62] [:r 14 nil] [:r 14 nil]]	:moved
+0	:invoke	:txn	[[:r 15 nil] [:append 15 63] [:append 15 64]]
+1	:invoke	:txn	[[:r 15 nil] [:append 14 61] [:append 15 65]]
+0	:ok	:txn	[[:r 15 [4 8 12 18 19 28 30 31 34 35 37 41]] [:append 15 63] [:append 15 64]]
+1	:fail	:txn	[[:r 15 nil] [:append 14 61] [:append 15 65]]	:moved
+3	:invoke	:txn	[[:r 9 nil] [:r 14 nil] [:r 9 nil]]
+3	:fail	:txn	[[:r 9 nil] [:r 14 nil] [:r 9 nil]]	:moved
+4	:invoke	:txn	[[:append 14 62] [:append 9 108] [:append 14 63]]
+4	:fail	:txn	[[:append 14 62] [:append 9 108] [:append 14 63]]	:moved
+1	:invoke	:txn	[[:r 9 nil] [:r 15 nil] [:append 9 109]]
+1	:fail	:txn	[[:r 9 nil] [:r 15 nil] [:append 9 109]]	:moved
+4	:invoke	:txn	[[:append 9 110] [:r 15 nil] [:append 15 66] [:append 15 67]]
+4	:fail	:txn	[[:append 9 110] [:r 15 nil] [:append 15 66] [:append 15 67]]	:moved
+1	:invoke	:txn	[[:append 15 68] [:r 15 nil] [:r 14 nil]]
+1	:fail	:txn	[[:append 15 68] [:r 15 nil] [:r 14 nil]]	:moved
+3	:invoke	:txn	[[:r 15 nil] [:r 14 nil] [:append 9 111] [:append 15 69]]
+3	:fail	:txn	[[:r 15 nil] [:r 14 nil] [:append 9 111] [:append 15 69]]	:moved
+0	:invoke	:txn	[[:r 14 nil] [:append 14 64] [:append 15 70]]
+4	:invoke	:txn	[[:r 15 nil] [:append 14 65]]
+0	:ok	:txn	[[:r 14 [4 40 47 56]] [:append 14 64] [:append 15 70]]
+4	:fail	:txn	[[:r 15 nil] [:append 14 65]]	:moved
+1	:invoke	:txn	[[:r 15 nil] [:append 14 66] [:append 14 67] [:append 7 30]]
+1	:fail	:txn	[[:r 15 nil] [:append 14 66] [:append 14 67] [:append 7 30]]	:moved
+4	:invoke	:txn	[[:r 15 nil] [:r 15 nil] [:append 15 71] [:append 15 72]]
+4	:fail	:txn	[[:r 15 nil] [:r 15 nil] [:append 15 71] [:append 15 72]]	:moved
+3	:invoke	:txn	[[:r 15 nil] [:append 14 68] [:r 14 nil]]
+3	:fail	:txn	[[:r 15 nil] [:append 14 68] [:r 14 nil]]	:moved
+3	:invoke	:txn	[[:r 14 nil] [:r 14 nil]]
+3	:fail	:txn	[[:r 14 nil] [:r 14 nil]]	:moved
+4	:invoke	:txn	[[:append 14 69]]
+4	:fail	:txn	[[:append 14 69]]	:moved
+3	:invoke	:txn	[[:append 14 70] [:append 15 73]]
+3	:fail	:txn	[[:append 14 70] [:append 15 73]]	:moved
+0	:invoke	:txn	[[:r 15 nil] [:r 15 nil] [:r 15 nil]]
+4	:invoke	:txn	[[:r 15 nil] [:append 15 74] [:r 15 nil]]
+4	:fail	:txn	[[:r 15 nil] [:append 15 74] [:r 15 nil]]	:moved
+1	:invoke	:txn	[[:append 15 75]]
+1	:fail	:txn	[[:append 15 75]]	:moved
+3	:invoke	:txn	[[:r 9 nil]]
+3	:fail	:txn	[[:r 9 nil]]	:moved
+0	:ok	:txn	[[:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70]] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70]] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70]]]
+4	:invoke	:txn	[[:append 15 76]]
+4	:fail	:txn	[[:append 15 76]]	:moved
+1	:invoke	:txn	[[:append 14 71] [:append 8 46] [:r 15 nil]]
+1	:fail	:txn	[[:append 14 71] [:append 8 46] [:r 15 nil]]	:moved
+:nemesis	:info	:reset-clock	("n1" "n5" "n4" "n2")
+3	:invoke	:txn	[[:append 14 72] [:r 15 nil] [:append 15 77] [:append 15 78]]
+3	:fail	:txn	[[:append 14 72] [:r 15 nil] [:append 15 77] [:append 15 78]]	:moved
+0	:invoke	:txn	[[:r 15 nil] [:r 15 nil] [:r 15 nil]]
+4	:invoke	:txn	[[:append 14 73]]
+4	:fail	:txn	[[:append 14 73]]	:moved
+1	:invoke	:txn	[[:r 15 nil]]
+1	:fail	:txn	[[:r 15 nil]]	:moved
+0	:ok	:txn	[[:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70]] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70]] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70]]]
+0	:invoke	:txn	[[:append 15 79]]
+4	:invoke	:txn	[[:append 15 80] [:append 15 81] [:append 15 82] [:append 14 74]]
+4	:fail	:txn	[[:append 15 80] [:append 15 81] [:append 15 82] [:append 14 74]]	:moved
+4	:invoke	:txn	[[:append 15 83] [:append 15 84] [:r 15 nil]]
+3	:invoke	:txn	[[:r 14 nil] [:append 14 75]]
+1	:invoke	:txn	[[:append 9 112] [:r 15 nil]]
+0	:ok	:txn	[[:append 15 79]]
+4	:fail	:txn	[[:append 15 83] [:append 15 84] [:r 15 nil]]	:moved
+3	:fail	:txn	[[:r 14 nil] [:append 14 75]]	:moved
+1	:fail	:txn	[[:append 9 112] [:r 15 nil]]	:moved
+0	:invoke	:txn	[[:append 8 47] [:r 8 nil] [:r 9 nil] [:append 15 85]]
+0	:ok	:txn	[[:append 8 47] [:r 8 [3 15 21 24 25 27 33 36 40 47]] [:r 9 [22 39 46 49 69 72 73 75 90 95 96 97 107]] [:append 15 85]]
+3	:invoke	:txn	[[:r 15 nil] [:r 14 nil] [:append 8 48]]
+3	:fail	:txn	[[:r 15 nil] [:r 14 nil] [:append 8 48]]	:moved
+4	:invoke	:txn	[[:r 14 nil]]
+4	:fail	:txn	[[:r 14 nil]]	:moved
+1	:invoke	:txn	[[:append 15 86] [:r 15 nil] [:r 15 nil]]
+1	:fail	:txn	[[:append 15 86] [:r 15 nil] [:r 15 nil]]	:moved
+1	:invoke	:txn	[[:r 15 nil] [:append 14 76] [:append 8 49]]
+1	:fail	:txn	[[:r 15 nil] [:append 14 76] [:append 8 49]]	:moved
+4	:invoke	:txn	[[:r 15 nil] [:r 14 nil] [:r 14 nil]]
+3	:invoke	:txn	[[:append 14 77] [:r 15 nil] [:r 15 nil]]
+4	:fail	:txn	[[:r 15 nil] [:r 14 nil] [:r 14 nil]]	:moved
+3	:fail	:txn	[[:append 14 77] [:r 15 nil] [:r 15 nil]]	:moved
+3	:invoke	:txn	[[:append 9 113] [:append 14 78] [:r 14 nil] [:append 15 87]]
+3	:fail	:txn	[[:append 9 113] [:append 14 78] [:r 14 nil] [:append 15 87]]	:moved
+0	:invoke	:txn	[[:append 14 79] [:append 15 88] [:append 15 89] [:append 4 5]]
+1	:invoke	:txn	[[:r 9 nil] [:append 15 90] [:r 8 nil]]
+1	:fail	:txn	[[:r 9 nil] [:append 15 90] [:r 8 nil]]	:moved
+0	:ok	:txn	[[:append 14 79] [:append 15 88] [:append 15 89] [:append 4 5]]
+3	:invoke	:txn	[[:append 8 50]]
+3	:fail	:txn	[[:append 8 50]]	:moved
+4	:invoke	:txn	[[:append 14 80]]
+4	:fail	:txn	[[:append 14 80]]	:moved
+1	:invoke	:txn	[[:append 14 81]]
+1	:fail	:txn	[[:append 14 81]]	:moved
+3	:invoke	:txn	[[:r 9 nil]]
+3	:fail	:txn	[[:r 9 nil]]	:moved
+0	:invoke	:txn	[[:append 14 82] [:r 15 nil] [:append 15 91]]
+3	:invoke	:txn	[[:append 9 114]]
+7	:invoke	:txn	[[:r 9 nil] [:append 14 16] [:r 8 nil] [:append 13 114]]
+7	:fail	:txn	[[:r 9 nil] [:append 14 16] [:r 8 nil] [:append 13 114]]	[:no-client Connection refused (Connection refused)]
+4	:invoke	:txn	[[:r 15 nil] [:append 15 92] [:r 15 nil] [:r 14 nil]]
+1	:invoke	:txn	[[:append 15 93] [:append 8 51] [:append 15 94]]
+3	:fail	:txn	[[:append 9 114]]	:moved
+0	:ok	:txn	[[:append 14 82] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70 79 85 88 89]] [:append 15 91]]
+1	:fail	:txn	[[:append 15 93] [:append 8 51] [:append 15 94]]	:moved
+4	:fail	:txn	[[:r 15 nil] [:append 15 92] [:r 15 nil] [:r 14 nil]]	:moved
+4	:invoke	:txn	[[:append 15 95] [:append 9 115] [:append 8 52] [:append 8 53]]
+4	:fail	:txn	[[:append 15 95] [:append 9 115] [:append 8 52] [:append 8 53]]	:moved
+0	:invoke	:txn	[[:r 14 nil] [:r 15 nil]]
+0	:ok	:txn	[[:r 14 [4 40 47 56 64 79 82]] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70 79 85 88 89 91]]]
+3	:invoke	:txn	[[:append 15 97] [:r 14 nil] [:r 8 nil] [:r 14 nil]]
+3	:fail	:txn	[[:append 15 97] [:r 14 nil] [:r 8 nil] [:r 14 nil]]	:moved
+0	:invoke	:txn	[[:r 15 nil] [:append 8 54]]
+4	:invoke	:txn	[[:append 15 98]]
+4	:fail	:txn	[[:append 15 98]]	:moved
+1	:invoke	:txn	[[:append 8 55]]
+1	:fail	:txn	[[:append 8 55]]	:moved
+0	:ok	:txn	[[:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70 79 85 88 89 91]] [:append 8 54]]
+3	:invoke	:txn	[[:append 15 99] [:r 15 nil] [:append 14 83] [:append 6 18]]
+3	:fail	:txn	[[:append 15 99] [:r 15 nil] [:append 14 83] [:append 6 18]]	:moved
+4	:invoke	:txn	[[:r 15 nil]]
+4	:fail	:txn	[[:r 15 nil]]	:moved
+1	:invoke	:txn	[[:r 15 nil] [:append 15 100] [:append 14 84]]
+1	:fail	:txn	[[:r 15 nil] [:append 15 100] [:append 14 84]]	:moved
+0	:invoke	:txn	[[:append 15 101]]
+1	:invoke	:txn	[[:append 15 102]]
+1	:fail	:txn	[[:append 15 102]]	:moved
+3	:invoke	:txn	[[:r 14 nil]]
+3	:fail	:txn	[[:r 14 nil]]	:moved
+4	:invoke	:txn	[[:r 14 nil] [:append 15 103]]
+0	:ok	:txn	[[:append 15 101]]
+4	:fail	:txn	[[:r 14 nil] [:append 15 103]]	:moved
+0	:invoke	:txn	[[:append 9 116] [:r 15 nil]]
+1	:invoke	:txn	[[:append 15 104] [:append 9 117] [:r 14 nil] [:r 15 nil]]
+1	:fail	:txn	[[:append 15 104] [:append 9 117] [:r 14 nil] [:r 15 nil]]	:moved
+0	:ok	:txn	[[:append 9 116] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70 79 85 88 89 91 101]]]
+3	:invoke	:txn	[[:append 9 118]]
+3	:fail	:txn	[[:append 9 118]]	:moved
+0	:invoke	:txn	[[:r 15 nil] [:r 14 nil] [:r 7 nil]]
+4	:invoke	:txn	[[:append 15 105] [:append 14 85] [:r 15 nil] [:r 15 nil]]
+4	:fail	:txn	[[:append 15 105] [:append 14 85] [:r 15 nil] [:r 15 nil]]	:moved
+0	:ok	:txn	[[:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70 79 85 88 89 91 101]] [:r 14 [4 40 47 56 64 79 82]] [:r 7 [16 19 26 28]]]
+4	:invoke	:txn	[[:r 15 nil] [:append 8 56] [:r 15 nil] [:append 8 57]]
+1	:invoke	:txn	[[:append 14 86] [:append 15 106] [:r 9 nil]]
+1	:fail	:txn	[[:append 14 86] [:append 15 106] [:r 9 nil]]	:moved
+4	:fail	:txn	[[:r 15 nil] [:append 8 56] [:r 15 nil] [:append 8 57]]	:moved
+3	:invoke	:txn	[[:r 9 nil] [:r 15 nil] [:append 15 107]]
+3	:fail	:txn	[[:r 9 nil] [:r 15 nil] [:append 15 107]]	:moved
+4	:invoke	:txn	[[:r 15 nil]]
+4	:fail	:txn	[[:r 15 nil]]	:moved
+1	:invoke	:txn	[[:r 14 nil]]
+1	:fail	:txn	[[:r 14 nil]]	:moved
+3	:invoke	:txn	[[:append 14 87] [:r 9 nil] [:append 14 88] [:append 15 108]]
+3	:fail	:txn	[[:append 14 87] [:r 9 nil] [:append 14 88] [:append 15 108]]	:moved
+0	:invoke	:txn	[[:append 14 89]]
+3	:invoke	:txn	[[:append 15 109] [:r 15 nil] [:r 15 nil]]
+3	:fail	:txn	[[:append 15 109] [:r 15 nil] [:r 15 nil]]	:moved
+4	:invoke	:txn	[[:append 15 110]]
+4	:fail	:txn	[[:append 15 110]]	:moved
+0	:ok	:txn	[[:append 14 89]]
+1	:invoke	:txn	[[:append 15 111] [:r 8 nil] [:r 14 nil] [:append 14 90]]
+3	:invoke	:txn	[[:r 14 nil] [:append 9 119]]
+1	:fail	:txn	[[:append 15 111] [:r 8 nil] [:r 14 nil] [:append 14 90]]	:moved
+3	:fail	:txn	[[:r 14 nil] [:append 9 119]]	:moved
+0	:invoke	:txn	[[:append 15 112] [:append 15 113] [:r 15 nil]]
+4	:invoke	:txn	[[:r 14 nil]]
+4	:fail	:txn	[[:r 14 nil]]	:moved
+0	:ok	:txn	[[:append 15 112] [:append 15 113] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70 79 85 88 89 91 101 112 113]]]
+0	:invoke	:txn	[[:r 15 nil] [:append 9 120]]
+3	:invoke	:txn	[[:r 7 nil] [:append 15 114] [:append 15 115]]
+3	:fail	:txn	[[:r 7 nil] [:append 15 114] [:append 15 115]]	:moved
+3	:invoke	:txn	[[:r 15 nil] [:append 15 116] [:r 14 nil]]
+4	:invoke	:txn	[[:r 14 nil]]
+1	:invoke	:txn	[[:r 15 nil] [:append 15 117] [:r 15 nil] [:r 9 nil]]
+4	:fail	:txn	[[:r 14 nil]]	:moved
+0	:ok	:txn	[[:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70 79 85 88 89 91 101 112 113]] [:append 9 120]]
+3	:fail	:txn	[[:r 15 nil] [:append 15 116] [:r 14 nil]]	:moved
+1	:fail	:txn	[[:r 15 nil] [:append 15 117] [:r 15 nil] [:r 9 nil]]	:moved
+4	:invoke	:txn	[[:r 14 nil] [:r 14 nil]]
+4	:fail	:txn	[[:r 14 nil] [:r 14 nil]]	:moved
+0	:invoke	:txn	[[:append 15 118] [:r 15 nil] [:append 14 91]]
+3	:invoke	:txn	[[:append 15 119] [:r 15 nil] [:append 15 120] [:append 15 121]]
+0	:ok	:txn	[[:append 15 118] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70 79 85 88 89 91 101 112 113 118]] [:append 14 91]]
+3	:fail	:txn	[[:append 15 119] [:r 15 nil] [:append 15 120] [:append 15 121]]	:moved
+0	:invoke	:txn	[[:r 3 nil] [:append 15 122]]
+1	:invoke	:txn	[[:r 9 nil]]
+1	:fail	:txn	[[:r 9 nil]]	:moved
+4	:invoke	:txn	[[:append 14 92] [:r 8 nil]]
+4	:fail	:txn	[[:append 14 92] [:r 8 nil]]	:moved
+4	:invoke	:txn	[[:r 15 nil] [:r 14 nil] [:append 15 123]]
+3	:invoke	:txn	[[:append 14 93] [:r 14 nil] [:append 9 121]]
+0	:ok	:txn	[[:r 3 []] [:append 15 122]]
+3	:fail	:txn	[[:append 14 93] [:r 14 nil] [:append 9 121]]	:moved
+4	:fail	:txn	[[:r 15 nil] [:r 14 nil] [:append 15 123]]	:moved
+0	:invoke	:txn	[[:r 14 nil] [:append 14 94] [:r 15 nil] [:append 15 124]]
+4	:invoke	:txn	[[:append 14 95]]
+4	:fail	:txn	[[:append 14 95]]	:moved
+1	:invoke	:txn	[[:append 8 58] [:r 14 nil] [:r 9 nil]]
+3	:invoke	:txn	[[:append 15 125] [:r 15 nil]]
+0	:ok	:txn	[[:r 14 [4 40 47 56 64 79 82 89 91]] [:append 14 94] [:r 15 [4 8 12 18 19 28 30 31 34 35 37 41 63 64 70 79 85 88 89 91 101 112 113 118 122]] [:append 15 124]]
+3	:fail	:txn	[[:append 15 125] [:r 15 nil]]	:moved
+1	:fail	:txn	[[:append 8 58] [:r 14 nil] [:r 9 nil]]	:moved
+1	:invoke	:txn	[[:append 15 126] [:append 14 96] [:r 14 nil]]
+1	:fail	:txn	[[:append 15 126] [:append 14 96] [:r 14 nil]]	:moved
+4	:invoke	:txn	[[:append 15 127]]
+4	:fail	:txn	[[:append 15 127]]	:moved
+3	:invoke	:txn	[[:r 14 nil]]
+3	:fail	:txn	[[:r 14 nil]]	:moved
+1	:invoke	:txn	[[:r 9 nil]]
+1	:fail	:txn	[[:r 9 nil]]	:moved
+4	:invoke	:txn	[[:append 15 128]]
+4	:fail	:txn	[[:append 15 128]]	:moved
+0	:invoke	:txn	[[:append 14 97]]
+1	:invoke	:txn	[[:r 15 nil] [:append 14 98] [:append 14 99] [:r 9 nil]]
+3	:invoke	:txn	[[:r 9 nil] [:r 14 nil] [:append 9 122]]
+0	:ok	:txn	[[:append 14 97]]
+3	:fail	:txn	[[:r 9 nil] [:r 14 nil] [:append 9 122]]	:moved
+1	:fail	:txn	[[:r 15 nil] [:append 14 98] [:append 14 99] [:r 9 nil]]	:moved
+3	:invoke	:txn	[[:append 16 1] [:append 16 2] [:r 14 nil] [:append 16 3]]
+3	:fail	:txn	[[:append 16 1] [:append 16 2] [:r 14 nil] [:append 16 3]]	:moved
+4	:invoke	:txn	[[:append 16 4] [:r 14 nil] [:r 14 nil]]
+4	:fail	:txn	[[:append 16 4] [:r 14 nil] [:r 14 nil]]	:moved
+0	:invoke	:txn	[[:append 9 123]]
+3	:invoke	:txn	[[:append 16 5]]
+3	:fail	:txn	[[:append 16 5]]	:moved
+0	:ok	:txn	[[:append 9 123]]
+0	:invoke	:txn	[[:append 16 6]]
+1	:invoke	:txn	[[:append 8 59]]
+1	:fail	:txn	[[:append 8 59]]	:moved
+1	:invoke	:txn	[[:r 16 nil] [:append 14 100]]
+1	:fail	:txn	[[:r 16 nil] [:append 14 100]]	:moved
+3	:invoke	:txn	[[:r 16 nil] [:r 14 nil] [:r 9 nil] [:append 14 101]]
+1	:invoke	:txn	[[:r 14 nil]]
+4	:invoke	:txn	[[:append 9 124] [:append 14 102]]
+1	:fail	:txn	[[:r 14 nil]]	:moved
+0	:ok	:txn	[[:append 16 6]]
+4	:fail	:txn	[[:append 9 124] [:append 14 102]]	:moved
+3	:fail	:txn	[[:r 16 nil] [:r 14 nil] [:r 9 nil] [:append 14 101]]	:moved
+4	:invoke	:txn	[[:r 16 nil] [:r 16 nil] [:append 7 31]]
+4	:fail	:txn	[[:r 16 nil] [:r 16 nil] [:append 7 31]]	:moved
+1	:invoke	:txn	[[:r 3 nil] [:r 14 nil] [:r 14 nil] [:append 9 125]]
+1	:fail	:txn	[[:r 3 nil] [:r 14 nil] [:r 14 nil] [:append 9 125]]	:moved
+3	:invoke	:txn	[[:append 14 103] [:append 16 7] [:r 14 nil]]
+3	:fail	:txn	[[:append 14 103] [:append 16 7] [:r 14 nil]]	:moved
+1	:invoke	:txn	[[:r 14 nil] [:r 9 nil] [:r 14 nil]]
+1	:fail	:txn	[[:r 14 nil] [:r 9 nil] [:r 14 nil]]	:moved
+0	:invoke	:txn	[[:append 16 8] [:r 16 nil] [:append 14 104] [:r 16 nil]]
+4	:invoke	:txn	[[:r 9 nil] [:append 8 60]]
+4	:fail	:txn	[[:r 9 nil] [:append 8 60]]	:moved
+0	:ok	:txn	[[:append 16 8] [:r 16 [6 8]] [:append 14 104] [:r 16 [6 8]]]
+3	:invoke	:txn	[[:append 16 9] [:r 9 nil] [:r 14 nil]]
+1	:invoke	:txn	[[:append 16 10]]
+1	:fail	:txn	[[:append 16 10]]	:moved
+3	:fail	:txn	[[:append 16 9] [:r 9 nil] [:r 14 nil]]	:moved
+4	:invoke	:txn	[[:append 14 105] [:append 16 11]]
+4	:fail	:txn	[[:append 14 105] [:append 16 11]]	:moved
+4	:invoke	:txn	[[:r 14 nil] [:r 8 nil]]
+4	:fail	:txn	[[:r 14 nil] [:r 8 nil]]	:moved
+0	:invoke	:txn	[[:r 16 nil] [:append 16 12] [:append 16 13]]
+4	:invoke	:txn	[[:append 9 126]]
+4	:fail	:txn	[[:append 9 126]]	:moved
+3	:invoke	:txn	[[:append 7 32] [:r 16 nil]]
+:nemesis	:info	:start-partition	:majority
+3	:fail	:txn	[[:append 7 32] [:r 16 nil]]	:moved
+4	:invoke	:txn	[[:append 16 14]]
+4	:fail	:txn	[[:append 16 14]]	:moved
+1	:invoke	:txn	[[:append 9 127] [:r 14 nil] [:append 16 15]]
+4	:invoke	:txn	[[:r 14 nil]]
+4	:fail	:txn	[[:r 14 nil]]	:moved
+1	:fail	:txn	[[:append 9 127] [:r 14 nil] [:append 16 15]]	:moved
+1	:invoke	:txn	[[:r 14 nil] [:r 16 nil] [:append 14 106]]
+1	:fail	:txn	[[:r 14 nil] [:r 16 nil] [:append 14 106]]	:moved
+:nemesis	:info	:start-partition	[:isolated {"n1" #{"n2" "n5" "n4"}, "n3" #{"n2" "n5" "n4"}, "n2" #{"n1" "n3"}, "n5" #{"n1" "n3"}, "n4" #{"n1" "n3"}}]
+1	:invoke	:txn	[[:append 14 107]]
+1	:fail	:txn	[[:append 14 107]]	:moved
+4	:invoke	:txn	[[:append 14 108] [:r 5 nil]]
+3	:invoke	:txn	[[:append 16 16] [:append 16 17] [:append 14 109] [:append 9 128]]
+4	:fail	:txn	[[:append 14 108] [:r 5 nil]]	:moved
+1	:invoke	:txn	[[:append 16 18] [:r 6 nil]]
+3	:fail	:txn	[[:append 16 16] [:append 16 17] [:append 14 109] [:append 9 128]]	:moved
+1	:fail	:txn	[[:append 16 18] [:r 6 nil]]	:moved
+4	:invoke	:txn	[[:r 16 nil]]
+4	:fail	:txn	[[:r 16 nil]]	:moved
+4	:invoke	:txn	[[:r 8 nil] [:append 14 110] [:r 14 nil] [:r 14 nil]]
+4	:fail	:txn	[[:r 8 nil] [:append 14 110] [:r 14 nil] [:r 14 nil]]	:moved
+1	:invoke	:txn	[[:r 7 nil] [:r 14 nil] [:append 16 19] [:append 14 111]]
+1	:fail	:txn	[[:r 7 nil] [:r 14 nil] [:append 16 19] [:append 14 111]]	:moved
+4	:invoke	:txn	[[:r 16 nil]]
+4	:fail	:txn	[[:r 16 nil]]	:moved
+4	:invoke	:txn	[[:r 16 nil] [:r 16 nil] [:r 16 nil] [:append 16 20]]
+4	:fail	:txn	[[:r 16 nil] [:r 16 nil] [:r 16 nil] [:append 16 20]]	:moved
+3	:invoke	:txn	[[:append 6 19] [:r 16 nil] [:append 16 21] [:r 16 nil]]
+3	:fail	:txn	[[:append 6 19] [:r 16 nil] [:append 16 21] [:r 16 nil]]	:moved
+1	:invoke	:txn	[[:append 16 22] [:append 16 23] [:r 14 nil]]
+1	:fail	:txn	[[:append 16 22] [:append 16 23] [:r 14 nil]]	:moved
+4	:invoke	:txn	[[:append 14 112] [:append 16 24] [:r 16 nil] [:append 16 25]]
+4	:fail	:txn	[[:append 14 112] [:append 16 24] [:r 16 nil] [:append 16 25]]	:moved
+3	:invoke	:txn	[[:append 16 26] [:r 14 nil] [:append 16 27] [:r 14 nil]]
+3	:fail	:txn	[[:append 16 26] [:r 14 nil] [:append 16 27] [:r 14 nil]]	:moved
+1	:invoke	:txn	[[:append 16 28]]
+1	:fail	:txn	[[:append 16 28]]	:moved
+4	:invoke	:txn	[[:r 16 nil] [:append 16 29]]
+4	:fail	:txn	[[:r 16 nil] [:append 16 29]]	:moved
+3	:invoke	:txn	[[:r 16 nil] [:append 7 33]]
+3	:fail	:txn	[[:r 16 nil] [:append 7 33]]	:moved
+4	:invoke	:txn	[[:r 16 nil] [:append 17 1]]
+4	:fail	:txn	[[:r 16 nil] [:append 17 1]]	:moved
+3	:invoke	:txn	[[:append 16 30] [:r 16 nil] [:r 16 nil]]
+3	:fail	:txn	[[:append 16 30] [:r 16 nil] [:r 16 nil]]	:moved
+4	:invoke	:txn	[[:append 16 31] [:append 16 32]]
+4	:fail	:txn	[[:append 16 31] [:append 16 32]]	:moved
+1	:invoke	:txn	[[:r 16 nil] [:r 16 nil] [:append 16 33]]
+1	:fail	:txn	[[:r 16 nil] [:r 16 nil] [:append 16 33]]	:moved
+3	:invoke	:txn	[[:r 14 nil] [:r 17 nil]]
+3	:fail	:txn	[[:r 14 nil] [:r 17 nil]]	:moved
+1	:invoke	:txn	[[:append 14 113] [:r 14 nil] [:r 16 nil] [:r 16 nil]]
+1	:fail	:txn	[[:append 14 113] [:r 14 nil] [:r 16 nil] [:r 16 nil]]	:moved
+4	:invoke	:txn	[[:append 16 34] [:append 16 35]]
+4	:fail	:txn	[[:append 16 34] [:append 16 35]]	:moved
+3	:invoke	:txn	[[:append 16 36] [:r 16 nil] [:append 16 37] [:r 16 nil]]
+3	:fail	:txn	[[:append 16 36] [:r 16 nil] [:append 16 37] [:r 16 nil]]	:moved
+1	:invoke	:txn	[[:r 14 nil] [:r 14 nil]]
+1	:fail	:txn	[[:r 14 nil] [:r 14 nil]]	:moved
+3	:invoke	:txn	[[:append 8 61] [:r 16 nil] [:r 14 nil] [:append 16 38]]
+3	:fail	:txn	[[:append 8 61] [:r 16 nil] [:r 14 nil] [:append 16 38]]	:moved
+4	:invoke	:txn	[[:r 16 nil] [:r 14 nil] [:r 8 nil]]
+4	:fail	:txn	[[:r 16 nil] [:r 14 nil] [:r 8 nil]]	:moved
+3	:invoke	:txn	[[:r 16 nil]]
+3	:fail	:txn	[[:r 16 nil]]	:moved
+1	:invoke	:txn	[[:append 16 39]]
+1	:fail	:txn	[[:append 16 39]]	:moved
+4	:invoke	:txn	[[:r 16 nil]]
+4	:fail	:txn	[[:r 16 nil]]	:noleader
+1	:invoke	:txn	[[:r 14 nil] [:r 16 nil]]
+1	:fail	:txn	[[:r 14 nil] [:r 16 nil]]	:noleader
+3	:invoke	:txn	[[:r 16 nil] [:r 14 nil]]
+3	:fail	:txn	[[:r 16 nil] [:r 14 nil]]	:noleader
+4	:invoke	:txn	[[:r 16 nil]]
+4	:ok	:txn	[[:r 16 [6 8]]]
+3	:invoke	:txn	[[:r 16 nil] [:append 17 2]]
+3	:fail	:txn	[[:r 16 nil] [:append 17 2]]	:moved
+4	:invoke	:txn	[[:r 16 nil]]
+4	:ok	:txn	[[:r 16 [6 8]]]
+1	:invoke	:txn	[[:append 16 40]]
+1	:fail	:txn	[[:append 16 40]]	:moved
+4	:invoke	:txn	[[:r 5 nil] [:append 14 114]]
+1	:invoke	:txn	[[:append 8 62] [:append 14 115]]
+4	:ok	:txn	[[:r 5 [10]] [:append 14 114]]
+1	:fail	:txn	[[:append 8 62] [:append 14 115]]	:moved
+1	:invoke	:txn	[[:append 14 116] [:r 14 nil] [:append 14 117]]
+1	:fail	:txn	[[:append 14 116] [:r 14 nil] [:append 14 117]]	:moved
+3	:invoke	:txn	[[:r 14 nil] [:append 16 41] [:r 17 nil]]
+3	:fail	:txn	[[:r 14 nil] [:append 16 41] [:r 17 nil]]	:moved
+1	:invoke	:txn	[[:r 8 nil] [:r 16 nil]]
+1	:fail	:txn	[[:r 8 nil] [:r 16 nil]]	:moved
+3	:invoke	:txn	[[:r 5 nil] [:r 16 nil] [:r 16 nil]]
+3	:fail	:txn	[[:r 5 nil] [:r 16 nil] [:r 16 nil]]	:moved
+3	:invoke	:txn	[[:append 16 42] [:append 16 43]]
+3	:fail	:txn	[[:append 16 42] [:append 16 43]]	:moved
+1	:invoke	:txn	[[:append 17 3] [:append 16 44]]
+1	:fail	:txn	[[:append 17 3] [:append 16 44]]	:moved
+4	:invoke	:txn	[[:append 14 118]]
+1	:invoke	:txn	[[:r 16 nil]]
+4	:ok	:txn	[[:append 14 118]]
+1	:fail	:txn	[[:r 16 nil]]	:moved
+3	:invoke	:txn	[[:append 16 45] [:append 6 20] [:r 16 nil]]
+3	:fail	:txn	[[:append 16 45] [:append 6 20] [:r 16 nil]]	:moved
+1	:invoke	:txn	[[:append 14 119] [:r 14 nil]]
+1	:fail	:txn	[[:append 14 119] [:r 14 nil]]	:moved
+4	:invoke	:txn	[[:r 16 nil]]
+4	:ok	:txn	[[:r 16 [6 8]]]
+3	:invoke	:txn	[[:r 17 nil] [:append 14 120] [:r 14 nil]]
+3	:fail	:txn	[[:r 17 nil] [:append 14 120] [:r 14 nil]]	:moved
+4	:invoke	:txn	[[:r 16 nil] [:r 14 nil]]
+4	:ok	:txn	[[:r 16 [6 8]] [:r 14 [4 40 47 56 64 79 82 89 91 94 97 104 114 118]]]
+1	:invoke	:txn	[[:r 16 nil] [:append 17 4] [:append 16 46]]
+1	:fail	:txn	[[:r 16 nil] [:append 17 4] [:append 16 46]]	:moved
+1	:invoke	:txn	[[:append 14 121] [:append 16 47] [:append 16 48] [:r 16 nil]]
+1	:fail	:txn	[[:append 14 121] [:append 16 47] [:append 16 48] [:r 16 nil]]	:moved
+3	:invoke	:txn	[[:append 16 49] [:r 14 nil]]
+3	:fail	:txn	[[:append 16 49] [:r 14 nil]]	:moved
+4	:invoke	:txn	[[:append 14 122] [:append 16 50] [:append 17 5] [:append 16 51]]
+1	:invoke	:txn	[[:append 16 52]]
+1	:fail	:txn	[[:append 16 52]]	:moved
+4	:ok	:txn	[[:append 14 122] [:append 16 50] [:append 17 5] [:append 16 51]]
+3	:invoke	:txn	[[:append 16 53] [:r 16 nil] [:append 14 123] [:r 8 nil]]
+3	:fail	:txn	[[:append 16 53] [:r 16 nil] [:append 14 123] [:r 8 nil]]	:moved
+4	:invoke	:txn	[[:r 16 nil]]
+4	:ok	:txn	[[:r 16 [6 8 50 51]]]
+1	:invoke	:txn	[[:append 14 124] [:append 6 21] [:r 14 nil] [:append 16 54]]
+1	:fail	:txn	[[:append 14 124] [:append 6 21] [:r 14 nil] [:append 16 54]]	:moved
+1	:invoke	:txn	[[:r 8 nil] [:append 16 55] [:r 14 nil]]
+1	:fail	:txn	[[:r 8 nil] [:append 16 55] [:r 14 nil]]	:moved
+1	:invoke	:txn	[[:r 16 nil]]
+1	:fail	:txn	[[:r 16 nil]]	:moved
+3	:invoke	:txn	[[:r 14 nil] [:append 16 56] [:append 16 57] [:r 16 nil]]
+3	:fail	:txn	[[:r 14 nil] [:append 16 56] [:append 16 57] [:r 16 nil]]	:moved
+4	:invoke	:txn	[[:r 8 nil] [:r 16 nil] [:r 8 nil] [:append 16 58]]
+3	:invoke	:txn	[[:append 16 59]]
+3	:fail	:txn	[[:append 16 59]]	:moved
+3	:invoke	:txn	[[:r 14 nil] [:r 17 nil] [:append 8 63] [:append 16 60]]
+1	:invoke	:txn	[[:append 14 125] [:append 8 64] [:append 16 61] [:append 17 6]]
+4	:ok	:txn	[[:r 8 [3 15 21 24 25 27 33 36 40 47 54]] [:r 16 [6 8 50 51]] [:r 8 [3 15 21 24 25 27 33 36 40 47 54]] [:append 16 58]]
+1	:fail	:txn	[[:append 14 125] [:append 8 64] [:append 16 61] [:append 17 6]]	:moved
+3	:fail	:txn	[[:r 14 nil] [:r 17 nil] [:append 8 63] [:append 16 60]]	:moved
+1	:invoke	:txn	[[:r 17 nil] [:r 17 nil] [:r 14 nil] [:append 16 62]]
+1	:fail	:txn	[[:r 17 nil] [:r 17 nil] [:r 14 nil] [:append 16 62]]	:moved
+3	:invoke	:txn	[[:r 14 nil] [:r 16 nil]]
+3	:fail	:txn	[[:r 14 nil] [:r 16 nil]]	:moved
+4	:invoke	:txn	[[:r 16 nil]]
+4	:ok	:txn	[[:r 16 [6 8 50 51 58]]]
+7	:invoke	:txn	[[:r 15 nil] [:append 15 96]]
+7	:fail	:txn	[[:r 15 nil] [:append 15 96]]	[:no-client Connection refused (Connection refused)]
+1	:invoke	:txn	[[:append 14 126] [:r 14 nil] [:append 16 64] [:r 14 nil]]
+1	:fail	:txn	[[:append 14 126] [:r 14 nil] [:append 16 64] [:r 14 nil]]	:moved
+3	:invoke	:txn	[[:r 16 nil]]
+3	:fail	:txn	[[:r 16 nil]]	:moved
+4	:invoke	:txn	[[:append 8 65]]
+1	:invoke	:txn	[[:r 16 nil]]
+1	:fail	:txn	[[:r 16 nil]]	:moved
+4	:ok	:txn	[[:append 8 65]]
+3	:invoke	:txn	[[:r 16 nil]]
+3	:fail	:txn	[[:r 16 nil]]	:moved
+4	:invoke	:txn	[[:append 16 65] [:append 14 127] [:r 14 nil] [:r 16 nil]]
+:nemesis	:info	:pause	:primaries
+1	:invoke	:txn	[[:r 16 nil]]
+3	:invoke	:txn	[[:append 14 128] [:append 16 66] [:append 16 67] [:r 16 nil]]
+1	:fail	:txn	[[:r 16 nil]]	:moved
+4	:ok	:txn	[[:append 16 65] [:append 14 127] [:r 14 [4 40 47 56 64 79 82 89 91 94 97 104 114 118 122 127]] [:r 16 [6 8 50 51 58 65]]]
+3	:fail	:txn	[[:append 14 128] [:append 16 66] [:append 16 67] [:r 16 nil]]	:moved
+4	:invoke	:txn	[[:append 16 68] [:append 16 69]]
+1	:invoke	:txn	[[:r 14 nil] [:append 17 7] [:r 14 nil]]
+1	:fail	:txn	[[:r 14 nil] [:append 17 7] [:r 14 nil]]	:moved
+3	:invoke	:txn	[[:append 16 70]]
+3	:fail	:txn	[[:append 16 70]]	:moved
+3	:invoke	:txn	[[:r 18 nil] [:append 18 1] [:append 16 71]]
+3	:fail	:txn	[[:r 18 nil] [:append 18 1] [:append 16 71]]	:moved
+:nemesis	:info	:pause	{"n1" "", "n5" ""}
+1	:invoke	:txn	[[:r 16 nil] [:r 16 nil] [:append 16 72] [:r 16 nil]]
+1	:fail	:txn	[[:r 16 nil] [:r 16 nil] [:append 16 72] [:r 16 nil]]	:moved
+1	:invoke	:txn	[[:append 17 8]]
+1	:fail	:txn	[[:append 17 8]]	:moved
+3	:invoke	:txn	[[:append 16 73] [:append 16 74]]
+3	:fail	:txn	[[:append 16 73] [:append 16 74]]	:moved
+1	:invoke	:txn	[[:append 18 2] [:append 18 3] [:r 16 nil] [:append 16 75]]
+1	:fail	:txn	[[:append 18 2] [:append 18 3] [:r 16 nil] [:append 16 75]]	:moved
+3	:invoke	:txn	[[:r 16 nil] [:r 16 nil] [:append 18 4] [:append 16 76]]
+3	:fail	:txn	[[:r 16 nil] [:r 16 nil] [:append 18 4] [:append 16 76]]	:moved
+3	:invoke	:txn	[[:append 18 5] [:r 18 nil] [:r 16 nil]]
+3	:fail	:txn	[[:append 18 5] [:r 18 nil] [:r 16 nil]]	:moved
+3	:invoke	:txn	[[:append 18 6] [:append 8 66]]
+3	:fail	:txn	[[:append 18 6] [:append 8 66]]	:moved
+1	:invoke	:txn	[[:r 16 nil] [:append 18 7] [:append 4 6] [:append 18 8]]
+1	:fail	:txn	[[:r 16 nil] [:append 18 7] [:append 4 6] [:append 18 8]]	:moved
+1	:invoke	:txn	[[:r 18 nil]]
+1	:fail	:txn	[[:r 18 nil]]	:moved
+1	:invoke	:txn	[[:append 18 9] [:append 16 77] [:append 16 78]]
+1	:fail	:txn	[[:append 18 9] [:append 16 77] [:append 16 78]]	:moved
+1	:invoke	:txn	[[:r 16 nil] [:r 16 nil] [:r 16 nil] [:append 16 79]]
+1	:fail	:txn	[[:r 16 nil] [:r 16 nil] [:r 16 nil] [:append 16 79]]	:moved
+3	:invoke	:txn	[[:r 16 nil] [:r 16 nil] [:append 16 80] [:r 16 nil]]
+3	:fail	:txn	[[:r 16 nil] [:r 16 nil] [:append 16 80] [:r 16 nil]]	:moved
+1	:invoke	:txn	[[:r 17 nil] [:append 16 81]]
+1	:fail	:txn	[[:r 17 nil] [:append 16 81]]	:moved
+1	:invoke	:txn	[[:append 17 9] [:append 16 82]]
+1	:fail	:txn	[[:append 17 9] [:append 16 82]]	:moved
+3	:invoke	:txn	[[:r 18 nil]]
+3	:fail	:txn	[[:r 18 nil]]	:moved
+3	:invoke	:txn	[[:append 16 83]]
+3	:fail	:txn	[[:append 16 83]]	:moved
+3	:invoke	:txn	[[:append 16 84] [:r 16 nil]]
+3	:fail	:txn	[[:append 16 84] [:r 16 nil]]	:moved
+1	:invoke	:txn	[[:r 16 nil] [:append 16 85] [:append 18 10]]
+1	:fail	:txn	[[:r 16 nil] [:append 16 85] [:append 18 10]]	:moved
+1	:invoke	:txn	[[:r 17 nil] [:r 6 nil]]
+1	:fail	:txn	[[:r 17 nil] [:r 6 nil]]	:moved
+1	:invoke	:txn	[[:r 16 nil] [:r 16 nil] [:r 16 nil]]
+1	:fail	:txn	[[:r 16 nil] [:r 16 nil] [:r 16 nil]]	:moved
+3	:invoke	:txn	[[:append 18 11] [:r 16 nil]]
+3	:fail	:txn	[[:append 18 11] [:r 16 nil]]	:moved
+1	:invoke	:txn	[[:r 16 nil] [:r 16 nil]]
+1	:fail	:txn	[[:r 16 nil] [:r 16 nil]]	:moved
+1	:invoke	:txn	[[:append 18 12] [:r 18 nil] [:append 16 86]]
+1	:fail	:txn	[[:append 18 12] [:r 18 nil] [:append 16 86]]	:moved
+3	:invoke	:txn	[[:r 16 nil] [:append 16 87] [:append 16 88]]
+3	:fail	:txn	[[:r 16 nil] [:append 16 87] [:append 16 88]]	:moved
+3	:invoke	:txn	[[:append 18 13] [:r 16 nil] [:append 18 14] [:append 16 89]]
+3	:fail	:txn	[[:append 18 13] [:r 16 nil] [:append 18 14] [:append 16 89]]	:moved
+1	:invoke	:txn	[[:r 16 nil] [:r 16 nil]]
+1	:fail	:txn	[[:r 16 nil] [:r 16 nil]]	:moved
+1	:invoke	:txn	[[:append 8 67] [:append 18 15] [:append 18 16] [:append 16 90]]
+1	:fail	:txn	[[:append 8 67] [:append 18 15] [:append 18 16] [:append 16 90]]	:moved
+1	:invoke	:txn	[[:r 16 nil] [:append 16 91] [:r 16 nil] [:r 17 nil]]
+1	:fail	:txn	[[:r 16 nil] [:append 16 91] [:r 16 nil] [:r 17 nil]]	:moved
+3	:invoke	:txn	[[:append 16 92] [:r 16 nil]]
+3	:fail	:txn	[[:append 16 92] [:r 16 nil]]	:moved
+3	:invoke	:txn	[[:r 16 nil] [:append 18 17] [:append 18 18]]
+3	:fail	:txn	[[:r 16 nil] [:append 18 17] [:append 18 18]]	:moved
+3	:invoke	:txn	[[:append 18 19]]
+3	:fail	:txn	[[:append 18 19]]	:moved
+3	:invoke	:txn	[[:append 8 68] [:r 16 nil] [:r 18 nil]]
+3	:fail	:txn	[[:append 8 68] [:r 16 nil] [:r 18 nil]]	:moved
+1	:invoke	:txn	[[:r 16 nil] [:r 16 nil] [:r 8 nil] [:r 18 nil]]
+1	:fail	:txn	[[:r 16 nil] [:r 16 nil] [:r 8 nil] [:r 18 nil]]	:moved
+1	:invoke	:txn	[[:append 16 93]]
+1	:fail	:txn	[[:append 16 93]]	:moved
+3	:invoke	:txn	[[:append 18 20] [:r 18 nil]]
+3	:fail	:txn	[[:append 18 20] [:r 18 nil]]	:moved
+3	:invoke	:txn	[[:r 16 nil]]
+3	:fail	:txn	[[:r 16 nil]]	:moved
+1	:invoke	:txn	[[:r 3 nil]]
+1	:fail	:txn	[[:r 3 nil]]	:moved
+3	:invoke	:txn	[[:append 8 69] [:append 16 94] [:append 16 95] [:append 17 10]]
+3	:fail	:txn	[[:append 8 69] [:append 16 94] [:append 16 95] [:append 17 10]]	:moved
+3	:invoke	:txn	[[:append 16 96]]
+3	:fail	:txn	[[:append 16 96]]	:moved
+1	:invoke	:txn	[[:r 16 nil]]
+1	:fail	:txn	[[:r 16 nil]]	:moved
+3	:invoke	:txn	[[:append 7 34] [:r 16 nil] [:append 6 22]]
+1	:invoke	:txn	[[:r 17 nil] [:r 16 nil] [:r 18 nil] [:r 17 nil]]
+3	:fail	:txn	[[:append 7 34] [:r 16 nil] [:append 6 22]]	:moved
+1	:fail	:txn	[[:r 17 nil] [:r 16 nil] [:r 18 nil] [:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:append 16 97] [:append 16 98] [:append 18 21] [:append 8 70]]
+3	:fail	:txn	[[:append 16 97] [:append 16 98] [:append 18 21] [:append 8 70]]	:noleader
+1	:invoke	:txn	[[:r 17 nil] [:r 18 nil] [:append 16 99]]
+1	:fail	:txn	[[:r 17 nil] [:r 18 nil] [:append 16 99]]	:noleader
+1	:invoke	:txn	[[:r 16 nil] [:append 17 11] [:append 16 100]]
+1	:fail	:txn	[[:r 16 nil] [:append 17 11] [:append 16 100]]	:noleader
+3	:invoke	:txn	[[:append 18 22]]
+3	:fail	:txn	[[:append 18 22]]	:noleader
+1	:invoke	:txn	[[:r 8 nil] [:r 16 nil] [:append 16 101]]
+1	:fail	:txn	[[:r 8 nil] [:r 16 nil] [:append 16 101]]	:noleader
+3	:invoke	:txn	[[:append 17 12] [:r 8 nil]]
+3	:fail	:txn	[[:append 17 12] [:r 8 nil]]	:noleader
+3	:invoke	:txn	[[:append 8 71] [:append 16 102] [:r 16 nil]]
+3	:fail	:txn	[[:append 8 71] [:append 16 102] [:r 16 nil]]	:noleader
+1	:invoke	:txn	[[:append 16 103]]
+1	:fail	:txn	[[:append 16 103]]	:noleader
+1	:invoke	:txn	[[:r 16 nil] [:append 16 104] [:append 16 105]]
+1	:fail	:txn	[[:r 16 nil] [:append 16 104] [:append 16 105]]	:noleader
+3	:invoke	:txn	[[:r 7 nil] [:r 17 nil] [:r 16 nil] [:append 17 13]]
+3	:fail	:txn	[[:r 7 nil] [:r 17 nil] [:r 16 nil] [:append 17 13]]	:noleader
+1	:invoke	:txn	[[:append 16 106] [:r 18 nil] [:r 7 nil]]
+1	:fail	:txn	[[:append 16 106] [:r 18 nil] [:r 7 nil]]	:noleader
+3	:invoke	:txn	[[:append 17 14] [:append 8 72] [:append 17 15] [:append 18 23]]
+3	:fail	:txn	[[:append 17 14] [:append 8 72] [:append 17 15] [:append 18 23]]	:noleader
+3	:invoke	:txn	[[:append 16 107] [:append 17 16] [:r 16 nil]]
+3	:fail	:txn	[[:append 16 107] [:append 17 16] [:r 16 nil]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:append 16 108] [:append 18 24] [:append 16 109]]
+1	:fail	:txn	[[:r 18 nil] [:append 16 108] [:append 18 24] [:append 16 109]]	:noleader
+3	:invoke	:txn	[[:r 8 nil] [:r 18 nil] [:r 18 nil]]
+3	:fail	:txn	[[:r 8 nil] [:r 18 nil] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:r 16 nil] [:r 16 nil]]
+3	:fail	:txn	[[:r 16 nil] [:r 16 nil]]	:noleader
+1	:invoke	:txn	[[:append 18 25] [:r 16 nil] [:r 18 nil]]
+1	:fail	:txn	[[:append 18 25] [:r 16 nil] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:append 16 110]]
+3	:fail	:txn	[[:append 16 110]]	:noleader
+3	:invoke	:txn	[[:r 17 nil]]
+3	:fail	:txn	[[:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:r 16 nil]]
+3	:fail	:txn	[[:r 16 nil]]	:noleader
+1	:invoke	:txn	[[:r 16 nil] [:append 8 73]]
+1	:fail	:txn	[[:r 16 nil] [:append 8 73]]	:noleader
+1	:invoke	:txn	[[:r 16 nil] [:r 18 nil] [:append 17 17]]
+1	:fail	:txn	[[:r 16 nil] [:r 18 nil] [:append 17 17]]	:noleader
+3	:invoke	:txn	[[:append 18 26] [:append 18 27] [:r 18 nil] [:append 16 111]]
+3	:fail	:txn	[[:append 18 26] [:append 18 27] [:r 18 nil] [:append 16 111]]	:noleader
+3	:invoke	:txn	[[:r 16 nil] [:r 18 nil] [:append 17 18]]
+3	:fail	:txn	[[:r 16 nil] [:r 18 nil] [:append 17 18]]	:noleader
+1	:invoke	:txn	[[:r 16 nil] [:append 16 112]]
+1	:fail	:txn	[[:r 16 nil] [:append 16 112]]	:noleader
+3	:invoke	:txn	[[:append 8 74]]
+3	:fail	:txn	[[:append 8 74]]	:noleader
+3	:invoke	:txn	[[:r 16 nil] [:r 16 nil] [:r 16 nil]]
+3	:fail	:txn	[[:r 16 nil] [:r 16 nil] [:r 16 nil]]	:noleader
+:nemesis	:info	:resume	:all
+1	:invoke	:txn	[[:r 16 nil] [:r 16 nil]]
+1	:fail	:txn	[[:r 16 nil] [:r 16 nil]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:append 7 35]]
+3	:fail	:txn	[[:r 18 nil] [:append 7 35]]	:noleader
+:nemesis	:info	:resume	{"n1" "", "n2" "", "n3" "", "n4" "", "n5" ""}
+3	:invoke	:txn	[[:r 17 nil] [:r 16 nil] [:r 5 nil]]
+3	:fail	:txn	[[:r 17 nil] [:r 16 nil] [:r 5 nil]]	:noleader
+3	:invoke	:txn	[[:append 16 113]]
+3	:fail	:txn	[[:append 16 113]]	:noleader
+3	:invoke	:txn	[[:append 16 114] [:r 16 nil] [:r 17 nil]]
+3	:fail	:txn	[[:append 16 114] [:r 16 nil] [:r 17 nil]]	:noleader
+1	:invoke	:txn	[[:append 18 28] [:r 16 nil] [:r 18 nil] [:r 16 nil]]
+1	:fail	:txn	[[:append 18 28] [:r 16 nil] [:r 18 nil] [:r 16 nil]]	:noleader
+1	:invoke	:txn	[[:r 16 nil] [:r 5 nil]]
+1	:fail	:txn	[[:r 16 nil] [:r 5 nil]]	:noleader
+3	:invoke	:txn	[[:append 8 75] [:append 8 76]]
+3	:fail	:txn	[[:append 8 75] [:append 8 76]]	:noleader
+3	:invoke	:txn	[[:append 16 115]]
+3	:fail	:txn	[[:append 16 115]]	:noleader
+3	:invoke	:txn	[[:r 16 nil]]
+3	:fail	:txn	[[:r 16 nil]]	:noleader
+1	:invoke	:txn	[[:append 16 116]]
+1	:fail	:txn	[[:append 16 116]]	:noleader
+3	:invoke	:txn	[[:r 17 nil]]
+3	:fail	:txn	[[:r 17 nil]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:append 6 23] [:append 16 117]]
+1	:fail	:txn	[[:r 18 nil] [:append 6 23] [:append 16 117]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:append 16 118]]
+3	:fail	:txn	[[:r 18 nil] [:append 16 118]]	:noleader
+3	:invoke	:txn	[[:append 17 19]]
+3	:fail	:txn	[[:append 17 19]]	:noleader
+3	:invoke	:txn	[[:append 16 119] [:append 16 120] [:r 16 nil]]
+3	:fail	:txn	[[:append 16 119] [:append 16 120] [:r 16 nil]]	:noleader
+3	:invoke	:txn	[[:append 7 36] [:r 18 nil]]
+3	:fail	:txn	[[:append 7 36] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:r 16 nil] [:r 17 nil]]
+1	:fail	:txn	[[:r 16 nil] [:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:r 8 nil] [:append 5 11] [:append 16 121]]
+3	:fail	:txn	[[:r 8 nil] [:append 5 11] [:append 16 121]]	:noleader
+3	:invoke	:txn	[[:r 16 nil]]
+3	:fail	:txn	[[:r 16 nil]]	:noleader
+1	:invoke	:txn	[[:append 8 77] [:r 16 nil] [:append 18 29] [:append 16 122]]
+1	:fail	:txn	[[:append 8 77] [:r 16 nil] [:append 18 29] [:append 16 122]]	:noleader
+3	:invoke	:txn	[[:append 17 20] [:r 16 nil] [:append 16 123]]
+3	:fail	:txn	[[:append 17 20] [:r 16 nil] [:append 16 123]]	:noleader
+1	:invoke	:txn	[[:r 16 nil]]
+1	:fail	:txn	[[:r 16 nil]]	:noleader
+3	:invoke	:txn	[[:append 18 30]]
+3	:fail	:txn	[[:append 18 30]]	:noleader
+3	:invoke	:txn	[[:append 18 31] [:append 18 32]]
+3	:fail	:txn	[[:append 18 31] [:append 18 32]]	:noleader
+1	:invoke	:txn	[[:r 8 nil]]
+1	:fail	:txn	[[:r 8 nil]]	:noleader
+3	:invoke	:txn	[[:append 18 33] [:r 16 nil] [:r 16 nil] [:append 16 124]]
+3	:fail	:txn	[[:append 18 33] [:r 16 nil] [:r 16 nil] [:append 16 124]]	:noleader
+1	:invoke	:txn	[[:r 8 nil]]
+1	:fail	:txn	[[:r 8 nil]]	:noleader
+3	:invoke	:txn	[[:append 16 125] [:append 16 126] [:r 16 nil] [:append 18 34]]
+3	:fail	:txn	[[:append 16 125] [:append 16 126] [:r 16 nil] [:append 18 34]]	:noleader
+3	:invoke	:txn	[[:append 18 35] [:r 18 nil] [:r 18 nil]]
+3	:fail	:txn	[[:append 18 35] [:r 18 nil] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:r 16 nil]]
+1	:fail	:txn	[[:r 16 nil]]	:noleader
+7	:invoke	:txn	[[:append 16 63]]
+7	:fail	:txn	[[:append 16 63]]	[:no-client Connection refused (Connection refused)]
+3	:invoke	:txn	[[:r 16 nil] [:append 16 127] [:r 16 nil]]
+3	:fail	:txn	[[:r 16 nil] [:append 16 127] [:r 16 nil]]	:noleader
+1	:invoke	:txn	[[:append 18 36] [:r 8 nil]]
+1	:fail	:txn	[[:append 18 36] [:r 8 nil]]	:noleader
+3	:invoke	:txn	[[:append 8 78] [:append 8 79] [:append 16 128]]
+3	:fail	:txn	[[:append 8 78] [:append 8 79] [:append 16 128]]	:noleader
+3	:invoke	:txn	[[:r 16 nil] [:r 18 nil] [:append 18 39]]
+3	:fail	:txn	[[:r 16 nil] [:r 18 nil] [:append 18 39]]	:noleader
+1	:invoke	:txn	[[:r 8 nil] [:r 19 nil] [:append 18 40]]
+1	:fail	:txn	[[:r 8 nil] [:r 19 nil] [:append 18 40]]	:noleader
+1	:invoke	:txn	[[:append 18 41] [:append 18 42]]
+1	:fail	:txn	[[:append 18 41] [:append 18 42]]	:noleader
+3	:invoke	:txn	[[:r 19 nil] [:append 19 1]]
+3	:fail	:txn	[[:r 19 nil] [:append 19 1]]	:noleader
+3	:invoke	:txn	[[:append 19 2] [:r 19 nil]]
+3	:fail	:txn	[[:append 19 2] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:append 18 43] [:r 19 nil] [:append 19 3]]
+1	:fail	:txn	[[:r 19 nil] [:append 18 43] [:r 19 nil] [:append 19 3]]	:noleader
+3	:invoke	:txn	[[:r 19 nil] [:append 19 4] [:append 8 80]]
+3	:fail	:txn	[[:r 19 nil] [:append 19 4] [:append 8 80]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:r 18 nil] [:r 6 nil]]
+4	:ok	:txn	[[:append 16 68] [:append 16 69]]
+1	:fail	:txn	[[:r 18 nil] [:r 18 nil] [:r 6 nil]]	:moved
+1	:invoke	:txn	[[:append 19 5] [:r 18 nil]]
+1	:fail	:txn	[[:append 19 5] [:r 18 nil]]	:moved
+1	:invoke	:txn	[[:r 19 nil] [:append 17 22] [:r 17 nil]]
+1	:fail	:txn	[[:r 19 nil] [:append 17 22] [:r 17 nil]]	:moved
+4	:invoke	:txn	[[:append 19 6] [:r 19 nil]]
+3	:invoke	:txn	[[:r 18 nil] [:r 18 nil]]
+3	:fail	:txn	[[:r 18 nil] [:r 18 nil]]	:moved
+4	:ok	:txn	[[:append 19 6] [:r 19 [6]]]
+4	:invoke	:txn	[[:append 18 44] [:append 19 7] [:r 19 nil]]
+3	:invoke	:txn	[[:append 17 23]]
+3	:fail	:txn	[[:append 17 23]]	:moved
+1	:invoke	:txn	[[:append 19 8] [:r 18 nil]]
+4	:ok	:txn	[[:append 18 44] [:append 19 7] [:r 19 [6 7]]]
+1	:fail	:txn	[[:append 19 8] [:r 18 nil]]	:moved
+3	:invoke	:txn	[[:r 19 nil]]
+3	:fail	:txn	[[:r 19 nil]]	:moved
+3	:invoke	:txn	[[:r 19 nil] [:append 19 9] [:r 19 nil]]
+3	:fail	:txn	[[:r 19 nil] [:append 19 9] [:r 19 nil]]	:moved
+3	:invoke	:txn	[[:append 18 45] [:r 19 nil] [:append 19 10]]
+3	:fail	:txn	[[:append 18 45] [:r 19 nil] [:append 19 10]]	:moved
+1	:invoke	:txn	[[:r 8 nil] [:r 18 nil]]
+1	:fail	:txn	[[:r 8 nil] [:r 18 nil]]	:moved
+4	:invoke	:txn	[[:append 19 11] [:append 18 46] [:r 19 nil] [:r 19 nil]]
+1	:invoke	:txn	[[:append 19 12] [:append 19 13] [:append 19 14]]
+4	:ok	:txn	[[:append 19 11] [:append 18 46] [:r 19 [6 7 11]] [:r 19 [6 7 11]]]
+1	:fail	:txn	[[:append 19 12] [:append 19 13] [:append 19 14]]	:moved
+4	:invoke	:txn	[[:append 17 24]]
+3	:invoke	:txn	[[:append 19 15] [:append 18 47] [:append 18 48]]
+3	:fail	:txn	[[:append 19 15] [:append 18 47] [:append 18 48]]	:moved
+4	:ok	:txn	[[:append 17 24]]
+3	:invoke	:txn	[[:r 19 nil]]
+3	:fail	:txn	[[:r 19 nil]]	:moved
+1	:invoke	:txn	[[:append 19 16] [:append 17 25] [:append 19 17] [:r 18 nil]]
+1	:fail	:txn	[[:append 19 16] [:append 17 25] [:append 19 17] [:r 18 nil]]	:moved
+3	:invoke	:txn	[[:append 18 49]]
+3	:fail	:txn	[[:append 18 49]]	:moved
+4	:invoke	:txn	[[:r 19 nil] [:r 19 nil] [:r 19 nil] [:r 19 nil]]
+3	:invoke	:txn	[[:r 19 nil] [:r 19 nil] [:append 19 18] [:append 7 38]]
+3	:fail	:txn	[[:r 19 nil] [:r 19 nil] [:append 19 18] [:append 7 38]]	:moved
+3	:invoke	:txn	[[:append 19 19]]
+3	:fail	:txn	[[:append 19 19]]	:moved
+1	:invoke	:txn	[[:append 19 20] [:append 17 26]]
+1	:fail	:txn	[[:append 19 20] [:append 17 26]]	:moved
+4	:ok	:txn	[[:r 19 [6 7 11]] [:r 19 [6 7 11]] [:r 19 [6 7 11]] [:r 19 [6 7 11]]]
+1	:invoke	:txn	[[:append 19 21] [:append 19 22] [:append 18 50] [:append 19 23]]
+1	:fail	:txn	[[:append 19 21] [:append 19 22] [:append 18 50] [:append 19 23]]	:moved
+4	:invoke	:txn	[[:r 19 nil]]
+4	:ok	:txn	[[:r 19 [6 7 11]]]
+3	:invoke	:txn	[[:append 18 51] [:r 19 nil]]
+3	:fail	:txn	[[:append 18 51] [:r 19 nil]]	:moved
+:nemesis	:info	:pause	:primaries
+1	:invoke	:txn	[[:append 17 27] [:r 8 nil]]
+1	:fail	:txn	[[:append 17 27] [:r 8 nil]]	:moved
+3	:invoke	:txn	[[:append 19 24] [:r 7 nil]]
+3	:fail	:txn	[[:append 19 24] [:r 7 nil]]	:moved
+4	:invoke	:txn	[[:r 19 nil] [:append 17 28]]
+3	:invoke	:txn	[[:r 19 nil]]
+3	:fail	:txn	[[:r 19 nil]]	:moved
+1	:invoke	:txn	[[:r 18 nil] [:r 19 nil] [:append 19 25] [:r 19 nil]]
+1	:fail	:txn	[[:r 18 nil] [:r 19 nil] [:append 19 25] [:r 19 nil]]	:moved
+:nemesis	:info	:pause	{"n1" "", "n5" ""}
+3	:invoke	:txn	[[:r 18 nil] [:r 19 nil] [:r 19 nil]]
+3	:fail	:txn	[[:r 18 nil] [:r 19 nil] [:r 19 nil]]	:moved
+1	:invoke	:txn	[[:r 19 nil] [:append 19 26] [:r 17 nil] [:r 19 nil]]
+1	:fail	:txn	[[:r 19 nil] [:append 19 26] [:r 17 nil] [:r 19 nil]]	:moved
+3	:invoke	:txn	[[:append 19 27] [:r 19 nil]]
+3	:fail	:txn	[[:append 19 27] [:r 19 nil]]	:moved
+1	:invoke	:txn	[[:append 19 28]]
+1	:fail	:txn	[[:append 19 28]]	:moved
+3	:invoke	:txn	[[:append 8 81] [:append 18 52] [:r 19 nil]]
+3	:fail	:txn	[[:append 8 81] [:append 18 52] [:r 19 nil]]	:moved
+1	:invoke	:txn	[[:r 18 nil] [:r 19 nil] [:r 19 nil]]
+1	:fail	:txn	[[:r 18 nil] [:r 19 nil] [:r 19 nil]]	:moved
+3	:invoke	:txn	[[:r 19 nil]]
+3	:fail	:txn	[[:r 19 nil]]	:moved
+1	:invoke	:txn	[[:append 17 29] [:r 17 nil] [:r 19 nil] [:r 17 nil]]
+1	:fail	:txn	[[:append 17 29] [:r 17 nil] [:r 19 nil] [:r 17 nil]]	:moved
+1	:invoke	:txn	[[:r 8 nil] [:append 19 29]]
+1	:fail	:txn	[[:r 8 nil] [:append 19 29]]	:moved
+3	:invoke	:txn	[[:r 19 nil]]
+3	:fail	:txn	[[:r 19 nil]]	:moved
+1	:invoke	:txn	[[:append 7 39] [:append 19 30] [:append 17 30] [:r 19 nil]]
+1	:fail	:txn	[[:append 7 39] [:append 19 30] [:append 17 30] [:r 19 nil]]	:moved
+1	:invoke	:txn	[[:r 19 nil] [:append 8 82]]
+1	:fail	:txn	[[:r 19 nil] [:append 8 82]]	:moved
+3	:invoke	:txn	[[:r 17 nil]]
+3	:fail	:txn	[[:r 17 nil]]	:moved
+1	:invoke	:txn	[[:append 19 31] [:r 17 nil] [:r 19 nil]]
+1	:fail	:txn	[[:append 19 31] [:r 17 nil] [:r 19 nil]]	:moved
+1	:invoke	:txn	[[:append 19 32] [:append 19 33]]
+1	:fail	:txn	[[:append 19 32] [:append 19 33]]	:moved
+3	:invoke	:txn	[[:r 19 nil] [:append 18 53]]
+3	:fail	:txn	[[:r 19 nil] [:append 18 53]]	:moved
+1	:invoke	:txn	[[:r 8 nil] [:append 19 34] [:append 18 54] [:append 17 31]]
+1	:fail	:txn	[[:r 8 nil] [:append 19 34] [:append 18 54] [:append 17 31]]	:moved
+1	:invoke	:txn	[[:r 18 nil]]
+1	:fail	:txn	[[:r 18 nil]]	:moved
+3	:invoke	:txn	[[:append 19 35] [:r 19 nil] [:append 18 55]]
+3	:fail	:txn	[[:append 19 35] [:r 19 nil] [:append 18 55]]	:moved
+1	:invoke	:txn	[[:append 17 32] [:r 19 nil] [:append 17 33] [:append 7 40]]
+1	:fail	:txn	[[:append 17 32] [:r 19 nil] [:append 17 33] [:append 7 40]]	:moved
+1	:invoke	:txn	[[:append 19 36]]
+3	:invoke	:txn	[[:append 18 56]]
+3	:fail	:txn	[[:append 18 56]]	:noleader
+1	:fail	:txn	[[:append 19 36]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:append 18 57]]
+1	:fail	:txn	[[:r 19 nil] [:append 18 57]]	:noleader
+3	:invoke	:txn	[[:append 17 34] [:r 18 nil]]
+3	:fail	:txn	[[:append 17 34] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:append 19 37]]
+1	:fail	:txn	[[:r 19 nil] [:append 19 37]]	:noleader
+3	:invoke	:txn	[[:r 19 nil] [:r 19 nil]]
+3	:fail	:txn	[[:r 19 nil] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:append 18 58] [:r 18 nil] [:append 17 35] [:r 18 nil]]
+1	:fail	:txn	[[:append 18 58] [:r 18 nil] [:append 17 35] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:append 19 38] [:r 19 nil] [:append 19 39] [:append 19 40]]
+3	:fail	:txn	[[:append 19 38] [:r 19 nil] [:append 19 39] [:append 19 40]]	:noleader
+1	:invoke	:txn	[[:append 19 41] [:append 19 42]]
+1	:fail	:txn	[[:append 19 41] [:append 19 42]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:append 17 36] [:append 8 83]]
+3	:fail	:txn	[[:r 18 nil] [:append 17 36] [:append 8 83]]	:noleader
+1	:invoke	:txn	[[:append 19 43]]
+1	:fail	:txn	[[:append 19 43]]	:noleader
+3	:invoke	:txn	[[:r 19 nil] [:append 19 44]]
+3	:fail	:txn	[[:r 19 nil] [:append 19 44]]	:noleader
+1	:invoke	:txn	[[:r 17 nil] [:r 18 nil] [:r 19 nil]]
+1	:fail	:txn	[[:r 17 nil] [:r 18 nil] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:append 19 45] [:append 19 46] [:append 19 47] [:r 6 nil]]
+1	:fail	:txn	[[:append 19 45] [:append 19 46] [:append 19 47] [:r 6 nil]]	:noleader
+1	:invoke	:txn	[[:append 18 59] [:append 19 48]]
+1	:fail	:txn	[[:append 18 59] [:append 19 48]]	:noleader
+3	:invoke	:txn	[[:r 18 nil]]
+3	:fail	:txn	[[:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:append 18 60] [:append 18 61] [:r 19 nil] [:r 19 nil]]
+3	:fail	:txn	[[:append 18 60] [:append 18 61] [:r 19 nil] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil]]
+1	:fail	:txn	[[:r 19 nil]]	:noleader
+3	:invoke	:txn	[[:append 19 49] [:r 6 nil]]
+3	:fail	:txn	[[:append 19 49] [:r 6 nil]]	:noleader
+3	:invoke	:txn	[[:r 18 nil]]
+3	:fail	:txn	[[:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:r 7 nil] [:r 19 nil] [:r 8 nil]]
+3	:fail	:txn	[[:r 7 nil] [:r 19 nil] [:r 8 nil]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:append 19 50] [:r 19 nil]]
+1	:fail	:txn	[[:r 18 nil] [:append 19 50] [:r 19 nil]]	:noleader
+3	:invoke	:txn	[[:append 18 62]]
+3	:fail	:txn	[[:append 18 62]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:r 19 nil] [:r 19 nil] [:append 17 37]]
+3	:fail	:txn	[[:r 18 nil] [:r 19 nil] [:r 19 nil] [:append 17 37]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:append 18 63]]
+1	:fail	:txn	[[:r 18 nil] [:append 18 63]]	:noleader
+3	:invoke	:txn	[[:r 19 nil] [:r 18 nil] [:r 19 nil] [:append 19 51]]
+3	:fail	:txn	[[:r 19 nil] [:r 18 nil] [:r 19 nil] [:append 19 51]]	:noleader
+3	:invoke	:txn	[[:append 18 64] [:append 19 52] [:r 19 nil] [:r 17 nil]]
+3	:fail	:txn	[[:append 18 64] [:append 19 52] [:r 19 nil] [:r 17 nil]]	:noleader
+1	:invoke	:txn	[[:append 19 53]]
+1	:fail	:txn	[[:append 19 53]]	:noleader
+1	:invoke	:txn	[[:r 6 nil] [:append 18 65]]
+1	:fail	:txn	[[:r 6 nil] [:append 18 65]]	:noleader
+3	:invoke	:txn	[[:r 19 nil] [:r 19 nil] [:r 19 nil]]
+3	:fail	:txn	[[:r 19 nil] [:r 19 nil] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:append 19 54] [:r 19 nil]]
+1	:fail	:txn	[[:append 19 54] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:r 7 nil] [:append 19 55] [:r 18 nil]]
+1	:fail	:txn	[[:r 19 nil] [:r 7 nil] [:append 19 55] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:r 17 nil] [:append 19 56]]
+1	:fail	:txn	[[:r 19 nil] [:r 17 nil] [:append 19 56]]	:noleader
+3	:invoke	:txn	[[:append 19 57] [:r 19 nil] [:r 19 nil]]
+3	:fail	:txn	[[:append 19 57] [:r 19 nil] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:append 19 58] [:append 6 24] [:append 18 66] [:r 7 nil]]
+1	:fail	:txn	[[:append 19 58] [:append 6 24] [:append 18 66] [:r 7 nil]]	:noleader
+3	:invoke	:txn	[[:r 8 nil] [:append 18 67]]
+3	:fail	:txn	[[:r 8 nil] [:append 18 67]]	:noleader
+1	:invoke	:txn	[[:append 19 59] [:r 18 nil]]
+1	:fail	:txn	[[:append 19 59] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:append 19 60] [:append 17 38]]
+1	:fail	:txn	[[:r 18 nil] [:append 19 60] [:append 17 38]]	:noleader
+3	:invoke	:txn	[[:r 19 nil] [:append 19 61] [:append 6 25]]
+3	:fail	:txn	[[:r 19 nil] [:append 19 61] [:append 6 25]]	:noleader
+1	:invoke	:txn	[[:append 19 62] [:append 19 63]]
+1	:fail	:txn	[[:append 19 62] [:append 19 63]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:r 19 nil]]
+3	:fail	:txn	[[:r 17 nil] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:append 19 64] [:append 8 84]]
+1	:fail	:txn	[[:r 19 nil] [:append 19 64] [:append 8 84]]	:noleader
+7	:invoke	:txn	[[:append 7 37] [:append 18 37] [:append 18 38] [:append 17 21]]
+7	:fail	:txn	[[:append 7 37] [:append 18 37] [:append 18 38] [:append 17 21]]	[:no-client Connection refused (Connection refused)]
+3	:invoke	:txn	[[:append 19 65] [:append 19 66] [:append 19 67] [:append 8 85]]
+3	:fail	:txn	[[:append 19 65] [:append 19 66] [:append 19 67] [:append 8 85]]	:noleader
+3	:invoke	:txn	[[:append 19 68] [:r 18 nil]]
+3	:fail	:txn	[[:append 19 68] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:r 7 nil]]
+1	:fail	:txn	[[:r 7 nil]]	:noleader
+3	:invoke	:txn	[[:append 18 68] [:r 19 nil]]
+3	:fail	:txn	[[:append 18 68] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:append 19 69] [:r 18 nil] [:append 18 69]]
+1	:fail	:txn	[[:r 19 nil] [:append 19 69] [:r 18 nil] [:append 18 69]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:append 18 70]]
+3	:fail	:txn	[[:r 18 nil] [:append 18 70]]	:noleader
+1	:invoke	:txn	[[:append 19 70] [:append 19 71]]
+3	:invoke	:txn	[[:r 19 nil] [:r 18 nil]]
+3	:fail	:txn	[[:r 19 nil] [:r 18 nil]]	:noleader
+1	:fail	:txn	[[:append 19 70] [:append 19 71]]	:noleader
+1	:invoke	:txn	[[:append 7 41] [:r 19 nil]]
+1	:fail	:txn	[[:append 7 41] [:r 19 nil]]	:noleader
+3	:invoke	:txn	[[:r 19 nil] [:append 7 42] [:append 19 72] [:append 18 71]]
+3	:fail	:txn	[[:r 19 nil] [:append 7 42] [:append 19 72] [:append 18 71]]	:noleader
+1	:invoke	:txn	[[:append 19 73] [:append 18 72]]
+1	:fail	:txn	[[:append 19 73] [:append 18 72]]	:noleader
+3	:invoke	:txn	[[:append 19 74]]
+3	:fail	:txn	[[:append 19 74]]	:noleader
+1	:invoke	:txn	[[:append 19 75] [:append 19 76] [:append 17 39]]
+1	:fail	:txn	[[:append 19 75] [:append 19 76] [:append 17 39]]	:noleader
+3	:invoke	:txn	[[:append 19 77] [:r 18 nil]]
+3	:fail	:txn	[[:append 19 77] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:r 19 nil]]
+3	:fail	:txn	[[:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:append 19 78] [:append 18 73]]
+1	:fail	:txn	[[:append 19 78] [:append 18 73]]	:noleader
+3	:invoke	:txn	[[:append 19 79] [:r 18 nil] [:r 19 nil] [:append 6 26]]
+3	:fail	:txn	[[:append 19 79] [:r 18 nil] [:r 19 nil] [:append 6 26]]	:noleader
+3	:invoke	:txn	[[:append 17 40] [:r 17 nil] [:r 18 nil] [:r 19 nil]]
+3	:fail	:txn	[[:append 17 40] [:r 17 nil] [:r 18 nil] [:r 19 nil]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:append 19 80]]
+3	:fail	:txn	[[:r 17 nil] [:append 19 80]]	:noleader
+3	:invoke	:txn	[[:append 17 41]]
+3	:fail	:txn	[[:append 17 41]]	:noleader
+1	:invoke	:txn	[[:append 19 81] [:r 17 nil] [:append 17 42] [:r 5 nil]]
+1	:fail	:txn	[[:append 19 81] [:r 17 nil] [:append 17 42] [:r 5 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:append 19 82]]
+1	:fail	:txn	[[:r 19 nil] [:append 19 82]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:r 17 nil] [:append 18 74]]
+1	:fail	:txn	[[:r 19 nil] [:r 17 nil] [:append 18 74]]	:noleader
+1	:invoke	:txn	[[:r 17 nil] [:append 19 83]]
+1	:fail	:txn	[[:r 17 nil] [:append 19 83]]	:noleader
+3	:invoke	:txn	[[:r 17 nil]]
+3	:fail	:txn	[[:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:append 18 75] [:append 19 84] [:r 18 nil]]
+3	:fail	:txn	[[:append 18 75] [:append 19 84] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:append 18 76] [:append 19 85] [:append 19 86]]
+1	:fail	:txn	[[:append 18 76] [:append 19 85] [:append 19 86]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:r 18 nil]]
+3	:fail	:txn	[[:r 18 nil] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:append 19 87] [:r 18 nil]]
+1	:fail	:txn	[[:append 19 87] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:append 6 27] [:append 19 88]]
+1	:fail	:txn	[[:append 6 27] [:append 19 88]]	:noleader
+3	:invoke	:txn	[[:append 19 89] [:append 7 43] [:append 7 44] [:append 18 77]]
+3	:fail	:txn	[[:append 19 89] [:append 7 43] [:append 7 44] [:append 18 77]]	:noleader
+1	:invoke	:txn	[[:append 19 90]]
+1	:fail	:txn	[[:append 19 90]]	:noleader
+3	:invoke	:txn	[[:append 19 91] [:append 19 92]]
+3	:fail	:txn	[[:append 19 91] [:append 19 92]]	:noleader
+3	:invoke	:txn	[[:append 18 78]]
+3	:fail	:txn	[[:append 18 78]]	:noleader
+1	:invoke	:txn	[[:append 19 93] [:append 8 86] [:append 19 94] [:append 18 79]]
+1	:fail	:txn	[[:append 19 93] [:append 8 86] [:append 19 94] [:append 18 79]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:append 17 43]]
+1	:fail	:txn	[[:r 19 nil] [:append 17 43]]	:noleader
+3	:invoke	:txn	[[:append 19 95]]
+3	:fail	:txn	[[:append 19 95]]	:noleader
+:nemesis	:info	:join	"n3"
+1	:invoke	:txn	[[:r 19 nil] [:r 17 nil]]
+1	:fail	:txn	[[:r 19 nil] [:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:r 8 nil] [:r 19 nil] [:append 19 96]]
+3	:fail	:txn	[[:r 8 nil] [:r 19 nil] [:append 19 96]]	:noleader
+1	:invoke	:txn	[[:append 19 97] [:r 18 nil]]
+1	:fail	:txn	[[:append 19 97] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:append 19 98]]
+3	:fail	:txn	[[:r 18 nil] [:append 19 98]]	:noleader
+3	:invoke	:txn	[[:r 19 nil] [:r 8 nil] [:r 18 nil] [:append 7 45]]
+3	:fail	:txn	[[:r 19 nil] [:r 8 nil] [:r 18 nil] [:append 7 45]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:r 19 nil] [:append 18 80]]
+1	:fail	:txn	[[:r 19 nil] [:r 19 nil] [:append 18 80]]	:noleader
+3	:invoke	:txn	[[:r 3 nil]]
+3	:fail	:txn	[[:r 3 nil]]	:noleader
+1	:invoke	:txn	[[:append 18 81] [:r 7 nil] [:r 18 nil] [:append 19 99]]
+1	:fail	:txn	[[:append 18 81] [:r 7 nil] [:r 18 nil] [:append 19 99]]	:noleader
+3	:invoke	:txn	[[:append 18 82] [:r 19 nil] [:r 19 nil]]
+3	:fail	:txn	[[:append 18 82] [:r 19 nil] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:append 18 83] [:append 19 100] [:r 18 nil]]
+1	:fail	:txn	[[:append 18 83] [:append 19 100] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:append 19 101] [:r 8 nil]]
+3	:fail	:txn	[[:append 19 101] [:r 8 nil]]	:noleader
+1	:invoke	:txn	[[:append 19 102] [:append 19 103] [:r 18 nil] [:r 19 nil]]
+1	:fail	:txn	[[:append 19 102] [:append 19 103] [:r 18 nil] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:append 19 104] [:r 18 nil] [:r 18 nil]]
+1	:fail	:txn	[[:append 19 104] [:r 18 nil] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:append 18 84] [:append 8 87]]
+1	:fail	:txn	[[:append 18 84] [:append 8 87]]	:noleader
+3	:invoke	:txn	[[:r 4 nil]]
+3	:fail	:txn	[[:r 4 nil]]	:noleader
+3	:invoke	:txn	[[:r 19 nil]]
+3	:fail	:txn	[[:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:append 19 105] [:r 17 nil] [:append 18 85]]
+1	:fail	:txn	[[:r 18 nil] [:append 19 105] [:r 17 nil] [:append 18 85]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:append 19 106]]
+1	:fail	:txn	[[:r 19 nil] [:append 19 106]]	:noleader
+1	:invoke	:txn	[[:append 19 107] [:append 19 108]]
+1	:fail	:txn	[[:append 19 107] [:append 19 108]]	:noleader
+1	:invoke	:txn	[[:append 18 86] [:append 7 46] [:append 8 88] [:r 19 nil]]
+1	:fail	:txn	[[:append 18 86] [:append 7 46] [:append 8 88] [:r 19 nil]]	:noleader
+3	:invoke	:txn	[[:r 19 nil]]
+3	:fail	:txn	[[:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil]]
+1	:fail	:txn	[[:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:append 18 87] [:append 18 88] [:r 8 nil]]
+1	:fail	:txn	[[:append 18 87] [:append 18 88] [:r 8 nil]]	:noleader
+1	:invoke	:txn	[[:append 7 47] [:append 19 109]]
+1	:fail	:txn	[[:append 7 47] [:append 19 109]]	:noleader
+3	:invoke	:txn	[[:append 6 28] [:r 19 nil] [:append 6 29] [:append 19 110]]
+3	:fail	:txn	[[:append 6 28] [:r 19 nil] [:append 6 29] [:append 19 110]]	:noleader
+1	:invoke	:txn	[[:r 19 nil]]
+1	:fail	:txn	[[:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:append 19 111]]
+1	:fail	:txn	[[:append 19 111]]	:noleader
+3	:invoke	:txn	[[:append 18 89] [:append 19 112] [:r 19 nil] [:r 19 nil]]
+3	:fail	:txn	[[:append 18 89] [:append 19 112] [:r 19 nil] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:r 8 nil] [:append 17 44] [:r 19 nil]]
+1	:fail	:txn	[[:r 18 nil] [:r 8 nil] [:append 17 44] [:r 19 nil]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:r 18 nil] [:append 19 113]]
+3	:fail	:txn	[[:r 18 nil] [:r 18 nil] [:append 19 113]]	:noleader
+3	:invoke	:txn	[[:append 7 48] [:r 4 nil] [:append 19 114]]
+3	:fail	:txn	[[:append 7 48] [:r 4 nil] [:append 19 114]]	:noleader
+1	:invoke	:txn	[[:append 19 115]]
+1	:fail	:txn	[[:append 19 115]]	:noleader
+3	:invoke	:txn	[[:append 19 116] [:append 18 90]]
+3	:fail	:txn	[[:append 19 116] [:append 18 90]]	:noleader
+3	:invoke	:txn	[[:append 17 45]]
+3	:fail	:txn	[[:append 17 45]]	:noleader
+3	:invoke	:txn	[[:append 19 117] [:append 19 118]]
+3	:fail	:txn	[[:append 19 117] [:append 19 118]]	:noleader
+1	:invoke	:txn	[[:append 19 119] [:r 19 nil] [:r 19 nil] [:r 19 nil]]
+1	:fail	:txn	[[:append 19 119] [:r 19 nil] [:r 19 nil] [:r 19 nil]]	:noleader
+3	:invoke	:txn	[[:append 18 91] [:r 18 nil] [:r 19 nil] [:r 18 nil]]
+3	:fail	:txn	[[:append 18 91] [:r 18 nil] [:r 19 nil] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:r 18 nil]]
+3	:fail	:txn	[[:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:r 18 nil] [:append 19 120]]
+1	:fail	:txn	[[:r 19 nil] [:r 18 nil] [:append 19 120]]	:noleader
+3	:invoke	:txn	[[:append 19 121] [:append 8 89]]
+3	:fail	:txn	[[:append 19 121] [:append 8 89]]	:noleader
+3	:invoke	:txn	[[:append 19 122] [:r 18 nil] [:append 19 123]]
+3	:fail	:txn	[[:append 19 122] [:r 18 nil] [:append 19 123]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:r 19 nil]]
+1	:fail	:txn	[[:r 19 nil] [:r 19 nil]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:r 19 nil]]
+3	:fail	:txn	[[:r 18 nil] [:r 19 nil]]	:noleader
+1	:invoke	:txn	[[:append 19 124] [:append 18 92] [:append 7 49] [:append 19 125]]
+1	:fail	:txn	[[:append 19 124] [:append 18 92] [:append 7 49] [:append 19 125]]	:noleader
+1	:invoke	:txn	[[:append 19 126]]
+1	:fail	:txn	[[:append 19 126]]	:noleader
+1	:invoke	:txn	[[:append 18 93] [:append 19 127]]
+1	:fail	:txn	[[:append 18 93] [:append 19 127]]	:noleader
+1	:invoke	:txn	[[:r 17 nil]]
+1	:fail	:txn	[[:r 17 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:append 18 94] [:append 19 128]]
+1	:fail	:txn	[[:r 19 nil] [:append 18 94] [:append 19 128]]	:noleader
+3	:invoke	:txn	[[:append 18 95] [:r 17 nil]]
+3	:fail	:txn	[[:append 18 95] [:r 17 nil]]	:noleader
+1	:invoke	:txn	[[:r 19 nil] [:r 18 nil]]
+1	:fail	:txn	[[:r 19 nil] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:r 17 nil] [:append 20 1]]
+3	:fail	:txn	[[:r 18 nil] [:r 17 nil] [:append 20 1]]	:noleader
+3	:invoke	:txn	[[:append 20 2] [:r 18 nil] [:append 20 3] [:r 20 nil]]
+3	:fail	:txn	[[:append 20 2] [:r 18 nil] [:append 20 3] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:r 8 nil]]
+1	:fail	:txn	[[:r 8 nil]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:r 18 nil] [:r 5 nil] [:append 20 4]]
+1	:fail	:txn	[[:r 20 nil] [:r 18 nil] [:r 5 nil] [:append 20 4]]	:noleader
+1	:invoke	:txn	[[:r 17 nil] [:append 20 5]]
+3	:invoke	:txn	[[:append 18 96] [:r 18 nil] [:r 17 nil] [:r 17 nil]]
+3	:fail	:txn	[[:append 18 96] [:r 18 nil] [:r 17 nil] [:r 17 nil]]	:noleader
+1	:fail	:txn	[[:r 17 nil] [:append 20 5]]	:noleader
+3	:invoke	:txn	[[:r 20 nil]]
+3	:fail	:txn	[[:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:append 20 6] [:r 20 nil]]
+1	:fail	:txn	[[:append 20 6] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:append 17 46]]
+3	:fail	:txn	[[:append 17 46]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:r 8 nil]]
+1	:fail	:txn	[[:r 20 nil] [:r 8 nil]]	:noleader
+1	:invoke	:txn	[[:append 20 7] [:append 20 8] [:append 20 9] [:append 17 47]]
+1	:fail	:txn	[[:append 20 7] [:append 20 8] [:append 20 9] [:append 17 47]]	:noleader
+3	:invoke	:txn	[[:append 18 97]]
+3	:fail	:txn	[[:append 18 97]]	:noleader
+1	:invoke	:txn	[[:append 18 98] [:r 18 nil] [:r 20 nil]]
+1	:fail	:txn	[[:append 18 98] [:r 18 nil] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:r 18 nil]]
+3	:fail	:txn	[[:r 18 nil] [:r 18 nil]]	:noleader
+7	:invoke	:txn	[[:r 19 nil]]
+7	:fail	:txn	[[:r 19 nil]]	[:no-client Connection refused (Connection refused)]
+1	:invoke	:txn	[[:append 18 99] [:r 18 nil]]
+1	:fail	:txn	[[:append 18 99] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 10]]
+3	:fail	:txn	[[:append 20 10]]	:noleader
+1	:invoke	:txn	[[:append 5 12]]
+1	:fail	:txn	[[:append 5 12]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:r 20 nil]]
+1	:fail	:txn	[[:r 18 nil] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:append 7 50]]
+3	:fail	:txn	[[:append 7 50]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:append 6 30]]
+3	:fail	:txn	[[:r 17 nil] [:append 6 30]]	:noleader
+1	:invoke	:txn	[[:append 18 100] [:r 17 nil] [:r 20 nil]]
+1	:fail	:txn	[[:append 18 100] [:r 17 nil] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 11] [:append 20 12] [:append 18 101] [:r 20 nil]]
+3	:fail	:txn	[[:append 20 11] [:append 20 12] [:append 18 101] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 13] [:append 20 14] [:append 18 102]]
+3	:fail	:txn	[[:append 20 13] [:append 20 14] [:append 18 102]]	:noleader
+1	:invoke	:txn	[[:append 5 13] [:append 20 15]]
+1	:fail	:txn	[[:append 5 13] [:append 20 15]]	:noleader
+3	:invoke	:txn	[[:append 20 16]]
+3	:fail	:txn	[[:append 20 16]]	:noleader
+1	:invoke	:txn	[[:append 20 17] [:append 20 18] [:r 20 nil] [:append 17 48]]
+1	:fail	:txn	[[:append 20 17] [:append 20 18] [:r 20 nil] [:append 17 48]]	:noleader
+3	:invoke	:txn	[[:append 20 19] [:r 20 nil] [:append 6 31]]
+3	:fail	:txn	[[:append 20 19] [:r 20 nil] [:append 6 31]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:r 20 nil] [:append 20 20]]
+3	:fail	:txn	[[:r 20 nil] [:r 20 nil] [:append 20 20]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:r 18 nil] [:append 8 90]]
+1	:fail	:txn	[[:r 18 nil] [:r 18 nil] [:append 8 90]]	:noleader
+3	:invoke	:txn	[[:append 20 21] [:append 18 103] [:r 20 nil] [:r 18 nil]]
+3	:fail	:txn	[[:append 20 21] [:append 18 103] [:r 20 nil] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:append 18 104]]
+1	:fail	:txn	[[:r 20 nil] [:append 18 104]]	:noleader
+1	:invoke	:txn	[[:append 20 22] [:r 20 nil] [:append 17 49] [:r 18 nil]]
+1	:fail	:txn	[[:append 20 22] [:r 20 nil] [:append 17 49] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:append 8 91] [:r 20 nil] [:append 20 23]]
+3	:fail	:txn	[[:r 20 nil] [:append 8 91] [:r 20 nil] [:append 20 23]]	:noleader
+1	:invoke	:txn	[[:r 8 nil] [:r 18 nil] [:r 20 nil]]
+1	:fail	:txn	[[:r 8 nil] [:r 18 nil] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:r 20 nil]]
+3	:fail	:txn	[[:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:r 20 nil]]
+1	:fail	:txn	[[:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:r 20 nil]]
+3	:fail	:txn	[[:r 17 nil] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:append 18 105] [:r 20 nil]]
+3	:fail	:txn	[[:append 18 105] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:r 17 nil] [:append 20 24] [:r 7 nil]]
+1	:fail	:txn	[[:r 17 nil] [:append 20 24] [:r 7 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 25] [:append 18 106] [:append 8 92] [:append 18 107]]
+3	:fail	:txn	[[:append 20 25] [:append 18 106] [:append 8 92] [:append 18 107]]	:noleader
+3	:invoke	:txn	[[:append 20 26] [:append 7 51]]
+3	:fail	:txn	[[:append 20 26] [:append 7 51]]	:noleader
+3	:invoke	:txn	[[:append 18 108] [:r 20 nil]]
+3	:fail	:txn	[[:append 18 108] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 27] [:r 8 nil] [:append 20 28]]
+3	:fail	:txn	[[:append 20 27] [:r 8 nil] [:append 20 28]]	:noleader
+1	:invoke	:txn	[[:append 17 50] [:r 8 nil] [:append 20 29]]
+1	:fail	:txn	[[:append 17 50] [:r 8 nil] [:append 20 29]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:r 20 nil] [:r 20 nil] [:append 20 30]]
+3	:fail	:txn	[[:r 20 nil] [:r 20 nil] [:r 20 nil] [:append 20 30]]	:noleader
+1	:invoke	:txn	[[:append 18 109]]
+1	:fail	:txn	[[:append 18 109]]	:noleader
+3	:invoke	:txn	[[:r 8 nil] [:append 20 31] [:append 20 32]]
+3	:fail	:txn	[[:r 8 nil] [:append 20 31] [:append 20 32]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:append 20 33]]
+3	:fail	:txn	[[:r 20 nil] [:append 20 33]]	:noleader
+3	:invoke	:txn	[[:append 18 110] [:append 17 51]]
+3	:fail	:txn	[[:append 18 110] [:append 17 51]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:append 17 52]]
+1	:fail	:txn	[[:r 20 nil] [:append 17 52]]	:noleader
+3	:invoke	:txn	[[:append 20 34]]
+3	:fail	:txn	[[:append 20 34]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:append 20 35] [:r 20 nil] [:r 20 nil]]
+1	:fail	:txn	[[:r 20 nil] [:append 20 35] [:r 20 nil] [:r 20 nil]]	:noleader
+0	:info	:txn	[[:r 16 nil] [:append 16 12] [:append 16 13]]	:socket-timeout
+3	:invoke	:txn	[[:r 20 nil] [:r 20 nil] [:append 20 36] [:r 18 nil]]
+3	:fail	:txn	[[:r 20 nil] [:r 20 nil] [:append 20 36] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:append 8 93] [:r 18 nil]]
+1	:fail	:txn	[[:r 20 nil] [:append 8 93] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:append 20 37]]
+1	:fail	:txn	[[:append 20 37]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:append 17 53] [:r 17 nil] [:append 20 38]]
+3	:fail	:txn	[[:r 20 nil] [:append 17 53] [:r 17 nil] [:append 20 38]]	:noleader
+5	:invoke	:txn	[[:append 18 111] [:append 7 52]]
+3	:invoke	:txn	[[:append 18 112] [:append 20 39] [:append 20 40]]
+3	:fail	:txn	[[:append 18 112] [:append 20 39] [:append 20 40]]	:noleader
+1	:invoke	:txn	[[:append 20 41]]
+1	:fail	:txn	[[:append 20 41]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:r 18 nil]]
+3	:fail	:txn	[[:r 20 nil] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:r 7 nil] [:append 18 113] [:r 18 nil]]
+3	:fail	:txn	[[:r 7 nil] [:append 18 113] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:append 20 42] [:r 20 nil] [:append 20 43] [:append 18 114]]
+1	:fail	:txn	[[:append 20 42] [:r 20 nil] [:append 20 43] [:append 18 114]]	:noleader
+1	:invoke	:txn	[[:append 8 94] [:r 20 nil] [:r 20 nil] [:r 8 nil]]
+1	:fail	:txn	[[:append 8 94] [:r 20 nil] [:r 20 nil] [:r 8 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 44] [:append 20 45] [:append 17 54]]
+1	:invoke	:txn	[[:append 20 46] [:r 20 nil]]
+1	:fail	:txn	[[:append 20 46] [:r 20 nil]]	:noleader
+3	:fail	:txn	[[:append 20 44] [:append 20 45] [:append 17 54]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:append 20 47] [:r 4 nil] [:r 20 nil]]
+1	:fail	:txn	[[:r 18 nil] [:append 20 47] [:r 4 nil] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:r 17 nil] [:r 18 nil] [:r 20 nil] [:r 20 nil]]
+1	:fail	:txn	[[:r 17 nil] [:r 18 nil] [:r 20 nil] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 48]]
+3	:fail	:txn	[[:append 20 48]]	:noleader
+3	:invoke	:txn	[[:append 18 115] [:append 20 49] [:append 20 50]]
+3	:fail	:txn	[[:append 18 115] [:append 20 49] [:append 20 50]]	:noleader
+1	:invoke	:txn	[[:append 18 116] [:r 7 nil] [:append 18 117] [:append 18 118]]
+1	:fail	:txn	[[:append 18 116] [:r 7 nil] [:append 18 117] [:append 18 118]]	:noleader
+3	:invoke	:txn	[[:append 18 119] [:r 7 nil] [:append 20 51] [:r 20 nil]]
+3	:fail	:txn	[[:append 18 119] [:r 7 nil] [:append 20 51] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 52] [:r 20 nil] [:r 18 nil] [:append 18 120]]
+3	:fail	:txn	[[:append 20 52] [:r 20 nil] [:r 18 nil] [:append 18 120]]	:noleader
+3	:invoke	:txn	[[:append 18 121] [:r 18 nil]]
+3	:fail	:txn	[[:append 18 121] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:append 18 122] [:r 17 nil]]
+1	:fail	:txn	[[:r 18 nil] [:append 18 122] [:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:append 17 55] [:append 18 123]]
+3	:fail	:txn	[[:r 20 nil] [:append 17 55] [:append 18 123]]	:noleader
+1	:invoke	:txn	[[:r 4 nil] [:r 20 nil] [:append 20 53]]
+1	:fail	:txn	[[:r 4 nil] [:r 20 nil] [:append 20 53]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:r 20 nil]]
+3	:fail	:txn	[[:r 17 nil] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:append 20 54] [:append 20 55] [:r 18 nil] [:append 3 4]]
+1	:fail	:txn	[[:append 20 54] [:append 20 55] [:r 18 nil] [:append 3 4]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:r 20 nil]]
+1	:fail	:txn	[[:r 20 nil] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:r 17 nil] [:r 20 nil] [:r 20 nil]]
+1	:fail	:txn	[[:r 20 nil] [:r 17 nil] [:r 20 nil] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:r 18 nil]]
+3	:fail	:txn	[[:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:append 8 95]]
+1	:invoke	:txn	[[:append 20 56]]
+1	:fail	:txn	[[:append 20 56]]	:noleader
+1	:invoke	:txn	[[:append 20 57]]
+1	:fail	:txn	[[:append 20 57]]	:noleader
+3	:fail	:txn	[[:append 8 95]]	:noleader
+3	:invoke	:txn	[[:append 20 58]]
+3	:fail	:txn	[[:append 20 58]]	:noleader
+3	:invoke	:txn	[[:append 18 124] [:append 20 59]]
+3	:fail	:txn	[[:append 18 124] [:append 20 59]]	:noleader
+1	:invoke	:txn	[[:append 18 125] [:append 20 60] [:append 20 61] [:r 20 nil]]
+1	:fail	:txn	[[:append 18 125] [:append 20 60] [:append 20 61] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:r 17 nil]]
+1	:fail	:txn	[[:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 62]]
+3	:fail	:txn	[[:append 20 62]]	:noleader
+3	:invoke	:txn	[[:append 20 63] [:r 20 nil] [:r 20 nil]]
+3	:fail	:txn	[[:append 20 63] [:r 20 nil] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:r 18 nil] [:r 20 nil] [:r 18 nil]]
+3	:fail	:txn	[[:r 20 nil] [:r 18 nil] [:r 20 nil] [:r 18 nil]]	:noleader
+1	:invoke	:txn	[[:r 7 nil] [:append 17 56] [:r 20 nil]]
+1	:fail	:txn	[[:r 7 nil] [:append 17 56] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:r 18 nil] [:r 18 nil] [:r 17 nil]]
+1	:fail	:txn	[[:r 18 nil] [:r 18 nil] [:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 64] [:append 18 126] [:r 18 nil] [:append 20 65]]
+3	:fail	:txn	[[:append 20 64] [:append 18 126] [:r 18 nil] [:append 20 65]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:r 20 nil]]
+3	:fail	:txn	[[:r 20 nil] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:append 20 66]]
+1	:fail	:txn	[[:append 20 66]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:append 18 127] [:r 20 nil]]
+3	:fail	:txn	[[:r 20 nil] [:append 18 127] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:r 20 nil] [:r 20 nil] [:append 7 53]]
+3	:fail	:txn	[[:r 18 nil] [:r 20 nil] [:r 20 nil] [:append 7 53]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:append 17 57]]
+1	:fail	:txn	[[:r 20 nil] [:append 17 57]]	:noleader
+3	:invoke	:txn	[[:append 17 58] [:r 20 nil] [:r 20 nil] [:r 18 nil]]
+3	:fail	:txn	[[:append 17 58] [:r 20 nil] [:r 20 nil] [:r 18 nil]]	:noleader
+:nemesis	:info	:join	["n3" {"n3" "OK"}]
+1	:invoke	:txn	[[:append 17 59] [:append 20 67]]
+1	:fail	:txn	[[:append 17 59] [:append 20 67]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:append 17 60] [:r 18 nil] [:r 18 nil]]
+1	:fail	:txn	[[:r 20 nil] [:append 17 60] [:r 18 nil] [:r 18 nil]]	:noleader
+3	:invoke	:txn	[[:r 18 nil] [:r 18 nil] [:r 20 nil] [:append 20 68]]
+3	:fail	:txn	[[:r 18 nil] [:r 18 nil] [:r 20 nil] [:append 20 68]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:append 20 69] [:r 20 nil] [:append 18 128]]
+3	:fail	:txn	[[:r 20 nil] [:append 20 69] [:r 20 nil] [:append 18 128]]	:noleader
+1	:invoke	:txn	[[:append 20 70] [:append 20 71]]
+1	:fail	:txn	[[:append 20 70] [:append 20 71]]	:noleader
+1	:invoke	:txn	[[:append 21 1] [:append 21 2] [:append 4 7] [:r 17 nil]]
+1	:fail	:txn	[[:append 21 1] [:append 21 2] [:append 4 7] [:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:append 20 72] [:append 21 3] [:r 21 nil]]
+3	:fail	:txn	[[:r 17 nil] [:append 20 72] [:append 21 3] [:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 73] [:append 21 4]]
+3	:fail	:txn	[[:append 20 73] [:append 21 4]]	:noleader
+1	:invoke	:txn	[[:append 20 74] [:append 20 75]]
+1	:fail	:txn	[[:append 20 74] [:append 20 75]]	:noleader
+1	:invoke	:txn	[[:r 20 nil]]
+1	:fail	:txn	[[:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:append 21 5] [:r 17 nil] [:append 21 6]]
+3	:fail	:txn	[[:append 21 5] [:r 17 nil] [:append 21 6]]	:noleader
+3	:invoke	:txn	[[:r 5 nil] [:append 8 96]]
+3	:fail	:txn	[[:r 5 nil] [:append 8 96]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:r 8 nil] [:append 20 76]]
+3	:invoke	:txn	[[:r 20 nil] [:r 17 nil] [:append 20 77]]
+3	:fail	:txn	[[:r 20 nil] [:r 17 nil] [:append 20 77]]	:noleader
+3	:invoke	:txn	[[:r 20 nil]]
+3	:fail	:txn	[[:r 20 nil]]	:noleader
+1	:fail	:txn	[[:r 20 nil] [:r 8 nil] [:append 20 76]]	:noleader
+3	:invoke	:txn	[[:append 20 78]]
+3	:fail	:txn	[[:append 20 78]]	:noleader
+1	:invoke	:txn	[[:r 21 nil] [:r 21 nil] [:r 8 nil]]
+1	:fail	:txn	[[:r 21 nil] [:r 21 nil] [:r 8 nil]]	:noleader
+7	:invoke	:txn	[[:r 18 nil]]
+7	:fail	:txn	[[:r 18 nil]]	[:no-client Connection refused (Connection refused)]
+7	:invoke	:txn	[[:r 21 nil]]
+7	:fail	:txn	[[:r 21 nil]]	:nocluster
+3	:invoke	:txn	[[:r 20 nil] [:r 21 nil] [:append 21 7]]
+3	:fail	:txn	[[:r 20 nil] [:r 21 nil] [:append 21 7]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:append 20 79]]
+3	:fail	:txn	[[:r 17 nil] [:append 20 79]]	:noleader
+1	:invoke	:txn	[[:append 20 80] [:append 17 61]]
+1	:fail	:txn	[[:append 20 80] [:append 17 61]]	:noleader
+7	:invoke	:txn	[[:r 17 nil] [:append 17 62] [:r 20 nil]]
+7	:fail	:txn	[[:r 17 nil] [:append 17 62] [:r 20 nil]]	:nocluster
+7	:invoke	:txn	[[:r 17 nil]]
+7	:fail	:txn	[[:r 17 nil]]	:nocluster
+3	:invoke	:txn	[[:r 21 nil] [:r 20 nil] [:append 21 8]]
+7	:invoke	:txn	[[:r 20 nil] [:r 20 nil] [:r 21 nil]]
+3	:fail	:txn	[[:r 21 nil] [:r 20 nil] [:append 21 8]]	:noleader
+7	:fail	:txn	[[:r 20 nil] [:r 20 nil] [:r 21 nil]]	:nocluster
+1	:invoke	:txn	[[:r 21 nil] [:append 20 81]]
+1	:fail	:txn	[[:r 21 nil] [:append 20 81]]	:noleader
+1	:invoke	:txn	[[:r 21 nil] [:r 20 nil] [:r 21 nil]]
+1	:fail	:txn	[[:r 21 nil] [:r 20 nil] [:r 21 nil]]	:noleader
+7	:invoke	:txn	[[:append 20 82]]
+7	:fail	:txn	[[:append 20 82]]	:nocluster
+3	:invoke	:txn	[[:r 21 nil] [:r 20 nil]]
+3	:fail	:txn	[[:r 21 nil] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:append 20 83]]
+1	:fail	:txn	[[:append 20 83]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:r 17 nil] [:r 21 nil] [:append 21 9]]
+3	:fail	:txn	[[:r 17 nil] [:r 17 nil] [:r 21 nil] [:append 21 9]]	:noleader
+7	:invoke	:txn	[[:append 20 84] [:r 20 nil] [:append 21 10]]
+7	:fail	:txn	[[:append 20 84] [:r 20 nil] [:append 21 10]]	:nocluster
+1	:invoke	:txn	[[:append 17 63] [:r 20 nil]]
+1	:fail	:txn	[[:append 17 63] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 85] [:append 20 86] [:r 20 nil]]
+3	:fail	:txn	[[:append 20 85] [:append 20 86] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:r 17 nil]]
+1	:fail	:txn	[[:r 17 nil]]	:noleader
+7	:invoke	:txn	[[:r 5 nil] [:r 20 nil]]
+7	:fail	:txn	[[:r 5 nil] [:r 20 nil]]	:nocluster
+3	:invoke	:txn	[[:append 21 11] [:r 17 nil]]
+3	:fail	:txn	[[:append 21 11] [:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:append 8 97] [:append 21 12] [:r 17 nil]]
+3	:fail	:txn	[[:append 8 97] [:append 21 12] [:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:append 21 13] [:r 21 nil]]
+3	:fail	:txn	[[:r 20 nil] [:append 21 13] [:r 21 nil]]	:noleader
+1	:invoke	:txn	[[:append 20 87] [:r 20 nil]]
+1	:fail	:txn	[[:append 20 87] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:r 6 nil] [:append 8 98]]
+3	:fail	:txn	[[:r 6 nil] [:append 8 98]]	:noleader
+7	:invoke	:txn	[[:append 20 88]]
+7	:fail	:txn	[[:append 20 88]]	:nocluster
+1	:invoke	:txn	[[:r 20 nil] [:append 20 89]]
+1	:fail	:txn	[[:r 20 nil] [:append 20 89]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:r 21 nil] [:r 8 nil] [:append 20 90]]
+1	:fail	:txn	[[:r 20 nil] [:r 21 nil] [:r 8 nil] [:append 20 90]]	:noleader
+7	:invoke	:txn	[[:append 21 14] [:r 8 nil]]
+7	:fail	:txn	[[:append 21 14] [:r 8 nil]]	:nocluster
+7	:invoke	:txn	[[:append 20 91] [:r 20 nil] [:append 20 92]]
+7	:fail	:txn	[[:append 20 91] [:r 20 nil] [:append 20 92]]	:nocluster
+3	:invoke	:txn	[[:append 20 93] [:append 20 94] [:append 20 95]]
+3	:fail	:txn	[[:append 20 93] [:append 20 94] [:append 20 95]]	:noleader
+1	:invoke	:txn	[[:r 20 nil]]
+1	:fail	:txn	[[:r 20 nil]]	:noleader
+7	:invoke	:txn	[[:r 7 nil] [:r 20 nil]]
+7	:fail	:txn	[[:r 7 nil] [:r 20 nil]]	:nocluster
+7	:invoke	:txn	[[:r 21 nil] [:r 21 nil] [:r 20 nil]]
+7	:fail	:txn	[[:r 21 nil] [:r 21 nil] [:r 20 nil]]	:nocluster
+3	:invoke	:txn	[[:r 20 nil]]
+3	:fail	:txn	[[:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:r 21 nil] [:append 20 96] [:append 21 15] [:append 20 97]]
+1	:fail	:txn	[[:r 21 nil] [:append 20 96] [:append 21 15] [:append 20 97]]	:noleader
+7	:invoke	:txn	[[:r 20 nil]]
+7	:fail	:txn	[[:r 20 nil]]	:nocluster
+3	:invoke	:txn	[[:append 17 64]]
+3	:fail	:txn	[[:append 17 64]]	:noleader
+7	:invoke	:txn	[[:r 7 nil] [:r 21 nil] [:append 21 16] [:append 20 98]]
+7	:fail	:txn	[[:r 7 nil] [:r 21 nil] [:append 21 16] [:append 20 98]]	:nocluster
+1	:invoke	:txn	[[:r 21 nil]]
+1	:fail	:txn	[[:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 99]]
+3	:fail	:txn	[[:append 20 99]]	:noleader
+3	:invoke	:txn	[[:r 8 nil] [:r 21 nil] [:append 20 100]]
+3	:fail	:txn	[[:r 8 nil] [:r 21 nil] [:append 20 100]]	:noleader
+7	:invoke	:txn	[[:append 20 101]]
+7	:fail	:txn	[[:append 20 101]]	:nocluster
+1	:invoke	:txn	[[:append 17 65] [:append 21 17]]
+1	:fail	:txn	[[:append 17 65] [:append 21 17]]	:noleader
+1	:invoke	:txn	[[:r 7 nil]]
+1	:fail	:txn	[[:r 7 nil]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:append 20 102] [:r 20 nil]]
+3	:fail	:txn	[[:r 20 nil] [:append 20 102] [:r 20 nil]]	:noleader
+7	:invoke	:txn	[[:append 21 18]]
+7	:fail	:txn	[[:append 21 18]]	:nocluster
+1	:invoke	:txn	[[:append 20 103]]
+1	:fail	:txn	[[:append 20 103]]	:noleader
+3	:invoke	:txn	[[:r 21 nil] [:r 20 nil] [:append 7 54]]
+3	:fail	:txn	[[:r 21 nil] [:r 20 nil] [:append 7 54]]	:noleader
+1	:invoke	:txn	[[:r 21 nil]]
+1	:fail	:txn	[[:r 21 nil]]	:noleader
+7	:invoke	:txn	[[:r 20 nil] [:append 20 104] [:r 20 nil] [:r 20 nil]]
+7	:fail	:txn	[[:r 20 nil] [:append 20 104] [:r 20 nil] [:r 20 nil]]	:nocluster
+3	:invoke	:txn	[[:r 20 nil] [:r 20 nil] [:append 20 105] [:append 20 106]]
+7	:invoke	:txn	[[:r 20 nil]]
+7	:fail	:txn	[[:r 20 nil]]	:nocluster
+3	:fail	:txn	[[:r 20 nil] [:r 20 nil] [:append 20 105] [:append 20 106]]	:noleader
+1	:invoke	:txn	[[:r 20 nil]]
+1	:fail	:txn	[[:r 20 nil]]	:noleader
+7	:invoke	:txn	[[:r 21 nil] [:append 20 107]]
+7	:fail	:txn	[[:r 21 nil] [:append 20 107]]	:nocluster
+3	:invoke	:txn	[[:append 8 99]]
+3	:fail	:txn	[[:append 8 99]]	:noleader
+:nemesis	:info	:strobe-clock	{"n5" {:delta 48632, :period 38, :duration 18.52283488771335}, "n4" {:delta 67319, :period 106, :duration 19.158963824011444}, "n1" {:delta 248, :period 9, :duration 0.2863664797156211}, "n2" {:delta 15, :period 18, :duration 30.71098916907848}}
+7	:invoke	:txn	[[:r 20 nil] [:r 20 nil] [:append 5 14]]
+7	:fail	:txn	[[:r 20 nil] [:r 20 nil] [:append 5 14]]	:nocluster
+1	:invoke	:txn	[[:r 6 nil] [:r 21 nil] [:r 17 nil] [:r 20 nil]]
+1	:fail	:txn	[[:r 6 nil] [:r 21 nil] [:r 17 nil] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:append 21 19] [:append 20 108]]
+1	:fail	:txn	[[:r 20 nil] [:append 21 19] [:append 20 108]]	:noleader
+1	:invoke	:txn	[[:append 21 20]]
+1	:fail	:txn	[[:append 21 20]]	:noleader
+3	:invoke	:txn	[[:append 20 109]]
+3	:fail	:txn	[[:append 20 109]]	:noleader
+7	:invoke	:txn	[[:append 20 110] [:r 21 nil] [:r 5 nil] [:append 20 111]]
+7	:fail	:txn	[[:append 20 110] [:r 21 nil] [:r 5 nil] [:append 20 111]]	:nocluster
+7	:invoke	:txn	[[:r 20 nil] [:r 20 nil]]
+7	:fail	:txn	[[:r 20 nil] [:r 20 nil]]	:nocluster
+3	:invoke	:txn	[[:r 20 nil]]
+3	:fail	:txn	[[:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:append 6 32] [:append 17 66] [:append 17 67] [:append 6 33]]
+1	:fail	:txn	[[:append 6 32] [:append 17 66] [:append 17 67] [:append 6 33]]	:noleader
+1	:invoke	:txn	[[:append 17 68] [:r 21 nil]]
+1	:fail	:txn	[[:append 17 68] [:r 21 nil]]	:noleader
+1	:invoke	:txn	[[:r 20 nil]]
+3	:invoke	:txn	[[:append 21 21]]
+3	:fail	:txn	[[:append 21 21]]	:noleader
+1	:fail	:txn	[[:r 20 nil]]	:noleader
+7	:invoke	:txn	[[:append 20 112]]
+7	:fail	:txn	[[:append 20 112]]	:nocluster
+3	:invoke	:txn	[[:append 21 22] [:append 20 113] [:append 17 69] [:r 17 nil]]
+3	:fail	:txn	[[:append 21 22] [:append 20 113] [:append 17 69] [:r 17 nil]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:append 8 100] [:r 20 nil] [:r 20 nil]]
+1	:fail	:txn	[[:r 20 nil] [:append 8 100] [:r 20 nil] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:append 20 114]]
+1	:fail	:txn	[[:append 20 114]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:append 17 70]]
+3	:fail	:txn	[[:r 17 nil] [:append 17 70]]	:noleader
+1	:invoke	:txn	[[:append 20 115] [:r 6 nil]]
+1	:fail	:txn	[[:append 20 115] [:r 6 nil]]	:noleader
+7	:invoke	:txn	[[:r 20 nil] [:append 20 116]]
+7	:fail	:txn	[[:r 20 nil] [:append 20 116]]	:nocluster
+3	:invoke	:txn	[[:r 21 nil] [:append 8 101]]
+3	:fail	:txn	[[:r 21 nil] [:append 8 101]]	:noleader
+3	:invoke	:txn	[[:append 21 23] [:r 17 nil] [:r 20 nil] [:r 21 nil]]
+3	:fail	:txn	[[:append 21 23] [:r 17 nil] [:r 20 nil] [:r 21 nil]]	:noleader
+1	:invoke	:txn	[[:append 20 117] [:append 21 24]]
+1	:fail	:txn	[[:append 20 117] [:append 21 24]]	:noleader
+3	:invoke	:txn	[[:append 20 118] [:r 21 nil] [:r 20 nil] [:r 20 nil]]
+3	:fail	:txn	[[:append 20 118] [:r 21 nil] [:r 20 nil] [:r 20 nil]]	:noleader
+3	:invoke	:txn	[[:r 21 nil] [:r 20 nil] [:append 17 71]]
+3	:fail	:txn	[[:r 21 nil] [:r 20 nil] [:append 17 71]]	:noleader
+7	:invoke	:txn	[[:append 8 102]]
+7	:fail	:txn	[[:append 8 102]]	:nocluster
+1	:invoke	:txn	[[:append 20 119] [:append 20 120]]
+1	:fail	:txn	[[:append 20 119] [:append 20 120]]	:noleader
+7	:invoke	:txn	[[:append 21 25] [:r 8 nil] [:append 5 15]]
+7	:fail	:txn	[[:append 21 25] [:r 8 nil] [:append 5 15]]	:nocluster
+7	:invoke	:txn	[[:append 20 121]]
+7	:fail	:txn	[[:append 20 121]]	:nocluster
+3	:invoke	:txn	[[:append 17 72]]
+3	:fail	:txn	[[:append 17 72]]	:noleader
+1	:invoke	:txn	[[:r 20 nil] [:append 8 103]]
+1	:fail	:txn	[[:r 20 nil] [:append 8 103]]	:noleader
+7	:invoke	:txn	[[:append 21 26] [:append 21 27] [:append 17 73] [:append 17 74]]
+7	:fail	:txn	[[:append 21 26] [:append 21 27] [:append 17 73] [:append 17 74]]	:nocluster
+3	:invoke	:txn	[[:r 20 nil]]
+3	:fail	:txn	[[:r 20 nil]]	:noleader
+7	:invoke	:txn	[[:r 20 nil] [:append 17 75]]
+7	:fail	:txn	[[:r 20 nil] [:append 17 75]]	:nocluster
+1	:invoke	:txn	[[:r 7 nil]]
+1	:fail	:txn	[[:r 7 nil]]	:noleader
+3	:invoke	:txn	[[:r 21 nil] [:append 20 122] [:r 20 nil]]
+3	:fail	:txn	[[:r 21 nil] [:append 20 122] [:r 20 nil]]	:noleader
+1	:invoke	:txn	[[:append 21 28] [:r 20 nil] [:append 21 29]]
+1	:fail	:txn	[[:append 21 28] [:r 20 nil] [:append 21 29]]	:noleader
+3	:invoke	:txn	[[:r 21 nil] [:append 20 123] [:r 20 nil] [:append 21 30]]
+3	:fail	:txn	[[:r 21 nil] [:append 20 123] [:r 20 nil] [:append 21 30]]	:noleader
+7	:invoke	:txn	[[:append 21 31]]
+7	:fail	:txn	[[:append 21 31]]	:nocluster
+3	:invoke	:txn	[[:r 20 nil] [:append 8 104] [:append 20 124] [:r 8 nil]]
+3	:fail	:txn	[[:r 20 nil] [:append 8 104] [:append 20 124] [:r 8 nil]]	:noleader
+3	:invoke	:txn	[[:append 20 125] [:append 20 126] [:append 20 127]]
+7	:invoke	:txn	[[:r 20 nil] [:append 17 76]]
+3	:fail	:txn	[[:append 20 125] [:append 20 126] [:append 20 127]]	:noleader
+7	:fail	:txn	[[:r 20 nil] [:append 17 76]]	:nocluster
+1	:invoke	:txn	[[:r 20 nil] [:r 21 nil] [:r 20 nil]]
+1	:fail	:txn	[[:r 20 nil] [:r 21 nil] [:r 20 nil]]	:noleader
+7	:invoke	:txn	[[:append 20 128] [:r 17 nil] [:r 20 nil] [:r 8 nil]]
+7	:fail	:txn	[[:append 20 128] [:r 17 nil] [:r 20 nil] [:r 8 nil]]	:nocluster
+1	:invoke	:txn	[[:append 17 77] [:append 8 105]]
+1	:fail	:txn	[[:append 17 77] [:append 8 105]]	:noleader
+3	:invoke	:txn	[[:r 20 nil] [:append 22 1]]
+3	:fail	:txn	[[:r 20 nil] [:append 22 1]]	:noleader
+1	:invoke	:txn	[[:r 17 nil]]
+1	:fail	:txn	[[:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:r 22 nil]]
+3	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:r 8 nil] [:append 8 106] [:r 21 nil]]
+7	:fail	:txn	[[:r 8 nil] [:append 8 106] [:r 21 nil]]	:nocluster
+1	:invoke	:txn	[[:append 21 32]]
+1	:fail	:txn	[[:append 21 32]]	:noleader
+1	:invoke	:txn	[[:r 17 nil] [:append 22 2] [:append 22 3]]
+1	:fail	:txn	[[:r 17 nil] [:append 22 2] [:append 22 3]]	:noleader
+3	:invoke	:txn	[[:append 22 4] [:r 22 nil] [:r 21 nil]]
+3	:fail	:txn	[[:append 22 4] [:r 22 nil] [:r 21 nil]]	:noleader
+7	:invoke	:txn	[[:r 21 nil] [:append 22 5] [:r 7 nil]]
+7	:fail	:txn	[[:r 21 nil] [:append 22 5] [:r 7 nil]]	:nocluster
+1	:invoke	:txn	[[:r 22 nil] [:r 5 nil]]
+1	:fail	:txn	[[:r 22 nil] [:r 5 nil]]	:noleader
+3	:invoke	:txn	[[:append 17 78] [:append 22 6] [:r 21 nil] [:r 22 nil]]
+7	:invoke	:txn	[[:r 21 nil] [:r 22 nil] [:r 17 nil] [:append 21 33]]
+7	:fail	:txn	[[:r 21 nil] [:r 22 nil] [:r 17 nil] [:append 21 33]]	:nocluster
+1	:invoke	:txn	[[:append 22 7] [:r 22 nil] [:r 22 nil] [:r 7 nil]]
+1	:fail	:txn	[[:append 22 7] [:r 22 nil] [:r 22 nil] [:r 7 nil]]	:noleader
+3	:fail	:txn	[[:append 17 78] [:append 22 6] [:r 21 nil] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:r 22 nil] [:r 4 nil]]
+7	:fail	:txn	[[:r 22 nil] [:r 4 nil]]	:nocluster
+1	:invoke	:txn	[[:append 17 79]]
+1	:fail	:txn	[[:append 17 79]]	:noleader
+3	:invoke	:txn	[[:append 8 107]]
+3	:fail	:txn	[[:append 8 107]]	:noleader
+3	:invoke	:txn	[[:append 22 8] [:r 22 nil] [:append 17 80] [:r 22 nil]]
+3	:fail	:txn	[[:append 22 8] [:r 22 nil] [:append 17 80] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:r 8 nil]]
+7	:fail	:txn	[[:r 8 nil]]	:nocluster
+1	:invoke	:txn	[[:append 22 9]]
+1	:fail	:txn	[[:append 22 9]]	:noleader
+3	:invoke	:txn	[[:append 17 81] [:append 21 34]]
+3	:fail	:txn	[[:append 17 81] [:append 21 34]]	:noleader
+7	:invoke	:txn	[[:append 17 82] [:r 17 nil]]
+7	:fail	:txn	[[:append 17 82] [:r 17 nil]]	:nocluster
+1	:invoke	:txn	[[:append 21 35] [:r 22 nil] [:append 8 108]]
+1	:fail	:txn	[[:append 21 35] [:r 22 nil] [:append 8 108]]	:noleader
+1	:invoke	:txn	[[:r 22 nil] [:append 21 36]]
+1	:fail	:txn	[[:r 22 nil] [:append 21 36]]	:noleader
+1	:invoke	:txn	[[:r 17 nil]]
+1	:fail	:txn	[[:r 17 nil]]	:noleader
+7	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:r 8 nil]]
+7	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:r 8 nil]]	:nocluster
+3	:invoke	:txn	[[:append 22 10]]
+3	:fail	:txn	[[:append 22 10]]	:noleader
+3	:invoke	:txn	[[:append 22 11] [:r 22 nil] [:append 8 109] [:r 8 nil]]
+3	:fail	:txn	[[:append 22 11] [:r 22 nil] [:append 8 109] [:r 8 nil]]	:noleader
+7	:invoke	:txn	[[:r 17 nil]]
+7	:fail	:txn	[[:r 17 nil]]	:nocluster
+1	:invoke	:txn	[[:append 21 37]]
+1	:fail	:txn	[[:append 21 37]]	:noleader
+1	:invoke	:txn	[[:r 21 nil] [:append 22 12]]
+1	:fail	:txn	[[:r 21 nil] [:append 22 12]]	:noleader
+3	:invoke	:txn	[[:r 8 nil] [:r 1 nil]]
+3	:fail	:txn	[[:r 8 nil] [:r 1 nil]]	:noleader
+3	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:append 17 83] [:append 21 38]]
+3	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:append 17 83] [:append 21 38]]	:noleader
+1	:invoke	:txn	[[:append 21 39]]
+1	:fail	:txn	[[:append 21 39]]	:noleader
+7	:invoke	:txn	[[:append 22 13] [:append 22 14] [:r 21 nil] [:append 22 15]]
+7	:fail	:txn	[[:append 22 13] [:append 22 14] [:r 21 nil] [:append 22 15]]	:nocluster
+1	:invoke	:txn	[[:append 22 16] [:r 22 nil]]
+3	:invoke	:txn	[[:append 21 40] [:r 22 nil]]
+1	:fail	:txn	[[:append 22 16] [:r 22 nil]]	:noleader
+3	:fail	:txn	[[:append 21 40] [:r 22 nil]]	:noleader
+1	:invoke	:txn	[[:r 22 nil] [:append 22 17] [:append 17 84]]
+1	:fail	:txn	[[:r 22 nil] [:append 22 17] [:append 17 84]]	:noleader
+1	:invoke	:txn	[[:append 7 55] [:r 21 nil] [:r 22 nil]]
+1	:fail	:txn	[[:append 7 55] [:r 21 nil] [:r 22 nil]]	:noleader
+3	:invoke	:txn	[[:r 8 nil] [:r 17 nil] [:r 21 nil] [:r 21 nil]]
+3	:fail	:txn	[[:r 8 nil] [:r 17 nil] [:r 21 nil] [:r 21 nil]]	:noleader
+1	:invoke	:txn	[[:append 17 85] [:append 17 86] [:r 17 nil] [:r 21 nil]]
+1	:fail	:txn	[[:append 17 85] [:append 17 86] [:r 17 nil] [:r 21 nil]]	:noleader
+7	:invoke	:txn	[[:r 7 nil] [:r 22 nil] [:r 21 nil]]
+7	:fail	:txn	[[:r 7 nil] [:r 22 nil] [:r 21 nil]]	:nocluster
+1	:invoke	:txn	[[:r 7 nil] [:append 22 18] [:append 8 110] [:r 8 nil]]
+1	:fail	:txn	[[:r 7 nil] [:append 22 18] [:append 8 110] [:r 8 nil]]	:noleader
+3	:invoke	:txn	[[:append 22 19] [:r 22 nil] [:append 21 41] [:append 21 42]]
+1	:invoke	:txn	[[:append 17 87] [:append 21 43] [:append 21 44]]
+3	:fail	:txn	[[:append 22 19] [:r 22 nil] [:append 21 41] [:append 21 42]]	:noleader
+7	:invoke	:txn	[[:append 22 20]]
+7	:fail	:txn	[[:append 22 20]]	:nocluster
+1	:fail	:txn	[[:append 17 87] [:append 21 43] [:append 21 44]]	:noleader
+3	:invoke	:txn	[[:append 22 21]]
+3	:fail	:txn	[[:append 22 21]]	:noleader
+1	:invoke	:txn	[[:append 22 22] [:append 22 23] [:append 21 45] [:r 8 nil]]
+1	:fail	:txn	[[:append 22 22] [:append 22 23] [:append 21 45] [:r 8 nil]]	:noleader
+7	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:r 22 nil] [:append 17 88]]
+7	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:r 22 nil] [:append 17 88]]	:nocluster
+3	:invoke	:txn	[[:r 22 nil] [:r 8 nil] [:append 22 24]]
+3	:fail	:txn	[[:r 22 nil] [:r 8 nil] [:append 22 24]]	:noleader
+7	:invoke	:txn	[[:r 17 nil] [:r 21 nil] [:append 21 46] [:append 21 47]]
+7	:fail	:txn	[[:r 17 nil] [:r 21 nil] [:append 21 46] [:append 21 47]]	:nocluster
+3	:invoke	:txn	[[:r 22 nil] [:append 22 25] [:append 21 48] [:append 21 49]]
+3	:fail	:txn	[[:r 22 nil] [:append 22 25] [:append 21 48] [:append 21 49]]	:noleader
+3	:invoke	:txn	[[:r 21 nil]]
+3	:fail	:txn	[[:r 21 nil]]	:noleader
+1	:invoke	:txn	[[:r 7 nil] [:append 21 50] [:r 21 nil]]
+1	:fail	:txn	[[:r 7 nil] [:append 21 50] [:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:r 8 nil] [:r 21 nil] [:r 17 nil] [:append 8 111]]
+3	:fail	:txn	[[:r 8 nil] [:r 21 nil] [:r 17 nil] [:append 8 111]]	:noleader
+1	:invoke	:txn	[[:append 22 26] [:r 7 nil] [:r 22 nil]]
+1	:fail	:txn	[[:append 22 26] [:r 7 nil] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:r 22 nil] [:append 8 112] [:append 17 89] [:r 22 nil]]
+7	:fail	:txn	[[:r 22 nil] [:append 8 112] [:append 17 89] [:r 22 nil]]	:nocluster
+3	:invoke	:txn	[[:append 22 27] [:append 17 90]]
+3	:fail	:txn	[[:append 22 27] [:append 17 90]]	:noleader
+3	:invoke	:txn	[[:r 22 nil]]
+3	:fail	:txn	[[:r 22 nil]]	:noleader
+1	:invoke	:txn	[[:append 21 51]]
+1	:fail	:txn	[[:append 21 51]]	:noleader
+7	:invoke	:txn	[[:r 21 nil] [:r 22 nil] [:r 17 nil]]
+7	:fail	:txn	[[:r 21 nil] [:r 22 nil] [:r 17 nil]]	:nocluster
+7	:invoke	:txn	[[:r 21 nil] [:r 22 nil] [:append 22 28] [:append 21 52]]
+7	:fail	:txn	[[:r 21 nil] [:r 22 nil] [:append 22 28] [:append 21 52]]	:nocluster
+3	:invoke	:txn	[[:append 22 29] [:append 1 2] [:append 21 53]]
+3	:fail	:txn	[[:append 22 29] [:append 1 2] [:append 21 53]]	:noleader
+1	:invoke	:txn	[[:r 21 nil] [:append 22 30] [:append 22 31]]
+1	:fail	:txn	[[:r 21 nil] [:append 22 30] [:append 22 31]]	:noleader
+1	:invoke	:txn	[[:append 21 54] [:r 22 nil] [:r 7 nil]]
+1	:fail	:txn	[[:append 21 54] [:r 22 nil] [:r 7 nil]]	:noleader
+7	:invoke	:txn	[[:append 21 55] [:r 22 nil]]
+7	:fail	:txn	[[:append 21 55] [:r 22 nil]]	:nocluster
+1	:invoke	:txn	[[:append 17 91] [:r 22 nil] [:r 21 nil]]
+3	:invoke	:txn	[[:r 21 nil] [:append 17 92] [:append 22 32]]
+1	:fail	:txn	[[:append 17 91] [:r 22 nil] [:r 21 nil]]	:noleader
+3	:fail	:txn	[[:r 21 nil] [:append 17 92] [:append 22 32]]	:noleader
+7	:invoke	:txn	[[:append 17 93]]
+7	:fail	:txn	[[:append 17 93]]	:nocluster
+3	:invoke	:txn	[[:r 21 nil] [:r 8 nil]]
+3	:fail	:txn	[[:r 21 nil] [:r 8 nil]]	:noleader
+3	:invoke	:txn	[[:r 5 nil] [:append 17 94]]
+3	:fail	:txn	[[:r 5 nil] [:append 17 94]]	:noleader
+7	:invoke	:txn	[[:append 22 33] [:append 22 34]]
+7	:fail	:txn	[[:append 22 33] [:append 22 34]]	:nocluster
+1	:invoke	:txn	[[:append 22 35]]
+1	:fail	:txn	[[:append 22 35]]	:noleader
+1	:invoke	:txn	[[:append 22 36] [:append 21 56] [:append 22 37] [:append 22 38]]
+1	:fail	:txn	[[:append 22 36] [:append 21 56] [:append 22 37] [:append 22 38]]	:noleader
+3	:invoke	:txn	[[:r 21 nil] [:append 22 39] [:append 21 57]]
+3	:fail	:txn	[[:r 21 nil] [:append 22 39] [:append 21 57]]	:noleader
+7	:invoke	:txn	[[:r 21 nil]]
+7	:fail	:txn	[[:r 21 nil]]	:nocluster
+3	:invoke	:txn	[[:r 17 nil] [:append 17 95] [:r 7 nil]]
+3	:fail	:txn	[[:r 17 nil] [:append 17 95] [:r 7 nil]]	:noleader
+3	:invoke	:txn	[[:r 22 nil] [:append 8 113] [:append 22 40]]
+3	:fail	:txn	[[:r 22 nil] [:append 8 113] [:append 22 40]]	:noleader
+4	:info	:txn	[[:r 19 nil] [:append 17 28]]	:socket-timeout
+1	:invoke	:txn	[[:r 21 nil]]
+9	:invoke	:txn	[[:append 22 41] [:append 22 42] [:append 21 58] [:r 22 nil]]
+7	:invoke	:txn	[[:append 22 43]]
+1	:fail	:txn	[[:r 21 nil]]	:noleader
+7	:fail	:txn	[[:append 22 43]]	:nocluster
+1	:invoke	:txn	[[:r 17 nil]]
+1	:fail	:txn	[[:r 17 nil]]	:noleader
+7	:invoke	:txn	[[:r 21 nil]]
+7	:fail	:txn	[[:r 21 nil]]	:nocluster
+7	:invoke	:txn	[[:append 22 44] [:append 17 96]]
+7	:fail	:txn	[[:append 22 44] [:append 17 96]]	:nocluster
+1	:invoke	:txn	[[:append 21 59]]
+1	:fail	:txn	[[:append 21 59]]	:noleader
+3	:invoke	:txn	[[:r 8 nil]]
+3	:fail	:txn	[[:r 8 nil]]	:noleader
+3	:invoke	:txn	[[:r 22 nil]]
+3	:fail	:txn	[[:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:append 21 60] [:append 22 45] [:r 21 nil] [:append 21 61]]
+7	:fail	:txn	[[:append 21 60] [:append 22 45] [:r 21 nil] [:append 21 61]]	:nocluster
+7	:invoke	:txn	[[:r 7 nil] [:r 21 nil]]
+7	:fail	:txn	[[:r 7 nil] [:r 21 nil]]	:nocluster
+3	:invoke	:txn	[[:r 17 nil] [:append 21 62]]
+3	:fail	:txn	[[:r 17 nil] [:append 21 62]]	:noleader
+1	:invoke	:txn	[[:append 22 46] [:r 17 nil] [:r 22 nil]]
+1	:fail	:txn	[[:append 22 46] [:r 17 nil] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:append 8 114]]
+7	:fail	:txn	[[:append 8 114]]	:nocluster
+7	:invoke	:txn	[[:append 21 63] [:append 22 47]]
+7	:fail	:txn	[[:append 21 63] [:append 22 47]]	:nocluster
+7	:invoke	:txn	[[:r 22 nil] [:r 21 nil] [:append 21 64] [:r 17 nil]]
+7	:fail	:txn	[[:r 22 nil] [:r 21 nil] [:append 21 64] [:r 17 nil]]	:nocluster
+3	:invoke	:txn	[[:r 8 nil] [:append 17 97] [:append 21 65] [:append 8 115]]
+3	:fail	:txn	[[:r 8 nil] [:append 17 97] [:append 21 65] [:append 8 115]]	:noleader
+1	:invoke	:txn	[[:append 22 48]]
+1	:fail	:txn	[[:append 22 48]]	:noleader
+7	:invoke	:txn	[[:append 22 49] [:r 21 nil] [:append 22 50]]
+7	:fail	:txn	[[:append 22 49] [:r 21 nil] [:append 22 50]]	:nocluster
+1	:invoke	:txn	[[:append 22 51] [:append 21 66] [:r 22 nil] [:r 21 nil]]
+1	:fail	:txn	[[:append 22 51] [:append 21 66] [:r 22 nil] [:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:append 21 67] [:append 22 52] [:r 22 nil] [:r 22 nil]]
+3	:fail	:txn	[[:append 21 67] [:append 22 52] [:r 22 nil] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:r 22 nil] [:r 7 nil]]
+7	:fail	:txn	[[:r 22 nil] [:r 7 nil]]	:nocluster
+3	:invoke	:txn	[[:append 21 68] [:r 22 nil] [:r 7 nil] [:append 21 69]]
+3	:fail	:txn	[[:append 21 68] [:r 22 nil] [:r 7 nil] [:append 21 69]]	:noleader
+7	:invoke	:txn	[[:append 22 53]]
+7	:fail	:txn	[[:append 22 53]]	:nocluster
+1	:invoke	:txn	[[:r 22 nil] [:append 22 54] [:r 22 nil]]
+1	:fail	:txn	[[:r 22 nil] [:append 22 54] [:r 22 nil]]	:noleader
+1	:invoke	:txn	[[:append 22 55] [:r 22 nil] [:r 21 nil] [:r 22 nil]]
+1	:fail	:txn	[[:append 22 55] [:r 22 nil] [:r 21 nil] [:r 22 nil]]	:noleader
+3	:invoke	:txn	[[:r 21 nil] [:append 22 56]]
+3	:fail	:txn	[[:r 21 nil] [:append 22 56]]	:noleader
+7	:invoke	:txn	[[:r 22 nil]]
+7	:fail	:txn	[[:r 22 nil]]	:nocluster
+1	:invoke	:txn	[[:append 17 98]]
+1	:fail	:txn	[[:append 17 98]]	:noleader
+3	:invoke	:txn	[[:r 22 nil] [:append 22 57] [:r 22 nil]]
+3	:fail	:txn	[[:r 22 nil] [:append 22 57] [:r 22 nil]]	:noleader
+1	:invoke	:txn	[[:r 21 nil] [:append 8 116]]
+1	:fail	:txn	[[:r 21 nil] [:append 8 116]]	:noleader
+3	:invoke	:txn	[[:append 21 70] [:append 17 99] [:append 22 58] [:r 21 nil]]
+3	:fail	:txn	[[:append 21 70] [:append 17 99] [:append 22 58] [:r 21 nil]]	:noleader
+7	:invoke	:txn	[[:append 21 71] [:r 8 nil] [:append 21 72] [:r 8 nil]]
+7	:fail	:txn	[[:append 21 71] [:r 8 nil] [:append 21 72] [:r 8 nil]]	:nocluster
+7	:invoke	:txn	[[:append 17 100] [:append 5 16] [:append 21 73] [:append 22 59]]
+7	:fail	:txn	[[:append 17 100] [:append 5 16] [:append 21 73] [:append 22 59]]	:nocluster
+7	:invoke	:txn	[[:r 8 nil] [:append 5 17]]
+7	:fail	:txn	[[:r 8 nil] [:append 5 17]]	:nocluster
+1	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:r 22 nil]]
+1	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:append 17 101] [:append 22 60]]
+7	:fail	:txn	[[:append 17 101] [:append 22 60]]	:nocluster
+3	:invoke	:txn	[[:append 22 61] [:r 21 nil]]
+3	:fail	:txn	[[:append 22 61] [:r 21 nil]]	:noleader
+7	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:append 22 62] [:r 21 nil]]
+7	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:append 22 62] [:r 21 nil]]	:nocluster
+7	:invoke	:txn	[[:append 21 74]]
+7	:fail	:txn	[[:append 21 74]]	:nocluster
+1	:invoke	:txn	[[:append 22 63] [:append 22 64] [:append 22 65]]
+1	:fail	:txn	[[:append 22 63] [:append 22 64] [:append 22 65]]	:noleader
+1	:invoke	:txn	[[:r 17 nil]]
+1	:fail	:txn	[[:r 17 nil]]	:noleader
+1	:invoke	:txn	[[:r 22 nil] [:r 22 nil]]
+1	:fail	:txn	[[:r 22 nil] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:r 22 nil]]
+7	:fail	:txn	[[:r 22 nil]]	:nocluster
+3	:invoke	:txn	[[:r 22 nil] [:r 22 nil]]
+3	:fail	:txn	[[:r 22 nil] [:r 22 nil]]	:noleader
+1	:invoke	:txn	[[:r 22 nil] [:r 22 nil]]
+1	:fail	:txn	[[:r 22 nil] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:append 22 66] [:r 7 nil] [:r 22 nil]]
+7	:fail	:txn	[[:append 22 66] [:r 7 nil] [:r 22 nil]]	:nocluster
+3	:invoke	:txn	[[:append 22 67] [:r 8 nil] [:append 22 68] [:r 21 nil]]
+3	:fail	:txn	[[:append 22 67] [:r 8 nil] [:append 22 68] [:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:r 21 nil] [:r 8 nil] [:r 17 nil]]
+3	:fail	:txn	[[:r 21 nil] [:r 8 nil] [:r 17 nil]]	:noleader
+1	:invoke	:txn	[[:append 21 75]]
+1	:fail	:txn	[[:append 21 75]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:append 17 102] [:r 21 nil] [:r 22 nil]]
+3	:fail	:txn	[[:r 17 nil] [:append 17 102] [:r 21 nil] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:append 22 69] [:append 22 70] [:r 22 nil] [:append 22 71]]
+7	:fail	:txn	[[:append 22 69] [:append 22 70] [:r 22 nil] [:append 22 71]]	:nocluster
+1	:invoke	:txn	[[:r 21 nil] [:append 7 56] [:append 21 76]]
+1	:fail	:txn	[[:r 21 nil] [:append 7 56] [:append 21 76]]	:noleader
+1	:invoke	:txn	[[:append 21 77] [:append 22 72]]
+1	:fail	:txn	[[:append 21 77] [:append 22 72]]	:noleader
+1	:invoke	:txn	[[:append 22 73] [:r 22 nil] [:r 17 nil]]
+1	:fail	:txn	[[:append 22 73] [:r 22 nil] [:r 17 nil]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:r 22 nil]]
+3	:fail	:txn	[[:r 17 nil] [:r 22 nil]]	:noleader
+3	:invoke	:txn	[[:append 22 74]]
+3	:fail	:txn	[[:append 22 74]]	:noleader
+7	:invoke	:txn	[[:append 22 75]]
+7	:fail	:txn	[[:append 22 75]]	:nocluster
+1	:invoke	:txn	[[:append 22 76] [:r 22 nil]]
+1	:fail	:txn	[[:append 22 76] [:r 22 nil]]	:noleader
+1	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:append 22 77] [:append 21 78]]
+1	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:append 22 77] [:append 21 78]]	:noleader
+1	:invoke	:txn	[[:append 22 78] [:append 21 79] [:append 21 80]]
+1	:fail	:txn	[[:append 22 78] [:append 21 79] [:append 21 80]]	:noleader
+3	:invoke	:txn	[[:append 22 79] [:r 22 nil] [:r 21 nil] [:r 21 nil]]
+3	:fail	:txn	[[:append 22 79] [:r 22 nil] [:r 21 nil] [:r 21 nil]]	:noleader
+7	:invoke	:txn	[[:append 22 80] [:r 22 nil] [:append 21 81]]
+7	:fail	:txn	[[:append 22 80] [:r 22 nil] [:append 21 81]]	:nocluster
+3	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:append 22 81] [:append 21 82]]
+1	:invoke	:txn	[[:append 22 82] [:r 21 nil]]
+1	:fail	:txn	[[:append 22 82] [:r 21 nil]]	:noleader
+3	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:append 22 81] [:append 21 82]]	:noleader
+1	:invoke	:txn	[[:append 22 83] [:r 21 nil]]
+1	:fail	:txn	[[:append 22 83] [:r 21 nil]]	:noleader
+7	:invoke	:txn	[[:append 22 84] [:append 6 34] [:r 21 nil]]
+7	:fail	:txn	[[:append 22 84] [:append 6 34] [:r 21 nil]]	:nocluster
+3	:invoke	:txn	[[:append 22 85] [:append 8 117] [:r 21 nil] [:append 22 86]]
+3	:fail	:txn	[[:append 22 85] [:append 8 117] [:r 21 nil] [:append 22 86]]	:noleader
+1	:invoke	:txn	[[:r 21 nil] [:append 8 118] [:append 6 35] [:r 22 nil]]
+1	:fail	:txn	[[:r 21 nil] [:append 8 118] [:append 6 35] [:r 22 nil]]	:noleader
+3	:invoke	:txn	[[:append 22 87]]
+3	:fail	:txn	[[:append 22 87]]	:noleader
+1	:invoke	:txn	[[:r 21 nil] [:append 22 88] [:append 22 89] [:r 21 nil]]
+1	:fail	:txn	[[:r 21 nil] [:append 22 88] [:append 22 89] [:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:r 6 nil]]
+3	:fail	:txn	[[:r 6 nil]]	:noleader
+7	:invoke	:txn	[[:r 17 nil] [:r 21 nil] [:r 6 nil]]
+7	:fail	:txn	[[:r 17 nil] [:r 21 nil] [:r 6 nil]]	:nocluster
+1	:invoke	:txn	[[:append 21 83] [:append 17 103] [:r 22 nil]]
+1	:fail	:txn	[[:append 21 83] [:append 17 103] [:r 22 nil]]	:noleader
+1	:invoke	:txn	[[:append 21 84] [:r 22 nil] [:append 21 85] [:append 17 104]]
+1	:fail	:txn	[[:append 21 84] [:r 22 nil] [:append 21 85] [:append 17 104]]	:noleader
+7	:invoke	:txn	[[:append 5 18]]
+7	:fail	:txn	[[:append 5 18]]	:nocluster
+3	:invoke	:txn	[[:r 22 nil] [:r 22 nil]]
+3	:fail	:txn	[[:r 22 nil] [:r 22 nil]]	:noleader
+3	:invoke	:txn	[[:append 22 90] [:r 22 nil]]
+3	:fail	:txn	[[:append 22 90] [:r 22 nil]]	:noleader
+1	:invoke	:txn	[[:r 8 nil]]
+1	:fail	:txn	[[:r 8 nil]]	:noleader
+7	:invoke	:txn	[[:append 22 91] [:r 22 nil] [:append 22 92] [:append 22 93]]
+7	:fail	:txn	[[:append 22 91] [:r 22 nil] [:append 22 92] [:append 22 93]]	:nocluster
+7	:invoke	:txn	[[:append 17 105] [:r 22 nil]]
+7	:fail	:txn	[[:append 17 105] [:r 22 nil]]	:nocluster
+1	:invoke	:txn	[[:r 8 nil] [:append 17 106] [:r 21 nil]]
+1	:fail	:txn	[[:r 8 nil] [:append 17 106] [:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:r 22 nil] [:append 8 119] [:r 8 nil] [:append 21 86]]
+3	:fail	:txn	[[:r 22 nil] [:append 8 119] [:r 8 nil] [:append 21 86]]	:noleader
+1	:invoke	:txn	[[:append 22 94] [:r 7 nil] [:r 21 nil]]
+1	:fail	:txn	[[:append 22 94] [:r 7 nil] [:r 21 nil]]	:noleader
+7	:invoke	:txn	[[:r 22 nil] [:append 22 95] [:append 7 57] [:append 22 96]]
+7	:fail	:txn	[[:r 22 nil] [:append 22 95] [:append 7 57] [:append 22 96]]	:nocluster
+1	:invoke	:txn	[[:append 21 87] [:append 22 97] [:append 21 88]]
+1	:fail	:txn	[[:append 21 87] [:append 22 97] [:append 21 88]]	:noleader
+3	:invoke	:txn	[[:r 22 nil] [:append 22 98]]
+3	:fail	:txn	[[:r 22 nil] [:append 22 98]]	:noleader
+1	:invoke	:txn	[[:append 17 107] [:append 22 99]]
+1	:fail	:txn	[[:append 17 107] [:append 22 99]]	:noleader
+7	:invoke	:txn	[[:r 22 nil] [:append 21 89] [:r 6 nil] [:r 22 nil]]
+7	:fail	:txn	[[:r 22 nil] [:append 21 89] [:r 6 nil] [:r 22 nil]]	:nocluster
+3	:invoke	:txn	[[:r 8 nil] [:r 21 nil] [:append 21 90] [:r 22 nil]]
+3	:fail	:txn	[[:r 8 nil] [:r 21 nil] [:append 21 90] [:r 22 nil]]	:noleader
+3	:invoke	:txn	[[:r 17 nil]]
+3	:fail	:txn	[[:r 17 nil]]	:noleader
+1	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:r 22 nil] [:append 7 58]]
+1	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:r 22 nil] [:append 7 58]]	:noleader
+7	:invoke	:txn	[[:append 22 100] [:r 22 nil]]
+7	:fail	:txn	[[:append 22 100] [:r 22 nil]]	:nocluster
+3	:invoke	:txn	[[:append 22 101] [:append 21 91] [:append 22 102]]
+3	:fail	:txn	[[:append 22 101] [:append 21 91] [:append 22 102]]	:noleader
+1	:invoke	:txn	[[:append 22 103] [:r 21 nil]]
+1	:fail	:txn	[[:append 22 103] [:r 21 nil]]	:noleader
+1	:invoke	:txn	[[:r 8 nil] [:append 17 108]]
+7	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:r 21 nil]]
+7	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:r 21 nil]]	:nocluster
+1	:fail	:txn	[[:r 8 nil] [:append 17 108]]	:noleader
+3	:invoke	:txn	[[:append 22 104] [:r 22 nil] [:r 21 nil] [:append 17 109]]
+3	:fail	:txn	[[:append 22 104] [:r 22 nil] [:r 21 nil] [:append 17 109]]	:noleader
+1	:invoke	:txn	[[:append 22 105] [:append 22 106] [:append 21 92]]
+1	:fail	:txn	[[:append 22 105] [:append 22 106] [:append 21 92]]	:noleader
+7	:invoke	:txn	[[:append 22 107] [:append 21 93] [:append 8 120]]
+7	:fail	:txn	[[:append 22 107] [:append 21 93] [:append 8 120]]	:nocluster
+7	:invoke	:txn	[[:r 21 nil]]
+7	:fail	:txn	[[:r 21 nil]]	:nocluster
+1	:invoke	:txn	[[:r 22 nil]]
+1	:fail	:txn	[[:r 22 nil]]	:noleader
+3	:invoke	:txn	[[:append 21 94]]
+3	:fail	:txn	[[:append 21 94]]	:noleader
+7	:invoke	:txn	[[:r 22 nil]]
+7	:fail	:txn	[[:r 22 nil]]	:nocluster
+1	:invoke	:txn	[[:r 22 nil] [:r 22 nil]]
+1	:fail	:txn	[[:r 22 nil] [:r 22 nil]]	:noleader
+1	:invoke	:txn	[[:r 22 nil] [:r 17 nil] [:append 22 108] [:append 22 109]]
+1	:fail	:txn	[[:r 22 nil] [:r 17 nil] [:append 22 108] [:append 22 109]]	:noleader
+3	:invoke	:txn	[[:append 21 95]]
+3	:fail	:txn	[[:append 21 95]]	:noleader
+7	:invoke	:txn	[[:append 22 110]]
+7	:fail	:txn	[[:append 22 110]]	:nocluster
+3	:invoke	:txn	[[:r 17 nil] [:r 22 nil] [:append 17 110] [:append 22 111]]
+3	:fail	:txn	[[:r 17 nil] [:r 22 nil] [:append 17 110] [:append 22 111]]	:noleader
+7	:invoke	:txn	[[:r 22 nil]]
+7	:fail	:txn	[[:r 22 nil]]	:nocluster
+7	:invoke	:txn	[[:append 21 96]]
+7	:fail	:txn	[[:append 21 96]]	:nocluster
+1	:invoke	:txn	[[:r 3 nil]]
+1	:fail	:txn	[[:r 3 nil]]	:noleader
+7	:invoke	:txn	[[:append 21 97] [:append 22 112]]
+7	:fail	:txn	[[:append 21 97] [:append 22 112]]	:nocluster
+7	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:append 8 121] [:append 21 98]]
+7	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:append 8 121] [:append 21 98]]	:nocluster
+1	:invoke	:txn	[[:r 22 nil] [:r 21 nil]]
+1	:fail	:txn	[[:r 22 nil] [:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:r 21 nil]]
+3	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:r 21 nil]]	:noleader
+7	:invoke	:txn	[[:append 22 113]]
+7	:fail	:txn	[[:append 22 113]]	:nocluster
+3	:invoke	:txn	[[:r 21 nil] [:r 22 nil] [:append 22 114] [:append 22 115]]
+3	:fail	:txn	[[:r 21 nil] [:r 22 nil] [:append 22 114] [:append 22 115]]	:noleader
+1	:invoke	:txn	[[:append 22 116] [:append 22 117]]
+1	:fail	:txn	[[:append 22 116] [:append 22 117]]	:noleader
+7	:invoke	:txn	[[:r 8 nil] [:r 7 nil]]
+7	:fail	:txn	[[:r 8 nil] [:r 7 nil]]	:nocluster
+3	:invoke	:txn	[[:append 22 118] [:r 21 nil] [:r 22 nil] [:append 21 99]]
+3	:fail	:txn	[[:append 22 118] [:r 21 nil] [:r 22 nil] [:append 21 99]]	:noleader
+1	:invoke	:txn	[[:append 17 111]]
+1	:fail	:txn	[[:append 17 111]]	:noleader
+3	:invoke	:txn	[[:append 7 59] [:r 22 nil] [:append 21 100]]
+3	:fail	:txn	[[:append 7 59] [:r 22 nil] [:append 21 100]]	:noleader
+7	:invoke	:txn	[[:r 22 nil]]
+7	:fail	:txn	[[:r 22 nil]]	:nocluster
+1	:invoke	:txn	[[:r 17 nil] [:append 22 119] [:append 22 120] [:r 17 nil]]
+1	:fail	:txn	[[:r 17 nil] [:append 22 119] [:append 22 120] [:r 17 nil]]	:noleader
+7	:invoke	:txn	[[:append 21 101] [:append 22 121]]
+7	:fail	:txn	[[:append 21 101] [:append 22 121]]	:nocluster
+1	:invoke	:txn	[[:r 22 nil] [:r 22 nil] [:append 22 122]]
+1	:fail	:txn	[[:r 22 nil] [:r 22 nil] [:append 22 122]]	:noleader
+3	:invoke	:txn	[[:append 21 102] [:r 22 nil]]
+3	:fail	:txn	[[:append 21 102] [:r 22 nil]]	:noleader
+1	:invoke	:txn	[[:r 22 nil] [:r 22 nil]]
+1	:fail	:txn	[[:r 22 nil] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:r 22 nil]]
+7	:fail	:txn	[[:r 22 nil]]	:nocluster
+7	:invoke	:txn	[[:r 21 nil] [:append 21 103]]
+7	:fail	:txn	[[:r 21 nil] [:append 21 103]]	:nocluster
+3	:invoke	:txn	[[:r 21 nil] [:append 22 123]]
+3	:fail	:txn	[[:r 21 nil] [:append 22 123]]	:noleader
+1	:invoke	:txn	[[:r 7 nil] [:r 22 nil]]
+1	:fail	:txn	[[:r 7 nil] [:r 22 nil]]	:noleader
+1	:invoke	:txn	[[:r 21 nil] [:append 22 124] [:r 22 nil]]
+1	:fail	:txn	[[:r 21 nil] [:append 22 124] [:r 22 nil]]	:noleader
+7	:invoke	:txn	[[:r 8 nil]]
+7	:fail	:txn	[[:r 8 nil]]	:nocluster
+7	:invoke	:txn	[[:append 8 122]]
+7	:fail	:txn	[[:append 8 122]]	:nocluster
+7	:invoke	:txn	[[:append 21 104]]
+7	:fail	:txn	[[:append 21 104]]	:nocluster
+1	:invoke	:txn	[[:append 17 112] [:r 21 nil]]
+1	:fail	:txn	[[:append 17 112] [:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:append 22 125] [:append 17 113]]
+3	:fail	:txn	[[:append 22 125] [:append 17 113]]	:noleader
+7	:invoke	:txn	[[:append 22 126] [:append 21 105]]
+7	:fail	:txn	[[:append 22 126] [:append 21 105]]	:nocluster
+1	:invoke	:txn	[[:r 21 nil]]
+1	:fail	:txn	[[:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:r 21 nil]]
+3	:fail	:txn	[[:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:r 17 nil]]
+3	:fail	:txn	[[:r 17 nil]]	:noleader
+7	:invoke	:txn	[[:append 7 60]]
+7	:fail	:txn	[[:append 7 60]]	:nocluster
+1	:invoke	:txn	[[:r 21 nil] [:append 22 127] [:append 21 106]]
+1	:fail	:txn	[[:r 21 nil] [:append 22 127] [:append 21 106]]	:noleader
+3	:invoke	:txn	[[:append 17 114] [:r 21 nil] [:append 21 107]]
+3	:fail	:txn	[[:append 17 114] [:r 21 nil] [:append 21 107]]	:noleader
+7	:invoke	:txn	[[:append 21 108] [:append 22 128] [:r 8 nil]]
+7	:fail	:txn	[[:append 21 108] [:append 22 128] [:r 8 nil]]	:nocluster
+1	:invoke	:txn	[[:append 6 36] [:append 17 115]]
+1	:fail	:txn	[[:append 6 36] [:append 17 115]]	:noleader
+7	:invoke	:txn	[[:append 23 1] [:append 17 116] [:append 23 2] [:r 23 nil]]
+1	:invoke	:txn	[[:append 23 3] [:r 17 nil]]
+1	:fail	:txn	[[:append 23 3] [:r 17 nil]]	:noleader
+7	:fail	:txn	[[:append 23 1] [:append 17 116] [:append 23 2] [:r 23 nil]]	:nocluster
+3	:invoke	:txn	[[:r 21 nil] [:append 21 109]]
+3	:fail	:txn	[[:r 21 nil] [:append 21 109]]	:noleader
+3	:invoke	:txn	[[:r 23 nil] [:append 23 4]]
+3	:fail	:txn	[[:r 23 nil] [:append 23 4]]	:noleader
+7	:invoke	:txn	[[:append 23 5] [:r 23 nil] [:append 23 6] [:r 21 nil]]
+7	:fail	:txn	[[:append 23 5] [:r 23 nil] [:append 23 6] [:r 21 nil]]	:nocluster
+1	:invoke	:txn	[[:append 23 7]]
+1	:fail	:txn	[[:append 23 7]]	:noleader
+1	:invoke	:txn	[[:r 17 nil] [:append 17 117] [:r 21 nil] [:r 23 nil]]
+1	:fail	:txn	[[:r 17 nil] [:append 17 117] [:r 21 nil] [:r 23 nil]]	:noleader
+3	:invoke	:txn	[[:r 21 nil]]
+3	:fail	:txn	[[:r 21 nil]]	:noleader
+1	:invoke	:txn	[[:append 8 123] [:append 5 19] [:r 21 nil] [:append 23 8]]
+1	:fail	:txn	[[:append 8 123] [:append 5 19] [:r 21 nil] [:append 23 8]]	:noleader
+7	:invoke	:txn	[[:append 23 9]]
+7	:fail	:txn	[[:append 23 9]]	:nocluster
+3	:invoke	:txn	[[:r 23 nil] [:append 23 10] [:r 23 nil] [:append 21 110]]
+3	:fail	:txn	[[:r 23 nil] [:append 23 10] [:r 23 nil] [:append 21 110]]	:noleader
+7	:invoke	:txn	[[:r 17 nil] [:append 8 124]]
+7	:fail	:txn	[[:r 17 nil] [:append 8 124]]	:nocluster
+1	:invoke	:txn	[[:append 23 11] [:append 21 111] [:r 8 nil] [:r 21 nil]]
+1	:fail	:txn	[[:append 23 11] [:append 21 111] [:r 8 nil] [:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:r 21 nil] [:append 21 112] [:append 21 113] [:append 6 37]]
+3	:fail	:txn	[[:r 21 nil] [:append 21 112] [:append 21 113] [:append 6 37]]	:noleader
+7	:invoke	:txn	[[:r 23 nil] [:r 23 nil]]
+7	:fail	:txn	[[:r 23 nil] [:r 23 nil]]	:nocluster
+1	:invoke	:txn	[[:r 23 nil] [:r 23 nil]]
+1	:fail	:txn	[[:r 23 nil] [:r 23 nil]]	:noleader
+3	:invoke	:txn	[[:append 6 38] [:append 23 12] [:r 21 nil] [:append 23 13]]
+3	:fail	:txn	[[:append 6 38] [:append 23 12] [:r 21 nil] [:append 23 13]]	:noleader
+7	:invoke	:txn	[[:r 23 nil]]
+7	:fail	:txn	[[:r 23 nil]]	:nocluster
+1	:invoke	:txn	[[:r 23 nil] [:append 21 114]]
+1	:fail	:txn	[[:r 23 nil] [:append 21 114]]	:noleader
+7	:invoke	:txn	[[:append 17 118] [:append 23 14]]
+7	:fail	:txn	[[:append 17 118] [:append 23 14]]	:nocluster
+3	:invoke	:txn	[[:append 23 15] [:r 23 nil]]
+3	:fail	:txn	[[:append 23 15] [:r 23 nil]]	:noleader
+7	:invoke	:txn	[[:r 21 nil] [:append 17 119] [:append 23 16] [:append 23 17]]
+7	:fail	:txn	[[:r 21 nil] [:append 17 119] [:append 23 16] [:append 23 17]]	:nocluster
+7	:invoke	:txn	[[:append 8 125] [:r 23 nil] [:r 8 nil]]
+7	:fail	:txn	[[:append 8 125] [:r 23 nil] [:r 8 nil]]	:nocluster
+1	:invoke	:txn	[[:r 23 nil] [:append 23 18] [:append 23 19] [:append 23 20]]
+1	:fail	:txn	[[:r 23 nil] [:append 23 18] [:append 23 19] [:append 23 20]]	:noleader
+3	:invoke	:txn	[[:append 23 21] [:append 23 22]]
+3	:fail	:txn	[[:append 23 21] [:append 23 22]]	:noleader
+7	:invoke	:txn	[[:r 21 nil] [:r 23 nil] [:append 8 126]]
+7	:fail	:txn	[[:r 21 nil] [:r 23 nil] [:append 8 126]]	:nocluster
+3	:invoke	:txn	[[:append 23 23] [:r 23 nil] [:r 3 nil]]
+3	:fail	:txn	[[:append 23 23] [:r 23 nil] [:r 3 nil]]	:noleader
+1	:invoke	:txn	[[:r 23 nil]]
+1	:fail	:txn	[[:r 23 nil]]	:noleader
+7	:invoke	:txn	[[:r 8 nil]]
+7	:fail	:txn	[[:r 8 nil]]	:nocluster
+1	:invoke	:txn	[[:r 23 nil] [:r 23 nil]]
+1	:fail	:txn	[[:r 23 nil] [:r 23 nil]]	:noleader
+3	:invoke	:txn	[[:append 8 127] [:append 21 115]]
+3	:fail	:txn	[[:append 8 127] [:append 21 115]]	:noleader
+3	:invoke	:txn	[[:append 23 24] [:append 23 25] [:append 23 26]]
+3	:fail	:txn	[[:append 23 24] [:append 23 25] [:append 23 26]]	:noleader
+1	:invoke	:txn	[[:r 21 nil] [:append 21 116] [:r 8 nil]]
+1	:fail	:txn	[[:r 21 nil] [:append 21 116] [:r 8 nil]]	:noleader
+7	:invoke	:txn	[[:append 8 128]]
+7	:fail	:txn	[[:append 8 128]]	:nocluster
+3	:invoke	:txn	[[:append 21 117] [:r 23 nil]]
+3	:fail	:txn	[[:append 21 117] [:r 23 nil]]	:noleader
+1	:invoke	:txn	[[:append 23 27] [:append 23 28] [:append 23 29]]
+1	:fail	:txn	[[:append 23 27] [:append 23 28] [:append 23 29]]	:noleader
+3	:invoke	:txn	[[:r 23 nil] [:append 5 20] [:r 17 nil] [:r 23 nil]]
+1	:invoke	:txn	[[:append 23 30] [:append 7 61]]
+3	:fail	:txn	[[:r 23 nil] [:append 5 20] [:r 17 nil] [:r 23 nil]]	:noleader
+1	:fail	:txn	[[:append 23 30] [:append 7 61]]	:noleader
+7	:invoke	:txn	[[:r 17 nil] [:append 23 31] [:r 21 nil] [:r 23 nil]]
+7	:fail	:txn	[[:r 17 nil] [:append 23 31] [:r 21 nil] [:r 23 nil]]	:nocluster
+1	:invoke	:txn	[[:append 23 32]]
+1	:fail	:txn	[[:append 23 32]]	:noleader
+7	:invoke	:txn	[[:append 21 118]]
+7	:fail	:txn	[[:append 21 118]]	:nocluster
+1	:invoke	:txn	[[:r 23 nil] [:append 24 1] [:append 21 119]]
+1	:fail	:txn	[[:r 23 nil] [:append 24 1] [:append 21 119]]	:noleader
+3	:invoke	:txn	[[:r 21 nil]]
+3	:fail	:txn	[[:r 21 nil]]	:noleader
+7	:invoke	:txn	[[:r 17 nil] [:append 23 33]]
+7	:fail	:txn	[[:r 17 nil] [:append 23 33]]	:nocluster
+7	:invoke	:txn	[[:r 23 nil] [:append 17 120] [:append 23 34]]
+7	:fail	:txn	[[:r 23 nil] [:append 17 120] [:append 23 34]]	:nocluster
+7	:invoke	:txn	[[:append 21 120] [:append 7 62]]
+7	:fail	:txn	[[:append 21 120] [:append 7 62]]	:nocluster
+7	:invoke	:txn	[[:r 23 nil] [:r 23 nil]]
+7	:fail	:txn	[[:r 23 nil] [:r 23 nil]]	:nocluster
+1	:invoke	:txn	[[:append 17 121] [:append 21 121]]
+1	:fail	:txn	[[:append 17 121] [:append 21 121]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:r 23 nil] [:r 24 nil]]
+3	:fail	:txn	[[:r 17 nil] [:r 23 nil] [:r 24 nil]]	:noleader
+1	:invoke	:txn	[[:r 21 nil] [:append 21 122]]
+1	:fail	:txn	[[:r 21 nil] [:append 21 122]]	:noleader
+3	:invoke	:txn	[[:append 17 122] [:r 17 nil] [:append 21 123] [:append 23 35]]
+3	:fail	:txn	[[:append 17 122] [:r 17 nil] [:append 21 123] [:append 23 35]]	:noleader
+7	:invoke	:txn	[[:r 21 nil] [:r 23 nil] [:append 7 63] [:r 23 nil]]
+7	:fail	:txn	[[:r 21 nil] [:r 23 nil] [:append 7 63] [:r 23 nil]]	:nocluster
+1	:invoke	:txn	[[:r 23 nil] [:r 24 nil] [:append 23 36] [:r 21 nil]]
+1	:fail	:txn	[[:r 23 nil] [:r 24 nil] [:append 23 36] [:r 21 nil]]	:noleader
+3	:invoke	:txn	[[:r 23 nil] [:r 17 nil]]
+3	:fail	:txn	[[:r 23 nil] [:r 17 nil]]	:noleader
+7	:invoke	:txn	[[:append 23 37]]
+7	:fail	:txn	[[:append 23 37]]	:nocluster
+1	:invoke	:txn	[[:r 23 nil] [:append 23 38]]
+1	:fail	:txn	[[:r 23 nil] [:append 23 38]]	:noleader
+1	:invoke	:txn	[[:append 23 39] [:append 23 40] [:append 23 41]]
+1	:fail	:txn	[[:append 23 39] [:append 23 40] [:append 23 41]]	:noleader
+7	:invoke	:txn	[[:r 23 nil] [:append 23 42] [:r 23 nil] [:append 21 124]]
+7	:fail	:txn	[[:r 23 nil] [:append 23 42] [:r 23 nil] [:append 21 124]]	:nocluster
+7	:invoke	:txn	[[:append 23 43] [:r 21 nil]]
+7	:fail	:txn	[[:append 23 43] [:r 21 nil]]	:nocluster
+3	:invoke	:txn	[[:r 23 nil] [:append 23 44] [:append 21 125] [:r 23 nil]]
+3	:fail	:txn	[[:r 23 nil] [:append 23 44] [:append 21 125] [:r 23 nil]]	:noleader
+7	:invoke	:txn	[[:r 21 nil] [:append 24 2] [:append 23 45]]
+7	:fail	:txn	[[:r 21 nil] [:append 24 2] [:append 23 45]]	:nocluster
+7	:invoke	:txn	[[:append 23 46] [:append 23 47]]
+7	:fail	:txn	[[:append 23 46] [:append 23 47]]	:nocluster
+1	:invoke	:txn	[[:r 23 nil] [:append 23 48] [:append 7 64] [:r 23 nil]]
+1	:fail	:txn	[[:r 23 nil] [:append 23 48] [:append 7 64] [:r 23 nil]]	:noleader
+1	:invoke	:txn	[[:r 17 nil] [:r 21 nil] [:r 23 nil] [:append 5 21]]
+1	:fail	:txn	[[:r 17 nil] [:r 21 nil] [:r 23 nil] [:append 5 21]]	:noleader
+3	:invoke	:txn	[[:r 23 nil]]
+3	:fail	:txn	[[:r 23 nil]]	:noleader
+7	:invoke	:txn	[[:r 23 nil] [:append 23 49]]
+7	:fail	:txn	[[:r 23 nil] [:append 23 49]]	:nocluster
+3	:invoke	:txn	[[:append 23 50] [:append 17 123] [:r 21 nil]]
+3	:fail	:txn	[[:append 23 50] [:append 17 123] [:r 21 nil]]	:noleader
+1	:invoke	:txn	[[:r 23 nil] [:append 17 124] [:r 23 nil]]
+1	:fail	:txn	[[:r 23 nil] [:append 17 124] [:r 23 nil]]	:noleader
+7	:invoke	:txn	[[:append 21 126] [:append 7 65] [:r 21 nil] [:r 21 nil]]
+7	:fail	:txn	[[:append 21 126] [:append 7 65] [:r 21 nil] [:r 21 nil]]	:nocluster
+7	:invoke	:txn	[[:append 23 51] [:r 21 nil] [:append 23 52] [:append 21 127]]
+7	:fail	:txn	[[:append 23 51] [:r 21 nil] [:append 23 52] [:append 21 127]]	:nocluster
+1	:invoke	:txn	[[:append 6 39] [:r 23 nil] [:append 21 128]]
+1	:fail	:txn	[[:append 6 39] [:r 23 nil] [:append 21 128]]	:noleader
+1	:invoke	:txn	[[:append 23 53]]
+1	:fail	:txn	[[:append 23 53]]	:noleader
+7	:invoke	:txn	[[:r 23 nil] [:r 23 nil] [:append 4 8] [:append 25 1]]
+7	:fail	:txn	[[:r 23 nil] [:r 23 nil] [:append 4 8] [:append 25 1]]	:nocluster
+3	:invoke	:txn	[[:append 23 54]]
+3	:fail	:txn	[[:append 23 54]]	:noleader
+1	:invoke	:txn	[[:r 23 nil] [:append 25 2] [:append 23 55]]
+1	:fail	:txn	[[:r 23 nil] [:append 25 2] [:append 23 55]]	:noleader
+3	:invoke	:txn	[[:append 24 3] [:r 23 nil]]
+3	:fail	:txn	[[:append 24 3] [:r 23 nil]]	:noleader
+7	:invoke	:txn	[[:append 25 3] [:append 23 56]]
+7	:fail	:txn	[[:append 25 3] [:append 23 56]]	:nocluster
+7	:invoke	:txn	[[:append 5 22] [:append 25 4] [:r 17 nil]]
+7	:fail	:txn	[[:append 5 22] [:append 25 4] [:r 17 nil]]	:nocluster
+7	:invoke	:txn	[[:append 23 57] [:r 23 nil] [:append 25 5] [:append 25 6]]
+7	:fail	:txn	[[:append 23 57] [:r 23 nil] [:append 25 5] [:append 25 6]]	:nocluster
+7	:invoke	:txn	[[:r 25 nil] [:r 17 nil] [:append 24 4]]
+7	:fail	:txn	[[:r 25 nil] [:r 17 nil] [:append 24 4]]	:nocluster
+1	:invoke	:txn	[[:append 23 58] [:append 24 5] [:append 23 59]]
+1	:fail	:txn	[[:append 23 58] [:append 24 5] [:append 23 59]]	:noleader
+1	:invoke	:txn	[[:append 23 60] [:append 5 23]]
+1	:fail	:txn	[[:append 23 60] [:append 5 23]]	:noleader
+3	:invoke	:txn	[[:append 23 61] [:append 17 125] [:append 25 7] [:r 23 nil]]
+3	:fail	:txn	[[:append 23 61] [:append 17 125] [:append 25 7] [:r 23 nil]]	:noleader
+1	:invoke	:txn	[[:r 7 nil]]
+1	:fail	:txn	[[:r 7 nil]]	:noleader
+7	:invoke	:txn	[[:r 25 nil]]
+7	:fail	:txn	[[:r 25 nil]]	:nocluster
+3	:invoke	:txn	[[:append 24 6] [:r 25 nil] [:append 24 7] [:append 23 62]]
+3	:fail	:txn	[[:append 24 6] [:r 25 nil] [:append 24 7] [:append 23 62]]	:noleader
+3	:invoke	:txn	[[:r 23 nil]]
+3	:fail	:txn	[[:r 23 nil]]	:noleader
+1	:invoke	:txn	[[:r 23 nil] [:r 23 nil] [:append 25 8]]
+1	:fail	:txn	[[:r 23 nil] [:r 23 nil] [:append 25 8]]	:noleader
+3	:invoke	:txn	[[:append 17 126] [:r 25 nil]]
+7	:invoke	:txn	[[:append 24 8]]
+3	:fail	:txn	[[:append 17 126] [:r 25 nil]]	:noleader
+7	:fail	:txn	[[:append 24 8]]	:nocluster
+1	:invoke	:txn	[[:append 17 127] [:r 25 nil] [:r 25 nil] [:append 23 63]]
+1	:fail	:txn	[[:append 17 127] [:r 25 nil] [:r 25 nil] [:append 23 63]]	:noleader
+3	:invoke	:txn	[[:r 17 nil] [:append 23 64]]
+3	:fail	:txn	[[:r 17 nil] [:append 23 64]]	:noleader
+1	:invoke	:txn	[[:append 25 9] [:r 23 nil]]
+1	:fail	:txn	[[:append 25 9] [:r 23 nil]]	:noleader
+7	:invoke	:txn	[[:append 17 128] [:append 25 10] [:r 5 nil] [:r 6 nil]]
+7	:fail	:txn	[[:append 17 128] [:append 25 10] [:r 5 nil] [:r 6 nil]]	:nocluster
+1	:invoke	:txn	[[:append 23 65]]
+1	:fail	:txn	[[:append 23 65]]	:noleader
+3	:invoke	:txn	[[:append 25 11] [:r 23 nil]]
+3	:fail	:txn	[[:append 25 11] [:r 23 nil]]	:noleader
+1	:invoke	:txn	[[:r 23 nil] [:r 23 nil] [:r 25 nil] [:r 23 nil]]
+1	:fail	:txn	[[:r 23 nil] [:r 23 nil] [:r 25 nil] [:r 23 nil]]	:noleader
+7	:invoke	:txn	[[:r 24 nil]]
+7	:fail	:txn	[[:r 24 nil]]	:nocluster
+3	:invoke	:txn	[[:r 25 nil] [:append 23 66] [:r 23 nil] [:append 24 9]]
+3	:fail	:txn	[[:r 25 nil] [:append 23 66] [:r 23 nil] [:append 24 9]]	:noleader
+7	:invoke	:txn	[[:r 26 nil] [:r 23 nil] [:r 7 nil] [:r 26 nil]]
+7	:fail	:txn	[[:r 26 nil] [:r 23 nil] [:r 7 nil] [:r 26 nil]]	:nocluster
+3	:invoke	:txn	[[:append 25 12] [:r 25 nil] [:r 23 nil]]
+1	:invoke	:txn	[[:r 25 nil]]
+1	:fail	:txn	[[:r 25 nil]]	:noleader
+3	:fail	:txn	[[:append 25 12] [:r 25 nil] [:r 23 nil]]	:noleader
+3	:invoke	:txn	[[:r 6 nil] [:append 24 10]]
+3	:fail	:txn	[[:r 6 nil] [:append 24 10]]	:noleader
+7	:invoke	:txn	[[:append 26 1] [:r 26 nil]]
+7	:fail	:txn	[[:append 26 1] [:r 26 nil]]	:nocluster
+7	:invoke	:txn	[[:append 23 67]]
+7	:fail	:txn	[[:append 23 67]]	:nocluster
+7	:invoke	:txn	[[:append 23 68] [:append 23 69] [:append 23 70]]
+7	:fail	:txn	[[:append 23 68] [:append 23 69] [:append 23 70]]	:nocluster
+1	:invoke	:txn	[[:r 25 nil]]
+1	:fail	:txn	[[:r 25 nil]]	:noleader
+7	:invoke	:txn	[[:append 23 71] [:r 23 nil]]
+7	:fail	:txn	[[:append 23 71] [:r 23 nil]]	:nocluster
+3	:invoke	:txn	[[:append 26 2] [:r 26 nil] [:r 7 nil] [:r 24 nil]]
+3	:fail	:txn	[[:append 26 2] [:r 26 nil] [:r 7 nil] [:r 24 nil]]	:noleader
+1	:invoke	:txn	[[:r 23 nil] [:append 23 72] [:append 23 73] [:r 23 nil]]
+1	:fail	:txn	[[:r 23 nil] [:append 23 72] [:append 23 73] [:r 23 nil]]	:noleader
+3	:invoke	:txn	[[:r 24 nil] [:r 24 nil] [:r 23 nil] [:r 23 nil]]
+3	:fail	:txn	[[:r 24 nil] [:r 24 nil] [:r 23 nil] [:r 23 nil]]	:noleader
+5	:info	:txn	[[:append 18 111] [:append 7 52]]	:socket-timeout
+9	:info	:txn	[[:append 22 41] [:append 22 42] [:append 21 58] [:r 22 nil]]	:socket-timeout
+:nemesis	:info	:strobe-clock	{"n5" {:delta 48632, :period 38, :duration 18.52283488771335}, "n4" {:delta 67319, :period 106, :duration 19.158963824011444}, "n1" {:delta 248, :period 9, :duration 0.2863664797156211}, "n2" {:delta 15, :period 18, :duration 30.71098916907848}}
