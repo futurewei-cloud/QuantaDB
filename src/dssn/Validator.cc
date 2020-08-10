@@ -18,7 +18,7 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
   rpcService(_rpcService),
   isUnderTest(_isTesting),
   localTxQueue(*new WaitList(1000001)),
-  reorderQueue(*new SkipList()),
+  reorderQueue(*new SkipList<__uint128_t>()),
   distributedTxSet(*new DistributedTxSet()),
   activeTxSet(*new ActiveTxSet()),
   peerInfo(*new PeerInfo()),

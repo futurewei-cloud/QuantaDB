@@ -94,7 +94,7 @@ class Validator {
     DSSNService *rpcService;
     bool isUnderTest;
 	WaitList &localTxQueue;
-    SkipList &reorderQueue;
+    SkipList<__uint128_t> &reorderQueue;
     DistributedTxSet &distributedTxSet;
     ActiveTxSet &activeTxSet;
     PeerInfo &peerInfo;

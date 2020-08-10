@@ -351,8 +351,9 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 }
 
 TEST_F(ValidatorTest, BATPeerInfoReceivedEarly) {
+    __uint128_t cts = (__uint128_t)123 << 64;
     TxEntry *txEntry = validator.receiveSSNInfo(1 /*peerId*/,
-            (123 << 64) /*CTS*/,
+            cts,
             0, 0xfffffff, /*pstamp, sstamp*/
             TxEntry::TX_PENDING);
     EXPECT_EQ(true, txEntry == NULL);
