@@ -598,7 +598,7 @@ struct DSSNCommit {
 
     struct Request {
         RequestCommon common;
-        uint64_t cts;
+        __uint128_t cts;
         uint64_t pstamp;
         uint64_t sstamp;
         uint32_t shardCount; // Number of Part structures following
@@ -653,7 +653,7 @@ struct DSSNRequestInfoAsync {
         RequestCommon common; //must match struct Notification
         uint32_t length; //must match struct Notification -- indicating length of following
         uint64_t senderPeerId;
-        uint64_t cts;
+        __uint128_t cts;
         uint64_t pstamp;
         uint64_t sstamp;
         uint8_t txState;
@@ -667,7 +667,7 @@ struct DSSNSendInfoAsync {
         RequestCommon common; //must match struct Notification
         uint32_t length; //must match struct Notification -- indicating length of following
         uint64_t senderPeerId;
-        uint64_t cts;
+        __uint128_t cts;
         uint64_t pstamp;
         uint64_t sstamp;
         uint8_t txState;

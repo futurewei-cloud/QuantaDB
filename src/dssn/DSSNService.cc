@@ -876,7 +876,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
 }
 
 bool
-DSSNService::sendDSSNInfo(uint64_t cts, uint8_t txState, TxEntry *txEntry, bool isSpecific, uint64_t target)
+DSSNService::sendDSSNInfo(__uint128_t cts, uint8_t txState, TxEntry *txEntry, bool isSpecific, uint64_t target)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
 

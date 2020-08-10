@@ -43,13 +43,14 @@ class ValidatorTest : public ::testing::Test {
 
     void fillTxEntry(int noEntries, int noKeys = 1, int noOfPeers = 0) {
     	//prepare batches of 10 CIs of the same keys
-        static __uint128_t ctsBase = 10;
+        static __uint128_t ctsBase = (__uint128_t)10 << 64; //started with 10ns
     	uint32_t batchSize = 10;
     	uint32_t keySize = 32;
         for (int i = 0; i < noEntries; i++) {
         	uint32_t rr = 0, ww = 0;
         	txEntry[i] = new TxEntry(4 * noKeys / 5, (noKeys + 4) / 5);
-        	txEntry[i]->setCTS(ctsBase++);
+        	txEntry[i]->setCTS(ctsBase);
+        	ctsBase += (__uint128_t)1 << 64; //increased by 1ns
         	for (int j = 0; j < noKeys; j++) {
                 KVLayout kv(keySize);
                 snprintf((char *)kv.k.key.get(),

@@ -251,7 +251,7 @@ Validator::scheduleDistributedTxs() {
     TxEntry *txEntry;
     uint64_t lastTick = 0;
     do {
-        if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (uint64_t)-1 : clock.getClusterTime(0)))) {
+        if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (__uint128_t)-1 : clock.getClusterTime128(0)))) {
             if (txEntry->getCTS() <= lastScheduledTxCTS) {
                 assert(txEntry->getCTS() != lastScheduledTxCTS); //no duplicate CTS from sequencer
 
@@ -424,7 +424,7 @@ Validator::convertStampToClockValue(uint64_t timestamp) {
 }
 
 TxEntry*
-Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
+Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
     TxEntry *txEntry = NULL;
     if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this)) {
         //Handle the fact that peer info is received before its tx commit intent is received,
@@ -440,7 +440,7 @@ Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64
 }
 
 void
-Validator::replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
+Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
 
     if (peerTxState == TxEntry::TX_CONFLICT)
         assert(0); //Fixme: do recovery or debug

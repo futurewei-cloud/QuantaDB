@@ -123,10 +123,6 @@ class Validator {
     // serialization of commit-intent validation
     void serialize();
 
-    // perform SSN validation on distributed transactions
-    /// help cross-shard CIs in activeTxSet to exchange SSN info with peers
-    void validateDistributedTxs(int worker);
-
     // perform SSN validation on a local transaction
     bool validateLocalTx(TxEntry& txEntry);
 
@@ -174,8 +170,8 @@ class Validator {
     bool insertTxEntry(TxEntry *txEntry);
     bool updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
     bool insertConcludeQueue(TxEntry *txEntry);
-    TxEntry* receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
-    void replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
+    TxEntry* receiveSSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
+    void replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
     void sendTxCommitReply(TxEntry *txEntry);
 
     // calculate sstamp and pstamp using local read/write sets

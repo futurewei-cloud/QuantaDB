@@ -181,7 +181,7 @@ class SkipList {
 
     inline void * get() { return (head->forw[0])?  head->forw[0]->value : NULL; }
     
-    inline void * get(uint64_t key)
+    inline void * get(Key_t key)
     {
         SkipNode<Key_t> * n = find(key);
         return (n)? const_cast<void *>(n->value) : NULL;
@@ -197,7 +197,7 @@ class SkipList {
         return val;
     }
 
-    inline void * try_pop(uint64_t key)
+    inline void * try_pop(Key_t key)
     {
         void * val = NULL;
         if (head->forw[0] && (key >= head->forw[0]->key)) {
