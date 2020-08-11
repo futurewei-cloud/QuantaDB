@@ -24,10 +24,10 @@ class ClusterTimeServiceTest : public ::testing::Test {
 
 TEST_F(ClusterTimeServiceTest, getClusterTime) {
     for(int ii = 0; ii < 1000; ii++) {
-        uint64_t t1 = clock.getClusterTime();
-        uint64_t t2 = clock.getClusterTime();
-        uint64_t t3 = clock.getClusterTime();
-        uint64_t t4 = clock.getClusterTime();
+        __uint128_t t1 = clock.getClusterTime();
+        __uint128_t t2 = clock.getClusterTime();
+        __uint128_t t3 = clock.getClusterTime();
+        __uint128_t t4 = clock.getClusterTime();
         EXPECT_GT(t2, t1);
         EXPECT_GT(t3, t2);
         EXPECT_GT(t4, t3);
@@ -48,11 +48,11 @@ TEST_F(ClusterTimeServiceTest, getLocalTime) {
 
 TEST_F(ClusterTimeServiceTest, multiClockTest) {
     for(int ii = 0; ii < 1000; ii++) {
-        uint64_t t0 = clock.getClusterTime();
-        uint64_t t1 = clock1.getClusterTime();
-        uint64_t t2 = clock2.getClusterTime();
-        uint64_t t3 = clock3.getClusterTime();
-        uint64_t t4 = clock4.getClusterTime();
+        __uint128_t t0 = clock.getClusterTime();
+        __uint128_t t1 = clock1.getClusterTime();
+        __uint128_t t2 = clock2.getClusterTime();
+        __uint128_t t3 = clock3.getClusterTime();
+        __uint128_t t4 = clock4.getClusterTime();
         EXPECT_GT(t1, t0);
         EXPECT_GT(t2, t1);
         EXPECT_GT(t3, t2);
@@ -63,11 +63,11 @@ TEST_F(ClusterTimeServiceTest, multiClockTest) {
 void multiThreadTest(ClusterTimeServiceTest *t)
 {
     for(int ii = 0; ii < 1024*1024; ii++) {
-        uint64_t tA = t->clock.getClusterTime();
-        uint64_t tB = t->clock1.getClusterTime();
-        uint64_t tC = t->clock2.getClusterTime();
-        uint64_t tD = t->clock3.getClusterTime();
-        uint64_t tE = t->clock4.getClusterTime();
+        __uint128_t tA = t->clock.getClusterTime();
+        __uint128_t tB = t->clock1.getClusterTime();
+        __uint128_t tC = t->clock2.getClusterTime();
+        __uint128_t tD = t->clock3.getClusterTime();
+        __uint128_t tE = t->clock4.getClusterTime();
         EXPECT_GT(tB, tA);
         EXPECT_GT(tC, tB);
         EXPECT_GT(tD, tC);

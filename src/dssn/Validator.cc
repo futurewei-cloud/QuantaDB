@@ -251,7 +251,7 @@ Validator::scheduleDistributedTxs() {
     TxEntry *txEntry;
     uint64_t lastTick = 0;
     do {
-        if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (__uint128_t)-1 : clock.getClusterTime128(0)))) {
+        if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (__uint128_t)-1 : clock.getClusterTime(0)))) {
             if (txEntry->getCTS() <= lastScheduledTxCTS) {
                 assert(txEntry->getCTS() != lastScheduledTxCTS); //no duplicate CTS from sequencer
 
@@ -301,7 +301,7 @@ Validator::serialize() {
 
                 if (txEntry->getCTS() == 0) {
                     //This feature may allow tx client to do without a clock
-                    txEntry->setCTS(clock.getClusterTime128(0));
+                    txEntry->setCTS(clock.getClusterTime(0));
                     counters.ctsSets++;
                 }
 

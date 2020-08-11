@@ -13,14 +13,9 @@ namespace DSSN {
 Sequencer::Sequencer() { }
 
 // Return CTS
-uint64_t Sequencer::getCTS()
+__uint128_t Sequencer::getCTS()
 {
     return clock.getClusterTime(SEQUENCER_DELTA);
-}
-
-__uint128_t Sequencer::getCTS128()
-{
-    return clock.getClusterTime128(SEQUENCER_DELTA);
 }
 
 } // DSSN
