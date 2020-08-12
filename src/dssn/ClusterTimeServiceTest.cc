@@ -22,18 +22,6 @@ class ClusterTimeServiceTest : public ::testing::Test {
   DISALLOW_COPY_AND_ASSIGN(ClusterTimeServiceTest);
 };
 
-TEST_F(ClusterTimeServiceTest, getClusterTime) {
-    for(int ii = 0; ii < 100; ii++) {
-        __uint128_t t1 = clock.getClusterTime();
-        __uint128_t t2 = clock.getClusterTime();
-        __uint128_t t3 = clock.getClusterTime();
-        __uint128_t t4 = clock.getClusterTime();
-        EXPECT_GT(t2, t1);
-        EXPECT_GT(t3, t2);
-        EXPECT_GT(t4, t3);
-    }
-}
-
 TEST_F(ClusterTimeServiceTest, getLocalTime) {
     for(int ii = 0; ii < 100; ii++) {
         uint64_t t1 = clock.getLocalTime();
@@ -48,11 +36,11 @@ TEST_F(ClusterTimeServiceTest, getLocalTime) {
 
 TEST_F(ClusterTimeServiceTest, multiClockTest) {
     for(int ii = 0; ii < 1000; ii++) {
-        __uint128_t t0 = clock.getClusterTime();
-        __uint128_t t1 = clock1.getClusterTime();
-        __uint128_t t2 = clock2.getClusterTime();
-        __uint128_t t3 = clock3.getClusterTime();
-        __uint128_t t4 = clock4.getClusterTime();
+        __uint128_t t0 = clock.getLocalTime();
+        __uint128_t t1 = clock1.getLocalTime();
+        __uint128_t t2 = clock2.getLocalTime();
+        __uint128_t t3 = clock3.getLocalTime();
+        __uint128_t t4 = clock4.getLocalTime();
         EXPECT_GE(t1, t0);
         EXPECT_GE(t2, t1);
         EXPECT_GE(t3, t2);
@@ -63,11 +51,11 @@ TEST_F(ClusterTimeServiceTest, multiClockTest) {
 void multiThreadTest(ClusterTimeServiceTest *t)
 {
     for(int ii = 0; ii < 1024*1024; ii++) {
-        __uint128_t tA = t->clock.getClusterTime();
-        __uint128_t tB = t->clock1.getClusterTime();
-        __uint128_t tC = t->clock2.getClusterTime();
-        __uint128_t tD = t->clock3.getClusterTime();
-        __uint128_t tE = t->clock4.getClusterTime();
+        __uint128_t tA = t->clock.getLocalTime();
+        __uint128_t tB = t->clock1.getLocalTime();
+        __uint128_t tC = t->clock2.getLocalTime();
+        __uint128_t tD = t->clock3.getLocalTime();
+        __uint128_t tE = t->clock4.getLocalTime();
         EXPECT_GE(tB, tA);
         EXPECT_GE(tC, tB);
         EXPECT_GE(tD, tC);
@@ -91,42 +79,6 @@ TEST_F(ClusterTimeServiceTest, benchGenClusterTime) {
     //
     start = Cycles::rdtsc();
     for (int i = 0; i < loop; i += 10) {
-        clock.getClusterTime();
-        clock.getClusterTime();
-        clock.getClusterTime();
-        clock.getClusterTime();
-        clock.getClusterTime();
-        clock.getClusterTime();
-        clock.getClusterTime();
-        clock.getClusterTime();
-        clock.getClusterTime();
-        clock.getClusterTime();
-    }
-    stop = Cycles::rdtsc();
-    GTEST_COUT << "getClusterTime: "
-    << Cycles::toNanoseconds(stop - start)/(1024*1024) << " nano sec " << std::endl;
-
-    //
-    start = Cycles::rdtsc();
-    for (int i = 0; i < loop; i += 10) {
-        clock.getClusterTime(1000);
-        clock.getClusterTime(1000);
-        clock.getClusterTime(1000);
-        clock.getClusterTime(1000);
-        clock.getClusterTime(1000);
-        clock.getClusterTime(1000);
-        clock.getClusterTime(1000);
-        clock.getClusterTime(1000);
-        clock.getClusterTime(1000);
-        clock.getClusterTime(1000);
-    }
-    stop = Cycles::rdtsc();
-    GTEST_COUT << "getClusterTime(delta): "
-    << Cycles::toNanoseconds(stop - start)/(1024*1024) << " nano sec " << std::endl;
-
-    //
-    start = Cycles::rdtsc();
-    for (int i = 0; i < loop; i += 10) {
         clock.getLocalTime();
         clock.getLocalTime();
         clock.getLocalTime();
@@ -141,25 +93,6 @@ TEST_F(ClusterTimeServiceTest, benchGenClusterTime) {
     stop = Cycles::rdtsc();
     GTEST_COUT << "getLocalTime: "
     << Cycles::toNanoseconds(stop - start)/(1024*1024) << " nano sec " << std::endl;
-
-    //
-    start = Cycles::rdtsc();
-    for (int i = 0; i < loop; i += 10) {
-        clock.Cluster2Local(start);
-        clock.Cluster2Local(start);
-        clock.Cluster2Local(start);
-        clock.Cluster2Local(start);
-        clock.Cluster2Local(start);
-        clock.Cluster2Local(start);
-        clock.Cluster2Local(start);
-        clock.Cluster2Local(start);
-        clock.Cluster2Local(start);
-        clock.Cluster2Local(start);
-    }
-    stop = Cycles::rdtsc();
-    GTEST_COUT << "Cluster2Local: "
-    << Cycles::toNanoseconds(stop - start)/(1024*1024) << " nano sec " << std::endl;
-
 }
 
 }  // namespace RAMCloud

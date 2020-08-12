@@ -31,6 +31,7 @@ class Sequencer {
     private:
     // ClusterTimeClient clock;
     ClusterTimeService clock;   // Use server class for now.
+    uint64_t    node_id;
 }; // Sequencer
 
 } // end namespace DSSN

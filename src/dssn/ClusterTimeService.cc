@@ -16,81 +16,6 @@
 #include "Cycles.h"
 #include "ClusterTimeService.h"
 
-static int getifname(char ifname[], uint32_t len)
-{
-    FILE *f;
-    char line[100] , *p , *c;
-
-    f = fopen("/proc/net/route", "r");
-
-    while(fgets(line , 100 , f))
-    {
-        p = strtok(line , " \t");
-        c = strtok(NULL , " \t");
-            
-        if(p!=NULL && c!=NULL)
-        {
-            if(strcmp(c , "00000000") == 0)
-            {
-                assert(len > strlen(p));
-                strcpy(ifname, p);
-                return 0;
-            }
-        }
-    }
-    return ENOENT;;
-}
-
-
-static int getipaddr(char *ifname, char ipaddr[]/*out*/, uint32_t len)
-{
-    struct ifaddrs *ifaddr, *ifa;
-	int family , s;
-	char host[NI_MAXHOST];
-    int ret = 0;
-
-	if (getifaddrs(&ifaddr) == -1) 
-	{
-		perror("getifaddrs");
-		exit(EXIT_FAILURE);
-	}
-
-	//Walk through linked list, maintaining head pointer so we can free list later
-	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) 
-	{
-		if (ifa->ifa_addr == NULL)
-		{
-			continue;
-		}
-
-		family = ifa->ifa_addr->sa_family;
-
-		if(strcmp( ifa->ifa_name , ifname) == 0)
-		{
-			if (family == AF_INET)
-			{
-				s = getnameinfo( ifa->ifa_addr, (family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6) , host , NI_MAXHOST , NULL , 0 , NI_NUMERICHOST);
-				
-				if (s != 0) 
-				{
-					// printf("getnameinfo() failed: %s\n", gai_strerror(s));
-					exit(EXIT_FAILURE);
-				}
-				// printf("address: %s", host);
-				assert(strlen(host) < len);
-                strcpy(ipaddr, host);
-                goto out;
-			}
-			// printf("\n");
-		}
-	}
-    ret = ENOENT;
-out:
-	freeifaddrs(ifaddr);
-    return ret;
-}
-
-
 namespace DSSN {
 using namespace RAMCloud;
 
@@ -134,18 +59,7 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
 
 ClusterTimeService::ClusterTimeService()
 {
-    char ifname[64], ipaddr[64];
-    uint32_t i1, i2, i3, i4;
     int fd;
-
-    // Parse IF address and get node id.
-    if ((getifname(ifname, sizeof(ifname)) != 0) ||
-        (getipaddr(ifname, ipaddr, sizeof(ipaddr)) != 0) ||
-        (sscanf(ipaddr, "%d.%d.%d.%d", &i1, &i2, &i3, &i4) != 4)) {
-        printf("Fatal Error: can not get default IP addr\n");
-        *(int *)0 = 0;  // panic
-    }
-    node_id = i4; 
 
     // attached to shared delta tracker
     if ((fd = shm_open(TS_TRACKER_NAME, O_CREAT|O_RDWR, 0666)) == -1) {

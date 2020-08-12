@@ -67,18 +67,6 @@ class ClusterTimeService {
     ClusterTimeService();
     ~ClusterTimeService();
 
-    // return a cluster unique logical time stamp
-    inline __uint128_t getClusterTime()   	         
-    {
-        return ((__uint128_t)getLocalTime() << 64) + node_id;
-    }
-
-    // return a cluster unique logical time stamp
-    inline __uint128_t getClusterTime(uint32_t delta /* nanosec */)   	         
-    {
-        return ((__uint128_t)(getLocalTime() + delta) << 64) + node_id;
-    }
-
     // return a local system clock time stamp
     inline uint64_t getLocalTime()
     {
@@ -88,12 +76,6 @@ class ClusterTimeService {
             return ntp->last_nsec + ntp->ctr;
         }
         return ntp->last_nsec + ntp->ctr++;
-    }
-
-    // Convert a cluster time stamp to local clock time stamp
-    inline uint64_t Cluster2Local(__uint128_t cluster_ts)
-    {
-        return (uint64_t)(cluster_ts >> 64);
     }
 
     private:
