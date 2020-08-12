@@ -23,7 +23,7 @@ class ClusterTimeServiceTest : public ::testing::Test {
 };
 
 TEST_F(ClusterTimeServiceTest, getClusterTime) {
-    for(int ii = 0; ii < 1000; ii++) {
+    for(int ii = 0; ii < 100; ii++) {
         __uint128_t t1 = clock.getClusterTime();
         __uint128_t t2 = clock.getClusterTime();
         __uint128_t t3 = clock.getClusterTime();
@@ -35,7 +35,7 @@ TEST_F(ClusterTimeServiceTest, getClusterTime) {
 }
 
 TEST_F(ClusterTimeServiceTest, getLocalTime) {
-    for(int ii = 0; ii < 1000; ii++) {
+    for(int ii = 0; ii < 100; ii++) {
         uint64_t t1 = clock.getLocalTime();
         uint64_t t2 = clock.getLocalTime();
         uint64_t t3 = clock.getLocalTime();
@@ -53,10 +53,10 @@ TEST_F(ClusterTimeServiceTest, multiClockTest) {
         __uint128_t t2 = clock2.getClusterTime();
         __uint128_t t3 = clock3.getClusterTime();
         __uint128_t t4 = clock4.getClusterTime();
-        EXPECT_GT(t1, t0);
-        EXPECT_GT(t2, t1);
-        EXPECT_GT(t3, t2);
-        EXPECT_GT(t4, t3);
+        EXPECT_GE(t1, t0);
+        EXPECT_GE(t2, t1);
+        EXPECT_GE(t3, t2);
+        EXPECT_GE(t4, t3);
     }
 }
 
@@ -68,10 +68,10 @@ void multiThreadTest(ClusterTimeServiceTest *t)
         __uint128_t tC = t->clock2.getClusterTime();
         __uint128_t tD = t->clock3.getClusterTime();
         __uint128_t tE = t->clock4.getClusterTime();
-        EXPECT_GT(tB, tA);
-        EXPECT_GT(tC, tB);
-        EXPECT_GT(tD, tC);
-        EXPECT_GT(tE, tD);
+        EXPECT_GE(tB, tA);
+        EXPECT_GE(tC, tB);
+        EXPECT_GE(tD, tC);
+        EXPECT_GE(tE, tD);
     }
 }
 

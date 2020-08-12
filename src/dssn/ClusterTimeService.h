@@ -83,6 +83,10 @@ class ClusterTimeService {
     inline uint64_t getLocalTime()
     {
         nt_pair_t *ntp = &tp->nt[tp->idx];
+        if (ntp->ctr > 1000) {
+            //prevent ctr from going beyond '1us' and hence the last_nsec update interval
+            return ntp->last_nsec + ntp->ctr;
+        }
         return ntp->last_nsec + ntp->ctr++;
     }
 
