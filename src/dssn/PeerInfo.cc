@@ -78,13 +78,15 @@ bool
 PeerInfo::sweep() {
     //delete peerInfo entry no longer needed
     ///further reference to the swept tx should be using CTS into the tx log
-    std::for_each(peerInfo.begin(), peerInfo.end(), [&] (const std::pair<CTS, PeerEntry *>& pr) {
-        PeerEntry *peerEntry = pr.second;
+    auto itr = peerInfo.begin();
+    while (itr != peerInfo.end()) {
+        PeerEntry *peerEntry = (*itr).second;
         if (peerEntry->txEntry && peerEntry->txEntry->getTxCIState() >= TxEntry::TX_CI_SEALED) {
-                peerInfo.unsafe_erase(pr.first);
-                delete peerEntry;
-        }
-    });
+            itr = peerInfo.unsafe_erase(itr);
+            delete peerEntry;
+        } else
+            itr++;
+    }
     return true;
 }
 
