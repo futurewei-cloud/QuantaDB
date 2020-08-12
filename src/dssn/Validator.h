@@ -101,7 +101,7 @@ class Validator {
 	ConcludeQueue &concludeQueue;
 	TxLog &txLog;
     ClusterTimeService clock;
-    __uint128_t lastScheduledTxCTS = 0;
+    __uint128_t lastScheduledTxCTS;
     //LATER DependencyMatrix blockedTxSet;
     Counters counters;
     uint32_t logLevel = LOG_INFO;
@@ -143,6 +143,7 @@ class Validator {
     /// (3,4) is used because there is implicit 'this' parameter in argument list
     bool logMessage(uint32_t level, const char* fmt, ...) __attribute__ ((format (gnu_printf, 3, 4)));
 
+
     PUBLIC:
 
 	Validator(HashmapKVStore &kvStore, DSSNService *rpcService = NULL, bool isTesting = false);
@@ -183,7 +184,7 @@ class Validator {
 
     // used for obtaining clock value in nanosecond unit
     uint64_t getClockValue();
-    uint64_t convertStampToClockValue(uint64_t timestamp);
+    __uint128_t get128bClockValue();
 
     // used for updating counters
     Counters& getCounters() {return counters;}
