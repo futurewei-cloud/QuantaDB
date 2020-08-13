@@ -66,6 +66,7 @@ class ServerRpcPool : public LogProtector::EpochProvider {
         T* rpc = pool.construct(static_cast<Args&&>(args)...);
         outstandingServerRpcs.push_back(*rpc);
         outstandingAllocations++;
+	rpc->startTimer();
         return rpc;
     }
 

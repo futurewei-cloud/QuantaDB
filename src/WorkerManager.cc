@@ -98,7 +98,10 @@ WorkerManager::WorkerManager(Context* context, uint32_t maxCores)
     , maxCores(maxCores)
     , rpcsWaiting(0)
     , testingSaveRpcs(0)
+    , rpcRequestCount(0)
+    , rpcInProcCount(0)
     , testRpcs()
+    , mMetrics(NULL)
 {
     levels.resize(RpcLevel::maxLevel() + 1);
 
@@ -117,6 +120,11 @@ WorkerManager::WorkerManager(Context* context, uint32_t maxCores)
         worker->thread.construct(workerMain, worker);
         idleThreads.push_back(worker);
     }
+#ifdef MONITOR
+    if (IS_WORKERMANAGER_MONITORED()) {
+        mMetrics = new WorkerManagerMetrics(this, context->metricExposer);
+    }
+#endif
 }
 
 /**
@@ -160,6 +168,7 @@ void
 WorkerManager::handleRpc(Transport::ServerRpc* rpc)
 {
     // Find the service for this RPC.
+    rpcRequestCount++;
     const WireFormat::RequestCommon* header;
     header = rpc->requestPayload.getStart<WireFormat::RequestCommon>();
     if ((header == NULL) || (header->opcode >= WireFormat::ILLEGAL_RPC_TYPE)) {
@@ -269,6 +278,19 @@ WorkerManager::handleRpc(Transport::ServerRpc* rpc)
     busyThreads.push_back(worker);
 }
 
+void
+WorkerManager::handleRpcDone(Transport::ServerRpc* rpc)
+{
+    if (!IS_WORKERMANAGER_MONITORED()) return;
+
+    if (IS_TRACING_MONITOR_ENABLED()) {
+        mMetrics->observeTcValue(WMM_TC_RPC_LATENCY, (double)rpc->getTotalLatency());
+	mMetrics->observeTcValue(WMM_TC_INGRESS_LATENCY, (double)rpc->getIngressQueueingDelay());
+	mMetrics->observeTcValue(WMM_TC_RPC_PROC_LATENCY, (double)rpc->getRpcProcessingTime());
+	mMetrics->observeTcValue(WMM_TC_EGRESS_LATENCY, (double)rpc->getEgressQueueingDelay());
+    }
+}
+
 /**
  * Returns true if there are currently no RPCs being serviced, false
  * if at least one RPC is currently being executed by a worker.  If true
@@ -362,6 +384,7 @@ WorkerManager::poll()
 		    reinterpret_cast<uint64_t>(rpc->getServerRpc()),
 		    rpc->getServerRpc()->replyPayload.size());
 #endif
+		rpc->getServerRpc()->endRpcProcessingTimer();
 		rpc->getServerRpc()->sendReply();
 		timeTrace("sent reply for opcode %d, thread %d",
 			  worker->threadId, worker->opcode);
@@ -482,6 +505,7 @@ WorkerManager::workerMain(Worker* worker)
             worker->getServerRpc()->epoch = LogProtector::getCurrentEpoch();
             Service::Rpc rpc(worker, &worker->getServerRpc()->requestPayload,
 			     &worker->getServerRpc()->replyPayload);
+	    worker->getServerRpc()->endIngressQueueingTimer();
             Service::handleRpc(worker->context, &rpc);
 	    /*RAMCLOUD_LOG(DEBUG, "workerMain completed: worker id=%d, opcode=%d. rpc=%lx", worker->threadId,
 	      worker->opcode, (uint64_t)worker->rpc);*/
@@ -518,11 +542,13 @@ WorkerManager::getRpcHandle(Transport::ServerRpc* rpc)
 	mFreeRpcHandlePool.pop_back();
 	handle->init(rpc, this);
     }
+    rpcInProcCount++;
     return handle;
 }
 
 void
 WorkerManager::freeRpcHandle(RpcHandle* handle) {
+    rpcInProcCount--;
     handle->clear();
     mFreeRpcHandlePool.push_back(handle);
 }

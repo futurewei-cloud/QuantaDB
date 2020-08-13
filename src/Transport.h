@@ -23,6 +23,8 @@
 #include "BoostIntrusive.h"
 #include "Buffer.h"
 #include "CodeLocation.h"
+#include "Common.h"
+#include "Cycles.h"
 #include "Exception.h"
 
 namespace RAMCloud {
@@ -119,6 +121,97 @@ class Transport {
             return epoch != 0;
         }
 
+	/**
+	 * Start the timer to track the lifecycle of this rpc processing
+	 */
+	void
+	inline startTimer()
+	{
+	    if (!IS_TRACING_MONITOR_ENABLED()) return;
+
+	    mIngressQueueingDelay = 0;
+	    mRpcProcessingTime = 0;
+	    mEgressQueueingDelay = 0;
+	    mStartTime = Cycles::rdtsc();
+	}
+
+	/**
+	 * End the ingress queueing timer and reset the timer
+	 * for the next stage
+	 */
+	inline void endIngressQueueingTimer() {
+	    if (!IS_TRACING_MONITOR_ENABLED()) return;
+
+	    uint64_t now = Cycles::rdtsc();
+	    mIngressQueueingDelay = now - mStartTime;
+	    mStartTime = now;
+	    assert(mRpcProcessingTime == 0);
+	}
+
+	/**
+	 * Return the amount of time this RPC waiting to be processed
+	 */
+	inline uint64_t getIngressQueueingDelay() {
+	    if (!IS_TRACING_MONITOR_ENABLED()) return 0;
+
+	    return Cycles::toMicroseconds(mIngressQueueingDelay);
+	}
+
+	/**
+	 * End the rpc processing time and reset the timer
+	 * for the next stage
+	 */
+	inline void endRpcProcessingTimer() {
+	    if (!IS_TRACING_MONITOR_ENABLED()) return;
+
+	    uint64_t now = Cycles::rdtsc();
+	    mRpcProcessingTime = now - mStartTime;
+	    mStartTime = now;
+	    assert(mEgressQueueingDelay == 0);
+	}
+
+	/**
+	 * Return the amount of time this RPC is being processed
+	 */
+	inline uint64_t getRpcProcessingTime() {
+	    if (!IS_TRACING_MONITOR_ENABLED()) return 0;
+
+	    return Cycles::toMicroseconds(mRpcProcessingTime);
+	}
+
+	/**
+	 * End the egress queueing timer
+	 */
+	inline void endEgressQueueingTimer() {
+	    if (!IS_TRACING_MONITOR_ENABLED()) return;
+
+	    uint64_t now = Cycles::rdtsc();
+	    mEgressQueueingDelay = now - mStartTime;
+	    mStartTime = now;
+	}
+
+	/**
+	 * Return the amount of time this RPC waiting to be sent out
+	 */
+	inline uint64_t getEgressQueueingDelay() {
+	    if (!IS_TRACING_MONITOR_ENABLED()) return 0;
+
+	    return Cycles::toMicroseconds(mEgressQueueingDelay);
+	}
+
+	/**
+	 * Return the total time this RPC spent in the system
+	 */
+	inline uint64_t getTotalLatency() {
+	    if (!IS_TRACING_MONITOR_ENABLED()) return 0;
+
+	    if (mEgressQueueingDelay) {
+	        return Cycles::toMicroseconds(mIngressQueueingDelay +
+					     mRpcProcessingTime +
+					     mEgressQueueingDelay);
+	    }
+	    return 0;
+	}
         /**
          * The incoming RPC payload, which contains a request.
          */
@@ -162,8 +255,14 @@ class Transport {
          * constructed by ServerRpcPool and removed when they're destroyed.
          */
         IntrusiveListHook outstandingRpcListHook;
-
+	uint64_t mIngressQueueingDelay;
+	uint64_t mRpcProcessingTime;
+	uint64_t mEgressQueueingDelay;
       PRIVATE:
+	/**
+	 * The start time of the RPC operation
+	 */
+	uint64_t mStartTime;
         DISALLOW_COPY_AND_ASSIGN(ServerRpc);
     };
 

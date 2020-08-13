@@ -247,6 +247,7 @@ void
 HomaTransport::deleteServerRpc(ServerRpc* serverRpc)
 {
     uint64_t sequence = serverRpc->rpcId.sequence;
+    WorkerManager* wm = context->workerManager;
     TEST_LOG("RpcId (%lu, %lu)", serverRpc->rpcId.clientId,
             sequence);
     incomingRpcs.erase(serverRpc->rpcId);
@@ -259,6 +260,8 @@ HomaTransport::deleteServerRpc(ServerRpc* serverRpc)
     if (serverRpc->response.active) {
         erase(activeOutgoingMessages, serverRpc->response);
     }
+    serverRpc->endEgressQueueingTimer();
+    wm->handleRpcDone(serverRpc);
     serverRpcPool.destroy(serverRpc);
     timeTrace("deleted server RPC, clientId %u, sequence %u, %u incoming RPCs",
             serverRpc->rpcId.clientId, sequence, incomingRpcs.size());

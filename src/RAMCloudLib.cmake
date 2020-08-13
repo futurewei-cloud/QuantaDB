@@ -136,7 +136,7 @@ add_library(ramcloud SHARED
   WallTime.cc
   WireFormat.cc
   WorkerManager.cc
-#  WorkerManagerMetrics.cc
+  WorkerManagerMetrics.cc
   WorkerSession.cc
   WorkerTimer.cc
   ${PROTO_SRCS}${PROTO_HDRS})

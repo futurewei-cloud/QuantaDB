@@ -19,6 +19,7 @@
 
 #include "Common.h"
 #include "WireFormat.h"
+#include <prometheus/exposer.h>
 
 namespace RAMCloud {
 
@@ -145,6 +146,9 @@ class Context {
     // its size is guaranteed to be large enough to hold the largest
     // request/reply message of an RPC.
     const void* masterZeroCopyRegion;
+    // The prometheus client handler which opens server socket for incoming
+    // metrics scrape
+    prometheus::Exposer* metricExposer;
 
     /**
      * Returns the BackupService associated with this context, if

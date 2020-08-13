@@ -250,7 +250,8 @@ struct ServerConfig {
             , useMinCopysets(false)
             , usePlusOneBackup(false)
             , allowLocalBackup(false)
-            ,isTesting(true)
+            , isTesting(true)
+	    , metricScrapePort(-1)
         {}
 
         /**
@@ -272,6 +273,7 @@ struct ServerConfig {
             , useMinCopysets()
             , usePlusOneBackup()
             , allowLocalBackup()
+	    , metricScrapePort(8080)
         {}
 
         /**
@@ -369,6 +371,9 @@ struct ServerConfig {
 
         /// If true, the DSSNService (and Validator) would be instantiated differently
         bool isTesting = false;
+
+        /// The port number at which the metric server will pull the stats
+        uint32_t metricScrapePort;
     } master;
 
     /**

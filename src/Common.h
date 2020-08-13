@@ -295,5 +295,40 @@ timevalToMicroseconds(struct timeval* tv)
 extern uint64_t debugXXX;
 extern double debugYYY;
 
+/**
+ * List of system monitor flags
+ *
+ */
+#define MONITOR_TRACING_ENABLED (0x1u)
+#define MONITOR_PERF_ENABLED    (0x2u)
+#define MONITOR_DIAG_ENABLED    (0x4u)
+#define MONITOR_FLAGS           (0x0u)
+
+#define IS_TRACING_MONITOR_ENABLED() (MONITOR_FLAGS & MONITOR_TRACING_ENABLED)
+#define IS_PERF_MONITOR_ENABLED() (MONITOR_FLAGS & MONITOR_PERF_ENABLED)
+#define IS_DIAG_MONITOR_ENABLED() (MONITOR_FLAGS & MONITOR_DIAG_ENABLED)
+
+#ifdef MONITOR
+#undef MONITOR_FLAGS
+
+#ifdef DEBUG_BUILD
+#define MONITOR_FLAGS (MONITOR_TRACING_ENABLED | MONITOR_PERF_ENABLED | MONITOR_DIAG_ENABLED)
+#else
+#define MONITOR_FLAGS (MONITOR_PERF_ENABLED | MONITOR_DIAG_ENABLED)
+#endif //DEBUG_BUILD
+#endif //MONITOR
+
+/**
+ * Monitor system sampling interval
+ */
+#define MONITOR_SAMPLING_INTERVAL_IN_MS (10)
+
+/**
+ * List of sub system to be monitor
+ */
+#define WORKERMANAGER (0x1u)
+#define MONITOR_SUBSYSTEM_FLAGS (WORKERMANAGER)
+#define IS_WORKERMANAGER_MONITORED() (MONITOR_SUBSYSTEM_FLAGS & WORKERMANAGER)
+
 } // end RAMCloud
 #endif // RAMCLOUD_COMMON_H

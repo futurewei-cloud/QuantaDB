@@ -94,6 +94,7 @@ Context::Context(bool hasDedicatedDispatchThread,
 #else
     , masterZeroCopyRegion(Memory::xmalloc(HERE, Transport::MAX_RPC_LEN))
 #endif
+    , metricExposer(NULL)
 {
     try {
         Cycles::init();

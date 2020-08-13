@@ -250,7 +250,10 @@ main(int argc, char *argv[])
              "this value. Lower values cause the disk cleaner to run more "
              "frequently. Higher values do more in-memory cleaning and "
              "reduce the amount of backup disk bandwidth used during disk "
-             "cleaning.");
+             "cleaning.")
+	    ("metricScapePort",
+             ProgramOptions::value<uint32_t>(&config.master.metricScrapePort),
+             "The port at which the metric server will pull the metrics");
 
         OptionParser optionParser(serverOptions, argc, argv);
 
@@ -360,6 +363,12 @@ main(int argc, char *argv[])
         // StatsLogger logger(context.dispatch, 1.0);
         MemoryMonitor monitor(context.dispatch, 1.0, 100);
 
+#ifdef MONITOR
+	if (config.master.metricScrapePort != (uint32_t)-1) {
+	  context.metricExposer = new prometheus::Exposer(string("127.0.0.1:") + to_string(config.master.metricScrapePort), "/metrics", 1);
+	    LOG(NOTICE, "start metric exporter");
+	}
+#endif
         Server server(&context, &config);
         server.run(); // Never returns except for exceptions.
 

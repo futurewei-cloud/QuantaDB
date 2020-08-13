@@ -938,6 +938,7 @@ TcpTransport::ClientSocketHandler::handleFileEvent(int events)
 void
 TcpTransport::TcpServerRpc::sendReply()
 {
+    WorkerManager* wm = transport->context->workerManager;
     try {
         Socket* socket = transport->sockets[fd];
 
@@ -964,7 +965,8 @@ TcpTransport::TcpServerRpc::sendReply()
     } catch (TransportException& e) {
         transport->closeSocket(fd);
     }
-
+    endEgressQueueingTimer();
+    wm->handleRpcDone(this);
     // The whole response was sent immediately (this should be the
     // common case).  Recycle the RPC object.
     transport->serverRpcPool.destroy(this);

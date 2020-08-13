@@ -187,6 +187,7 @@ SHARED_SRCFILES := \
 		   src/WallTime.cc \
 		   src/WireFormat.cc \
 		   src/WorkerManager.cc \
+		   src/WorkerManagerMetrics.cc \
 		   src/WorkerSession.cc \
 		   src/WorkerTimer.cc \
 		   $(INFINIBAND_SRCFILES) \
