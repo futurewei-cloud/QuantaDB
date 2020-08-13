@@ -71,7 +71,7 @@ class ClusterTimeService {
     inline uint64_t getLocalTime()
     {
         nt_pair_t *ntp = &tp->nt[tp->idx];
-        if (ntp->ctr > 1000) {
+        if (ntp->ctr > 200000) {
             //prevent ctr from going beyond '1us' and hence the last_nsec update interval
             return ntp->last_nsec + ntp->ctr;
         }
@@ -111,7 +111,6 @@ class ClusterTimeService {
 
     // 
     ts_tracker_t * tp;                // pointing to a shared ts_tracker
-    uint32_t node_id;		          // 
     pthread_t tid;
     bool thread_run_run;
     bool tracker_init;

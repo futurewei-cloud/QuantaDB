@@ -41,6 +41,7 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
     tp->idx = 0;
     ctsp->tracker_init = true;
 
+    // uint64_t max_delay = 0;
     while (ctsp->thread_run_run) {
         nt_pair_t *ntp = &tp->nt[tp->idx];
         uint64_t nsec = getnsec();
@@ -51,7 +52,13 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
             tp->nt[nidx].ctr = 0;
             tp->idx = nidx;
         }
-        usleep(2);
+        // uint64_t t1 = getnsec();
+        usleep(1);
+        // uint64_t delta = getnsec() - t1;
+        // if (delta > max_delay) {
+        //      max_delay = delta;
+        //      printf("max time delay = %d\n", delta); 
+        // }
     }
 
     return NULL;

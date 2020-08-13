@@ -18,6 +18,7 @@ class ClusterTimeServiceTest : public ::testing::Test {
   ~ClusterTimeServiceTest() {};
 
   ClusterTimeService clock, clock1, clock2, clock3, clock4;
+  std::atomic<uint64_t> cntr;
 
   DISALLOW_COPY_AND_ASSIGN(ClusterTimeServiceTest);
 };
@@ -36,34 +37,34 @@ TEST_F(ClusterTimeServiceTest, getLocalTime) {
 
 TEST_F(ClusterTimeServiceTest, multiClockTest) {
     for(int ii = 0; ii < 1000; ii++) {
-        __uint128_t t0 = clock.getLocalTime();
-        __uint128_t t1 = clock1.getLocalTime();
-        __uint128_t t2 = clock2.getLocalTime();
-        __uint128_t t3 = clock3.getLocalTime();
-        __uint128_t t4 = clock4.getLocalTime();
-        EXPECT_GE(t1, t0);
-        EXPECT_GE(t2, t1);
-        EXPECT_GE(t3, t2);
-        EXPECT_GE(t4, t3);
+        uint64_t t0 = clock.getLocalTime();
+        uint64_t t1 = clock1.getLocalTime();
+        uint64_t t2 = clock2.getLocalTime();
+        uint64_t t3 = clock3.getLocalTime();
+        uint64_t t4 = clock4.getLocalTime();
+        EXPECT_GT(t1, t0);
+        EXPECT_GT(t2, t1);
+        EXPECT_GT(t3, t2);
+        EXPECT_GT(t4, t3);
     }
 }
 
 void multiThreadTest(ClusterTimeServiceTest *t)
 {
     for(int ii = 0; ii < 1024*1024; ii++) {
-        __uint128_t tA = t->clock.getLocalTime();
-        __uint128_t tB = t->clock1.getLocalTime();
-        __uint128_t tC = t->clock2.getLocalTime();
-        __uint128_t tD = t->clock3.getLocalTime();
-        __uint128_t tE = t->clock4.getLocalTime();
-        EXPECT_GE(tB, tA);
-        EXPECT_GE(tC, tB);
-        EXPECT_GE(tD, tC);
-        EXPECT_GE(tE, tD);
+        uint64_t tA = t->clock.getLocalTime();
+        uint64_t tB = t->clock1.getLocalTime();
+        uint64_t tC = t->clock2.getLocalTime();
+        uint64_t tD = t->clock3.getLocalTime();
+        uint64_t tE = t->clock4.getLocalTime();
+        EXPECT_GT(tB, tA);
+        EXPECT_GT(tC, tB);
+        EXPECT_GT(tD, tC);
+        EXPECT_GT(tE, tD);
     }
 }
 
-TEST_F(ClusterTimeServiceTest, multiThreadClockTest) {
+TEST_F(ClusterTimeServiceTest, MTClockTest) {
     std::thread t1(multiThreadTest, this);
     std::thread t2(multiThreadTest, this);
     std::thread t3(multiThreadTest, this);
@@ -71,6 +72,42 @@ TEST_F(ClusterTimeServiceTest, multiThreadClockTest) {
     t1.join();
     t2.join();
     t3.join();
+}
+
+#define OP_WAIT     0
+#define OP_START    1
+#define OP_END      2
+void MTAtomicIntInc(ClusterTimeServiceTest *t, int *op)
+{
+    while (*op == OP_WAIT);
+    while (*op != OP_END)
+        t->cntr++;
+}
+
+TEST_F(ClusterTimeServiceTest, BenchMTAtomicInc) {
+    uint64_t start, stop;
+    int op = OP_WAIT;
+
+    cntr = 0;
+    std::thread t1(MTAtomicIntInc, this, &op);
+    std::thread t2(MTAtomicIntInc, this, &op);
+    std::thread t3(MTAtomicIntInc, this, &op);
+    std::thread t4(MTAtomicIntInc, this, &op);
+    std::thread t5(MTAtomicIntInc, this, &op);
+
+    start = Cycles::rdtsc();
+    op = OP_START;
+    sleep(1);
+    op = OP_END;
+    stop = Cycles::rdtsc();
+    GTEST_COUT << "MT Bench Atomic Inc: "
+    << Cycles::toNanoseconds(stop - start) / cntr << " nano sec " << std::endl;
+
+    t1.join();
+    t2.join();
+    t3.join();
+    t4.join();
+    t5.join();
 }
 
 TEST_F(ClusterTimeServiceTest, benchGenClusterTime) {
