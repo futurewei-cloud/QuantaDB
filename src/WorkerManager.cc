@@ -100,6 +100,8 @@ WorkerManager::WorkerManager(Context* context, uint32_t maxCores)
     , testingSaveRpcs(0)
     , rpcRequestCount(0)
     , rpcInProcCount(0)
+    , lastPollEnd(Cycles::rdtsc())
+    , pollLatency(0)
     , testRpcs()
     , mMetrics(NULL)
 {
@@ -281,9 +283,7 @@ WorkerManager::handleRpc(Transport::ServerRpc* rpc)
 void
 WorkerManager::handleRpcDone(Transport::ServerRpc* rpc)
 {
-    if (!IS_WORKERMANAGER_MONITORED()) return;
-
-    if (IS_TRACING_MONITOR_ENABLED()) {
+    if (rpc->isTracing()) {
         mMetrics->observeTcValue(WMM_TC_RPC_LATENCY, (double)rpc->getTotalLatency());
 	mMetrics->observeTcValue(WMM_TC_INGRESS_LATENCY, (double)rpc->getIngressQueueingDelay());
 	mMetrics->observeTcValue(WMM_TC_RPC_PROC_LATENCY, (double)rpc->getRpcProcessingTime());
@@ -310,6 +310,7 @@ WorkerManager::idle()
 int
 WorkerManager::poll()
 {
+    recordPollLatency();
     int foundWork = 0;
     // Each iteration of the following loop checks the status of one active
     // worker. The order of iteration is crucial, since it allows us to
@@ -408,6 +409,7 @@ WorkerManager::poll()
     }
     // Send out all async RPC reply
     sendAsyncRpcReply();
+    lastPollEnd = Cycles::rdtsc();
     return foundWork;
 }
 

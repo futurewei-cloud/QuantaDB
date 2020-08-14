@@ -96,6 +96,9 @@ class WorkerManager : Dispatch::Poller {
     };
     inline RpcHandle* getRpcHandle(Transport::ServerRpc* rpc);
     inline void freeRpcHandle(RpcHandle* handle);
+    inline void recordPollLatency() {
+        pollLatency = Cycles::rdtsc() - lastPollEnd;
+    }
     inline void sendAsyncRpcReply();
     std::mutex rpcReplyQueueMutex;
     std::vector<Level> levels;
@@ -125,6 +128,10 @@ class WorkerManager : Dispatch::Poller {
     uint64_t rpcRequestCount;
     //Track number of RPC currently being processed
     uint64_t rpcInProcCount;
+    //Track the timestamp at which the worker manager processing end
+    uint64_t lastPollEnd;
+    //Track the last poll latency
+    uint64_t pollLatency;
 
     // Used for testing: if testingSaveRpcs is set, incoming RPCs are
     // queued here, not sent to workers.

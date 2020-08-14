@@ -65,7 +65,6 @@ class Transport {
 #else
       static const uint32_t MAX_RPC_LEN = ((1 << 23) + 200);
 #endif
-
     /**
      * An RPC request that has been received and is either being serviced or
      * waiting for service.
@@ -122,17 +121,33 @@ class Transport {
         }
 
 	/**
+	 * Indicates if this RPC is being traced
+	 */
+	bool
+	isTracing()
+	{
+	    return (mStartTime != 0);
+	}
+
+#define RPC_SAMPLING_FREQ (1000)
+
+	/**
 	 * Start the timer to track the lifecycle of this rpc processing
 	 */
 	void
 	inline startTimer()
 	{
-	    if (!IS_TRACING_MONITOR_ENABLED()) return;
-
+	    static uint64_t mIndex = 0;
 	    mIngressQueueingDelay = 0;
 	    mRpcProcessingTime = 0;
 	    mEgressQueueingDelay = 0;
-	    mStartTime = Cycles::rdtsc();
+	    mStartTime = 0;
+	    mIndex++;
+
+	    if (!IS_TRACING_MONITOR_ENABLED()) return;
+	    if ((mIndex % RPC_SAMPLING_FREQ) == 0) {
+		mStartTime = Cycles::rdtsc();
+	    }
 	}
 
 	/**
@@ -140,19 +155,18 @@ class Transport {
 	 * for the next stage
 	 */
 	inline void endIngressQueueingTimer() {
-	    if (!IS_TRACING_MONITOR_ENABLED()) return;
+	    if (!isTracing()) return;
 
 	    uint64_t now = Cycles::rdtsc();
 	    mIngressQueueingDelay = now - mStartTime;
 	    mStartTime = now;
-	    assert(mRpcProcessingTime == 0);
 	}
 
 	/**
 	 * Return the amount of time this RPC waiting to be processed
 	 */
 	inline uint64_t getIngressQueueingDelay() {
-	    if (!IS_TRACING_MONITOR_ENABLED()) return 0;
+	    if (!isTracing()) return 0;
 
 	    return Cycles::toMicroseconds(mIngressQueueingDelay);
 	}
@@ -162,19 +176,18 @@ class Transport {
 	 * for the next stage
 	 */
 	inline void endRpcProcessingTimer() {
-	    if (!IS_TRACING_MONITOR_ENABLED()) return;
+	    if (!isTracing()) return;
 
 	    uint64_t now = Cycles::rdtsc();
 	    mRpcProcessingTime = now - mStartTime;
 	    mStartTime = now;
-	    assert(mEgressQueueingDelay == 0);
 	}
 
 	/**
 	 * Return the amount of time this RPC is being processed
 	 */
 	inline uint64_t getRpcProcessingTime() {
-	    if (!IS_TRACING_MONITOR_ENABLED()) return 0;
+	    if (!isTracing()) return 0;
 
 	    return Cycles::toMicroseconds(mRpcProcessingTime);
 	}
@@ -183,7 +196,7 @@ class Transport {
 	 * End the egress queueing timer
 	 */
 	inline void endEgressQueueingTimer() {
-	    if (!IS_TRACING_MONITOR_ENABLED()) return;
+	    if (!isTracing()) return;
 
 	    uint64_t now = Cycles::rdtsc();
 	    mEgressQueueingDelay = now - mStartTime;
@@ -194,7 +207,7 @@ class Transport {
 	 * Return the amount of time this RPC waiting to be sent out
 	 */
 	inline uint64_t getEgressQueueingDelay() {
-	    if (!IS_TRACING_MONITOR_ENABLED()) return 0;
+	    if (!isTracing()) return 0;
 
 	    return Cycles::toMicroseconds(mEgressQueueingDelay);
 	}
@@ -203,7 +216,7 @@ class Transport {
 	 * Return the total time this RPC spent in the system
 	 */
 	inline uint64_t getTotalLatency() {
-	    if (!IS_TRACING_MONITOR_ENABLED()) return 0;
+	    if (!isTracing()) return 0;
 
 	    if (mEgressQueueingDelay) {
 	        return Cycles::toMicroseconds(mIngressQueueingDelay +
@@ -262,7 +275,7 @@ class Transport {
 	/**
 	 * The start time of the RPC operation
 	 */
-	uint64_t mStartTime;
+	std::atomic<uint64_t> mStartTime;
         DISALLOW_COPY_AND_ASSIGN(ServerRpc);
     };
 

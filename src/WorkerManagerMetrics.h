@@ -57,6 +57,7 @@ enum WmmTcMetric {
     WMM_TC_INGRESS_LATENCY,
     WMM_TC_RPC_PROC_LATENCY,
     WMM_TC_EGRESS_LATENCY,
+    WMM_TC_POLL_LATENCY,
     WMM_TC_MAX
 };
 
@@ -65,6 +66,7 @@ static const char* WmmTcMetricLabels[] = {
     "RPC_ingress_latency",
     "RPC_processing_latency",
     "RPC_egress_latency",
+    "worker_manager_poll_latency",
     "Invalid"
 };
 
@@ -106,7 +108,7 @@ class WorkerManagerMetrics {
      * Helper function to add a tracing histogram
      */
     void addTcMetric(WmmTcMetric type) {
-        prometheus::Histogram::BucketBoundaries bucketsInMicroSec{1, 2.5, 5, 10, 20, 40, 60, 80, 100,
+        prometheus::Histogram::BucketBoundaries bucketsInMicroSec{0.1, 1, 2.5, 5, 10, 20, 40, 60, 80, 100,
 	    130, 160, 200};
 	mPTcCounterHandle[type] = &mPTcCounters->Add({{"label", WmmTcMetricLabels[type]}}, bucketsInMicroSec);
     }
