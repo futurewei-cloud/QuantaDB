@@ -3,8 +3,9 @@
 #include <semaphore.h>
 #include <time.h>
 
-#define MAX_CORE 64
+#define MAX_CORE 32
 sem_t child, parent;
+bool child_start = false;
 
 static inline u_int64_t rdtscp(u_int32_t &aux)
 {
@@ -20,7 +21,11 @@ void *func(void *arg)
     u_int32_t core;
     struct timespec clock_start, clock_end;
     sem_post(&parent);
+#ifdef CHILD_USE_SEM
     sem_wait(&child);
+#else
+    while (child_start == false) {;}
+#endif
     tsc_start = rdtscp(core);
     clock_gettime(CLOCK_REALTIME, &clock_start);
     int i,j; for (i=0, j=0; i< 65536; i++) { j+= i*i; }
@@ -53,9 +58,13 @@ int main()
         sem_wait(&parent);
     } 
 
+#ifdef CHILD_USE_SEM
     for (int i=0; i<MAX_CORE; i++) {
         sem_post(&child);
     }
+#else
+    child_start = true;
+#endif
 
     for (int i=0; i<MAX_CORE; i++) {
         pthread_join(threads[i], NULL);
