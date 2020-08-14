@@ -32,7 +32,7 @@ void *func(void *arg)
     clock_diff += (clock_diff < 0) ? 1000000000 : 0;
 
     float scale = (float) tsc_diff / (float) clock_diff;
-    printf("t[%02lx] c[%04x] tsc[%08lx,%08lx] clock[%08lx, %08lx], tsc diff %08ld, clock diff %08ld %1.4f\n",
+    printf("t[%02lx] c[%04x] tsc %08ld %08ld clock %08ld %08ld tsc diff %08ld clock diff %08ld %1.4f\n",
         (u_int64_t)arg, core, tsc_start, tsc_end, clock_start.tv_nsec, clock_end.tv_nsec,
         tsc_diff, clock_diff, scale);
 
