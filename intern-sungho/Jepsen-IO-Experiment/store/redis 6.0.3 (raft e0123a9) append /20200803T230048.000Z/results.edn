@@ -1,0 +1,171 @@
+{:perf {:latency-graph {:valid? true},
+        :rate-graph {:valid? true},
+        :valid? true},
+ :clock {:valid? true},
+ :crash {:valid? true},
+ :stats {:valid? false,
+         :count 2791,
+         :ok-count 0,
+         :fail-count 0,
+         :info-count 2791,
+         :by-f {:txn {:valid? false,
+                      :count 2791,
+                      :ok-count 0,
+                      :fail-count 0,
+                      :info-count 2791}}},
+ :exceptions {:valid? true,
+              :exceptions ({:count 2791,
+                            :class clojure.lang.ExceptionInfo,
+                            :example {:type :info,
+                                      :f :txn,
+                                      :value [[:r 11 nil]
+                                              [:r 11 nil]
+                                              [:append 10 2]
+                                              [:r 10 nil]],
+                                      :process 1,
+                                      :time 186282484,
+                                      :exception {:via [{:type clojure.lang.ExceptionInfo,
+                                                         :message "ERR DISCARD: Unsupported call.",
+                                                         :data {:prefix :err},
+                                                         :at [taoensso.carmine.protocol$get_unparsed_reply
+                                                              invokeStatic
+                                                              "protocol.clj"
+                                                              130]}],
+                                                  :trace [[taoensso.carmine.protocol$get_unparsed_reply
+                                                           invokeStatic
+                                                           "protocol.clj"
+                                                           130]
+                                                          [taoensso.carmine.protocol$get_unparsed_reply
+                                                           invoke
+                                                           "protocol.clj"
+                                                           106]
+                                                          [taoensso.carmine.protocol$fn__5298$get_parsed_reply__5299
+                                                           invoke
+                                                           "protocol.clj"
+                                                           198]
+                                                          [taoensso.carmine.protocol$execute_requests
+                                                           invokeStatic
+                                                           "protocol.clj"
+                                                           320]
+                                                          [taoensso.carmine.protocol$execute_requests
+                                                           invoke
+                                                           "protocol.clj"
+                                                           284]
+                                                          [taoensso.carmine.protocol$_with_replies
+                                                           invokeStatic
+                                                           "protocol.clj"
+                                                           342]
+                                                          [taoensso.carmine.protocol$_with_replies
+                                                           invoke
+                                                           "protocol.clj"
+                                                           328]
+                                                          [jepsen.redis.client$abort_txn_BANG_$fn__6194$fn__6198
+                                                           invoke
+                                                           "client.clj"
+                                                           119]
+                                                          [jepsen.redis.client$abort_txn_BANG_$fn__6194
+                                                           invoke
+                                                           "client.clj"
+                                                           119]
+                                                          [jepsen.redis.client$abort_txn_BANG_
+                                                           invokeStatic
+                                                           "client.clj"
+                                                           117]
+                                                          [jepsen.redis.client$abort_txn_BANG_
+                                                           invoke
+                                                           "client.clj"
+                                                           110]
+                                                          [jepsen.redis.append.Client$fn__6292
+                                                           invoke
+                                                           "append.clj"
+                                                           61]
+                                                          [jepsen.redis.append.Client
+                                                           invoke_BANG_
+                                                           "append.clj"
+                                                           61]
+                                                          [jepsen.core$invoke_op_BANG_$fn__5881
+                                                           invoke
+                                                           "core.clj"
+                                                           223]
+                                                          [jepsen.core$invoke_op_BANG_
+                                                           invokeStatic
+                                                           "core.clj"
+                                                           223]
+                                                          [jepsen.core$invoke_op_BANG_
+                                                           invoke
+                                                           "core.clj"
+                                                           218]
+                                                          [jepsen.core.ClientWorker
+                                                           run_worker_BANG_
+                                                           "core.clj"
+                                                           355]
+                                                          [jepsen.core$run_workers_BANG_$run__5872
+                                                           invoke
+                                                           "core.clj"
+                                                           206]
+                                                          [dom_top.core$real_pmap_helper$build_thread__214$fn__215
+                                                           invoke
+                                                           "core.clj"
+                                                           146]
+                                                          [clojure.lang.AFn
+                                                           applyToHelper
+                                                           "AFn.java"
+                                                           152]
+                                                          [clojure.lang.AFn
+                                                           applyTo
+                                                           "AFn.java"
+                                                           144]
+                                                          [clojure.core$apply
+                                                           invokeStatic
+                                                           "core.clj"
+                                                           665]
+                                                          [clojure.core$with_bindings_STAR_
+                                                           invokeStatic
+                                                           "core.clj"
+                                                           1973]
+                                                          [clojure.core$with_bindings_STAR_
+                                                           doInvoke
+                                                           "core.clj"
+                                                           1973]
+                                                          [clojure.lang.RestFn
+                                                           invoke
+                                                           "RestFn.java"
+                                                           425]
+                                                          [clojure.lang.AFn
+                                                           applyToHelper
+                                                           "AFn.java"
+                                                           156]
+                                                          [clojure.lang.RestFn
+                                                           applyTo
+                                                           "RestFn.java"
+                                                           132]
+                                                          [clojure.core$apply
+                                                           invokeStatic
+                                                           "core.clj"
+                                                           669]
+                                                          [clojure.core$bound_fn_STAR_$fn__5734
+                                                           doInvoke
+                                                           "core.clj"
+                                                           2003]
+                                                          [clojure.lang.RestFn
+                                                           invoke
+                                                           "RestFn.java"
+                                                           397]
+                                                          [clojure.lang.AFn
+                                                           run
+                                                           "AFn.java"
+                                                           22]
+                                                          [java.lang.Thread
+                                                           run
+                                                           "Thread.java"
+                                                           748]],
+                                                  :cause "ERR DISCARD: Unsupported call.",
+                                                  :data {:prefix :err}},
+                                      :error "indeterminate: ERR DISCARD: Unsupported call.",
+                                      :index 2}})},
+ :workload {:valid? :unknown,
+            :anomaly-types (:empty-transaction-graph),
+            :anomalies {:empty-transaction-graph true},
+            :not #{},
+            :also-not #{}},
+ :valid? false}
