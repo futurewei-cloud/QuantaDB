@@ -249,11 +249,13 @@ class RpcHandle {
         : mServerRpc(rpc)
         , mWorkerManager(NULL)
         , isAsync(false)
+        , isSendAsyncReplyCalled(false)
     {}
     RpcHandle(Transport::ServerRpc* rpc, WorkerManager* wm)
         : mServerRpc(rpc)
         , mWorkerManager(wm)
         , isAsync(false)
+        , isSendAsyncReplyCalled(false)
     {
     }
     void init(Transport::ServerRpc * rpc, WorkerManager* wm) {
@@ -261,21 +263,26 @@ class RpcHandle {
         mServerRpc = rpc;
 	mWorkerManager = wm;
 	isAsync = false;
+	isSendAsyncReplyCalled = false;
     }
 
     inline void enableAsync() { isAsync = true; }
     inline bool isAsyncEnabled() { return isAsync; }
     void sendReplyAsync() {
         //Enqueue this RPC on WorkerManager's queue
+        if (isSendAsyncReplyCalled) {
+	    assert(!"validator called sendReplyAsync() multiple times");
+	}
         if (mWorkerManager) {
-	    mWorkerManager->enqueueRpcReply(this);
 	    mServerRpc->endRpcProcessingTimer();
+	    mWorkerManager->enqueueRpcReply(this);
 	} else {
 #if TESTING
 	    //This only happens in the unit test mode
 	    mServerRpc->sendReply();
 #endif
 	}
+	isSendAsyncReplyCalled = true;
     }
     void clear() {
         mServerRpc = NULL;
@@ -286,7 +293,14 @@ class RpcHandle {
     private:
       Transport::ServerRpc* mServerRpc;
       WorkerManager* mWorkerManager;
+      /**
+       * Flag to indicate if the RPC processing is async
+       */
       bool isAsync;
+      /**
+       * Flag to indicate if the sendAsyncReply() has already been called.
+       */
+      bool isSendAsyncReplyCalled;
 };
 }  // namespace RAMCloud
 
