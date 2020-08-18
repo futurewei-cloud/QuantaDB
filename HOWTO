@@ -13,7 +13,11 @@ The --network host option allows the container to share the networking namespace
 with the host
 
 
-4. Configuration for the Grafana
+4. Configuration for the Grafana.
+- Login to the Grafana server
+  Enter the following URL to your browser: http://[mgmt ip]:3000
+  username/password: admin/admin
+
 - Add data source.
 Settings->Data Sources, choose Prometheus, Click Save&Test.
 
