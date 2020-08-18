@@ -83,7 +83,10 @@ include_directories(pmemhash/utils)
 include_directories(src)
 include_directories(src/dssn)
 include_directories(prometheus-cpp/core/include)
+include_directories(prometheus-cpp/build/core/include)
 include_directories(prometheus-cpp/pull/include)
+include_directories(prometheus-cpp/build/pull/include)
+
 
 #TODO: Fix the package dependencies
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/hot/build/tbb_cmake_build/tbb_cmake_build_subdir_release)
