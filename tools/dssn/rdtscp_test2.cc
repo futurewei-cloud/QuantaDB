@@ -57,12 +57,12 @@ void *func(void *arg)
 
 int main(int ac, char *av[])
 {
-    if ((ac != 3) || !(strcmp(av[1], "rdtsc") == 0 || strcmp(av[1], "rdtscp") == 0)) {
-        printf("Usage: %s [rdtsc|rdtscp] <runtime in sec>\n", av[0]);
+    if ((ac < 2) || !(strcmp(av[1], "rdtsc") == 0 || strcmp(av[1], "rdtscp") == 0)) {
+        printf("Usage: %s <rdtsc|rdtscp> [<runtime in sec>]\n", av[0]);
         exit(1);
     }
 
-    int runtime = (ac == 1)? 5 : atoi(av[2]);
+    int runtime = (ac < 3)? 5 : atoi(av[2]);
     bool call_rdtsc = (strcmp(av[1], "rdtsc") == 0); 
         
     pthread_t threads[MAX_CORE];
