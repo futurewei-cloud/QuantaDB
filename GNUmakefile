@@ -160,6 +160,7 @@ INCLUDES := -I$(TOP)/src \
 	    -I$(TOP)/hot/libs/hot/rowex/include/ \
 	    -I$(TOP)/hot/libs/hot/commons/include/ \
 	    -I$(TOP)/hot/libs/idx/content-helpers/include/ \
+	    -I$(TOP)/prometheus-cpp/core/include/ \
              $(NULL)
 
 ifeq ($(LOGCABIN),yes)

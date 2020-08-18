@@ -1321,6 +1321,7 @@ InfRcTransport::ServerRpc::sendReply()
     ++metrics->transport.transmit.packetCount;
 
     InfRcTransport *t = transport;
+    WorkerManager *wm = t->context->workerManager;
 
     // "t->serverRpcPool.destroy(this);" on our way out of the method
     ServerRpcPoolGuard<ServerRpc> suicide(t->serverRpcPool, this);
@@ -1335,7 +1336,8 @@ InfRcTransport::ServerRpc::sendReply()
 
     t->sendZeroCopy(nonce, &replyPayload, qp, true);
     interval.stop();
-
+    endEgressQueueingTimer();
+    wm->handleRpcDone(this);
     // Restart port watchdog for this server port
 
     uint32_t qpNum = qp->getLocalQpNumber(); // get QP number from qp instance

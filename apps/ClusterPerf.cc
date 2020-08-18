@@ -5917,7 +5917,7 @@ tpcc()
             startStats[i] = *statsBuffer.getStart<PerfStats>();
         }
         RAMCLOUD_LOG(NOTICE, "Collect start stats");
-        Cycles::sleep(period * 1000000);
+        sleep(period);
 	RAMCLOUD_LOG(NOTICE, "Collect end stats");
         for (int i = 1; i < numTlbNodes; ++i) {
             cluster->objectServerControl(TPCC::tableId[i], "not-used", 3,

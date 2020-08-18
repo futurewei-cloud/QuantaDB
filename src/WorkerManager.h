@@ -26,6 +26,7 @@
 #include "PerfCounter.h"
 #include "PerfStats.h"
 #include "ServerId.h"
+#include "WorkerManagerMetrics.h"
 
 namespace RAMCloud {
 
@@ -45,6 +46,11 @@ class WorkerManager : Dispatch::Poller {
 
     void exitWorker();
     void handleRpc(Transport::ServerRpc* rpc);
+    /**
+     * The transport layer notifies the WorkManager the RPC is delivered to the hardware.
+     * The workermanager uses this callback to perform necessary bookkeeping
+     */
+    void handleRpcDone(Transport::ServerRpc* rpc);
     bool idle();
     static void init();
     int poll();
@@ -90,6 +96,9 @@ class WorkerManager : Dispatch::Poller {
     };
     inline RpcHandle* getRpcHandle(Transport::ServerRpc* rpc);
     inline void freeRpcHandle(RpcHandle* handle);
+    inline void recordPollLatency() {
+        pollLatency = Cycles::rdtsc() - lastPollEnd;
+    }
     inline void sendAsyncRpcReply();
     std::mutex rpcReplyQueueMutex;
     std::vector<Level> levels;
@@ -115,6 +124,15 @@ class WorkerManager : Dispatch::Poller {
     // Intended for use in unit tests only.
     int testingSaveRpcs;
 
+    //Track number of rpc received.
+    uint64_t rpcRequestCount;
+    //Track number of RPC currently being processed
+    uint64_t rpcInProcCount;
+    //Track the timestamp at which the worker manager processing end
+    uint64_t lastPollEnd;
+    //Track the last poll latency
+    uint64_t pollLatency;
+
     // Used for testing: if testingSaveRpcs is set, incoming RPCs are
     // queued here, not sent to workers.
     std::queue<Transport::ServerRpc*> testRpcs;
@@ -123,8 +141,9 @@ class WorkerManager : Dispatch::Poller {
     std::queue<RpcHandle*> mRpcReply;
     static void workerMain(Worker* worker);
     static Syscall *sys;
-
+    WorkerManagerMetrics* mMetrics;
     friend class Worker;
+    friend class WorkerManagerMetrics;
     DISALLOW_COPY_AND_ASSIGN(WorkerManager);
 };
 
@@ -250,6 +269,7 @@ class RpcHandle {
         //Enqueue this RPC on WorkerManager's queue
         if (mWorkerManager) {
 	    mWorkerManager->enqueueRpcReply(this);
+	    mServerRpc->endRpcProcessingTimer();
 	} else {
 #if TESTING
 	    //This only happens in the unit test mode
