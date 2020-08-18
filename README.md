@@ -36,6 +36,11 @@ cd hot
 mkdir build
 cd build; cmake ..
 
-3. build RAMCloud
+3. build prometheus
+cd prometheus-cpp
+mkdir build
+cd build; cmake ..; make -j 20
+
+4. build RAMCloud
 make
 
