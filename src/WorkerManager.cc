@@ -283,12 +283,14 @@ WorkerManager::handleRpc(Transport::ServerRpc* rpc)
 void
 WorkerManager::handleRpcDone(Transport::ServerRpc* rpc)
 {
+#ifdef MONITOR
     if (rpc->isTracing()) {
         mMetrics->observeTcValue(WMM_TC_RPC_LATENCY, (double)rpc->getTotalLatency());
 	mMetrics->observeTcValue(WMM_TC_INGRESS_LATENCY, (double)rpc->getIngressQueueingDelay());
 	mMetrics->observeTcValue(WMM_TC_RPC_PROC_LATENCY, (double)rpc->getRpcProcessingTime());
 	mMetrics->observeTcValue(WMM_TC_EGRESS_LATENCY, (double)rpc->getEgressQueueingDelay());
     }
+#endif
 }
 
 /**
