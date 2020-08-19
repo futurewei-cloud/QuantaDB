@@ -188,7 +188,7 @@ PeerInfo::send(Validator *validator) {
 
         if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING
                 && txEntry->getTxState() != TxEntry::TX_ALERT
-                && nsTime - (txEntry->getCTS() >> 64) > alertThreshold) {
+                && nsTime - (uint64_t)(txEntry->getCTS() >> 64) > alertThreshold) {
             std::lock_guard<std::mutex> lock(peerEntry->mutexForPeerUpdate);
             txEntry->setTxState(TxEntry::TX_ALERT);
         }

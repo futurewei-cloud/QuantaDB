@@ -264,6 +264,7 @@ Validator::scheduleDistributedTxs() {
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
                 sendTxCommitReply(txEntry);
                 counters.lateScheduleErrors++;
+                delete txEntry;
                 continue;
             }
             while (!distributedTxSet.add(txEntry));
@@ -348,7 +349,7 @@ Validator::conclude(TxEntry& txEntry) {
     if (txEntry.getPeerSet().size() >= 1) {
         activeTxSet.remove(&txEntry);
     } else {
-        rpcService->sendTxCommitReply(&txEntry);
+        sendTxCommitReply(&txEntry);
         if (txEntry.getTxState() == TxEntry::TX_COMMIT)
             counters.commits++;
         else
