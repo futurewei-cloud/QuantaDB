@@ -53,7 +53,7 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
             tp->nt[nidx].last_tsc   = tsc;
             tp->idx = nidx;
         }
-        usleep(1);
+        Cycles::sleep(1);
     }
 
     return NULL;
