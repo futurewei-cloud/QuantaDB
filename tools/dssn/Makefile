@@ -1,6 +1,6 @@
 TOP = ../..
 
-CFLAGS = -I$(TOP)/src/dssn -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TOP)/obj.master
+CFLAGS = -I$(TOP)/src/dssn -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TOP)/obj.master -I$(TOP)/prometheus-cpp/core/include/ -I$(TOP)/prometheus-cpp/pull/include/ -I$(TOP)/prometheus-cpp/build/pull/include/ -I$(TOP)/prometheus-cpp/build/core/include/
 
 %.o:$(TOP)/src/%.cc
 	g++ -c $(CFLAGS) $< -o $@
