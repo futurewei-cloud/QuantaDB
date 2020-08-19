@@ -19,13 +19,14 @@ namespace DSSN {
 /*
  * Skip Node Declaration
  */
+template <typename Key_t>
 struct SkipNode
 {
-    uint64_t key;
+    Key_t key;
     void * value;
-    SkipNode *forw[MAX_LEVEL+1];
+    SkipNode<Key_t> *forw[MAX_LEVEL+1];
 
-    SkipNode(uint64_t k, void *v) : key(k), value(v)
+    SkipNode(Key_t k, void *v) : key(k), value(v)
     {
         bzero(forw, sizeof(forw));
     }
@@ -34,14 +35,15 @@ struct SkipNode
 /*
  * Skip List Declaration
  */
+template <typename Key_t>
 class SkipList {
   public:
-    SkipNode *head;
+    SkipNode<Key_t> *head;
     int level;
     SkipList(float p = 0.5) : level(0)
     {
         probability = p;
-        head = new SkipNode(0, (void *)const_cast<char *>("head"));
+        head = new SkipNode<Key_t>(0, (void *)const_cast<char *>("head"));
         ctr = 0;
         lock_ = 0;
     }
@@ -49,8 +51,8 @@ class SkipList {
     ~SkipList() 
     {
         // delete all nodes
-        SkipNode* tmp;
-        SkipNode* nxt;
+        SkipNode<Key_t> * tmp;
+        SkipNode<Key_t> * nxt;
         tmp = head;
         while ( tmp )
         {
@@ -67,7 +69,7 @@ class SkipList {
     {
         std::cout <<"=======\n";
 
-        SkipNode* node = head;
+        SkipNode<Key_t> * node = head;
         do {
             std::cout << "key: " << node->key << " val: " << (char *)node->value;
             for(int lvl = 0; lvl < MAX_LEVEL; lvl++) {
@@ -81,17 +83,17 @@ class SkipList {
         std::cout <<"=======\n";
     }
 
-    inline bool contains(uint64_t key) { return find(key) != NULL; }
+    inline bool contains(Key_t key) { return find(key) != NULL; }
 
     /*
      * Insert Element in Skip List
      */
-    bool insert(uint64_t key, void *value)
+    bool insert(Key_t key, void *value)
     {
         lock();
-        SkipNode *x = head;	
-        SkipNode *update[MAX_LEVEL + 1];
-        memset(update, 0, sizeof(SkipNode*) * (MAX_LEVEL + 1));
+        SkipNode<Key_t> *x = head;	
+        SkipNode<Key_t> *update[MAX_LEVEL + 1];
+        memset(update, 0, sizeof(SkipNode<Key_t>*) * (MAX_LEVEL + 1));
 
         for (int i = level; i >= 0; i--)
         {
@@ -117,7 +119,7 @@ class SkipList {
             }
 
             // x = new SkipNode(lvl, key, value);
-            x = new SkipNode(key, value);
+            x = new SkipNode<Key_t>(key, value);
             if (x == NULL) {
                 unlock();
                 return false;
@@ -139,12 +141,12 @@ class SkipList {
     /*
      * Delete Element from Skip List
      */
-    void remove(uint64_t key) 
+    void remove(Key_t key) 
     {
         lock();
-        SkipNode *x = head;	
-        SkipNode *update[MAX_LEVEL + 1];
-        memset (update, 0, sizeof(SkipNode*) * (MAX_LEVEL + 1));
+        SkipNode<Key_t> *x = head;	
+        SkipNode<Key_t> *update[MAX_LEVEL + 1];
+        memset (update, 0, sizeof(SkipNode<Key_t>*) * (MAX_LEVEL + 1));
 
         for (int i = level; i >= 0; i--)
         {
@@ -179,9 +181,9 @@ class SkipList {
 
     inline void * get() { return (head->forw[0])?  head->forw[0]->value : NULL; }
     
-    inline void * get(uint64_t key)
+    inline void * get(Key_t key)
     {
-        SkipNode * n = find(key);
+        SkipNode<Key_t> * n = find(key);
         return (n)? const_cast<void *>(n->value) : NULL;
     }
 
@@ -195,7 +197,7 @@ class SkipList {
         return val;
     }
 
-    inline void * try_pop(uint64_t key)
+    inline void * try_pop(Key_t key)
     {
         void * val = NULL;
         if (head->forw[0] && (key >= head->forw[0]->key)) {
@@ -209,7 +211,7 @@ class SkipList {
 
     inline uint64_t lastkey()
     {
-        SkipNode *tmp = head;
+        SkipNode<Key_t> *tmp = head;
         while (tmp->forw[0]) tmp = tmp->forw[0];
         return tmp->key;
     }
@@ -235,9 +237,9 @@ class SkipList {
     /*
      * Search Elemets in Skip List
      */
-    SkipNode * find(uint64_t key) 
+    SkipNode<Key_t> * find(Key_t key) 
     {
-        SkipNode *x = head;
+        SkipNode<Key_t> *x = head;
 
         for (int i = level; i >= 0; i--)
         {

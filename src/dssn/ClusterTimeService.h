@@ -67,42 +67,15 @@ class ClusterTimeService {
     ClusterTimeService();
     ~ClusterTimeService();
 
-    // return a cluster unique logical time stamp
-    inline uint64_t getClusterTime()   	         
-    {
-        //TODO: Please remove 
-        return getLocalTime();
-    }
-
-    // return a cluster unique logical time stamp
-    inline __uint128_t getClusterTime128(uint32_t delta /* nanosec */)   	         
-    {
-        return ((__uint128_t)getLocalTime() << 64) + node_id;
-    }
-
-    // cluster unique time stamp that is local clock + delta
-    inline uint64_t getClusterTime(uint32_t delta /* nanosec */)
-    {
-        return ((getLocalTime() + delta) << 10) + node_id;
-    }
-
     // return a local system clock time stamp
     inline uint64_t getLocalTime()
     {
         nt_pair_t *ntp = &tp->nt[tp->idx];
+        if (ntp->ctr > 200000) {
+            //prevent ctr from going beyond '1us' and hence the last_nsec update interval
+            return ntp->last_nsec + ntp->ctr;
+        }
         return ntp->last_nsec + ntp->ctr++;
-    }
-
-    // Convert a cluster time stamp to local clock time stamp
-    inline uint64_t Cluster2Local(uint64_t cluster_ts)
-    {
-        return (cluster_ts >> 10);
-    }
-
-    // Convert a local time stamp to cluster clock time stamp
-    inline uint64_t Local2Cluster(uint64_t local_ts)
-    {
-        return (local_ts << 10);
     }
 
     private:
@@ -138,7 +111,6 @@ class ClusterTimeService {
 
     // 
     ts_tracker_t * tp;                // pointing to a shared ts_tracker
-    uint32_t node_id;		          // 
     pthread_t tid;
     bool thread_run_run;
     bool tracker_init;

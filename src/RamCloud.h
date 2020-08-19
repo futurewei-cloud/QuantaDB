@@ -170,7 +170,7 @@ class RamCloud {
     __uint128_t getCTS() {
         __uint128_t cts = 0;
 #if DSSNTX
-        cts = sequencer.getCTS128();
+        cts = sequencer.getCTS();
 #endif
 	return cts;
     }

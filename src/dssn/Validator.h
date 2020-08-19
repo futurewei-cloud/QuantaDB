@@ -61,6 +61,7 @@ struct Counters {
     uint64_t concludeErrors = 0;
     uint64_t commitMetaErrors = 0;
     uint64_t alertRequests = 0;
+    uint64_t alertAborts = 0;
     uint64_t commits = 0;
     uint64_t aborts = 0;
     uint64_t commitReads = 0;
@@ -93,14 +94,14 @@ class Validator {
     DSSNService *rpcService;
     bool isUnderTest;
 	WaitList &localTxQueue;
-    SkipList &reorderQueue;
+    SkipList<__uint128_t> &reorderQueue;
     DistributedTxSet &distributedTxSet;
     ActiveTxSet &activeTxSet;
     PeerInfo &peerInfo;
 	ConcludeQueue &concludeQueue;
 	TxLog &txLog;
     ClusterTimeService clock;
-    uint64_t lastScheduledTxCTS = 0;
+    __uint128_t lastScheduledTxCTS;
     //LATER DependencyMatrix blockedTxSet;
     Counters counters;
     uint32_t logLevel = LOG_INFO;
@@ -122,10 +123,6 @@ class Validator {
     // serialization of commit-intent validation
     void serialize();
 
-    // perform SSN validation on distributed transactions
-    /// help cross-shard CIs in activeTxSet to exchange SSN info with peers
-    void validateDistributedTxs(int worker);
-
     // perform SSN validation on a local transaction
     bool validateLocalTx(TxEntry& txEntry);
 
@@ -145,6 +142,7 @@ class Validator {
     // put arbitrary message into tx log, depending on log level
     /// (3,4) is used because there is implicit 'this' parameter in argument list
     bool logMessage(uint32_t level, const char* fmt, ...) __attribute__ ((format (gnu_printf, 3, 4)));
+
 
     PUBLIC:
 
@@ -173,8 +171,8 @@ class Validator {
     bool insertTxEntry(TxEntry *txEntry);
     bool updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
     bool insertConcludeQueue(TxEntry *txEntry);
-    TxEntry* receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
-    void replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
+    TxEntry* receiveSSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
+    void replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
     void sendTxCommitReply(TxEntry *txEntry);
 
     // calculate sstamp and pstamp using local read/write sets
@@ -186,7 +184,10 @@ class Validator {
 
     // used for obtaining clock value in nanosecond unit
     uint64_t getClockValue();
-    uint64_t convertStampToClockValue(uint64_t timestamp);
+    __uint128_t get128bClockValue();
+
+    // used for updating counters
+    Counters& getCounters() {return counters;}
 
     // put commit intent into tx log, depending on log level
     bool logTx(uint32_t currentLevel, TxEntry *txEntry);

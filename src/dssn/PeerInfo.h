@@ -47,7 +47,7 @@ struct PeerEntry {
 
 class  Validator;
 
-typedef uint64_t CTS;
+typedef __uint128_t CTS;
 typedef tbb::concurrent_unordered_map<CTS, PeerEntry *>::iterator PeerInfoIterator;
 
 class PeerInfo {

@@ -42,8 +42,8 @@ public:
         delete my_hashtable;
     }
     KVLayout* preput(KVLayout &kvIn);
-    bool putNew(KVLayout *kv, uint64_t cts, uint64_t pi);
-    bool put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength);
+    bool putNew(KVLayout *kv, __uint128_t cts, uint64_t pi);
+    bool put(KVLayout *kv, __uint128_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength);
     KVLayout * fetch(KLayout& k);
     // the following three functions will be obsoleted
     //bool getMeta(KLayout& k, DSSNMeta &meta);

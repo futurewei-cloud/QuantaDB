@@ -41,9 +41,9 @@ class SkiplistTest : public ::testing::Test {
     }
   };
 
-  SkipList s;
+  SkipList<uint64_t> s;
 
-  SkipList *sp = new SkipList(0.2);
+  SkipList<uint64_t> *sp = new SkipList<uint64_t>(0.2);
 
   DISALLOW_COPY_AND_ASSIGN(SkiplistTest);
 };

@@ -18,7 +18,7 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
   rpcService(_rpcService),
   isUnderTest(_isTesting),
   localTxQueue(*new WaitList(1000001)),
-  reorderQueue(*new SkipList()),
+  reorderQueue(*new SkipList<__uint128_t>()),
   distributedTxSet(*new DistributedTxSet()),
   activeTxSet(*new ActiveTxSet()),
   peerInfo(*new PeerInfo()),
@@ -28,6 +28,8 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
 #else
   txLog(*new TxLog(false)) {
 #endif
+    lastScheduledTxCTS = 0;
+
     // Fixme: may need to use TBB to pin the threads to specific cores LATER
     if (!isUnderTest) {
         serializeThread = std::thread(&Validator::serialize, this);
@@ -76,12 +78,13 @@ Validator::updateTxPStampSStamp(TxEntry &txEntry) {
      * is to pass the write set (and read set) through the commit-intent.
      */
 
-    txEntry.setSStamp(std::min(txEntry.getSStamp(), txEntry.getCTS()));
+    txEntry.setSStamp(std::min(txEntry.getSStamp(), uint64_t(txEntry.getCTS() >> 64)));
 
     //update sstamp of transaction
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
-        if (readSet[i] == NULL) continue; //the array may be over-provisioned
+        if (readSet[i] == NULL)
+            continue; //the array may be over-provisioned due to read-modify-write tx handling
 
         KVLayout *kv = kvStore.fetch(readSet[i]->k);
         if (kv) {
@@ -125,7 +128,7 @@ Validator::updateKVReadSetPStamp(TxEntry &txEntry) {
     auto &readSet = txEntry.getReadSetInStore();
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
         if (readSet[i]) {
-            readSet[i]->meta().pStamp = std::max(txEntry.getCTS(), readSet[i]->meta().pStamp);
+            readSet[i]->meta().pStamp = std::max(uint64_t(txEntry.getCTS() >> 64), readSet[i]->meta().pStamp);
             counters.commitReads++;
         } else {
             counters.commitMetaErrors++;
@@ -251,7 +254,7 @@ Validator::scheduleDistributedTxs() {
     TxEntry *txEntry;
     uint64_t lastTick = 0;
     do {
-        if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (uint64_t)-1 : clock.getClusterTime(0)))) {
+        if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (__uint128_t)-1 : get128bClockValue()))) {
             if (txEntry->getCTS() <= lastScheduledTxCTS) {
                 assert(txEntry->getCTS() != lastScheduledTxCTS); //no duplicate CTS from sequencer
 
@@ -301,7 +304,7 @@ Validator::serialize() {
 
                 if (txEntry->getCTS() == 0) {
                     //This feature may allow tx client to do without a clock
-                    txEntry->setCTS(clock.getClusterTime());
+                    txEntry->setCTS(get128bClockValue());
                     counters.ctsSets++;
                 }
 
@@ -376,7 +379,7 @@ Validator::insertTxEntry(TxEntry *txEntry) {
     counters.commitIntents++;
 
     if ((txEntry->getPStamp() >= txEntry->getSStamp())
-            && (txEntry->getPStamp() >= txEntry->getCTS() &&  txEntry->getCTS() != 0)) {
+            && (txEntry->getPStamp() >= (txEntry->getCTS() >> 64) &&  txEntry->getCTS() != 0)) {
         //Clearly the commit intent will be aborted -- the client should not even have
         //initiated, and we should not further burden the pipeline.
         counters.trivialAborts++;
@@ -417,14 +420,13 @@ Validator::getClockValue() {
     return clock.getLocalTime();
 }
 
-uint64_t
-Validator::convertStampToClockValue(uint64_t timestamp) {
-    //due to current clock service implementation, need conversion into ns unit.
-    return clock.Cluster2Local(timestamp);
+__uint128_t
+Validator::get128bClockValue() {
+    return (__uint128_t)clock.getLocalTime() << 64;
 }
 
 TxEntry*
-Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
+Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
     TxEntry *txEntry = NULL;
     if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this)) {
         //Handle the fact that peer info is received before its tx commit intent is received,
@@ -440,7 +442,7 @@ Validator::receiveSSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64
 }
 
 void
-Validator::replySSNInfo(uint64_t peerId, uint64_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
+Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
 
     if (peerTxState == TxEntry::TX_CONFLICT)
         assert(0); //Fixme: do recovery or debug
@@ -528,6 +530,7 @@ Validator::logCounters() {
     c += snprintf(val + c, s - c, "concludeErrors:%lu, ", counters.concludeErrors);
     c += snprintf(val + c, s - c, "commitMetaErrors:%lu, ", counters.commitMetaErrors);
     c += snprintf(val + c, s - c, "alertRequests:%lu, ", counters.alertRequests);
+    c += snprintf(val + c, s - c, "alertAborts:%lu, ", counters.alertAborts);
     c += snprintf(val + c, s - c, "commits:%lu, ", counters.commits);
     c += snprintf(val + c, s - c, "aborts:%lu, ", counters.aborts);
     c += snprintf(val + c, s - c, "commitReads:%lu, ", counters.commitReads);
@@ -537,7 +540,7 @@ Validator::logCounters() {
 
     assert(s >= c);
     assert(strlen(val) < sizeof(val));
-    return txLog.fabricate(clock.getClusterTime(), (uint8_t *)key, (uint32_t)sizeof(key),
+    return txLog.fabricate(get128bClockValue(), (uint8_t *)key, (uint32_t)sizeof(key),
             (uint8_t *)val, sizeof(val) /*(uint32_t)strlen(val) + 1*/);
 }
 
@@ -558,7 +561,7 @@ Validator::logMessage(uint32_t currentLevel, const char* fmt, ...) {
     va_start(args, fmt);
     vsnprintf(val, sizeof(val), fmt, args);
     va_end(args);
-    return txLog.fabricate(clock.getClusterTime(), (uint8_t *)key, (uint32_t)sizeof(key),
+    return txLog.fabricate(get128bClockValue(), (uint8_t *)key, (uint32_t)sizeof(key),
             (uint8_t *)val, (uint32_t)strlen(val) + 1);
 }
 
