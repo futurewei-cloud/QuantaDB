@@ -5956,10 +5956,11 @@ tpcc()
             }
 
             RAMCLOUD_LOG(NOTICE, "== Result of client %d ==", i);
-            RAMCLOUD_LOG(NOTICE, "type  latency(usec)  committed   aborted");
+            RAMCLOUD_LOG(NOTICE, "type  tx_rate latency(usec)  committed   aborted");
             for (int t = 0; t < 5; ++t) {
-                RAMCLOUD_LOG(NOTICE, "[%d] %7.2f | %5d (%2.2f) | %5d",
+                RAMCLOUD_LOG(NOTICE, "[%d] %7u %7.2f | %5d (%2.2f) | %5d",
                     t,
+		    static_cast<uint32_t>(stat->txPerformedCount[t] / (stat->cumulativeLatency[t] / (1e6))), 
                     stat->cumulativeLatency[t] / stat->txPerformedCount[t],
                     stat->txPerformedCount[t],
                     static_cast<double>(100 * stat->txPerformedCount[t]) / sum,
@@ -5977,32 +5978,35 @@ tpcc()
 	int allTxDone = 0;
 	int allTxAbort = 0;
 	double allLatencyTotal = 0;
+	double avgClientTestDuration;
 	for (int t = 0; t < 5; ++t) {
+	    avgClientTestDuration = txTotalLatency[t]/(1e6)/(numClients - 1);
 	    RAMCLOUD_LOG(NOTICE, "[%d]   %6d     |    %2.2f    |     %7.2f",
 			 t,
-			 static_cast<int32_t>(txDone[t] / (txTotalLatency[t]/(1e6))),
+			 static_cast<int32_t>(txDone[t] / avgClientTestDuration),
 			 static_cast<double>(100 * txDone[t]) / (txDone[t] + txAbort[t]),
 			 txTotalLatency[t] / txDone[t]);
 	    allTxDone += txDone[t];
 	    allTxAbort += txAbort[t];
 	    allLatencyTotal += txTotalLatency[t];
 	}
-
+	avgClientTestDuration = allLatencyTotal/(1e6)/(numClients - 1);
 	RAMCLOUD_LOG(NOTICE, "======== Total TPCC Transaction Rate =========");
 	RAMCLOUD_LOG(NOTICE, "tx_rate     committed(%%)   latency");
 	RAMCLOUD_LOG(NOTICE, "  %6d     |    %2.2f       |   %7.2f   ",
-		     static_cast<int32_t>(allTxDone / (allLatencyTotal/1e6)),
+		     static_cast<int32_t>(allTxDone / avgClientTestDuration),
 		     static_cast<double>(100 * allTxDone) / (allTxDone + allTxAbort),
 		     allLatencyTotal/allTxDone);
 
-	allNewOrderTxDone += txDone[4];
-	allNewOrderLatencyTotal += txTotalLatency[4];
-	printf("clients   throughput    latency    ReadRate   worker   cleaner  compactor  cleaner  dispatch  netOut    netIn    backupWrite  backup\n");
+	allNewOrderTxDone = txDone[4];
+	allNewOrderLatencyTotal = txTotalLatency[4];
+	avgClientTestDuration = allNewOrderLatencyTotal/(1e6)/(numClients - 1);
+	printf("clients AggThroughput  latency    ReadRate   worker   cleaner  compactor  cleaner  dispatch  netOut    netIn    backupWrite  backup\n");
 	printf("        (NewOrder/sec)   (us)      (ops/s)     cores     cores   free %%    free %%   utiliz. (MB/s)    (MB/s)   (MB/s)       utiliz.\n");
         printf("%5d  %8d      %8.3f ",
                 //numServers,
                 numClients-1,
-	        static_cast<int32_t>(allNewOrderTxDone / (allNewOrderLatencyTotal/1e6)),
+	        static_cast<int32_t>(allNewOrderTxDone / avgClientTestDuration),
                 allNewOrderLatencyTotal / allNewOrderTxDone);
         for (int i = 0; i < numTlbNodes; ++i) {
             if (i > 0) {
