@@ -832,8 +832,8 @@ bool
 DSSNService::sendTxCommitReply(TxEntry *txEntry)
 {
     RpcHandle *handle = static_cast<RpcHandle *>(txEntry->getRpcHandle());
-    if (handle == NULL)
-        return false; //this may be the case during Validator unit test
+    assert(handle != NULL);
+
     Transport::ServerRpc* rpc = handle->getServerRpc();
  
     const WireFormat::RequestCommon* header = rpc->requestPayload.getStart<WireFormat::RequestCommon>();
@@ -846,6 +846,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
             respHdr->common.status = STATUS_TX_WRITE_ABORT;
         }
         handle->sendReplyAsync();
+        txEntry->setRpcHandle(NULL);
         return true;
     } else if (opcode == WireFormat::MultiOp::opcode) {
         //The RC multi-write is treated as one multi-write local transaction
@@ -855,6 +856,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
             respHdr->common.status = STATUS_TX_WRITE_ABORT;
         }
         handle->sendReplyAsync();
+        txEntry->setRpcHandle(NULL);
         return true;
     }
 
@@ -872,6 +874,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
         respHdr->vote = WireFormat::TxPrepare::ABORT_REQUESTED;
     }
     handle->sendReplyAsync();
+    txEntry->setRpcHandle(NULL);
     return true;
 }
 
