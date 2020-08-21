@@ -137,6 +137,7 @@ class WorkerManager : Dispatch::Poller {
     // queued here, not sent to workers.
     std::queue<Transport::ServerRpc*> testRpcs;
     std::vector<RpcHandle*> mFreeRpcHandlePool;
+    std::mutex mFreeRpcHandlePoolLock;
     // Store the list of rpc to be sent out
     std::queue<RpcHandle*> mRpcReply;
     static void workerMain(Worker* worker);
@@ -274,6 +275,7 @@ class RpcHandle {
 	    assert(!"validator called sendReplyAsync() multiple times");
 	}
         if (mWorkerManager) {
+	    isSendAsyncReplyCalled = true;
 	    mServerRpc->endRpcProcessingTimer();
 	    mWorkerManager->enqueueRpcReply(this);
 	} else {
@@ -282,7 +284,6 @@ class RpcHandle {
 	    mServerRpc->sendReply();
 #endif
 	}
-	isSendAsyncReplyCalled = true;
     }
     void clear() {
         mServerRpc = NULL;

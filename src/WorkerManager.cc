@@ -539,6 +539,7 @@ RpcHandle*
 WorkerManager::getRpcHandle(Transport::ServerRpc* rpc)
 {
     RpcHandle* handle = NULL;
+    std::lock_guard<std::mutex> lck(mFreeRpcHandlePoolLock);
     if(mFreeRpcHandlePool.size() == 0) {
         handle = new RpcHandle(rpc, this);
     } else {
@@ -554,6 +555,7 @@ void
 WorkerManager::freeRpcHandle(RpcHandle* handle) {
     rpcInProcCount--;
     handle->clear();
+    std::lock_guard<std::mutex> lck(mFreeRpcHandlePoolLock);
     mFreeRpcHandlePool.push_back(handle);
 }
 
