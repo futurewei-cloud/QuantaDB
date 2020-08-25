@@ -343,6 +343,8 @@ def run_test(
         cluster_args['master_args'] = options.master_args
     if options.dpdk_port != None:
         cluster_args['dpdk_port'] = options.dpdk_port
+    if options.scrape_port != None:
+        cluster_args['scrape_port'] = options.scrape_port
 
     client_args = {}
     if options.count != None:
@@ -1115,6 +1117,8 @@ if __name__ == '__main__':
             help='Allow servers to use hugepage memory')
     parser.add_option('--numWarehouses', type=int,
             help='Number of warehouses used during TPC-C benchmark.')
+    parser.add_option('--metricScrapePort', type=int, default=-1, dest='scrape_port',
+            help='Port used by the metric server to scape local metrics.')
 
     (options, args) = parser.parse_args()
 

@@ -252,7 +252,7 @@ main(int argc, char *argv[])
              "reduce the amount of backup disk bandwidth used during disk "
              "cleaning.")
 	    ("metricScapePort",
-             ProgramOptions::value<uint32_t>(&config.master.metricScrapePort),
+             ProgramOptions::value<uint32_t>(&config.master.metricScrapePort)->default_value(-1),
              "The port at which the metric server will pull the metrics");
 
         OptionParser optionParser(serverOptions, argc, argv);
@@ -364,10 +364,19 @@ main(int argc, char *argv[])
         MemoryMonitor monitor(context.dispatch, 1.0, 100);
 
 #ifdef MONITOR
+	// For the single node performance profiling, the system will use localhost
+	// ip address and port 8080 for the metric scraping
+	ServiceLocator sl(config.localLocator);
+	uint32_t port = 8080;
+	std::string hostName = "127.0.0.1";
 	if (config.master.metricScrapePort != (uint32_t)-1) {
-	  context.metricExposer = new prometheus::Exposer(string("127.0.0.1:") + to_string(config.master.metricScrapePort), "/metrics", 1);
-	    LOG(NOTICE, "start metric exporter");
+	    hostName = sl.getOption("host");
+	    port = config.master.metricScrapePort;
+	    //uint32_t port = std::stoi(sl.getOption("port")) + 1;
 	}
+	std::string address = hostName + string(":") + to_string(port);
+	context.metricExposer = new prometheus::Exposer(address, "/metrics", 1);
+	LOG(NOTICE, "start metric exporter on: %s", address.c_str());
 #endif
         Server server(&context, &config);
         server.run(); // Never returns except for exceptions.

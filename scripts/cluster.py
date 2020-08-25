@@ -345,7 +345,6 @@ class Cluster(object):
                     log_prefix,
                     self.next_server_id,
                     args))
-
         self.next_server_id += 1
         if master and backup:
             pass
@@ -585,6 +584,7 @@ def run(
         valgrind=False,            # Do not run under valgrind
         valgrind_args='',          # Additional arguments for valgrind
         disjunct=False,            # Disjunct entities on a server
+        scrape_port=-1,            # metrics scrape port
         coordinator_host=None
         ):
     """
@@ -650,6 +650,7 @@ def run(
             master_args += ' --configDir %s' % config_dir
             if client:
                 client += ' --configDir %s' % config_dir
+        master_args += ' --metricScapePort %d' % scrape_port
 
         if not coordinator_host:
             coordinator_host = cluster.hosts[-1]
