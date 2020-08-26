@@ -104,6 +104,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
 
     // DSSN TX metadata
     WireFormat::DSSNTxMeta mMeta;
+    __uint128_t dssnCTS;
 
   PUBLIC:
     /// Flag that can be set indicating that the transaction is read-only and
@@ -238,7 +239,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
     class PrepareRpc : public ClientTransactionRpcWrapper {
       PUBLIC:
         PrepareRpc(RamCloud* ramcloud, Transport::SessionRef session,
-		   ClientTransactionTask* task, CacheEntry* entry = NULL);
+		   ClientTransactionTask* task);
         ~PrepareRpc() {}
         bool appendOp(CommitCacheMap::iterator opEntry);
         WireFormat::TxPrepare::Vote wait();

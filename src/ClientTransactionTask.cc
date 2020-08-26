@@ -292,6 +292,7 @@ ClientTransactionTask::initTaskDSSN()
         nextCacheEntry++;
     }
     assert(participantCount > 0);
+    dssnCTS = ramcloud->getCTS();
 }
 /**
  * Process any decision rpcs that have completed.  Used in performTask.
@@ -510,7 +511,7 @@ ClientTransactionTask::sendPrepareRpc()
             rpcSession =
                     ramcloud->clientContext->objectFinder->lookup(key->tableId,
                                                                   key->keyHash);
-            prepareRpcs.emplace_back(ramcloud, rpcSession, this, entry);
+            prepareRpcs.emplace_back(ramcloud, rpcSession, this);
             nextRpc = &prepareRpcs.back();
         }
 
@@ -714,8 +715,7 @@ ClientTransactionTask::DecisionRpc::markOpsForRetry()
  */
 ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
 					      Transport::SessionRef session,
-					      ClientTransactionTask* task,
-					      CacheEntry* entry)
+					      ClientTransactionTask* task)
     : ClientTransactionRpcWrapper(ramcloud,
                                   session,
                                   task,
@@ -735,7 +735,7 @@ ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
 #ifdef DSSNTX
     reqHdr->meta.pstamp = task->mMeta.pstamp;
     reqHdr->meta.sstamp = task->mMeta.sstamp;
-    reqHdr->meta.cts = ramcloud->getCTS();
+    reqHdr->meta.cts = task->dssnCTS;
 #else
     reqHdr->lease = task->lease;
 #endif
