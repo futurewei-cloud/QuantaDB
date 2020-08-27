@@ -307,7 +307,8 @@ zooTest: $(OBJDIR)/zooTest
 # does *not* use the normal compilation flags, since we only want installed
 # info to be available.
 testInstall: install
-	$(CXX) --std=$(CXX_STANDARD) -g -DNDEBUG -Iinstall/include -I. -Isrc \
+	$(CXX) --std=$(CXX_STANDARD) -g -DNDEBUG -Iinstall/include \
+	       -Iinstall/include/ramcloud/include -I. -Isrc \
 	        src/TestClient.cc -o $(OBJDIR)/TestClient -Linstall/lib/ramcloud/ \
 	        -lramcloud -Wl,-rpath=install/bin $(TEST_INSTALL_FLAGS)
 

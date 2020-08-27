@@ -24,6 +24,10 @@ model {
             ramcloud {
                 headers.srcDirs("$ramcloudDir/$ramcloudSrc",
 				"$ramcloudDir/$ramcloudSrc/dssn",
+				"$ramcloudDir/prometheus-cpp/core/include",
+				"$ramcloudDir/prometheus-cpp/pull/include",
+				"$ramcloudDir/prometheus-cpp/build/pull/include",
+				"$ramcloudDir/prometheus-cpp/build/core/include",
                                 "$ramcloudDir/$ramcloudBin")
                 binaries.withType(SharedLibraryBinary) {
                     sharedLibraryFile = file(
@@ -33,6 +37,10 @@ model {
             ramcloudtest {
                 headers.srcDirs("$ramcloudDir/$ramcloudSrc",
 				"$ramcloudDir/$ramcloudSrc/dssn",
+				"$ramcloudDir/prometheus-cpp/core/include/",
+				"$ramcloudDir/prometheus-cpp/pull/include/",
+				"$ramcloudDir/prometheus-cpp/build/pull/include/",
+				"$ramcloudDir/prometheus-cpp/build/core/include/",
                                 "$ramcloudDir/$ramcloudBin")
                 binaries.withType(SharedLibraryBinary) {
                     sharedLibraryFile = file(

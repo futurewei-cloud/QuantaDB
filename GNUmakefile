@@ -512,6 +512,10 @@ INSTALL_INCLUDES := \
     $(OBJDIR)/SpinLockStatistics.pb.h \
     $(OBJDIR)/TableConfig.pb.h \
     $(OBJDIR)/Tablets.pb.h \
+    $(TOP)/prometheus-cpp/pull/include \
+    $(TOP)/prometheus-cpp/core/include \
+    $(TOP)/prometheus-cpp/build/core/include \
+    $(TOP)/prometheus-cpp/build/pull/include \
     $(NULL)
 
 INSTALLED_BINS := $(patsubst $(OBJDIR)/%, $(INSTALL_DIR)/bin/%, $(INSTALL_BINS))
@@ -521,7 +525,7 @@ install: all java
 	mkdir -p $(INSTALL_DIR)/bin
 	cp $(INSTALL_BINS) $(INSTALL_DIR)/bin
 	mkdir -p $(INSTALL_DIR)/include/ramcloud
-	cp $(INSTALL_INCLUDES) $(INSTALL_DIR)/include/ramcloud
+	cp -r $(INSTALL_INCLUDES) $(INSTALL_DIR)/include/ramcloud
 	mkdir -p $(INSTALL_DIR)/lib/ramcloud
 	cp $(INSTALL_LIBS) $(INSTALL_DIR)/lib/ramcloud
 	cp bindings/java/build/install/ramcloud/lib/* $(INSTALL_DIR)/lib/ramcloud
