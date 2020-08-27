@@ -4,7 +4,7 @@ System performance monitoring on a single node
 - Install docker
 
 2. Download & start Grafana container for visualization:
-docker run -d -p 3000:3000 --name grafana grafana/grafana:6.5.0
+docker run -d -p 3000:3000 --name grafana grafana/grafana
 
 3. Download & start Prometheus
 docker run --network host -p 9090:9090 -v {DSSN Directory}/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
