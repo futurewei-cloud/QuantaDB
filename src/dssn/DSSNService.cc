@@ -435,7 +435,7 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
 
     if (validator->insertTxEntry(txEntry)) {
         while (validator->testRun()) {
-            if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED)
+            if (txEntry->getTxCIState() < TxEntry::TX_CI_FINISHED)
                 continue;
             //reply already sent in testRun(), free memory now
             delete txEntry;
@@ -547,7 +547,7 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
         txEntry->insertWriteSet(nkv, 0);
         if (validator->insertTxEntry(txEntry)) {
             while (validator->testRun()) {
-                if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED)
+                if (txEntry->getTxCIState() < TxEntry::TX_CI_FINISHED)
                     continue;
                 //reply already sent in testRun(), free memory now
                 delete txEntry;
@@ -803,7 +803,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     if (respHdr->common.status == STATUS_OK) {
         if (validator->insertTxEntry(txEntry)) {
             while (validator->testRun()) {
-                if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED)
+                if (txEntry->getTxCIState() < TxEntry::TX_CI_FINISHED)
                     continue;
                 //reply already sent in testRun(), free memory now
                 delete txEntry;
@@ -901,13 +901,15 @@ DSSNService::sendDSSNInfo(__uint128_t cts, uint8_t txState, TxEntry *txEntry, bo
     char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
     uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);
     if (isSpecific) {
+        ServerId sid(target);
         Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
-                msg, length, *new ServerId(target));
+                msg, length, sid);
     } else if (txEntry != NULL) {
         std::set<uint64_t>::iterator it;
         for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
+            ServerId sid(*it);
             Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
-                    msg, length, *new ServerId(*it));
+                    msg, length, sid);
         }
     }
     return true;
@@ -926,13 +928,16 @@ DSSNService::requestDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
     char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
     uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);
     if (isSpecific) {
+        ServerId sid(target);
+        assert(target != getServerId());
         Notifier::notify(context, WireFormat::DSSN_REQUEST_INFO_ASYNC,
-                msg, length, *new ServerId(target));
+                msg, length, sid);
     } else {
         std::set<uint64_t>::iterator it;
         for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
+            ServerId sid(*it);
             Notifier::notify(context, WireFormat::DSSN_REQUEST_INFO_ASYNC,
-                    msg, length, *new ServerId(*it));
+                    msg, length, sid);
         }
     }
     return true;
