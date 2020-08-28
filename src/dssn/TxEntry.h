@@ -94,9 +94,8 @@ class TxEntry {
 
     enum {
     	//TX_xxx states track tx state visible to outside components like peers and coordinator
-        /// Transaction is active and in an unstable state
 
-        /* Transaction is active and in an unstable state. */
+        /// Transaction is active and in an unstable state
         TX_PENDING = 1,
 
         /// Transaction has reached an abort conclusion, a stable state
@@ -105,9 +104,6 @@ class TxEntry {
         /// Transaction has reached a commit conclusion, a stable state
         TX_COMMIT = 3,
 
-        /* Transaction is deactivated and in an unstable state. The responder will
-         * no longer send out its SSN data again. (Fixme)
-         */
 		/// Transaction is to be aborted if peers agree, an unstable state
         TX_ALERT = 4,
 

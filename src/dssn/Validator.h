@@ -47,20 +47,25 @@ struct Counters {
     uint64_t trivialAborts = 0;
     uint64_t busyAborts = 0;
     uint64_t ctsSets = 0;
+    uint64_t addPeers = 0;
     uint64_t earlyPeers = 0;
+    uint64_t matchEarlyPeers = 0;
+    uint64_t currentPeers = 0;
     uint64_t queuedDistributedTxs = 0;
     // scheduledDistributedTxs tracked by distributedTxSet
     // evaluatedDistributedTxs tracked bydistributedT
     // queuedLocalTxs tracked by localTxQueue
     // evaluatedLocalTxs tracked by localTxQueue
+    uint64_t infoSends = 0;
+    uint64_t infoReceives = 0;
+    uint64_t infoRequests = 0;
+    uint64_t infoReplies = 0;
     uint64_t precommitReadErrors = 0;
     uint64_t precommitWriteErrors = 0;
     uint64_t preputErrors = 0;
     uint64_t lateScheduleErrors = 0;
     uint64_t readVersionErrors = 0;
     uint64_t concludeErrors = 0;
-    uint64_t commitMetaErrors = 0;
-    uint64_t alertRequests = 0;
     uint64_t alertAborts = 0;
     uint64_t commits = 0;
     uint64_t aborts = 0;

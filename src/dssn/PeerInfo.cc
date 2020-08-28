@@ -9,9 +9,18 @@
 
 namespace DSSN {
 
+PeerInfo::~PeerInfo() {
+    auto itr = peerInfo.begin();
+    while (itr != peerInfo.end()) {
+        PeerEntry *peerEntry = (*itr).second;
+        itr = peerInfo.unsafe_erase(itr);
+        delete peerEntry;
+    }
+}
+
 bool
 PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
-    std::lock_guard<std::mutex> lock(mutexForPeerAdd);
+    mutexForPeerAdd.lock();
     PeerInfoIterator it = peerInfo.find(cts);
     if (it == peerInfo.end()) {
         PeerEntry* entry = new PeerEntry();
@@ -22,15 +31,20 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
             entry->meta.pStamp = txEntry->getPStamp();
             entry->meta.sStamp = txEntry->getSStamp();
         }
-        peerInfo.insert(std::make_pair(cts, entry));
+        assert(peerInfo.insert(std::make_pair(cts, entry)).second);
+        validator->getCounters().addPeers++;
     } else if (txEntry != NULL) {
         PeerEntry* existing = it->second;
-        std::lock_guard<std::mutex> lock(existing->mutexForPeerUpdate);
+        existing->mutexForPeerUpdate.lock();
         existing->txEntry = txEntry;
         txEntry->setPStamp(std::max(txEntry->getPStamp(), existing->meta.pStamp));
         txEntry->setSStamp(std::min(txEntry->getSStamp(), existing->meta.sStamp));
-        evaluate(it->second, TxEntry::TX_PENDING, txEntry, validator);
+        evaluate(existing, TxEntry::TX_PENDING, txEntry, validator);
+        validator->getCounters().matchEarlyPeers++;
+        existing->mutexForPeerUpdate.unlock();
     }
+    assert(peerInfo.find(cts) != peerInfo.end());
+    mutexForPeerAdd.unlock();
     return true;
 }
 
@@ -51,35 +65,15 @@ PeerInfo::getNext(PeerInfoIterator &it) {
     }
     return NULL;
 }
-/*
-bool
-PeerInfo::sweep() {
-    //delete peerInfo entry no longer needed
-    ///further reference to the swept tx should be using CTS into the tx log
-    PeerEntry *prev = NULL;
-    std::for_each(peerInfo.begin(), peerInfo.end(), [&] (const std::pair<CTS, PeerEntry *>& pr) {
-        PeerEntry *peerEntry = pr.second;
-        if (peerEntry->txEntry && peerEntry->txEntry->getTxCIState() >= TxEntry::TX_CI_SEALED) {
-            if (prev) {
-                peerInfo.unsafe_erase(prev->meta.cStamp);
-                delete prev;
-            }
-            prev = peerEntry;
-        }
-    });
-    if (prev) {
-        peerInfo.unsafe_erase(prev->meta.cStamp);
-        delete prev;
-    }
-    return true;
-}*/
 
 bool
-PeerInfo::sweep() {
+PeerInfo::sweep(Validator *validator) {
     //delete peerInfo entry no longer needed
     ///further reference to the swept tx should be using CTS into the tx log
+    uint32_t cnt = 0;
     auto itr = peerInfo.begin();
     while (itr != peerInfo.end()) {
+        cnt++;
         PeerEntry *peerEntry = (*itr).second;
         if (peerEntry->txEntry && peerEntry->txEntry->getTxCIState() >= TxEntry::TX_CI_SEALED) {
             itr = peerInfo.unsafe_erase(itr);
@@ -87,6 +81,7 @@ PeerInfo::sweep() {
         } else
             itr++;
     }
+    validator->getCounters().currentPeers = cnt;
     return true;
 }
 
@@ -141,9 +136,9 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp,
     PeerInfoIterator it;
     it = peerInfo.find(cts);
     if (it != peerInfo.end()) {
-        std::lock_guard<std::mutex> lock(it->second->mutexForPeerUpdate);
         PeerEntry* peerEntry = it->second;
         assert(peerEntry != NULL);
+        peerEntry->mutexForPeerUpdate.lock();
         peerEntry->meta.pStamp = std::max(peerEntry->meta.pStamp, pstamp);
         peerEntry->meta.sStamp = std::min(peerEntry->meta.sStamp, sstamp);
         peerEntry->peerSeenSet.insert(peerId);
@@ -157,6 +152,7 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp,
             txEntry->setSStamp(std::min(txEntry->getSStamp(), peerEntry->meta.sStamp));
             evaluate(peerEntry, peerTxState, txEntry, validator);
         }
+        peerEntry->mutexForPeerUpdate.unlock();
         return true;
     }
     return false;
@@ -168,14 +164,14 @@ PeerInfo::send(Validator *validator) {
     uint64_t currentTick = nsTime / tickUnit;
     std::for_each(peerInfo.begin(), peerInfo.end(), [&] (const std::pair<CTS, PeerEntry *>& pr) {
         PeerEntry *peerEntry = pr.second;
-        TxEntry* txEntry = pr.second->txEntry;
+        peerEntry->mutexForPeerUpdate.lock();
+        TxEntry* txEntry = peerEntry->txEntry;
 
         if (txEntry == NULL)
             return;
 
-        if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
-            std::lock_guard<std::mutex> lock(peerEntry->mutexForPeerUpdate);
 
+        if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
             validator->updateTxPStampSStamp(*txEntry);
 
             //log CI before sending
@@ -189,9 +185,9 @@ PeerInfo::send(Validator *validator) {
         if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING
                 && txEntry->getTxState() != TxEntry::TX_ALERT
                 && nsTime - (uint64_t)(txEntry->getCTS() >> 64) > alertThreshold) {
-            std::lock_guard<std::mutex> lock(peerEntry->mutexForPeerUpdate);
             txEntry->setTxState(TxEntry::TX_ALERT);
         }
+
 
         if (txEntry->getTxState() == TxEntry::TX_ALERT) {
             //request missing SSN info from peers periodically;
@@ -204,6 +200,7 @@ PeerInfo::send(Validator *validator) {
                 }
             }
         }
+        peerEntry->mutexForPeerUpdate.unlock();
     });
     lastTick = currentTick;
 

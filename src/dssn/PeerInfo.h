@@ -62,6 +62,8 @@ class PeerInfo {
     bool evaluate(PeerEntry *peerEntry, uint8_t peerTxState, TxEntry *txEntry, Validator *validator);
 
     PUBLIC:
+    ~PeerInfo();
+
 	//add a tx for tracking peer info
     ///txEntry may or may not be NULL
     bool add(CTS cts, TxEntry* txEntry, Validator* validator);
@@ -71,7 +73,7 @@ class PeerInfo {
     TxEntry* getNext(PeerInfoIterator &it);
 
     //free txs which have been enqueued into conclusion queue
-    bool sweep();
+    bool sweep(Validator *validator);
 
     //send tx SSN info to peers
     bool send(Validator *validator);

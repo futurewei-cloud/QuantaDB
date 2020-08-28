@@ -18,15 +18,16 @@ namespace DSSN {
 class ConcludeQueue {
     PROTECTED:
 	boost::lockfree::queue<TxEntry*> inQueue{10000};
-	std::atomic<uint32_t> count{0};
+	std::atomic<uint32_t> inCount{0};
+    std::atomic<uint32_t> outCount{0};
 
     PUBLIC:
-	ConcludeQueue() { count = 0; }
+	ConcludeQueue() { ; }
 
 	//for dequeueing by the consumer
     bool try_pop(TxEntry *&txEntry) {
-    	if (count > 0 && inQueue.pop(txEntry)) {
-        	count--;
+    	if ((inCount - outCount) > 0 && inQueue.pop(txEntry)) {
+        	outCount++;
         	return true;
     	}
     	return false;
@@ -35,7 +36,7 @@ class ConcludeQueue {
     //for enqueueing by producers
     bool push(TxEntry *txEntry) {
     	if (inQueue.push(txEntry)) {
-    		count++;
+    		inCount++;
     		return true;
     	}
     	return false;

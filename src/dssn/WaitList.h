@@ -127,13 +127,13 @@ class WaitList {
 
     WaitList() {
         txs = new TxEntry*[size];
-        std::memset(txs, 0, size);
+        std::memset(txs, 0, size * sizeof(TxEntry*));
     }
 
     WaitList(uint32_t _size) {
         size = _size;
         txs = new TxEntry*[size];
-        std::memset(txs, 0, size);
+        std::memset(txs, 0, size * sizeof(TxEntry*));
     }
 
     ~WaitList() {

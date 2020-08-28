@@ -673,7 +673,7 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             if (nkv == NULL) {
                 respHdr->common.status = STATUS_NO_TABLE_SPACE;
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
-                //validator->counters.preputErrors++; //Fixme: Better to encapsulate kv store using validator API
+                validator->getCounters().preputErrors++;
                 break;
             }
             txEntry->insertReadSet(nkv, readSetIdx++);

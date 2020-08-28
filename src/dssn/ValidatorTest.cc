@@ -325,6 +325,23 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     freeTxEntry(size);
 }
 
+TEST_F(ValidatorTest, BATActiveTxSet) {
+
+    fillTxEntry(1, 10, 2); //5 txs of 10 keys and 2 peers
+
+    //start cross-validation but leave it unfinished
+    validator.activeTxSet.add(txEntry[0]);
+    bool ret = validator.activeTxSet.blocks(txEntry[0]);
+    EXPECT_EQ(true, ret);
+    ret = validator.activeTxSet.remove(txEntry[0]);
+    EXPECT_EQ(true, ret);
+    ret = validator.activeTxSet.blocks(txEntry[0]);
+    EXPECT_EQ(false, ret);
+
+    freeTxEntry(1);
+}
+
+
 TEST_F(ValidatorTest, BATPeerInfo) {
 
 	fillTxEntry(5, 10, 2); //5 txs of 10 keys and 2 peers
@@ -345,10 +362,25 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 		EXPECT_NE(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
 	}
 	EXPECT_EQ((uint32_t)5, validator.peerInfo.size());
-	validator.peerInfo.sweep();
+	validator.peerInfo.sweep(&validator);
 	EXPECT_EQ((uint32_t)2, validator.peerInfo.size());
 
 	freeTxEntry(5);
+}
+
+TEST_F(ValidatorTest, BATPeerInfo2) {
+
+    fillTxEntry(2, 10, 1);
+
+    validator.peerInfo.add(txEntry[0]->getCTS(), txEntry[0], &validator);
+    TxEntry* txEnt = validator.receiveSSNInfo(0, txEntry[0]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING);
+    EXPECT_EQ(txEntry[0], txEnt);
+
+    txEnt = validator.receiveSSNInfo(0, txEntry[1]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING);
+    bool ret = validator.peerInfo.add(txEntry[1]->getCTS(), txEntry[1], &validator);
+    EXPECT_EQ(true, ret);
+
+    freeTxEntry(2);
 }
 
 TEST_F(ValidatorTest, BATPeerInfoReceivedEarly) {
