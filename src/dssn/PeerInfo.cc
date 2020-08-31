@@ -87,8 +87,9 @@ PeerInfo::sweep(Validator *validator) {
 
 bool
 PeerInfo::evaluate(PeerEntry *peerEntry, uint8_t peerTxState, TxEntry *txEntry, Validator *validator) {
-
-    if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED) {
+    //Currently only in the TX_CI_LISTENING state, the txEntry has updated its local
+    //pstamp and sstamp and has been scheduled to use peer pstamp and sstamp to evaluate.
+    if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING) {
         if (txEntry->isExclusionViolated()) {
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
@@ -119,7 +120,6 @@ PeerInfo::evaluate(PeerEntry *peerEntry, uint8_t peerTxState, TxEntry *txEntry, 
             && validator->logTx(LOG_ALWAYS, txEntry)) {
         txEntry->setTxCIState(TxEntry::TX_CI_SEALED);
         assert(validator->insertConcludeQueue(txEntry));
-        validator->sendTxCommitReply(txEntry);
     }
 
     if ((txEntry->getTxState() == TxEntry::TX_ABORT && peerTxState == TxEntry::TX_COMMIT) ||

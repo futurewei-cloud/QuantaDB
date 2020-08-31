@@ -112,6 +112,9 @@ class TxEntry {
         /// no new transactions involving its read/write sets can/should proceed.
         TX_CONFLICT = 5,
 
+        /// Transaction has reached an abort conclusion due to being late
+        TX_LATE = 6,
+
         /// Indicator of a fabricated tx entry for logging purpose
         TX_FABRICATED = 99
     };

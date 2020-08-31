@@ -223,12 +223,6 @@ Validator::read(KLayout& k, KVLayout *&kv) {
 
 bool
 Validator::insertConcludeQueue(TxEntry *txEntry) {
-    if (txEntry->getTxState() == TxEntry::TX_COMMIT)
-        counters.commits++;
-    else if (txEntry->getTxState() == TxEntry::TX_ABORT)
-        counters.aborts++;
-    else
-        counters.concludeErrors++;
     return concludeQueue.push(txEntry);
 }
 
@@ -262,11 +256,10 @@ Validator::scheduleDistributedTxs() {
 
                 //abort this CI, which has arrived later than a scheduled CI
                 //aborting is fine because its SSN info has never been sent to its peers
-                txEntry->setTxState(TxEntry::TX_ABORT);
-                txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED); //Fixme: a potential source of skipping activeTxSet!!!
-                sendTxCommitReply(txEntry);
+                //set the states and let peerInfo handling thread to do the rest
+                txEntry->setTxState(TxEntry::TX_LATE);
+                txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
                 counters.lateScheduleErrors++;
-                delete txEntry;
                 continue;
             }
             while (!distributedTxSet.add(txEntry));
@@ -350,14 +343,21 @@ Validator::conclude(TxEntry& txEntry) {
     }
 
     if (txEntry.getPeerSet().size() >= 1) {
-        activeTxSet.remove(&txEntry);
-    } else {
-        sendTxCommitReply(&txEntry);
-        if (txEntry.getTxState() == TxEntry::TX_COMMIT)
-            counters.commits++;
+        //for late cross-shard tx, it is never added to activeTxSet; just convert the state
+        if (txEntry.getTxState() == TxEntry::TX_LATE)
+            txEntry.setTxState(TxEntry::TX_ABORT);
         else
-            counters.aborts++;
+            activeTxSet.remove(&txEntry);
     }
+
+    sendTxCommitReply(&txEntry);
+
+    if (txEntry.getTxState() == TxEntry::TX_COMMIT)
+        counters.commits++;
+    else if (txEntry.getTxState() == TxEntry::TX_ABORT)
+        counters.aborts++;
+    else
+        counters.concludeErrors++;
 
     txEntry.setTxCIState(TxEntry::TX_CI_FINISHED);
 
