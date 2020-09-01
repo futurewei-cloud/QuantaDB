@@ -41,6 +41,7 @@ struct PeerEntry {
     std::mutex mutexForPeerUpdate;
     std::set<uint64_t> peerSeenSet;
     std::set<uint64_t> peerAlertSet;
+    uint32_t peerTxState = TxEntry::TX_PENDING;
     DSSNMeta meta;
     TxEntry *txEntry = NULL;
 };
@@ -56,10 +57,10 @@ class PeerInfo {
     std::mutex mutexForPeerAdd;
     uint64_t lastTick = 0;
     uint64_t tickUnit = 1000000; //1ms per tick
-    uint64_t alertThreshold = tickUnit; //arbitrary
+    uint64_t alertThreshold = 10000 * tickUnit; //arbitrary //Fixme
 
     //evaluate the new states of the commit intent; caller is supposed to hold the mutex
-    bool evaluate(PeerEntry *peerEntry, uint8_t peerTxState, TxEntry *txEntry, Validator *validator);
+    bool evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator);
 
     PUBLIC:
     ~PeerInfo();

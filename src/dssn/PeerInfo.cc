@@ -39,7 +39,7 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
         existing->txEntry = txEntry;
         txEntry->setPStamp(std::max(txEntry->getPStamp(), existing->meta.pStamp));
         txEntry->setSStamp(std::min(txEntry->getSStamp(), existing->meta.sStamp));
-        evaluate(existing, TxEntry::TX_PENDING, txEntry, validator);
+        evaluate(existing, txEntry, validator);
         validator->getCounters().matchEarlyPeers++;
         existing->mutexForPeerUpdate.unlock();
     }
@@ -86,7 +86,7 @@ PeerInfo::sweep(Validator *validator) {
 }
 
 bool
-PeerInfo::evaluate(PeerEntry *peerEntry, uint8_t peerTxState, TxEntry *txEntry, Validator *validator) {
+PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator) {
     //Currently only in the TX_CI_LISTENING state, the txEntry has updated its local
     //pstamp and sstamp and has been scheduled to use peer pstamp and sstamp to evaluate.
     if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING) {
@@ -94,11 +94,11 @@ PeerInfo::evaluate(PeerEntry *peerEntry, uint8_t peerTxState, TxEntry *txEntry, 
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
         } else if (txEntry->getTxState() == TxEntry::TX_ALERT
-                && peerTxState == TxEntry::TX_COMMIT) {
+                && peerEntry->peerTxState == TxEntry::TX_COMMIT) {
             txEntry->setTxState(TxEntry::TX_COMMIT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
         } else if (txEntry->getTxState() == TxEntry::TX_ALERT
-                && (peerTxState == TxEntry::TX_ABORT
+                && (peerEntry->peerTxState == TxEntry::TX_ABORT
                         || peerEntry->peerAlertSet == txEntry->getPeerSet())) {
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
@@ -122,8 +122,8 @@ PeerInfo::evaluate(PeerEntry *peerEntry, uint8_t peerTxState, TxEntry *txEntry, 
         assert(validator->insertConcludeQueue(txEntry));
     }
 
-    if ((txEntry->getTxState() == TxEntry::TX_ABORT && peerTxState == TxEntry::TX_COMMIT) ||
-            (txEntry->getTxState() == TxEntry::TX_COMMIT && peerTxState == TxEntry::TX_ABORT)) {
+    if ((txEntry->getTxState() == TxEntry::TX_ABORT && peerEntry->peerTxState == TxEntry::TX_COMMIT) ||
+            (txEntry->getTxState() == TxEntry::TX_COMMIT && peerEntry->peerTxState == TxEntry::TX_ABORT)) {
         txEntry->setTxState(TxEntry::TX_CONFLICT);
         assert(0); //there must be a design problem -- debug
     }
@@ -144,13 +144,18 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp,
         peerEntry->peerSeenSet.insert(peerId);
         if (peerTxState == TxEntry::TX_ALERT)
             peerEntry->peerAlertSet.insert(peerId);
-        else
+        else if (peerTxState == TxEntry::TX_ABORT || peerTxState == TxEntry::TX_LATE) {
+            peerEntry->peerTxState = TxEntry::TX_ABORT;
             peerEntry->peerAlertSet.erase(peerId);
+        } else if (peerTxState == TxEntry::TX_COMMIT) {
+            peerEntry->peerTxState = TxEntry::TX_COMMIT;
+            peerEntry->peerAlertSet.erase(peerId);
+        }
         txEntry = it->second->txEntry;
         if (txEntry != NULL) {
             txEntry->setPStamp(std::max(txEntry->getPStamp(), peerEntry->meta.pStamp));
             txEntry->setSStamp(std::min(txEntry->getSStamp(), peerEntry->meta.sStamp));
-            evaluate(peerEntry, peerTxState, txEntry, validator);
+            evaluate(peerEntry, txEntry, validator);
         }
         peerEntry->mutexForPeerUpdate.unlock();
         return true;
@@ -182,12 +187,16 @@ PeerInfo::send(Validator *validator) {
             }
         }
 
-        if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING
-                && txEntry->getTxState() != TxEntry::TX_ALERT
-                && nsTime - (uint64_t)(txEntry->getCTS() >> 64) > alertThreshold) {
-            txEntry->setTxState(TxEntry::TX_ALERT);
-        }
+        if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING) {
+            evaluate(peerEntry, txEntry, validator);
 
+            if (txEntry->getTxState() != TxEntry::TX_ALERT
+                && nsTime - (uint64_t)(txEntry->getCTS() >> 64) > alertThreshold) {
+                txEntry->setTxState(TxEntry::TX_ALERT);
+                validator->getCounters().precommitReadErrors = nsTime; //Fixme
+                validator->getCounters().precommitWriteErrors = (uint64_t)(txEntry->getCTS() >> 64); //Fixme
+            }
+        }
 
         if (txEntry->getTxState() == TxEntry::TX_ALERT) {
             //request missing SSN info from peers periodically;
