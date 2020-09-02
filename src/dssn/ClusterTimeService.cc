@@ -3,7 +3,6 @@
  * All rights are reserved.
  */
 
-#include <x86intrin.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <stdio.h>

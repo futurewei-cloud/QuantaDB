@@ -2,6 +2,7 @@
  * All rights are reserved.
  */
 #pragma once
+#include <x86intrin.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <time.h>
