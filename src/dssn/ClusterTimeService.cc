@@ -26,9 +26,9 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
 
     // See if another tracker may be already running
     if (tp->idx <= 1) {
-        uint64_t nsec = tp->nt[tp->idx].last_nsec;
+        uint64_t nsec = tp->nt[tp->idx].last_clock;
         usleep(3);
-        if (nsec != tp->nt[tp->idx].last_nsec) {
+        if (nsec != tp->nt[tp->idx].last_clock) {
             ctsp->thread_run_run = false;
             ctsp->tracker_init   = true;
             return NULL;
@@ -36,8 +36,8 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
     }
 
     // Init
-    tp->nt[0].last_nsec = tp->nt[1].last_nsec = getnsec();
-    tp->nt[0].ctr       = tp->nt[1].ctr       = 0;
+    tp->nt[0].last_clock = tp->nt[1].last_clock = getnsec();
+    tp->nt[0].last_tsc   = tp->nt[1].last_tsc   = rdtscp();
     tp->idx = 0;
     ctsp->tracker_init = true;
 
@@ -45,20 +45,15 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
     while (ctsp->thread_run_run) {
         nt_pair_t *ntp = &tp->nt[tp->idx];
         uint64_t nsec = getnsec();
+        uint64_t tsc  = rdtscp();
 
-        if (nsec > ntp->last_nsec + ntp->ctr) {
+        if (nsec > (ntp->last_clock + Cycles::toNanoseconds(tsc - ntp->last_tsc))) {
             int nidx = 1 - tp->idx;
-            tp->nt[nidx].last_nsec = nsec;
-            tp->nt[nidx].ctr = 0;
+            tp->nt[nidx].last_clock = nsec;
+            tp->nt[nidx].last_tsc   = tsc;
             tp->idx = nidx;
         }
-        // uint64_t t1 = getnsec();
-        usleep(1);
-        // uint64_t delta = getnsec() - t1;
-        // if (delta > max_delay) {
-        //      max_delay = delta;
-        //      printf("max time delay = %d\n", delta); 
-        // }
+        Cycles::sleep(1);
     }
 
     return NULL;

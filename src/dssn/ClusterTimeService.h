@@ -71,11 +71,9 @@ class ClusterTimeService {
     inline uint64_t getLocalTime()
     {
         nt_pair_t *ntp = &tp->nt[tp->idx];
-        if (ntp->ctr > 200000) {
-            //prevent ctr from going beyond '1us' and hence the last_nsec update interval
-            return ntp->last_nsec + ntp->ctr;
-        }
-        return ntp->last_nsec + ntp->ctr++;
+        uint64_t tsc = rdtscp();
+        // assert(tsc > ntp->last_tsc);
+        return ntp->last_clock + Cycles::toNanoseconds(tsc - ntp->last_tsc);
     }
 
     private:
@@ -98,10 +96,16 @@ class ClusterTimeService {
         return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
     }
 
+    static inline u_int64_t rdtscp()
+    {
+        uint32_t aux;
+        return __rdtscp(&aux);
+    }
+
     #define TS_TRACKER_NAME  "DSSN_TS_Tracker"
     typedef struct {
-        uint64_t last_nsec;           // nano-sec from the last update
-        std::atomic<uint32_t> ctr;
+        uint64_t last_clock;           // nano-sec from the last update
+        uint64_t last_tsc;             // TSC counter value
     } nt_pair_t;
 
     typedef struct {
