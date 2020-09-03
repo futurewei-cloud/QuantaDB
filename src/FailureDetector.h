@@ -51,6 +51,8 @@ class FailureDetector {
   PRIVATE:
     /// Number of microseconds between probes.
     static const int PROBE_INTERVAL_USECS = 100 * 1000;
+    /// Maximum tolerable clock drift between two servers.
+    static const uint64_t MAX_CLOCK_DRIFT_NS = 100 * 1000;
 
     /**
      * Number of microseconds before a probe is considered to have timed out.

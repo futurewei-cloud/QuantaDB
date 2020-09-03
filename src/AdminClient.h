@@ -78,7 +78,8 @@ class PingRpc : public ServerIdRpcWrapper {
     /// \copydoc ServerIdRpcWrapper::waitAndCheckErrors
     void wait() {waitAndCheckErrors();}
     bool wait(uint64_t timeoutNanoseconds);
-
+    /// Cluster time stamp from the server it is pinging
+    uint64_t remoteServerTime;
     PRIVATE:
     DISALLOW_COPY_AND_ASSIGN(PingRpc);
 };

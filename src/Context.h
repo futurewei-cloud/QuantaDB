@@ -21,6 +21,10 @@
 #include "WireFormat.h"
 #include <prometheus/exposer.h>
 
+namespace DSSN {
+    class ClusterTimeService;
+}
+
 namespace RAMCloud {
 
 // forward declarations
@@ -150,6 +154,8 @@ class Context {
     // metrics scrape
     prometheus::Exposer* metricExposer;
 
+    /// Clock from the Cluster Time Service
+    DSSN::ClusterTimeService* ctsClock;
     /**
      * Returns the BackupService associated with this context, if
      * there is one, or NULL if there is none.

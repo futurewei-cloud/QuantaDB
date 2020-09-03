@@ -28,6 +28,7 @@
 #include "TableManager.h"
 #include "TransportManager.h"
 #include "WorkerManager.h"
+#include "ClusterTimeService.h"
 
 namespace RAMCloud {
 
@@ -117,6 +118,7 @@ Context::Context(bool hasDedicatedDispatchThread,
         // portAlarmTimer = new PortAlarmTimer(this);
 
         coordinatorSession = new CoordinatorSession(this);
+	ctsClock = new DSSN::ClusterTimeService();
 
         for (int i = 0; i < WireFormat::INVALID_SERVICE; i++) {
             services[i] = NULL;

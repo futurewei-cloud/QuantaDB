@@ -115,6 +115,9 @@ PingRpc::wait(uint64_t timeoutNanoseconds)
     }
     if (responseHeader->status != STATUS_OK)
         ClientException::throwException(HERE, responseHeader->status);
+    WireFormat::Ping::Response* rsp = static_cast<WireFormat::Ping::Response *>(response->getRange(0,
+					  sizeof(WireFormat::Ping::Response)));
+    remoteServerTime = rsp->currentTime;
     return true;
 }
 

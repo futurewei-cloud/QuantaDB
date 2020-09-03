@@ -1316,6 +1316,7 @@ struct Ping {
     } __attribute__((packed));
     struct Response {
         ResponseCommon common;
+        uint64_t currentTime;       // Current Time of the server
     } __attribute__((packed));
 };
 

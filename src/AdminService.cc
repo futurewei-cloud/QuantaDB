@@ -27,6 +27,7 @@
 #include "ServerList.h"
 #include "TimeTrace.h"
 #include "CacheTrace.h"
+#include "ClusterTimeService.h"
 
 namespace RAMCloud {
 
@@ -173,6 +174,7 @@ AdminService::ping(const WireFormat::Ping::Request* reqHdr,
         LOG(WARNING, "Slow responding to ping request from server %s; "
             "took %.2f ms", callerId.c_str(), ms);
     }
+    respHdr->currentTime = context->ctsClock->getLocalTime();
 }
 
 /**

@@ -27,6 +27,7 @@
 #include "MasterService.h"
 #include "ShortMacros.h"
 #include "WireFormat.h"
+#include "ClusterTimeService.h"
 
 namespace RAMCloud {
 
@@ -163,10 +164,19 @@ FailureDetector::pingRandomServer()
         uint64_t start = Cycles::rdtsc();
         PingRpc rpc(context, pingee, ourServerId);
         if (rpc.wait(TIMEOUT_USECS *1000)) {
+	    uint64_t currentTime = (context->ctsClock)->getLocalTime();
+	    uint64_t rtdNs = Cycles::toNanoseconds(Cycles::rdtsc() - start);
+	    uint64_t timeDiff = abs(int64_t(currentTime - rpc.remoteServerTime));
+	    //uint64_t timeDiff = abs(int64_t(currentTime - rpc.remoteServerTime - ((rtdUs * 1000)>>1)));
             probesWithoutResponse = 0;
-            LOG(DEBUG, "Ping succeeded to server %s (%s) in %.1f us",
+            LOG(DEBUG, "Ping succeeded to server %s (%s) in %lu ns",
                 pingee.toString().c_str(), locator.c_str(),
-                1e06*Cycles::toSeconds(Cycles::rdtsc() - start));
+                rtdNs);
+	    //if (timeDiff > MAX_CLOCK_DRIFT_NS) {
+	    if (timeDiff > rtdNs) {
+	        LOG(ERROR, "The time difference %lu nsec exceeded the max clock drift %lu nsec allowed (local: %lu, remote: %lu, rtd: %lu)",
+		    timeDiff, rtdNs, currentTime, rpc.remoteServerTime, rtdNs);
+	    }
         } else {
             // Server appears to have crashed; notify the coordinator.
             LOG(WARNING, "Ping timeout to server id %s (locator \"%s\")",
