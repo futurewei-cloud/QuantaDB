@@ -71,13 +71,10 @@ class ClusterTimeService {
     // return a local system clock time stamp
     inline uint64_t getLocalTime()
     {
-#if 0
         nt_pair_t *ntp = &tp->nt[tp->idx];
         uint64_t tsc = rdtscp();
         // assert(tsc > ntp->last_tsc);
         return ntp->last_clock + Cycles::toNanoseconds(tsc - ntp->last_tsc);
-#endif
-	return getnsec();
     }
 
     private:

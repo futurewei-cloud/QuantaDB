@@ -42,6 +42,7 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
 
     // uint64_t max_delay = 0;
     while (ctsp->thread_run_run) {
+#if 0 //Original code
         nt_pair_t *ntp = &tp->nt[tp->idx];
         uint64_t nsec = getnsec();
         uint64_t tsc  = rdtscp();
@@ -52,6 +53,14 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
             tp->nt[nidx].last_tsc   = tsc;
             tp->idx = nidx;
         }
+#else //Temporary changes - to be removed.
+	uint64_t nsec = getnsec();
+        uint64_t tsc  = rdtscp();
+	int nidx = 1 - tp->idx;
+	tp->nt[nidx].last_clock = nsec;
+	tp->nt[nidx].last_tsc   = tsc;
+	tp->idx = nidx;
+#endif
         Cycles::sleep(1);
     }
 
