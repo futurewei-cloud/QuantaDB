@@ -36,7 +36,7 @@ TEST_F(ClusterTimeServiceTest, getLocalTime) {
 }
 
 TEST_F(ClusterTimeServiceTest, multiClockTest) {
-    for(int ii = 0; ii < 1000; ii++) {
+    for(int ii = 0; ii < 1024*1024; ii++) {
         uint64_t t0 = clock.getLocalTime();
         uint64_t t1 = clock1.getLocalTime();
         uint64_t t2 = clock2.getLocalTime();

@@ -18,52 +18,54 @@
 namespace DSSN {
 using namespace RAMCloud;
 
+#define TRACKER_SLEEP_USEC  1
+
 void * ClusterTimeService::update_ts_tracker(void *arg)
 {
     ClusterTimeService *ctsp = (ClusterTimeService*)arg;
     ts_tracker_t *tp = ctsp->tp;
 
-    // See if another tracker may be already running
-    if (tp->idx <= 1) {
-        uint64_t nsec = tp->nt[tp->idx].last_clock;
-        usleep(3);
-        if (nsec != tp->nt[tp->idx].last_clock) {
-            ctsp->thread_run_run = false;
-            ctsp->tracker_init   = true;
-            return NULL;
-        }
-    }
+    // Set ts->tracker_id
+    tp->tracker_id = ctsp->my_tracker_id;
 
-    // Init
-    tp->nt[0].last_clock = tp->nt[1].last_clock = getnsec();
-    tp->nt[0].last_tsc   = tp->nt[1].last_tsc   = rdtscp();
-    tp->idx = 0;
+    // Wait for other tracker's heartbeat to stop
+    uint32_t heartbeat;
+    do {
+        heartbeat = tp->heartbeat;
+        usleep(TRACKER_SLEEP_USEC+10);
+    } while (heartbeat != tp->heartbeat); // still alive
+    
+    // Init ts_tracker
+    tp->pingpong = 0;
+    tp->cyclesPerSec = Cycles::perSecond();
+    tp->nt[0].last_clock       = tp->nt[1].last_clock       = getnsec();
+    tp->nt[0].last_clock_tsc   = tp->nt[1].last_clock_tsc   = rdtscp();
+
+    //
     ctsp->tracker_init = true;
+    ctsp->uctr = ctsp->nctr = 0;
 
     // uint64_t max_delay = 0;
-    while (ctsp->thread_run_run) {
-#if 0 //Original code
-        nt_pair_t *ntp = &tp->nt[tp->idx];
-        uint64_t nsec = getnsec();
-        uint64_t tsc  = rdtscp();
+    while (ctsp->thread_run_run && tp->tracker_id == ctsp->my_tracker_id) {
+        tp->heartbeat++;
 
-        if (nsec > (ntp->last_clock + Cycles::toNanoseconds(tsc - ntp->last_tsc))) {
-            int nidx = 1 - tp->idx;
+        nt_pair_t *ntp = &tp->nt[tp->pingpong];
+        uint64_t tsc; // = rdtscp();
+        uint64_t nsec = getnsec(&tsc);
+        if (nsec >
+            (ntp->last_clock + Cycles::toNanoseconds(tsc - ntp->last_clock_tsc, tp->cyclesPerSec))) {
+            int nidx = 1 - tp->pingpong;
+            tp->nt[nidx].last_clock_tsc = tsc;
             tp->nt[nidx].last_clock = nsec;
-            tp->nt[nidx].last_tsc   = tsc;
-            tp->idx = nidx;
-        }
-#else //Temporary changes - to be removed.
-	uint64_t nsec = getnsec();
-        uint64_t tsc  = rdtscp();
-	int nidx = 1 - tp->idx;
-	tp->nt[nidx].last_clock = nsec;
-	tp->nt[nidx].last_tsc   = tsc;
-	tp->idx = nidx;
-#endif
-        Cycles::sleep(1);
-    }
+            tp->pingpong = nidx;
+            ctsp->uctr++;
+        } else
+            ctsp->nctr++;
 
+        if (tp->tracker_id == ctsp->my_tracker_id) {
+            Cycles::sleep(TRACKER_SLEEP_USEC);
+        }
+    }
     return NULL;
 }
 
@@ -93,6 +95,8 @@ ClusterTimeService::ClusterTimeService()
     thread_run_run = true;
     tracker_init = false;
 	pthread_create(&tid, NULL, update_ts_tracker, (void *)this);
+    srand(tid);
+    my_tracker_id = rand();
 
     while(!tracker_init)
         usleep(1);
@@ -100,11 +104,12 @@ ClusterTimeService::ClusterTimeService()
 
 ClusterTimeService::~ClusterTimeService()
 {
-    if (thread_run_run) {
+    if (thread_run_run && tp->tracker_id == my_tracker_id) {
         void * ret;
         thread_run_run = false;
 	    pthread_join(tid, &ret);
     }
+    // printf("~ClusterTimeService uctr=%ld nctr=%ld\n", uctr, nctr);
     munmap(tp, sizeof(ts_tracker_t));
 }
 

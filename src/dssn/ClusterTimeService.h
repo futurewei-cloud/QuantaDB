@@ -71,10 +71,10 @@ class ClusterTimeService {
     // return a local system clock time stamp
     inline uint64_t getLocalTime()
     {
-        nt_pair_t *ntp = &tp->nt[tp->idx];
-        uint64_t tsc = rdtscp();
-        // assert(tsc > ntp->last_tsc);
-        return ntp->last_clock + Cycles::toNanoseconds(tsc - ntp->last_tsc);
+        nt_pair_t *ntp = &tp->nt[tp->pingpong];
+        uint64_t last_clock      = ntp->last_clock;
+        uint64_t last_clock_tsc  = ntp->last_clock_tsc;
+        return last_clock + Cycles::toNanoseconds(rdtscp() - last_clock_tsc, tp->cyclesPerSec);
     }
 
     private:
@@ -97,6 +97,18 @@ class ClusterTimeService {
         return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
     }
 
+    // Slow (~500ns) about at nsec precision
+    static inline uint64_t getnsec(uint64_t *tsc)
+    {
+        timespec ts;
+        uint64_t tsc1 = rdtscp();
+        clock_gettime(CLOCK_REALTIME, &ts);
+        // uint64_t tsc2 = rdtscp();
+        // *tsc = (tsc1 + tsc2) / 2;
+        *tsc = tsc1;
+        return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
+    }
+
     static inline u_int64_t rdtscp()
     {
         uint32_t aux;
@@ -106,19 +118,24 @@ class ClusterTimeService {
     #define TS_TRACKER_NAME  "DSSN_TS_Tracker"
     typedef struct {
         uint64_t last_clock;           // nano-sec from the last update
-        uint64_t last_tsc;             // TSC counter value
+        uint64_t last_clock_tsc;       // TSC counter value of the last_clock
     } nt_pair_t;
 
     typedef struct {
-        volatile uint32_t idx;        // Ping-pong index. Eiter 0 or 1.
+        volatile uint32_t pingpong;        // Ping-pong index. Eiter 0 or 1.
         nt_pair_t nt[2];
+        double cyclesPerSec;
+        std::atomic<int> tracker_id;
+        uint32_t heartbeat;
     } ts_tracker_t;
 
     // 
     ts_tracker_t * tp;                // pointing to a shared ts_tracker
     pthread_t tid;
+    int my_tracker_id;
     bool thread_run_run;
     bool tracker_init;
+    uint64_t uctr, nctr;              // statistics
 }; // ClusterTimeService
 
 } // end namespace DSSN
