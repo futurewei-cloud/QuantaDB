@@ -25,17 +25,21 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
     ClusterTimeService *ctsp = (ClusterTimeService*)arg;
     ts_tracker_t *tp = ctsp->tp;
 
-    // Set ts->tracker_id
-    tp->tracker_id = ctsp->my_tracker_id;
 
-    // Wait for other tracker's heartbeat to stop
+    // See if a tracker already running, by detecting its heartbeat.
     uint32_t heartbeat;
-    do {
+    int loop = 5;
+    while(loop-- > 0) {
         heartbeat = tp->heartbeat;
         usleep(TRACKER_SLEEP_USEC+10);
-    } while (heartbeat != tp->heartbeat); // still alive
+        if (heartbeat != tp->heartbeat) { // alive
+            ctsp->tracker_init = true;
+            return NULL;
+        }
+    }
     
     // Init ts_tracker
+    tp->tracker_id = ctsp->my_tracker_id;
     tp->pingpong = 0;
     tp->cyclesPerSec = Cycles::perSecond();
     tp->nt[0].last_clock       = tp->nt[1].last_clock       = getnsec();
@@ -50,7 +54,7 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
         tp->heartbeat++;
 
         nt_pair_t *ntp = &tp->nt[tp->pingpong];
-        uint64_t tsc; // = rdtscp();
+        uint64_t tsc;
         uint64_t nsec = getnsec(&tsc);
         if (nsec >
             (ntp->last_clock + Cycles::toNanoseconds(tsc - ntp->last_clock_tsc, tp->cyclesPerSec))) {

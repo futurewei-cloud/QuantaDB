@@ -74,7 +74,7 @@ Cycles::init() {
                 break;
             }
         }
-        double delta = cyclesPerSec/1000.0;
+        double delta = cyclesPerSec/1000000.0;
         if ((oldCycles > (cyclesPerSec - delta)) &&
                 (oldCycles < (cyclesPerSec + delta))) {
             return;

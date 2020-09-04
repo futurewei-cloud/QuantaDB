@@ -103,9 +103,8 @@ class ClusterTimeService {
         timespec ts;
         uint64_t tsc1 = rdtscp();
         clock_gettime(CLOCK_REALTIME, &ts);
-        // uint64_t tsc2 = rdtscp();
-        // *tsc = (tsc1 + tsc2) / 2;
-        *tsc = tsc1;
+        uint64_t tsc2 = rdtscp();
+        *tsc = (tsc1 + tsc2) / 2;
         return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
     }
 
