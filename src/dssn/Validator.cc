@@ -415,7 +415,6 @@ Validator::insertTxEntry(TxEntry *txEntry) {
 
         counters.queuedDistributedTxs++;
     }
-
     return true;
 }
 
@@ -448,7 +447,6 @@ Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uin
 
 void
 Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
-
     if (peerTxState == TxEntry::TX_CONFLICT)
         assert(0); //Fixme: do recovery or debug
     if (rpcService == NULL) //unit test may make rpcService NULL
@@ -469,17 +467,20 @@ Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint6
 }
 
 void
-Validator::sendSSNInfo(TxEntry *txEntry) {
+Validator::sendSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t targetPeerId) {
     if (rpcService) {
-        rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry->getTxState(), txEntry);
+        if (!isSpecific)
+            rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry->getTxState(), txEntry);
+        else
+            rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry->getTxState(), txEntry, true, targetPeerId);
         counters.infoSends++;
     }
 }
 
 void
-Validator::requestSSNInfo(TxEntry *txEntry, uint64_t targetPeerId) {
+Validator::requestSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t targetPeerId) {
     if (rpcService) {
-        rpcService->requestDSSNInfo(txEntry, true, targetPeerId);
+        rpcService->requestDSSNInfo(txEntry, isSpecific, targetPeerId);
         counters.infoRequests++;
     }
 }
@@ -529,15 +530,15 @@ Validator::logCounters() {
     c += snprintf(val + c, s - c, "trivialAborts:%lu, ", counters.trivialAborts);
     c += snprintf(val + c, s - c, "busyAborts:%lu, ", counters.busyAborts);
     c += snprintf(val + c, s - c, "ctsSets:%lu, ", counters.ctsSets);
+    c += snprintf(val + c, s - c, "queuedLocalTxs:%lu, ", localTxQueue.addedTxCount.load());
+    c += snprintf(val + c, s - c, "evaluatedLocalTxs:%lu, ", localTxQueue.removedTxCount);
     c += snprintf(val + c, s - c, "addPeers:%lu, ", counters.addPeers);
     c += snprintf(val + c, s - c, "earlyPeers:%lu, ", counters.earlyPeers);
     c += snprintf(val + c, s - c, "matchEarlyPeers:%lu, ", counters.matchEarlyPeers);
-    c += snprintf(val + c, s - c, "currentPeers:%lu, ", counters.currentPeers);
+    c += snprintf(val + c, s - c, "deletedPeers:%lu, ", counters.deletedPeers);
     c += snprintf(val + c, s - c, "queuedDistributedTxs:%lu, ", counters.queuedDistributedTxs);
     c += snprintf(val + c, s - c, "scheduledDistributedTxs:%lu, ", distributedTxSet.addedTxCount);
     c += snprintf(val + c, s - c, "evaluatedDistributedTxs:%lu, ", distributedTxSet.removedTxCount);
-    c += snprintf(val + c, s - c, "queuedLocalTxs:%lu, ", localTxQueue.addedTxCount.load());
-    c += snprintf(val + c, s - c, "evaluatedLocalTxs:%lu, ", localTxQueue.removedTxCount);
     c += snprintf(val + c, s - c, "infoSends:%lu, ", counters.infoSends);
     c += snprintf(val + c, s - c, "infoReceives:%lu, ", counters.infoReceives);
     c += snprintf(val + c, s - c, "infoRequests:%lu, ", counters.infoRequests);

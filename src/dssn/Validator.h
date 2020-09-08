@@ -50,7 +50,7 @@ struct Counters {
     uint64_t addPeers = 0;
     uint64_t earlyPeers = 0;
     uint64_t matchEarlyPeers = 0;
-    uint64_t currentPeers = 0;
+    uint64_t deletedPeers = 0;
     uint64_t queuedDistributedTxs = 0;
     // scheduledDistributedTxs tracked by distributedTxSet
     // evaluatedDistributedTxs tracked bydistributedT
@@ -184,8 +184,8 @@ class Validator {
     bool updateTxPStampSStamp(TxEntry& txEntry);
 
     // used for invoking RPCs
-    void sendSSNInfo(TxEntry *txEntry);
-    void requestSSNInfo(TxEntry *txEntry, uint64_t targetPeerId);
+    void sendSSNInfo(TxEntry *txEntry, bool isSpecific = false, uint64_t targetPeerId = 0);
+    void requestSSNInfo(TxEntry *txEntry, bool isSpecific = false, uint64_t targetPeerId = 0);
 
     // used for obtaining clock value in nanosecond unit
     uint64_t getClockValue();

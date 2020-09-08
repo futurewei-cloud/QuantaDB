@@ -953,6 +953,7 @@ DSSNService::handleSendInfoAsync(Rpc* rpc)
             rpc->requestPayload->getStart<WireFormat::DSSNSendInfoAsync::Request>();
     if (reqHdr == NULL)
         throw MessageTooShortError(HERE);
+    assert(reqHdr->senderPeerId != getServerId());
     validator->receiveSSNInfo(reqHdr->senderPeerId, reqHdr->cts, reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState);
 }
 
