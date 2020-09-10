@@ -346,12 +346,9 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 
 	fillTxEntry(5, 10, 2); //5 txs of 10 keys and 2 peers
 
-    //start cross-validation but leave it unfinished
-	validator.serialize();
-	EXPECT_EQ(TxEntry::TX_PENDING, txEntry[0]->getTxState());
-
 	for (int ent = 0; ent < 5; ent++) {
 		validator.peerInfo.add(txEntry[ent]->getCTS(), txEntry[ent], &validator);
+        txEntry[ent]->setTxCIState(TxEntry::TX_CI_LISTENING);
 	}
 
 	for (int ent = 1; ent < 4; ent++) {
@@ -410,8 +407,10 @@ TEST_F(ValidatorTest, BATValidateDistributedTxs) {
     for (int i = 0; i < size; i += 10) {
     	validator.serialize();
     	for (int j = 0; j < 10; j++) {
-    		if (i + j  < size)
+    		if (i + j  < size) {
+    	        txEntry[i+j]->setTxCIState(TxEntry::TX_CI_LISTENING);
     			fillTxEntryPeers(txEntry[i + j]);
+    		}
     	}
     }
 
@@ -492,7 +491,7 @@ TEST_F(ValidatorTest, BATLateDistributedTxs) {
     validator.testRun();
 
     //the older tx is aborted
-    EXPECT_EQ(TxEntry::TX_ABORT, txEntry[0]->getTxState());
+    EXPECT_EQ(TxEntry::TX_LATE, txEntry[0]->getTxState());
 
     //the younger tx taking too long to complete is put in ALERT state
     EXPECT_EQ(TxEntry::TX_ALERT, txEntry[1]->getTxState());
