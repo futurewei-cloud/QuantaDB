@@ -6,6 +6,8 @@ project(DSSN)
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+# enable -fPIC
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # List of packages
 find_package(PythonInterp 2.7 REQUIRED)
