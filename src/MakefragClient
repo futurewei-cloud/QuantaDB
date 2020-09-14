@@ -118,6 +118,7 @@ CLIENT_SRCFILES := \
 		   src/UdpDriver.cc \
 		   src/Util.cc \
 		   src/WireFormat.cc \
+		   src/WorkerManagerMetrics.cc \
 		   src/WorkerManager.cc \
 		   src/WorkerSession.cc \
 		   src/WorkerTimer.cc \

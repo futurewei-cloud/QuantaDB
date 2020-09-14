@@ -90,6 +90,7 @@ SHARED_SRCFILES := \
 		   src/dssn/KVStore.cc \
 		   src/dssn/PeerInfo.cc \
 		   src/dssn/DSSNService.cc \
+		   src/dssn/DSSNServiceMonitor.cc \
 		   src/dssn/BlockedTxSet.cc \
 		   src/dssn/DistributedTxSet.cc \
 		   src/dssn/TxLog.cc \
@@ -186,8 +187,8 @@ SHARED_SRCFILES := \
 		   src/Util.cc \
 		   src/WallTime.cc \
 		   src/WireFormat.cc \
-		   src/WorkerManager.cc \
 		   src/WorkerManagerMetrics.cc \
+		   src/WorkerManager.cc \
 		   src/WorkerSession.cc \
 		   src/WorkerTimer.cc \
 		   $(INFINIBAND_SRCFILES) \
