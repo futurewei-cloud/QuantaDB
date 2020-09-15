@@ -50,7 +50,8 @@ public:
     //bool getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength);
     //bool getValue(KLayout& k, KVLayout *&kv);
     bool remove(KLayout& k, DSSNMeta &meta);
-
+    uint32_t get_evict_count() { return my_hashtable->get_evict_count(); }
+    uint32_t get_avg_elem_iter_len() { return my_hashtable->get_avg_elem_iter_len(); }
 private:
     hash_table<KVLayout, KLayout, VLayout, HashKLayout> * my_hashtable;
     uint32_t            bucket_count;
