@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 1,
+  "id": 4,
   "links": [],
   "panels": [
     {
@@ -61,7 +61,7 @@
         },
         "showUnfilled": true
       },
-      "pluginVersion": "7.1.5",
+      "pluginVersion": "7.1.3",
       "targets": [
         {
           "expr": "sum(workermanager_rpc_latency_bucket{label=\"RPC_total_latency\"}) by (le)",
@@ -86,23 +86,7 @@
       "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "align": null
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
+          "custom": {}
         },
         "overrides": []
       },
@@ -129,7 +113,7 @@
       "linewidth": 3,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.5",
+      "pluginVersion": "7.1.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -238,7 +222,7 @@
         },
         "showUnfilled": true
       },
-      "pluginVersion": "7.1.5",
+      "pluginVersion": "7.1.3",
       "targets": [
         {
           "expr": "sum(workermanager_rpc_latency_bucket{label=\"RPC_ingress_latency\"}) by (le)",
@@ -294,7 +278,7 @@
       "linewidth": 3,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.5",
+      "pluginVersion": "7.1.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -404,7 +388,7 @@
         },
         "showUnfilled": true
       },
-      "pluginVersion": "7.1.5",
+      "pluginVersion": "7.1.3",
       "targets": [
         {
           "expr": "sum(workermanager_rpc_latency_bucket{label=\"RPC_processing_latency\"}) by (le)",
@@ -458,7 +442,7 @@
       "linewidth": 3,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.5",
+      "pluginVersion": "7.1.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -559,7 +543,7 @@
         },
         "showUnfilled": true
       },
-      "pluginVersion": "7.1.5",
+      "pluginVersion": "7.1.3",
       "targets": [
         {
           "expr": "sum(workermanager_rpc_latency_bucket{label=\"RPC_egress_latency\"}) by (le)",
@@ -611,7 +595,7 @@
       "linewidth": 3,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.5",
+      "pluginVersion": "7.1.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -669,6 +653,120 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 20,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      },
+      "pluginVersion": "7.1.3",
+      "targets": [
+        {
+          "expr": "sum(workermanager_rpc_latency_bucket{label=\"RPC_worker_handoff_latency\"}) by (le)",
+          "format": "heatmap",
+          "interval": "",
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Worker Handoff Latency (usec)",
+      "type": "bargauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "id": 19,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      },
+      "pluginVersion": "7.1.3",
+      "targets": [
+        {
+          "expr": "sum(workermanager_rpc_latency_bucket{label=\"worker_manager_poll_latency\"}) by (le)",
+          "format": "heatmap",
+          "interval": "",
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Dispatcher Poll Latency (usec)",
+      "type": "bargauge"
     }
   ],
   "refresh": "5s",
@@ -679,7 +777,7 @@
     "list": []
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {
@@ -699,5 +797,5 @@
   "timezone": "America/Los_Angeles",
   "title": "WorkerManager",
   "uid": "K-FaBoIMz",
-  "version": 4
+  "version": 2
 }
