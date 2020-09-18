@@ -626,7 +626,8 @@ Worker::handoff(RpcHandle* newRpc)
 {
     assert(rpc == NULL);
     rpc = newRpc;
-    newRpc->getServerRpc()->startWorkerHandoffTimer();
+    if (rpc != WORKER_EXIT)
+        newRpc->getServerRpc()->startWorkerHandoffTimer();
 
     Fence::leave();
 #ifdef SMTT
