@@ -40,7 +40,7 @@ class OpTrace {
      * Constructor of the OpTrace
      */
     OpTrace(Metric *metric) {
-#ifdef MONITOR
+#if defined(MONITOR) || defined(TESTING)
         pMetric = metric;
 	pResult = NULL;
         mStartTime = RAMCloud::Cycles::rdtsc();
@@ -49,7 +49,7 @@ class OpTrace {
     }
 
     OpTrace(Metric *metric, bool* result) {
-#ifdef MONITOR
+#if defined(MONITOR) || defined(TESTING)
         pMetric = metric;
 	pResult = result;
         mStartTime = RAMCloud::Cycles::rdtsc();
@@ -57,7 +57,7 @@ class OpTrace {
     }
 
     ~OpTrace() {
-#ifdef MONITOR
+#if defined(MONITOR) || defined(TESTING)
         pMetric->latency = RAMCloud::Cycles::rdtsc() - mStartTime;
 	pMetric->count++;
 
