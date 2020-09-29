@@ -58,7 +58,7 @@ class TxLog {
     void dump(int fd);
 
     // For debugging. Fabricate a tx log entry that records arbitrary information
-    bool fabricate(uint64_t cts, uint8_t *key, uint32_t keyLength, uint8_t *value, uint32_t valueLength);
+    bool fabricate(__uint128_t cts, uint8_t *key, uint32_t keyLength, uint8_t *value, uint32_t valueLength);
 
     private:
     // private struct

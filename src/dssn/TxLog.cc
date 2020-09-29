@@ -91,7 +91,7 @@ TxLog::getTxState(__uint128_t cts)
 }
 
 bool
-TxLog::fabricate(uint64_t cts, uint8_t *key, uint32_t keyLength, uint8_t *value, uint32_t valueLength)
+TxLog::fabricate(__uint128_t cts, uint8_t *key, uint32_t keyLength, uint8_t *value, uint32_t valueLength)
 {
     TxEntry *txEntry = new TxEntry(0,1);
     txEntry->setCTS(cts);
