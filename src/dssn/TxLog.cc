@@ -68,7 +68,7 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
 }
 
 uint32_t
-TxLog::getTxState(uint64_t cts)
+TxLog::getTxState(__uint128_t cts)
 {
     uint32_t dlen;
     TxLogTailer_t * tal;

@@ -30,7 +30,7 @@ class TxLog {
     //return the last logged tx state: supposedly one of TX_PENDING, TX_ABORT, and TX_COMMIT.
     ///expected to be used for replying to peer's or coordinator's request for tx state.
     ///how long should TxLog keep the tx states?
-    uint32_t getTxState(uint64_t cts);
+    uint32_t getTxState(__uint128_t cts);
 
     //obtain the first (non-concluded) commit-intent in the log
     ///the returned id is used for iterating through the non-concluded commit-intents
