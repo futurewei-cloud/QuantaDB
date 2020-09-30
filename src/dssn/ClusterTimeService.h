@@ -61,7 +61,6 @@ namespace DSSN {
  * monotonically increasing timestamps.
  */
 
-
 // ClusterTimeService
 class ClusterTimeService {
     public:
@@ -90,19 +89,19 @@ class ClusterTimeService {
     }
 
     // Slow (~500ns) about at nsec precision
-    static inline uint64_t getnsec()
+    inline uint64_t getnsec()
     {
         timespec ts;
-        clock_gettime(CLOCK_REALTIME, &ts);
+        clock_gettime(clockid, &ts);
         return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
     }
 
     // Slow (~500ns) about at nsec precision
-    static inline uint64_t getnsec(uint64_t *tsc)
+    inline uint64_t getnsec(uint64_t *tsc)
     {
         timespec ts;
         uint64_t tsc1 = rdtscp();
-        clock_gettime(CLOCK_REALTIME, &ts);
+        clock_gettime(clockid, &ts);
         uint64_t tsc2 = rdtscp();
         *tsc = (tsc1 + tsc2) / 2;
         return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
@@ -121,7 +120,7 @@ class ClusterTimeService {
     } nt_pair_t;
 
     typedef struct {
-        volatile uint32_t pingpong;        // Ping-pong index. Eiter 0 or 1.
+        volatile uint32_t pingpong;    // Ping-pong index. Eiter 0 or 1.
         nt_pair_t nt[2];
         double cyclesPerSec;
         std::atomic<int> tracker_id;
@@ -131,6 +130,7 @@ class ClusterTimeService {
     // 
     ts_tracker_t * tp;                // pointing to a shared ts_tracker
     pthread_t tid;
+    clockid_t clockid;                //
     int my_tracker_id;
     bool thread_run_run;
     bool tracker_init;

@@ -12,15 +12,145 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/ioctl.h>
 #include <string.h>
 #include <assert.h>
 #include <pthread.h>
+#include <errno.h>
 #include <string>
 #include <iostream>
+#include <net/if.h>
+#include <linux/ptp_clock.h>
+#include <linux/sockios.h>
+#include <linux/ethtool.h>
 #include "intel-family.h"
 #include "Cycles.h"
 #include "ClusterTimeService.h"
 
+
+#define CLOCKFD 3
+#define FD_TO_CLOCKID(fd) ((~(clockid_t) (fd) << 3) | CLOCKFD)
+#define CLOCKID_TO_FD(clk) ((unsigned int) ~((clk) >> 3))
+
+#ifndef CLOCK_INVALID
+#define CLOCK_INVALID -1
+#endif
+
+static inline int validate_clockid(clockid_t clkid)
+{
+    struct ptp_clock_caps caps;
+    return ioctl(CLOCKID_TO_FD(clkid), PTP_CLOCK_GETCAPS, &caps);
+}
+
+// Return PTP device name to the obuf
+static int get_ptp_device(char obuf[], int len)
+{
+  FILE *fp;
+  char path[1024];
+  int found = ENOENT;
+
+  /* Open the command for reading. */
+  fp = popen("ps -ef | fgrep ptp4l", "r");
+  if (fp == NULL) {
+    printf("FatalError: failed to run command ps -ef\n" );
+    exit(1);
+  }
+
+  /* Read the output one line at a time */
+  while (fgets(path, sizeof(path), fp) != NULL) {
+    char UID[16],  PID[16], PPID[16], C[8],     STIME[16], TTY[16],
+         TIME[16], CMD[64], ARG1[16], ARG2[16], ARG3[16], ARG4[16];
+    int ret = sscanf(path, "%s %s %s %s %s %s %s %s %s %s %s %s",
+                    UID, PID, PPID, C, STIME, TTY, TIME, CMD, ARG1, ARG2, ARG3, ARG4);
+    if ((ret == 12) && (strcmp("-i", ARG3) == 0)) {
+        // printf("CMD=%s ARG4=%s\n", CMD, ARG4);
+        strncpy(obuf, ARG4, len);
+        found = 0;
+    }
+  }
+
+  /* close */
+  pclose(fp);
+
+  return found;
+}
+
+static clockid_t get_clock_id(char *device, int *phc_index)
+{
+	/* check if device is CLOCK_REALTIME */
+	if (!strcasecmp(device, "CLOCK_REALTIME")) {
+		return CLOCK_REALTIME;
+	}
+
+	int clkid;
+	char phc_device[19];
+	struct ethtool_ts_info info;
+	struct ifreq ifr;
+	int fd, err;
+
+	memset(&ifr, 0, sizeof(ifr));
+	memset(&info, 0, sizeof(info));
+
+	info.cmd = ETHTOOL_GET_TS_INFO;
+	strncpy(ifr.ifr_name, device, IFNAMSIZ - 1);
+	ifr.ifr_data = (char *) &info;
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (fd < 0) {
+		perror("socket failed:");
+		return CLOCK_INVALID;
+	}
+
+	err = ioctl(fd, SIOCETHTOOL, &ifr);
+	if (err < 0) {
+		perror("ioctl SIOCETHTOOL failed:");
+		close(fd);
+		return CLOCK_INVALID;
+	}
+
+	close(fd);
+    //-----------------------
+	if (info.phc_index < 0) {
+		printf("Interface %s does not have a PHC\n", device);
+		return CLOCK_INVALID;
+	}
+
+	snprintf(phc_device, sizeof(phc_device), "/dev/ptp%d", info.phc_index);
+    fd = open(phc_device, O_RDONLY);
+    if (fd < 0) {
+		printf("FatalError: cannot open %s for read. Need to change mode to 644.\n", phc_device);
+        return CLOCK_INVALID;
+    }
+
+    clkid = FD_TO_CLOCKID(fd);
+	*phc_index = info.phc_index;
+
+    assert (validate_clockid(clkid) == 0);
+
+	return clkid;
+}
+
+static clockid_t get_ptp_clock_id()
+{
+    int phc_index = -1;
+    char ptpdev[16];
+
+    if (get_ptp_device(ptpdev, sizeof(ptpdev)) != 0) {
+        printf("FatalError: PTP device not found. Fallback to using system clock.\n");
+        return CLOCK_REALTIME;
+    }
+
+    //printf("PTP device: %s\n", ptpdev);
+
+    clockid_t clkid = get_clock_id(ptpdev, &phc_index);
+
+    if (clkid == CLOCK_INVALID) {
+        printf("FatalError: can not get PTP clock id. fallback to using CLOCK_REALTIME.\n");
+        clkid = CLOCK_REALTIME;
+    }
+
+    return clkid;
+}
 
 static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
         unsigned int *ecx, unsigned int *edx)
@@ -207,7 +337,7 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
     tp->tracker_id = ctsp->my_tracker_id;
     tp->pingpong = 0;
     tp->cyclesPerSec = getTSCHz();
-    tp->nt[0].last_clock       = tp->nt[1].last_clock       = getnsec();
+    tp->nt[0].last_clock       = tp->nt[1].last_clock       = ctsp->getnsec();
     tp->nt[0].last_clock_tsc   = tp->nt[1].last_clock_tsc   = rdtscp();
 
     //
@@ -220,7 +350,7 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
 
         nt_pair_t *ntp = &tp->nt[tp->pingpong];
         uint64_t tsc;
-        uint64_t nsec = getnsec(&tsc);
+        uint64_t nsec = ctsp->getnsec(&tsc);
         if (nsec >
             (ntp->last_clock + Cycles::toNanoseconds(tsc - ntp->last_clock_tsc, tp->cyclesPerSec))) {
             int nidx = 1 - tp->pingpong;
@@ -257,8 +387,9 @@ ClusterTimeService::ClusterTimeService()
 
     tp = (ts_tracker_t *)mmap(NULL, sizeof(ts_tracker_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
     assert(tp);
-
     close(fd);
+
+    clockid = get_ptp_clock_id();
 
     // Start tracker thread
     thread_run_run = true;
