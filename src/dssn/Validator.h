@@ -38,6 +38,7 @@ class PeerInfo;
  */
 
 struct Counters {
+    uint64_t serverId = 0;
     uint64_t initialWrites = 0;
     uint64_t rejectedWrites = 0;
     uint64_t precommitReads = 0;

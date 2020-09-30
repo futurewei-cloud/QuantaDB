@@ -38,6 +38,7 @@ namespace DSSN {
  */
 
 struct PeerEntry {
+    bool isValid = false;
     std::mutex mutexForPeerUpdate; //mutex for this peer entry
     std::set<uint64_t> peerSeenSet; //peers seen so far
     std::set<uint64_t> peerAlertSet; //peers seen currently in alert state
@@ -57,10 +58,10 @@ class PeerInfo {
     std::mutex mutexForPeerAdd;
     uint64_t lastTick = 0;
     uint64_t tickUnit = 1000000; //1ms per tick
-    uint64_t alertThreshold = 1000 * tickUnit; //arbitrary //Fixme
+    uint64_t alertThreshold = 1000 * tickUnit;
 
     //evaluate the new states of the commit intent; caller is supposed to hold the mutex
-    bool evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator);
+    inline bool evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator);
 
     PUBLIC:
     ~PeerInfo();

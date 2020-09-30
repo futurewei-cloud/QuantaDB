@@ -610,6 +610,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
         return;
     }*/
 
+    validator->getCounters().serverId = getServerId();
+
     //We are over-provisioning the read set to accommodate the potential RMWs
     TxEntry *txEntry = new TxEntry(numRequests, numRequests - numReadRequests);
 
@@ -912,6 +914,28 @@ DSSNService::sendDSSNInfo(__uint128_t cts, uint8_t txState, TxEntry *txEntry, bo
                     msg, length, sid);
         }
     }
+    return true;
+}
+
+bool
+DSSNService::sendDSSNInfo(__uint128_t cts, uint8_t txState, uint64_t pStamp, uint64_t sStamp, uint64_t target)
+{
+    RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
+
+    WireFormat::DSSNSendInfoAsync::Request req;
+    req.senderPeerId = getServerId();
+
+    req.cts = cts;
+    req.pstamp = pStamp;
+    req.sstamp = sStamp;
+    req.txState = txState;
+
+    char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
+    uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);
+    ServerId sid(target);
+    Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
+            msg, length, sid);
+
     return true;
 }
 

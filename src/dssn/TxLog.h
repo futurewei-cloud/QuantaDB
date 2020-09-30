@@ -30,7 +30,9 @@ class TxLog {
     //return the last logged tx state: supposedly one of TX_PENDING, TX_ABORT, and TX_COMMIT.
     ///expected to be used for replying to peer's or coordinator's request for tx state.
     ///how long should TxLog keep the tx states?
-    uint32_t getTxState(uint64_t cts);
+    uint32_t getTxState(uint64_t cts); //Fixme: 128b
+
+    bool getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t &sStamp);
 
     //obtain the first (non-concluded) commit-intent in the log
     ///the returned id is used for iterating through the non-concluded commit-intents
@@ -58,7 +60,7 @@ class TxLog {
     void dump(int fd);
 
     // For debugging. Fabricate a tx log entry that records arbitrary information
-    bool fabricate(uint64_t cts, uint8_t *key, uint32_t keyLength, uint8_t *value, uint32_t valueLength);
+    bool fabricate(__uint128_t cts, uint8_t *key, uint32_t keyLength, uint8_t *value, uint32_t valueLength);
 
     private:
     // private struct

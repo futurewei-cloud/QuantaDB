@@ -356,8 +356,10 @@ Validator::conclude(TxEntry& txEntry) {
         counters.commits++;
     else if (txEntry.getTxState() == TxEntry::TX_ABORT)
         counters.aborts++;
-    else
+    else {
         counters.concludeErrors++;
+        assert(0);
+    }
 
     txEntry.setTxCIState(TxEntry::TX_CI_FINISHED);
 
@@ -454,16 +456,18 @@ Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint6
 
     //Fixme: if tx is already concluded and logged, provide the logged state
     TxEntry *txEntry = receiveSSNInfo(peerId, cts, pstamp, sstamp, peerTxState);
+    uint32_t txState;
+    uint64_t pStamp, sStamp;
     if (txEntry) {
         rpcService->sendDSSNInfo(cts, txEntry->getTxState(), txEntry, true, peerId);
-    /* } else if (txLog.get(cts)) {
-         ... Fixme
-     */
+        counters.infoReplies++;
+    } else if (txLog.getTxInfo(cts, txState, pStamp, sStamp)) {
+        rpcService->sendDSSNInfo(cts, txState, pStamp, sStamp, peerId);
+        counters.infoReplies++;
     } else {
         //This is the case when the local CI has not been created
-        rpcService->sendDSSNInfo(cts, TxEntry::TX_PENDING, NULL, true, peerId);
+        //Fixme: no reply at all?? rpcService->sendDSSNInfo(cts, TxEntry::TX_PENDING, NULL, true, peerId);
     }
-    counters.infoReplies++;
 }
 
 void
@@ -522,6 +526,7 @@ Validator::logCounters() {
     char val[2048];
     int c = 0;
     int s = sizeof(val);
+    c += snprintf(val + c, s - c, "serverId:%lu, ", counters.serverId);
     c += snprintf(val + c, s - c, "initialWrites:%lu, ", counters.initialWrites);
     c += snprintf(val + c, s - c, "rejectedWrites:%lu, ", counters.rejectedWrites);
     c += snprintf(val + c, s - c, "precommitReads:%lu, ", counters.precommitReads);

@@ -91,7 +91,36 @@ TxLog::getTxState(uint64_t cts)
 }
 
 bool
-TxLog::fabricate(uint64_t cts, uint8_t *key, uint32_t keyLength, uint8_t *value, uint32_t valueLength)
+TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t &sStamp)
+{
+    int cnt =0; //Fixme
+    uint32_t dlen;
+    TxLogTailer_t * tal;
+    size_t hdrsz = sizeof(TxLogTailer_t) + sizeof(TxLogHeader_t);
+
+    // Search backward to find the latest matching Tx
+    size_t tail_off = size() - sizeof(TxLogTailer_t);;
+    while ((tail_off > 0) && (tal = (TxLogTailer_t*)log->getaddr (tail_off, &dlen))) {
+        tail_off -= tal->length; // next tail
+        assert(tal->sig == TX_LOG_TAIL_SIG);
+
+        inMemStream in((uint8_t*)tal - tal->length + hdrsz, dlen + tal->length - hdrsz);
+        TxEntry tx(1,1);
+        tx.deSerialize_common( in );
+        if (tx.getCTS() == cts) {
+            txState = tx.getTxState();
+            pStamp = tx.getPStamp();
+            sStamp = tx.getSStamp();
+            return true;
+        }
+        cnt++;
+    }
+    abort();
+    return false; // indicating not found here
+}
+
+bool
+TxLog::fabricate(__uint128_t cts, uint8_t *key, uint32_t keyLength, uint8_t *value, uint32_t valueLength)
 {
     TxEntry *txEntry = new TxEntry(0,1);
     txEntry->setCTS(cts);
