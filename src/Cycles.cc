@@ -154,6 +154,12 @@ Cycles::toMicroseconds(uint64_t cycles, double cyclesPerSec)
     return toNanoseconds(cycles, cyclesPerSec) / 1000;
 }
 
+double
+Cycles::toPreciseMicroseconds(uint64_t cycles, double cyclesPerSec)
+{
+    return ((double)toNanoseconds(cycles, cyclesPerSec)) / 1000;
+}
+
 /**
  * Given a number of microseconds, return an approximate number of
  * cycles for an equivalent time length.

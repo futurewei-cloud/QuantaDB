@@ -87,4 +87,6 @@ int main(void)
     printf("Evict count = %d\n", my_hashtable.get_evict_count());
     printf("Insert count = %d\n", my_hashtable.get_insert_count());
     printf("Update count = %d\n", my_hashtable.get_update_count());
+    printf("Lookup count = %lu\n", my_hashtable.get_lookup_count());
+    printf("Average bucket element search length = %u\n", my_hashtable.get_avg_elem_iter_len());
 }

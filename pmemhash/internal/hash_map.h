@@ -13,6 +13,18 @@
 #define BUCKET_SIZE 32
 #define VICTIM_LIST_SIZE (BUCKET_SIZE)
 
+#ifdef NDEBUG
+#define LOOKUP_CNT_INCR() do {} while(0)
+#define CLT_BELEM_SRCH_CNT_INCR(delta) do {} while(0)
+#else
+#define LOOKUP_CNT_INCR() {			\
+  lookup_ctr_++;				\
+}
+#define CLT_BELEM_SRCH_CNT_INCR(delta) {	\
+    culminated_search_ctr_ += delta;		\
+}
+#endif
+
 const uint8_t SIG_INVALID = 0xFF;
 
 struct bucket_header
@@ -69,6 +81,7 @@ public:
 			buckets_[idx].hdr_.valid_ = 0;
 		}
         evict_ctr_ = insert_ctr_ = update_ctr_ = 0;
+	culminated_search_ctr_ = lookup_ctr_ = 0;
     }
 
     ~hash_table()
@@ -196,7 +209,6 @@ public:
     }
 
     elem_pointer<Elem> find_or_prepare_insert(const K& key) {
-
         uint8_t l_slot;
         auto bucket = bucketize(key);
         struct hash_bucket<Elem>& l_bucket = buckets_[bucket];
@@ -211,25 +223,39 @@ public:
         __m256i l_cmpeq_ret = _mm256_cmpeq_epi8(l_bucket.sig_.sig256_, l_sig256);
         uint32_t sig_matching_bits = _mm256_movemask_epi8(l_cmpeq_ret);
         uint32_t valid_matching_sig = sig_matching_bits & l_bucket.hdr_.valid_;
+	uint32_t search_cnt = 0;
+	LOOKUP_CNT_INCR ();
 
         do {
+	    search_cnt++;
             l_slot = __builtin_ffs(valid_matching_sig);
             if (l_slot == 0) break;
             Elem *l_ptr = l_bucket.ptr_[l_slot-1];
 
             //FIXME: make this getKey to be in a KeyExtractor
             if (l_ptr->getKey() == key) {
+                CLT_BELEM_SRCH_CNT_INCR (search_cnt);
                 return elem_pointer<Elem>(bucket, l_slot-1, l_ptr);
             }
             valid_matching_sig &= ~(1ULL << (l_slot-1));
         } while (l_slot < BUCKET_SIZE);
 
+        CLT_BELEM_SRCH_CNT_INCR (search_cnt);
         return elem_pointer<Elem>(0, 0, NULL);
     }
 
     uint32_t get_evict_count() { return evict_ctr_; }
     uint32_t get_insert_count() { return insert_ctr_; }
     uint32_t get_update_count() { return update_ctr_; }
+    uint64_t get_lookup_count() { return lookup_ctr_; }
+    uint32_t get_avg_elem_iter_len() {
+        if (lookup_ctr_) {
+	    uint64_t c_search_count = culminated_search_ctr_;
+	    uint64_t search_count = lookup_ctr_;
+	    return c_search_count/search_count;
+	}
+	return 0;
+    }
 
     int bucketize(const K & key) { return Hash{}(key) % bucket_count_; }
     uint8_t signature(const K & key) { return (Hash{}(key) / bucket_count_) & 0xFF; }
@@ -242,6 +268,8 @@ private:
     std::atomic<uint32_t> evict_ctr_;
     std::atomic<uint32_t> insert_ctr_;
     std::atomic<uint32_t> update_ctr_;
+    std::atomic<uint64_t> lookup_ctr_;
+    std::atomic<uint64_t> culminated_search_ctr_;
 };
 
 

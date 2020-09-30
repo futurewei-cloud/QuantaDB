@@ -180,6 +180,8 @@ class Worker {
                                        /// the worker has been finished and a
                                        /// response sent (but the worker may
                                        /// still be in POSTPROCESSING state).
+    uint64_t handoffTs;                /// Timestamp of the Dispatcher's request
+                                       /// to worker
   PRIVATE:
     int busyIndex;                     /// Location of this worker in
                                        /// #busyThreads, or -1 if this worker

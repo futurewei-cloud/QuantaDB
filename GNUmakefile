@@ -23,6 +23,8 @@ ONLOAD_DIR ?= /usr/local/openonload-201405
 
 #set to yes to enable DSSN style of transaction
 DSSNTX ?= yes
+#set to yes to enable performance monitoring
+MONITOR ?= no
 
 # set to yes to enable DSSN start in recovery mode
 DSSNTXRECOVERY ?= no
@@ -84,6 +86,9 @@ endif
 ifeq ($(DSSNTX), yes)
 COMFLAGS += -DDSSNTX
 endif
+ifeq ($(MONITOR), yes)
+COMFLAGS += -DMONITOR
+endif
 
 ifeq ($(DSSNTXRECOVERY), yes)
 COMFLAGS += -DDSSNTXRECOVERY
@@ -140,10 +145,16 @@ CXXWARNS := $(COMWARNS) -Wno-non-template-friend -Woverloaded-virtual \
 # Library paths that will be searched by the linker before default system
 # locations; one -L option for each search directory.
 LIB_PATHS ?= -L$(TOP)/hot/build/tbb_cmake_build/tbb_cmake_build_subdir_release
-LIBS := $(LIB_PATHS) $(EXTRALIBS) $(LOGCABIN_LIB) $(ZOOKEEPER_LIB) \
+ifeq ($(MONITOR),yes)
+LIB_PATHS += -L$(TOP)/prometheus-cpp/build/lib
+LIBS := -lprometheus-cpp-pull -lprometheus-cpp-core -lz
+endif
+
+LIBS += $(LIB_PATHS) $(EXTRALIBS) $(LOGCABIN_LIB) $(ZOOKEEPER_LIB) \
 	-lpcrecpp -lboost_program_options \
 	-lprotobuf -lrt -lboost_filesystem -lboost_system \
 	-lpthread -lssl -lcrypto -ltbb -ljemalloc
+
 ifeq ($(DEBUG),yes)
 # -rdynamic generates more useful backtraces when you have debugging symbols
 LIBS += -rdynamic
@@ -316,8 +327,8 @@ CFLAGS := $(CFLAGS_BASE) -Werror $(CWARNS)
 CXXFLAGS_BASE := $(COMFLAGS) -std=$(CXX_STANDARD) $(INCLUDES)
 CXXFLAGS_SILENT := $(CXXFLAGS_BASE) $(EXTRACXXFLAGS)
 CXXFLAGS_NOWERROR := $(CXXFLAGS_BASE) $(CXXWARNS) $(EXTRACXXFLAGS)
-# CXXFLAGS := $(CXXFLAGS_BASE) $(CXXWARNS) $(EXTRACXXFLAGS) $(PERF)
-CXXFLAGS := $(CXXFLAGS_BASE) -Werror $(CXXWARNS) $(EXTRACXXFLAGS) $(PERF)
+CXXFLAGS := $(CXXFLAGS_BASE) $(CXXWARNS) $(EXTRACXXFLAGS) $(PERF)
+#CXXFLAGS := $(CXXFLAGS_BASE) -Werror $(CXXWARNS) $(EXTRACXXFLAGS) $(PERF)
 
 ifeq ($(COMPILER),intel)
 CXXFLAGS = $(CXXFLAGS_BASE) $(CXXWARNS)

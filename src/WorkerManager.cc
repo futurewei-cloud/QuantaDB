@@ -285,10 +285,11 @@ WorkerManager::handleRpcDone(Transport::ServerRpc* rpc)
 {
 #ifdef MONITOR
     if (rpc->isTracing()) {
-        mMetrics->observeTcValue(WMM_TC_RPC_LATENCY, (double)rpc->getTotalLatency());
-	mMetrics->observeTcValue(WMM_TC_INGRESS_LATENCY, (double)rpc->getIngressQueueingDelay());
-	mMetrics->observeTcValue(WMM_TC_RPC_PROC_LATENCY, (double)rpc->getRpcProcessingTime());
-	mMetrics->observeTcValue(WMM_TC_EGRESS_LATENCY, (double)rpc->getEgressQueueingDelay());
+        mMetrics->observeTcValue(WMM_TC_RPC_LATENCY, rpc->getTotalLatency());
+	mMetrics->observeTcValue(WMM_TC_INGRESS_LATENCY, rpc->getIngressQueueingDelay());
+	mMetrics->observeTcValue(WMM_TC_RPC_PROC_LATENCY, rpc->getRpcProcessingTime());
+	mMetrics->observeTcValue(WMM_TC_EGRESS_LATENCY, rpc->getEgressQueueingDelay());
+	mMetrics->observeTcValue(WMM_TC_WORKER_HANDOFF_LATENCY, rpc->getWorkerHandoffDelay());
     }
 #endif
 }
@@ -506,6 +507,7 @@ WorkerManager::workerMain(Worker* worker)
                     worker->opcode);
 	    /*RAMCLOUD_LOG(DEBUG, "workerMain: worker id=%d, opcode=%d, rpcHandle=%lx", worker->threadId,
 	      worker->opcode, (uint64_t)worker->rpc);*/
+	    worker->getServerRpc()->endWorkerHandoffTimer();
             worker->getServerRpc()->epoch = LogProtector::getCurrentEpoch();
             Service::Rpc rpc(worker, &worker->getServerRpc()->requestPayload,
 			     &worker->getServerRpc()->replyPayload);
@@ -624,6 +626,9 @@ Worker::handoff(RpcHandle* newRpc)
 {
     assert(rpc == NULL);
     rpc = newRpc;
+    if (rpc != WORKER_EXIT)
+        newRpc->getServerRpc()->startWorkerHandoffTimer();
+
     Fence::leave();
 #ifdef SMTT
     if (rpc != WORKER_EXIT) {

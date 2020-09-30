@@ -165,10 +165,10 @@ class Transport {
 	/**
 	 * Return the amount of time this RPC waiting to be processed
 	 */
-	inline uint64_t getIngressQueueingDelay() {
+	inline double getIngressQueueingDelay() {
 	    if (!isTracing()) return 0;
 
-	    return Cycles::toMicroseconds(mIngressQueueingDelay);
+	    return Cycles::toPreciseMicroseconds(mIngressQueueingDelay);
 	}
 
 	/**
@@ -186,10 +186,10 @@ class Transport {
 	/**
 	 * Return the amount of time this RPC is being processed
 	 */
-	inline uint64_t getRpcProcessingTime() {
+	inline double getRpcProcessingTime() {
 	    if (!isTracing()) return 0;
 
-	    return Cycles::toMicroseconds(mRpcProcessingTime);
+	    return Cycles::toPreciseMicroseconds(mRpcProcessingTime);
 	}
 
 	/**
@@ -202,26 +202,47 @@ class Transport {
 	    mEgressQueueingDelay = now - mStartTime;
 	    mStartTime = now;
 	}
-
 	/**
 	 * Return the amount of time this RPC waiting to be sent out
 	 */
-	inline uint64_t getEgressQueueingDelay() {
+	inline double getEgressQueueingDelay() {
 	    if (!isTracing()) return 0;
 
-	    return Cycles::toMicroseconds(mEgressQueueingDelay);
+	    return Cycles::toPreciseMicroseconds(mEgressQueueingDelay);
 	}
+	/**
+	 * Start the worker handoff Timer for this RPC
+	 */
+	inline void startWorkerHandoffTimer() {
+	    if (!isTracing()) return;
+	    mWorkerHandoffTs = Cycles::rdtsc();
+	}
+	/**
+	 * End the worker handoff Timer for this RPC
+	 */
+	inline void endWorkerHandoffTimer() {
+	    if (!isTracing()) return;
+	    mWorkerHandoffDelay = Cycles::rdtsc() - mWorkerHandoffTs;
+	}
+	/**
+	 * Return the amount of time it takes for Dispatcher to handoff the
+	 * RPC request to the Worker Thread
+	 */
+	inline double getWorkerHandoffDelay() {
+	    if (!isTracing()) return 0;
 
+	    return Cycles::toPreciseMicroseconds(mWorkerHandoffDelay);
+	}
 	/**
 	 * Return the total time this RPC spent in the system
 	 */
-	inline uint64_t getTotalLatency() {
+	inline double getTotalLatency() {
 	    if (!isTracing()) return 0;
 
 	    if (mEgressQueueingDelay) {
-	        return Cycles::toMicroseconds(mIngressQueueingDelay +
-					     mRpcProcessingTime +
-					     mEgressQueueingDelay);
+	        return Cycles::toPreciseMicroseconds(mIngressQueueingDelay +
+						     mRpcProcessingTime +
+						     mEgressQueueingDelay);
 	    }
 	    return 0;
 	}
@@ -269,6 +290,8 @@ class Transport {
          */
         IntrusiveListHook outstandingRpcListHook;
 	uint64_t mIngressQueueingDelay;
+	uint64_t mWorkerHandoffTs;
+	uint64_t mWorkerHandoffDelay;
 	uint64_t mRpcProcessingTime;
 	uint64_t mEgressQueueingDelay;
       PRIVATE:

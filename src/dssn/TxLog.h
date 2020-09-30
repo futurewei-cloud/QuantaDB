@@ -30,7 +30,7 @@ class TxLog {
     //return the last logged tx state: supposedly one of TX_PENDING, TX_ABORT, and TX_COMMIT.
     ///expected to be used for replying to peer's or coordinator's request for tx state.
     ///how long should TxLog keep the tx states?
-    uint32_t getTxState(uint64_t cts); //Fixme: 128b
+    uint32_t getTxState(__uint128_t cts);
 
     bool getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t &sStamp);
 

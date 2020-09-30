@@ -68,7 +68,7 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
 }
 
 uint32_t
-TxLog::getTxState(uint64_t cts)
+TxLog::getTxState(__uint128_t cts)
 {
     uint32_t dlen;
     TxLogTailer_t * tal;
@@ -169,8 +169,8 @@ TxLog::dump(int fd)
         TxEntry tx(0,0);
         tx.deSerialize( in );
 
-        dprintf(fd, "CTS: %lu, TxState: %s, pStamp: %lu, sStamp: %lu\n",
-            (uint64_t)(tx.getCTS()>>64), txStateToStr(tx.getTxState()), tx.getPStamp(), tx.getSStamp());
+        dprintf(fd, "CTS: %lu:%lu, TxState: %s, pStamp: %lu, sStamp: %lu\n",
+            (uint64_t)(tx.getCTS()>>64), (uint64_t)tx.getCTS(), txStateToStr(tx.getTxState()), tx.getPStamp(), tx.getSStamp());
 
         dprintf(fd, "\tpeerSet: ");
         peerSet =   tx.getPeerSet();

@@ -8,6 +8,7 @@ add_library(dssn SHARED "")
     CountBloomFilter.cc
     DistributedTxSet.cc
     DSSNService.cc
+    DSSNServiceMonitor.cc
     HashmapKVStore.cc
     KVStore.cc
     PeerInfo.cc

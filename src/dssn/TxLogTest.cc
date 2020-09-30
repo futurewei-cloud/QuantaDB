@@ -34,6 +34,7 @@ class TxLogRecoveryTest : public ::testing::Test {
   DISALLOW_COPY_AND_ASSIGN(TxLogRecoveryTest);
 };
 
+#define NUM_ENTRY   1000
 TEST_F(TxLogTest, TxLogUnitTest)
 {
     uint64_t idOut;
@@ -50,7 +51,7 @@ TEST_F(TxLogTest, TxLogUnitTest)
     KVLayout kv(32);
     snprintf((char *)kv.getKey().key.get(), 32, "txlog-dump-key");
 
-    for (uint64_t idx = 0; idx < 100; idx++) {
+    for (uint64_t idx = 0; idx < NUM_ENTRY; idx++) {
         TxEntry tx(10,10);
         tx.setCTS(idx);
         tx.setPStamp(idx);
@@ -65,7 +66,7 @@ TEST_F(TxLogTest, TxLogUnitTest)
     }
 
     // getTxState
-    for (uint64_t idx = 0; idx < 100; idx++) {
+    for (uint64_t idx = 0; idx < NUM_ENTRY; idx++) {
         uint32_t tx_state = ((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT;
         if (txlog.getTxState(idx) != tx_state)
             GTEST_COUT << "idx=" << idx << std::endl;
@@ -85,7 +86,7 @@ TEST_F(TxLogTest, TxLogUnitTest)
         ctr++;
     }
 
-    EXPECT_EQ(ctr, (uint32_t)100/2 -1);
+    EXPECT_EQ(ctr, (uint32_t)NUM_ENTRY/2 -1);
 
 }
 
@@ -94,7 +95,7 @@ TEST_F(TxLogRecoveryTest, TxLogUnitTest)
     EXPECT_GT(txlog->size(), (size_t)0);
 
     // getTxState
-    for (uint64_t idx = 0; idx < 100; idx++) {
+    for (uint64_t idx = 0; idx < NUM_ENTRY; idx++) {
         uint32_t tx_state = ((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT;
         EXPECT_EQ(txlog->getTxState(idx), tx_state);
     }
@@ -117,7 +118,7 @@ TEST_F(TxLogRecoveryTest, TxLogUnitTest)
         ctr++;
     }
 
-    EXPECT_EQ(ctr, (uint32_t)100/2 -1);
+    EXPECT_EQ(ctr, (uint32_t)NUM_ENTRY/2 -1);
 }
 
 }  // namespace RAMCloud

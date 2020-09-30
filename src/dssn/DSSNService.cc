@@ -19,6 +19,7 @@ DSSNService::DSSNService(Context* context, ServerList* serverList,
     kvStore = new HashmapKVStore();
     validator = new Validator(*kvStore, this, serverConfig->master.isTesting);
     tabletManager = new TabletManager();
+    mMonitor = new DSSNServiceMonitor(this, context->metricExposer);
     context->services[WireFormat::DSSN_SERVICE] = this;
 }
 
@@ -35,21 +36,33 @@ DSSNService::dispatch(WireFormat::Opcode opcode, Rpc* rpc)
 {
     switch (opcode){
     case WireFormat::TxCommitDSSN::opcode:
+      {
+	Metric* m = mMonitor->getOpMetric(DSSNServiceCommit);
+        OpTrace t(m);
         callHandler<WireFormat::TxCommitDSSN, DSSNService,
         &DSSNService::txCommit>(rpc);
-        break;
+      }
+      break;
     case WireFormat::MultiOpDSSN::opcode:
         callHandler<WireFormat::MultiOpDSSN, DSSNService,
         &DSSNService::multiOp>(rpc);
         break;
     case WireFormat::ReadDSSN::opcode:
+      {
+	Metric* m = mMonitor->getOpMetric(DSSNServiceRead);
+        OpTrace t(m);
         callHandler<WireFormat::ReadDSSN, DSSNService,
         &DSSNService::read>(rpc);
-        break;
+      }
+      break;
     case WireFormat::ReadKeysAndValueDSSN::opcode:
+      {
+	Metric* m = mMonitor->getOpMetric(DSSNServiceReadKV);
+        OpTrace t(m);
         callHandler<WireFormat::ReadKeysAndValueDSSN, DSSNService,
         &DSSNService::readKeysAndValue>(rpc);
-        break;
+      }
+      break;
     case WireFormat::RemoveDSSN::opcode:
         callHandler<WireFormat::RemoveDSSN, DSSNService,
         &DSSNService::remove>(rpc);
@@ -108,7 +121,6 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
     }
 
     uint32_t initialLength = rpc->replyPayload->size();
-
     Buffer buffer;
     if (kv->getVLayout().valueLength > 0) {
         buffer.alloc(kv->getVLayout().valueLength);
@@ -182,14 +194,22 @@ DSSNService::multiOp(const WireFormat::MultiOpDSSN::Request* reqHdr,
         multiIncrement(reqHdr, respHdr, rpc);
         break;
     case WireFormat::MultiOp::OpType::READ:
+      {
+	Metric* m = mMonitor->getOpMetric(DSSNServiceReadMulti);
+        OpTrace t(m);
         multiRead(reqHdr, respHdr, rpc);
-        break;
+      }
+      break;
     case WireFormat::MultiOp::OpType::REMOVE:
         multiRemove(reqHdr, respHdr, rpc);
         break;
     case WireFormat::MultiOp::OpType::WRITE:
+      {
+	Metric* m = mMonitor->getOpMetric(DSSNServiceWriteMulti);
+        OpTrace t(m);
         multiWrite(reqHdr, respHdr, rpc);
-        break;
+      }
+      break;
     default:
         LOG(ERROR, "Unimplemented multiOp (type = %u) received!",
                 (uint32_t) reqHdr->type);
@@ -833,6 +853,8 @@ DSSNService::txDecision(const WireFormat::TxDecisionDSSN::Request* reqHdr,
 bool
 DSSNService::sendTxCommitReply(TxEntry *txEntry)
 {
+    Metric* m = mMonitor->getOpMetric(DSSNServiceSendTxReply);
+    OpTrace t(m);
     RpcHandle *handle = static_cast<RpcHandle *>(txEntry->getRpcHandle());
     assert(handle != NULL);
 
@@ -884,7 +906,8 @@ bool
 DSSNService::sendDSSNInfo(__uint128_t cts, uint8_t txState, TxEntry *txEntry, bool isSpecific, uint64_t target)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
-
+    Metric* m = mMonitor->getOpMetric(DSSNServiceSendDSSNInfo);
+    OpTrace t(m);
     WireFormat::DSSNSendInfoAsync::Request req;
     req.senderPeerId = getServerId();
     if (txEntry != NULL) {
@@ -942,6 +965,8 @@ DSSNService::sendDSSNInfo(__uint128_t cts, uint8_t txState, uint64_t pStamp, uin
 bool
 DSSNService::requestDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
 {
+    Metric* m = mMonitor->getOpMetric(DSSNServiceRequestDSSNInfo);
+    OpTrace t(m);
     WireFormat::DSSNRequestInfoAsync::Request req;
     req.cts = txEntry->getCTS();
     req.pstamp = txEntry->getPStamp();

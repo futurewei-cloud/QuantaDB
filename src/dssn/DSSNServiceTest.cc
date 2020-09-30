@@ -9,6 +9,7 @@
 #include "MockCluster.h"
 #include "RamCloud.h"
 #include "ServerId.h"
+#include "OpTrace.h"
 
 using namespace RAMCloud;
 
@@ -95,4 +96,39 @@ TEST_F(DSSNServiceTest, notification_send_dssn_info) {
     EXPECT_NE(string::npos, TestLog::get().find("sendDSSNInfo"));
     EXPECT_NE(string::npos, TestLog::get().find(std::to_string(serverId.serverId)));
 
+}
+
+TEST_F(DSSNServiceTest, OpTrace) {
+    DSSN::Metric td1;
+    DSSN::Metric td2;
+    {
+        DSSN::OpTrace d(&td1);
+	int i = 0;
+	i++;
+    }
+    EXPECT_TRUE(td1.latency > 0);
+    EXPECT_TRUE(td1.count == 1);
+    EXPECT_TRUE(td1.sCount == 0);
+    EXPECT_TRUE(td1.fCount == 0);
+    {
+        DSSN::OpTrace d(&td2);
+	for(int i = 0; i < 1000; i++);
+    }
+    EXPECT_TRUE(td2.latency > td1.latency);
+    {
+        bool result;
+	DSSN::OpTrace d(&td1, &result);
+	result = true;
+    }
+    EXPECT_TRUE(td1.count == 2);
+    EXPECT_TRUE(td1.sCount == 1);
+    EXPECT_TRUE(td1.fCount == 0);
+    {
+        bool result;
+	DSSN::OpTrace d(&td1, &result);
+	result = false;
+    };
+    EXPECT_TRUE(td1.count == 3);
+    EXPECT_TRUE(td1.sCount == 1);
+    EXPECT_TRUE(td1.fCount == 1);
 }

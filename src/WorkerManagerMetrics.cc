@@ -81,7 +81,7 @@ WorkerManagerMetrics::sample(WorkerManagerMetrics* wmm) {
 	    wmm->mPPfCounterHandle[WMM_PF_RPC_RATE]->Set((double)(rpcRequestCounter*1000/MONITOR_SAMPLING_INTERVAL_IN_MS));
 	}
 	if (IS_TRACING_MONITOR_ENABLED()) {
-	    wmm->observeTcValue(WMM_TC_POLL_LATENCY, Cycles::toMicroseconds(wmm->mManager->pollLatency));
+	    wmm->observeTcValue(WMM_TC_POLL_LATENCY, Cycles::toPreciseMicroseconds(wmm->mManager->pollLatency));
 	}
     }
 #endif

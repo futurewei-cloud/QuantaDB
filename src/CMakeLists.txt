@@ -3,7 +3,9 @@ ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/dssn)
 include(${CMAKE_CURRENT_SOURCE_DIR}/RAMCloudLib.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/RAMCloudCoord.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/RAMCloudServer.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/unittest.cmake)
+if(DEBUG)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/unittest.cmake)
+endif(DEBUG)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -37,9 +39,13 @@ target_sources(message
   PRIVATE
   ${PROTO_SRCS} ${PROTO_HDRS})
 
+if(DEBUG)
+  install(TARGETS test
+  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})
+endif(DEBUG)
 
-install(TARGETS coordinator server test
-RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(TARGETS coordinator server
+  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 install(TARGETS message ramcloud ramcloudcoord ramcloudserver
   PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE

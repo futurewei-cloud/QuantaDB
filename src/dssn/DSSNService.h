@@ -7,6 +7,7 @@
 #define DSSNSERVICE_H
 
 #include "AdminService.h"
+#include "DSSNServiceMonitor.h"
 #include "Service.h"
 #include "ServerConfig.h"
 #include "ServerList.h"
@@ -26,7 +27,7 @@ class DSSNService : public Service {
    ~DSSNService();
    void dispatch(WireFormat::Opcode opcode, Rpc* rpc);
 
-   static bool sendTxCommitReply(TxEntry *txEntry);
+   bool sendTxCommitReply(TxEntry *txEntry);
 
    bool sendDSSNInfo(__uint128_t cts, uint8_t txState, TxEntry *txEntry, bool isSpecific = false, uint64_t target = 0);
    bool sendDSSNInfo(__uint128_t cts, uint8_t txState, uint64_t pStamp, uint64_t sStamp, uint64_t target);
@@ -88,6 +89,7 @@ class DSSNService : public Service {
    HashmapKVStore* kvStore;
    Validator* validator;
    TabletManager *tabletManager;
+   DSSNServiceMonitor *mMonitor;
 };
 
 

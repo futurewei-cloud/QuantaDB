@@ -8,7 +8,10 @@ CFLAGS = -I$(TOP)/src/dssn -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TO
 %.o:$(TOP)/src/dssn/%.cc
 	g++ -c $(CFLAGS) $< -o $@
 
-TARGETS = txlog datalog rdtscp rdtscp_test2
+%:%.o
+	g++ -o $@ $^
+
+TARGETS = txlog datalog rdtscp rdtscp_test2 process_cpu phc_test
 
 all: $(TARGETS)
 
@@ -29,6 +32,9 @@ rdtscp: rdtscp.o
 
 rdtscp_test2: rdtscp_test2.o
 	g++ -o $@ $^ -lpthread
+
+phc_test: phc_test.c
+	g++ -DMAIN_FUNCTION phc_test.c -o phc_test
 
 clean:
 	rm -rf txlog_dumper *.o core $(TARGETS)
