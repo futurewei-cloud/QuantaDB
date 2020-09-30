@@ -140,8 +140,8 @@ TxLog::dump(int fd)
         TxEntry tx(0,0);
         tx.deSerialize( in );
 
-        dprintf(fd, "CTS: %lu, TxState: %s, pStamp: %lu, sStamp: %lu\n",
-            (uint64_t)(tx.getCTS()>>64), txStateToStr(tx.getTxState()), tx.getPStamp(), tx.getSStamp());
+        dprintf(fd, "CTS: %lu:%lu, TxState: %s, pStamp: %lu, sStamp: %lu\n",
+            (uint64_t)(tx.getCTS()>>64), (uint64_t)tx.getCTS(), txStateToStr(tx.getTxState()), tx.getPStamp(), tx.getSStamp());
 
         dprintf(fd, "\tpeerSet: ");
         peerSet =   tx.getPeerSet();
