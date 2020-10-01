@@ -112,6 +112,8 @@ TxEntry::serialize( outMemStream& out )
                 nWriteSet++;
         }
 
+        assert(nWriteSet == getWriteSetSize()); // According to Henry, the writeSet[] should be full of valid entries
+
         // writeSet
         out.write(&nWriteSet, sizeof(nWriteSet));
         for (uint32_t i = 0; i < nWriteSet; i++) {
