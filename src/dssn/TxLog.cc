@@ -115,7 +115,8 @@ TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t 
         }
         cnt++;
     }
-    abort();
+    *(int*)0 = 0;
+    // abort();
     return false; // indicating not found here
 }
 
