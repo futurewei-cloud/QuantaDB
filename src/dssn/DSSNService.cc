@@ -903,25 +903,19 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
 }
 
 bool
-DSSNService::sendDSSNInfo(__uint128_t cts, uint8_t txState, TxEntry *txEntry, bool isSpecific, uint64_t target)
+DSSNService::sendDSSNInfo(__uint128_t cts, TxEntry *txEntry, bool isSpecific, uint64_t target)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
     Metric* m = mMonitor->getOpMetric(DSSNServiceSendDSSNInfo);
     OpTrace t(m);
     WireFormat::DSSNSendInfoAsync::Request req;
     req.senderPeerId = getServerId();
-    if (txEntry != NULL) {
-        req.cts = txEntry->getCTS();
-        assert(cts == req.cts);
-        req.pstamp = txEntry->getPStamp();
-        req.sstamp = txEntry->getSStamp();
-        req.txState = txEntry->getTxState();
-    } else {
-        req.cts = cts;
-        req.pstamp = 0;
-        req.sstamp = 0xffffffffffffffff;
-        req.txState = txState;
-    }
+    assert(txEntry != NULL);
+    req.cts = txEntry->getCTS();
+    assert(cts == req.cts);
+    req.pstamp = txEntry->getPStamp();
+    req.sstamp = txEntry->getSStamp();
+    req.txState = txEntry->getTxState();
 
     char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
     uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);

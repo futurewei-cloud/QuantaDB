@@ -93,7 +93,6 @@ TxLog::getTxState(__uint128_t cts)
 bool
 TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t &sStamp)
 {
-    int cnt =0; //Fixme
     uint32_t dlen;
     TxLogTailer_t * tal;
     size_t hdrsz = sizeof(TxLogTailer_t) + sizeof(TxLogHeader_t);
@@ -113,9 +112,7 @@ TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t 
             sStamp = tx.getSStamp();
             return true;
         }
-        cnt++;
     }
-    abort();
     return false; // indicating not found here
 }
 

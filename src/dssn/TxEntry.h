@@ -113,7 +113,7 @@ class TxEntry {
         TX_CONFLICT = 5,
 
         /// Transaction has reached an abort conclusion due to being late
-        TX_LATE = 6,
+        TX_OUTOFORDER = 6,
 
         /// Indicator of a fabricated tx entry for logging purpose
         TX_FABRICATED = 99

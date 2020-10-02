@@ -491,7 +491,7 @@ TEST_F(ValidatorTest, BATLateDistributedTxs) {
     validator.testRun();
 
     //the older tx is aborted
-    EXPECT_EQ(TxEntry::TX_LATE, txEntry[0]->getTxState());
+    EXPECT_EQ(TxEntry::TX_OUTOFORDER, txEntry[0]->getTxState());
 
     //the younger tx taking too long to complete is put in ALERT state
     EXPECT_EQ(TxEntry::TX_ALERT, txEntry[1]->getTxState());

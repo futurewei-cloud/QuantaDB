@@ -32,9 +32,13 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
 
     // Fixme: may need to use TBB to pin the threads to specific cores LATER
     if (!isUnderTest) {
+#ifdef  DSSNTXRECOVERY
+        recover();
+#endif
         serializeThread = std::thread(&Validator::serialize, this);
         peeringThread = std::thread(&Validator::peer, this);
         schedulingThread = std::thread(&Validator::scheduleDistributedTxs, this);
+
     }
 }
 
@@ -256,8 +260,9 @@ Validator::scheduleDistributedTxs() {
 
                 //abort this CI, which has arrived later than a scheduled CI
                 //aborting is fine because its SSN info has never been sent to its peers
+                //although, in recovery case, SSN info could have been sent to its peers, the order of recovery should be preserved
                 //set the states and let peerInfo handling thread to do the rest
-                txEntry->setTxState(TxEntry::TX_LATE);
+                txEntry->setTxState(TxEntry::TX_OUTOFORDER);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
                 counters.lateScheduleErrors++;
                 continue;
@@ -344,7 +349,7 @@ Validator::conclude(TxEntry& txEntry) {
 
     if (txEntry.getPeerSet().size() >= 1) {
         //for late cross-shard tx, it is never added to activeTxSet; just convert the state
-        if (txEntry.getTxState() == TxEntry::TX_LATE)
+        if (txEntry.getTxState() == TxEntry::TX_OUTOFORDER)
             txEntry.setTxState(TxEntry::TX_ABORT);
         else
             activeTxSet.remove(&txEntry);
@@ -458,7 +463,7 @@ Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint6
     uint32_t txState;
     uint64_t pStamp, sStamp;
     if (txEntry) {
-        rpcService->sendDSSNInfo(cts, txEntry->getTxState(), txEntry, true, peerId);
+        rpcService->sendDSSNInfo(cts, txEntry, true, peerId);
         counters.infoReplies++;
     } else if (txLog.getTxInfo(cts, txState, pStamp, sStamp)) {
         rpcService->sendDSSNInfo(cts, txState, pStamp, sStamp, peerId);
@@ -473,9 +478,9 @@ void
 Validator::sendSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t targetPeerId) {
     if (rpcService) {
         if (!isSpecific)
-            rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry->getTxState(), txEntry);
+            rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry);
         else
-            rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry->getTxState(), txEntry, true, targetPeerId);
+            rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry, true, targetPeerId);
         counters.infoSends++;
     }
 }

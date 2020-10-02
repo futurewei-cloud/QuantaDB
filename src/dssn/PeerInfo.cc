@@ -134,7 +134,7 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
     }
 
     if ((txEntry->getTxState() == TxEntry::TX_ABORT && peerEntry->peerTxState == TxEntry::TX_COMMIT) ||
-            (txEntry->getTxState() == TxEntry::TX_COMMIT && peerEntry->peerTxState == TxEntry::TX_LATE) ||
+            (txEntry->getTxState() == TxEntry::TX_COMMIT && peerEntry->peerTxState == TxEntry::TX_OUTOFORDER) ||
             (txEntry->getTxState() == TxEntry::TX_COMMIT && peerEntry->peerTxState == TxEntry::TX_ABORT)) {
         abort(); //there must be a design problem -- debug
         txEntry->setTxState(TxEntry::TX_CONFLICT);
@@ -167,7 +167,7 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp,
         if (peerTxState == TxEntry::TX_ALERT) {
             peerEntry->peerTxState = TxEntry::TX_ALERT;
             peerEntry->peerAlertSet.insert(peerId);
-        } else if (peerTxState == TxEntry::TX_ABORT || peerTxState == TxEntry::TX_LATE) {
+        } else if (peerTxState == TxEntry::TX_ABORT || peerTxState == TxEntry::TX_OUTOFORDER) {
             assert(peerEntry->peerTxState != TxEntry::TX_COMMIT);
             peerEntry->peerTxState = TxEntry::TX_ABORT;
         } else if (peerTxState == TxEntry::TX_COMMIT) {
@@ -209,8 +209,11 @@ PeerInfo::send(Validator *validator) {
         if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
             validator->updateTxPStampSStamp(*txEntry);
 
-            //log CI before sending
-            if (validator->logTx(LOG_ALWAYS, txEntry)) {
+            //make sure that in recovery case, jump to alert state, if needed, skipping logging and sending in pending state
+            if (nsTime - (uint64_t)(txEntry->getCTS() >> 64) > alertThreshold) {
+                txEntry->setTxState(TxEntry::TX_ALERT);
+                txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
+            } else if (validator->logTx(LOG_ALWAYS, txEntry)) { //log CI before initial sending
                 assert(txEntry->getTxState() == TxEntry::TX_PENDING);
                 validator->sendSSNInfo(txEntry);
                 txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
