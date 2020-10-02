@@ -93,9 +93,7 @@ TEST_F(DSSNServiceTest, notification_send_dssn_info) {
     Notifier::notify(&context, WireFormat::DSSN_REQUEST_INFO_ASYNC,
                 msg, sizeof(req) - sizeof(WireFormat::Notification::Request), *new ServerId(serverId.serverId));
     //expect a reply is sent back to this sender
-    EXPECT_NE(string::npos, TestLog::get().find("sendDSSNInfo"));
-    EXPECT_NE(string::npos, TestLog::get().find(std::to_string(serverId.serverId)));
-
+    EXPECT_EQ(0, TestLog::get().find("handleRequestInfoAsync"));
 }
 
 TEST_F(DSSNServiceTest, OpTrace) {
