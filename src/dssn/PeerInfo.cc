@@ -45,7 +45,6 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
         validator->getCounters().matchEarlyPeers++;
         existing->mutexForPeerUpdate.unlock();
     }
-    assert(peerInfo.find(cts) != peerInfo.end());
     mutexForPeerAdd.unlock();
     return true;
 }
@@ -70,7 +69,6 @@ PeerInfo::getNext(PeerInfoIterator &it) {
 
 bool
 PeerInfo::sweep(Validator *validator) {
-    /*
     //delete peerInfo entry no longer needed
     ///further reference to the swept tx should be using CTS into the tx log
     uint32_t cnt = 0;
@@ -84,7 +82,7 @@ PeerInfo::sweep(Validator *validator) {
             validator->getCounters().deletedPeers++;
         } else
             itr++;
-    }*/
+    }
     return true;
 }
 
