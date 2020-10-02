@@ -38,7 +38,7 @@ namespace DSSN {
  */
 
 struct PeerEntry {
-    bool isValid = false;
+    bool isValid = true;
     std::mutex mutexForPeerUpdate; //mutex for this peer entry
     std::set<uint64_t> peerSeenSet; //peers seen so far
     std::set<uint64_t> peerAlertSet; //peers seen currently in alert state

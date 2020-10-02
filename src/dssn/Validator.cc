@@ -449,12 +449,11 @@ Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uin
 
 void
 Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
-    if (peerTxState == TxEntry::TX_CONFLICT)
-        assert(0); //Fixme: do recovery or debug
+    assert(peerTxState != TxEntry::TX_CONFLICT);
+
     if (rpcService == NULL) //unit test may make rpcService NULL
         return;
 
-    //Fixme: if tx is already concluded and logged, provide the logged state
     TxEntry *txEntry = receiveSSNInfo(peerId, cts, pstamp, sstamp, peerTxState);
     uint32_t txState;
     uint64_t pStamp, sStamp;
@@ -466,7 +465,7 @@ Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint6
         counters.infoReplies++;
     } else {
         //This is the case when the local CI has not been created
-        //Fixme: no reply at all?? rpcService->sendDSSNInfo(cts, TxEntry::TX_PENDING, NULL, true, peerId);
+        //no reply at all
     }
 }
 
