@@ -109,16 +109,16 @@ static clockid_t get_clock_id(char *device, int *phc_index)
 	}
 
 	close(fd);
-    //-----------------------
+ 
 	if (info.phc_index < 0) {
-		printf("Interface %s does not have a PHC\n", device);
+		//printf("Interface %s does not have a PHC\n", device);
 		return CLOCK_INVALID;
 	}
 
 	snprintf(phc_device, sizeof(phc_device), "/dev/ptp%d", info.phc_index);
     fd = open(phc_device, O_RDONLY);
     if (fd < 0) {
-		printf("FatalError: cannot open %s for read. Need to change mode to 644.\n", phc_device);
+		printf("Warning: %s no read permision. Need to change mode to 644.\n", phc_device);
         return CLOCK_INVALID;
     }
 
@@ -136,7 +136,7 @@ static clockid_t get_ptp_clock_id()
     char ptpdev[16];
 
     if (get_ptp_device(ptpdev, sizeof(ptpdev)) != 0) {
-        printf("FatalError: PTP device not found. Fallback to using system clock.\n");
+        printf("Warning: no PTP. Use system clock.\n");
         return CLOCK_REALTIME;
     }
 
@@ -145,7 +145,7 @@ static clockid_t get_ptp_clock_id()
     clockid_t clkid = get_clock_id(ptpdev, &phc_index);
 
     if (clkid == CLOCK_INVALID) {
-        printf("FatalError: can not get PTP clock id. fallback to using CLOCK_REALTIME.\n");
+        printf("Warning: can not get PTP clock id. Use system clock.\n");
         clkid = CLOCK_REALTIME;
     }
 
@@ -336,6 +336,7 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
     // Init ts_tracker
     tp->tracker_id = ctsp->my_tracker_id;
     tp->pingpong = 0;
+    tp->clockid = get_ptp_clock_id();
     tp->cyclesPerSec = getTSCHz();
     tp->nt[0].last_clock       = tp->nt[1].last_clock       = ctsp->getnsec();
     tp->nt[0].last_clock_tsc   = tp->nt[1].last_clock_tsc   = rdtscp();
@@ -388,8 +389,6 @@ ClusterTimeService::ClusterTimeService()
     tp = (ts_tracker_t *)mmap(NULL, sizeof(ts_tracker_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
     assert(tp);
     close(fd);
-
-    clockid = get_ptp_clock_id();
 
     // Start tracker thread
     thread_run_run = true;
