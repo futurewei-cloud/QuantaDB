@@ -92,7 +92,7 @@ class ClusterTimeService {
     inline uint64_t getnsec()
     {
         timespec ts;
-        clock_gettime(clockid, &ts);
+        clock_gettime(tp->clockid, &ts);
         return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
     }
 
@@ -101,7 +101,7 @@ class ClusterTimeService {
     {
         timespec ts;
         uint64_t tsc1 = rdtscp();
-        clock_gettime(clockid, &ts);
+        clock_gettime(tp->clockid, &ts);
         uint64_t tsc2 = rdtscp();
         *tsc = (tsc1 + tsc2) / 2;
         return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
@@ -125,12 +125,12 @@ class ClusterTimeService {
         double cyclesPerSec;
         std::atomic<int> tracker_id;
         uint32_t heartbeat;
+        clockid_t clockid;             //
     } ts_tracker_t;
 
     // 
     ts_tracker_t * tp;                // pointing to a shared ts_tracker
     pthread_t tid;
-    clockid_t clockid;                //
     int my_tracker_id;
     bool thread_run_run;
     bool tracker_init;

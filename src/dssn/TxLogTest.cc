@@ -73,6 +73,18 @@ TEST_F(TxLogTest, TxLogUnitTest)
         EXPECT_EQ(txlog.getTxState(idx), tx_state);
     }
 
+    // getTxInfo
+    for (uint64_t idx = 0; idx < NUM_ENTRY; idx++) {
+        uint32_t tx_state = ((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT;
+        uint32_t txState;
+        uint64_t pStamp, sStamp;
+        bool ret = txlog.getTxInfo(idx, txState, pStamp, sStamp);
+        EXPECT_EQ(ret, true);
+        EXPECT_EQ(tx_state, txState);
+        EXPECT_EQ(pStamp, idx);
+        EXPECT_EQ(sStamp, idx);
+    }
+
     ret = txlog.getFirstPendingTx(idOut, meta, peerSet, writeSet);
 
     EXPECT_EQ(ret, true);
