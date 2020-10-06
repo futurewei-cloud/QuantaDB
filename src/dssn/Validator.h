@@ -99,6 +99,7 @@ class Validator {
     HashmapKVStore &kvStore; //Fixme
     DSSNService *rpcService;
     bool isUnderTest;
+    bool isAlive = true;
 	WaitList &localTxQueue;
     SkipList<__uint128_t> &reorderQueue;
     DistributedTxSet &distributedTxSet;

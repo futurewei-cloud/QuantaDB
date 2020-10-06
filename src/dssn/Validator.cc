@@ -44,12 +44,13 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
 
 Validator::~Validator() {
     if (!isUnderTest) {
+        isAlive = false;
         if (serializeThread.joinable())
-            serializeThread.detach();
+            serializeThread.join();
         if (peeringThread.joinable())
-            peeringThread.detach();
+            peeringThread.join();
         if (schedulingThread.joinable())
-            schedulingThread.detach();
+            schedulingThread.join();
     }
     logCounters();
     delete &localTxQueue;
@@ -280,7 +281,7 @@ Validator::scheduleDistributedTxs() {
                 lastTick = currentTick;
             }
         }
-    } while (!isUnderTest);
+    } while (isAlive && !isUnderTest);
 }
 
 void
@@ -289,7 +290,7 @@ Validator::serialize() {
      * This loop handles the DSSN serialization window critical section
      */
     bool hasEvent = true;
-    while (!isUnderTest || hasEvent) {
+    while (isAlive && (!isUnderTest || hasEvent)) {
         hasEvent = false;
 
         // process all commit-intents on local transaction queue
@@ -382,7 +383,7 @@ Validator::peer() {
         peerInfo.send(this);
         peerInfo.sweep(this);
         this_thread::yield();
-    } while (!isUnderTest);
+    } while (isAlive && !isUnderTest);
 }
 
 bool
