@@ -14,19 +14,19 @@ using namespace DSSN;
 
 class TxLogTest : public ::testing::Test {
   public:
-  TxLogTest() {};
+  TxLogTest() { txlog = new TxLog(false, "unittest"); };
   ~TxLogTest() {};
 
   HashmapKVStore kvStore;
 
-  TxLog txlog;
+  TxLog *txlog;
 
   DISALLOW_COPY_AND_ASSIGN(TxLogTest);
 };
 
 class TxLogRecoveryTest : public ::testing::Test {
   public:
-  TxLogRecoveryTest() { txlog = new TxLog(true); };
+  TxLogRecoveryTest() { txlog = new TxLog(true, "unittest"); };
   ~TxLogRecoveryTest() {};
 
   TxLog *txlog;
@@ -42,9 +42,9 @@ TEST_F(TxLogTest, TxLogUnitTest)
     std::set<uint64_t> peerSet;
     boost::scoped_array<KVLayout*> writeSet;
 
-    EXPECT_EQ(txlog.size(), (size_t)0);
+    EXPECT_EQ(txlog->size(), (size_t)0);
 
-    bool ret = txlog.getFirstPendingTx(idOut, meta, peerSet, writeSet);
+    bool ret = txlog->getFirstPendingTx(idOut, meta, peerSet, writeSet);
 
     EXPECT_EQ(ret, false);
 
@@ -62,15 +62,15 @@ TEST_F(TxLogTest, TxLogUnitTest)
         KVLayout *kv2 = kvStore.preput(kv);
         tx.insertWriteSet(kv2, 0);
 
-        txlog.add(&tx);
+        txlog->add(&tx);
     }
 
     // getTxState
     for (uint64_t idx = 0; idx < NUM_ENTRY; idx++) {
         uint32_t tx_state = ((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT;
-        if (txlog.getTxState(idx) != tx_state)
+        if (txlog->getTxState(idx) != tx_state)
             GTEST_COUT << "idx=" << idx << std::endl;
-        EXPECT_EQ(txlog.getTxState(idx), tx_state);
+        EXPECT_EQ(txlog->getTxState(idx), tx_state);
     }
 
     // getTxInfo
@@ -78,7 +78,7 @@ TEST_F(TxLogTest, TxLogUnitTest)
         uint32_t tx_state = ((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT;
         uint32_t txState;
         uint64_t pStamp, sStamp;
-        bool ret = txlog.getTxInfo(idx, txState, pStamp, sStamp);
+        bool ret = txlog->getTxInfo(idx, txState, pStamp, sStamp);
         if (!ret)
             continue;
         EXPECT_EQ(ret, true);
@@ -87,14 +87,14 @@ TEST_F(TxLogTest, TxLogUnitTest)
         EXPECT_EQ(sStamp, idx);
     }
 
-    ret = txlog.getFirstPendingTx(idOut, meta, peerSet, writeSet);
+    ret = txlog->getFirstPendingTx(idOut, meta, peerSet, writeSet);
 
     EXPECT_EQ(ret, true);
     EXPECT_EQ(meta.pStamp, (uint64_t)0);
 
     uint64_t idIn = idOut;
     uint32_t ctr = 0;
-    while (txlog.getNextPendingTx(idIn, idOut, meta, peerSet, writeSet)) {
+    while (txlog->getNextPendingTx(idIn, idOut, meta, peerSet, writeSet)) {
         idIn = idOut;
         EXPECT_TRUE((meta.pStamp % 2) == 0);
         ctr++;

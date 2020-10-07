@@ -34,11 +34,11 @@ class DSSNService : public Service {
 
    bool requestDSSNInfo(TxEntry *txEntry, bool isSpecific = false, uint64_t target = 0);
 
- private:
    const std::string& getServerAddress() {
        static ServiceLocator sl(serverConfig->localLocator);
        return sl.getOption("host");
    }
+ private:
    inline uint64_t getServerId() {
        AdminService* admin = context->getAdminService();
        if (admin) {
