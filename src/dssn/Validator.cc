@@ -51,8 +51,8 @@ Validator::~Validator() {
             peeringThread.join();
         if (schedulingThread.joinable())
             schedulingThread.join();
+        logCounters();
     }
-    logCounters();
     delete &localTxQueue;
     delete &reorderQueue;
     delete &distributedTxSet;
@@ -273,7 +273,7 @@ Validator::scheduleDistributedTxs() {
         }
 
         //log counters every 10s
-        if (logLevel >= LOG_INFO) {
+        if (!isUnderTest && logLevel >= LOG_INFO) {
             uint64_t nsTime = getClockValue();
             uint64_t currentTick = nsTime / 10000000000;
             if (lastTick < currentTick) {
@@ -506,17 +506,12 @@ Validator::recover() {
     uint64_t it = 0;
     DSSNMeta meta;
     TxEntry *txEntry = new TxEntry(0, 0);
-    if (txLog.getFirstPendingTx(it, meta, txEntry->getPeerSet(),
+    while (txLog.getNextPendingTx(it, it, meta, txEntry->getPeerSet(),
             txEntry->getWriteSet())) {
+        txEntry->setTxState(TxEntry::TX_ALERT); //indicate a recovered entry
         insertTxEntry(txEntry);
         counters.recovers++;
         txEntry = new TxEntry(0, 0);
-        while (txLog.getNextPendingTx(it, it, meta, txEntry->getPeerSet(),
-                txEntry->getWriteSet())) {
-            insertTxEntry(txEntry);
-            counters.recovers++;
-            txEntry = new TxEntry(0, 0);
-        }
     }
     delete txEntry;
 

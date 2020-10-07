@@ -209,9 +209,8 @@ PeerInfo::send(Validator *validator) {
         if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
             validator->updateTxPStampSStamp(*txEntry);
 
-            //make sure that in recovery case, jump to alert state, if needed, skipping logging and sending in pending state
-            if (nsTime - (uint64_t)(txEntry->getCTS() >> 64) > alertThreshold) {
-                txEntry->setTxState(TxEntry::TX_ALERT);
+            if (txEntry->getTxState() == TxEntry::TX_ALERT) {
+                //this is in recovery case; skip logging and sending in pending state
                 txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
             } else if (validator->logTx(LOG_ALWAYS, txEntry)) { //log CI before initial sending
                 assert(txEntry->getTxState() == TxEntry::TX_PENDING);

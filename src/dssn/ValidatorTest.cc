@@ -498,22 +498,33 @@ TEST_F(ValidatorTest, BATLateDistributedTxs) {
 
     freeTxEntry(size);
 }
-
 /*
 TEST_F(ValidatorTest, BATRecover) {
-    int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
-    size = 20;
+    int size = 10;
 
     validator.txLog.clear();
 
     fillTxEntry(size, 20, 3); //3 participants
+    for (int i = 0; i < size; i++) {
+        validator.insertTxEntry(txEntry[i]);
+        validator.testRun();
+    }
+
+    EXPECT_EQ(size, (int)validator.activeTxSet.addedTxCount);
 
     validator.recover();
-    EXPECT_EQ(0UL, validator.counters.recovers);
+    EXPECT_EQ(size, (int)validator.counters.recovers);
+
+    validator.lastScheduledTxCTS = 0;
+    for (int i = 0; i < size; i++) {
+        validator.testRun();
+    }
+    EXPECT_EQ(size * 2, (int)validator.activeTxSet.addedTxCount);
 
     freeTxEntry(size);
-}
+}*/
 
+/*
 TEST_F(ValidatorTest, BATDependencyMatrix) {
 	fillTxEntry(35, 20, 2); //35 txs of 20 keys and 2 peers
 
