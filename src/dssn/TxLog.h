@@ -17,9 +17,16 @@ namespace DSSN {
  * The class is responsible for maintaining and cleaning the logged tx info.
  */
 class TxLog {
+    #define TXLOG_DIR   "/dev/shm/txlog"
+    #define TXLOG_CHUNK_SIZE (1024*1024*1024)
     public:
-    TxLog();
-    TxLog(bool); // for revovery mode
+
+    TxLog(bool recovery_mode, std::string logid = "")
+    {
+        std::string txlog_id(TXLOG_DIR);
+        txlog_id += "/" + logid;
+        log = new DLog<TXLOG_CHUNK_SIZE>(txlog_id, recovery_mode);
+    }
 
     //add to the log, where txEntry->getTxState() decides the handling within
     ///expected to be used for persisting the tx state then and the read and write sets
@@ -72,8 +79,6 @@ class TxLog {
     } TxLogHeader_t, TxLogTailer_t;
 
     // private variables
-    #define TXLOG_DIR   "/dev/shm/txlog"
-    #define TXLOG_CHUNK_SIZE (1024*1024*1024)
     DLog<TXLOG_CHUNK_SIZE> *log;
 }; // TxLog
 

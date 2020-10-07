@@ -16,6 +16,7 @@ DSSNService::DSSNService(Context* context, ServerList* serverList,
 , serverList(serverList)
 , serverConfig(serverConfig)
 {
+    RAMCLOUD_LOG(NOTICE, "%s", getServerAddress().c_str());  //Mike, please remove it.
     kvStore = new HashmapKVStore();
     validator = new Validator(*kvStore, this, serverConfig->master.isTesting);
     tabletManager = new TabletManager();

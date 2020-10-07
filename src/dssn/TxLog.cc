@@ -5,16 +5,6 @@
 
 namespace DSSN {
 
-TxLog::TxLog()
-{
-    log = new DLog<TXLOG_CHUNK_SIZE>(TXLOG_DIR, false);
-}
-
-TxLog::TxLog(bool recovery_mode = false)
-{
-    log = new DLog<TXLOG_CHUNK_SIZE>(TXLOG_DIR, recovery_mode);
-}
-
 bool
 TxLog::add(TxEntry *txEntry)
 {
