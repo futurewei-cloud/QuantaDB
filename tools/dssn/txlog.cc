@@ -32,7 +32,8 @@ int main(int ac, char *av[])
         struct dirent *dp;
         while ((dp = readdir(dir)) != NULL) {
             if ((strcmp(dp->d_name, ".") == 0) ||
-                (strcmp(dp->d_name, "..") == 0))
+                (strcmp(dp->d_name, "..") == 0) ||
+                (dp->d_type != DT_DIR))
                 continue;
             printf("%s\n", dp->d_name);
         }
