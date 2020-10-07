@@ -498,11 +498,11 @@ TEST_F(ValidatorTest, BATLateDistributedTxs) {
 
     freeTxEntry(size);
 }
-/*
+
 TEST_F(ValidatorTest, BATRecover) {
     int size = 10;
 
-    validator.txLog.clear();
+    validator.txLog.trim(0);
 
     fillTxEntry(size, 20, 3); //3 participants
     for (int i = 0; i < size; i++) {
@@ -522,7 +522,7 @@ TEST_F(ValidatorTest, BATRecover) {
     EXPECT_EQ(size * 2, (int)validator.activeTxSet.addedTxCount);
 
     freeTxEntry(size);
-}*/
+}
 
 /*
 TEST_F(ValidatorTest, BATDependencyMatrix) {
