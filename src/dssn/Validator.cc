@@ -24,9 +24,9 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
   peerInfo(*new PeerInfo()),
   concludeQueue(*new ConcludeQueue()),
 #ifdef  DSSNTXRECOVERY
-  txLog(*new TxLog(true, _rpcService->getServerAddress())) {
+  txLog(*new TxLog(true, _rpcService ?_rpcService->getServerAddress() : "0.0.0.0")) {
 #else
-  txLog(*new TxLog(false, _rpcService->getServerAddress())) {
+  txLog(*new TxLog(false, _rpcService ?_rpcService->getServerAddress() : "0.0.0.0")) {
 #endif
     lastScheduledTxCTS = 0;
 

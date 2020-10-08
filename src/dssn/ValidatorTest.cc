@@ -498,7 +498,7 @@ TEST_F(ValidatorTest, BATLateDistributedTxs) {
 
     freeTxEntry(size);
 }
-
+/*
 TEST_F(ValidatorTest, BATRecover) {
     int size = 10;
 
