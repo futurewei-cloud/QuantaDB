@@ -136,20 +136,13 @@ static clockid_t get_ptp_clock_id()
     char ptpdev[16];
 
     if (get_ptp_device(ptpdev, sizeof(ptpdev)) != 0) {
-        printf("Warning: no PTP. Use system clock.\n");
-        return CLOCK_REALTIME;
+        printf("Warning: PTP not running.\n");
+        return CLOCK_INVALID;
     }
 
     //printf("PTP device: %s\n", ptpdev);
 
-    clockid_t clkid = get_clock_id(ptpdev, &phc_index);
-
-    if (clkid == CLOCK_INVALID) {
-        printf("Warning: can not get PTP clock id. Use system clock.\n");
-        clkid = CLOCK_REALTIME;
-    }
-
-    return clkid;
+    return get_clock_id(ptpdev, &phc_index);
 }
 
 static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
@@ -336,7 +329,15 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
     // Init ts_tracker
     tp->tracker_id = ctsp->my_tracker_id;
     tp->pingpong = 0;
-    tp->clockid = get_ptp_clock_id();
+    #if (1)
+    tp->clockid = CLOCK_REALTIME; // Use SYS clock for now.
+    #else
+    tp->clockid = get_ptp_clock_id(); // Use PTP clock
+    if (tp->clockid == CLOCK_INVALID) {
+        printf("FatalError: failed to get PTP clock id.\n");
+        exit(10);
+    }
+    #endif
     tp->cyclesPerSec = getTSCHz();
     tp->nt[0].last_clock       = tp->nt[1].last_clock       = ctsp->getnsec();
     tp->nt[0].last_clock_tsc   = tp->nt[1].last_clock_tsc   = rdtscp();
