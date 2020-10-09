@@ -43,7 +43,7 @@ class SkiplistTest : public ::testing::Test {
 
   SkipList<uint64_t> s;
 
-  SkipList<uint64_t> *sp = new SkipList<uint64_t>(0.2);
+  // SkipList<uint64_t> *sp = new SkipList<uint64_t>(0.2);
 
   DISALLOW_COPY_AND_ASSIGN(SkiplistTest);
 };
@@ -185,6 +185,33 @@ TEST_F(SkiplistTest, benchGetCTS) {
     GTEST_COUT << "Skiplist pop():"
     << Cycles::toNanoseconds(stop - start)/loop << " nano sec per call " << std::endl;
 
+}
+
+void multiThreadTest(SkiplistTest *t)
+{
+    int foo;
+    srand((uint64_t)&foo >> 32);
+    for (uint64_t i = 0; i < t->loop; ++i) {
+        int op = rand() % 5;
+        switch(op) {
+        case 0: t->s.insert(i, t->buf[i]); break;
+        case 1: t->s.remove(i); break;
+        case 2: t->s.pop(); break;
+        case 3: t->s.try_pop(i); break;
+        case 4: t->s.get(i); break;
+        default: break;
+        }
+    }
+}
+
+TEST_F(SkiplistTest, MtTest) {
+    std::thread t1(multiThreadTest, this);
+    std::thread t2(multiThreadTest, this);
+    std::thread t3(multiThreadTest, this);
+
+    t1.join();
+    t2.join();
+    t3.join();
 }
 
 }  // namespace RAMCloud

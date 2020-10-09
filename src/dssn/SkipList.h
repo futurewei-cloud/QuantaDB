@@ -83,10 +83,16 @@ class SkipList {
         std::cout <<"=======\n";
     }
 
-    inline bool contains(Key_t key) { return find(key) != NULL; }
+    inline bool contains(Key_t key)
+    {
+        lock();
+        bool ret = find(key) != NULL;
+        unlock();
+        return ret;
+    }
 
     /*
-     * Insert Element in Skip List
+     * Insert Element to Skip List
      */
     bool insert(Key_t key, void *value)
     {
@@ -144,38 +150,7 @@ class SkipList {
     void remove(Key_t key) 
     {
         lock();
-        SkipNode<Key_t> *x = head;	
-        SkipNode<Key_t> *update[MAX_LEVEL + 1];
-        memset (update, 0, sizeof(SkipNode<Key_t>*) * (MAX_LEVEL + 1));
-
-        for (int i = level; i >= 0; i--)
-        {
-            while (x->forw[i] != NULL && x->forw[i]->key < key)
-            {
-                x = x->forw[i];
-            }
-            update[i] = x; 
-        }
-
-        x = x->forw[0];
-
-        if (x->key == key) 
-        {
-            for (int i = 0;i <= level;i++) 
-            {
-                if (update[i]->forw[i] != x)
-                    break;
-
-                update[i]->forw[i] = x->forw[i];
-            }
-
-            delete x;
-            ctr--;
-            while (level > 0 && head->forw[level] == NULL) 
-            {
-                level--;
-            }
-        }
+        remove_internal(key);
         unlock();
     }
 
@@ -183,27 +158,33 @@ class SkipList {
     
     inline void * get(Key_t key)
     {
+        lock();
         SkipNode<Key_t> * n = find(key);
-        return (n)? const_cast<void *>(n->value) : NULL;
+        unlock();
+        return (n)? n->value : NULL;
     }
 
     inline void * pop()
     {
         void * val = NULL;
+        lock();
         if (head->forw[0]) { 
             val = head->forw[0]->value;
-            remove(head->forw[0]->key);
+            remove_internal(head->forw[0]->key);
         }
+        unlock();
         return val;
     }
 
     inline void * try_pop(Key_t key)
     {
         void * val = NULL;
+        lock();
         if (head->forw[0] && (key >= head->forw[0]->key)) {
             val = head->forw[0]->value;
-            remove(head->forw[0]->key);
+            remove_internal(head->forw[0]->key);
         }
+        unlock();
         return val;
     }
 
@@ -239,7 +220,7 @@ class SkipList {
      */
     SkipNode<Key_t> * find(Key_t key) 
     {
-        SkipNode<Key_t> *x = head;
+        SkipNode<Key_t> *x = head, *ret;
 
         for (int i = level; i >= 0; i--)
         {
@@ -250,7 +231,47 @@ class SkipList {
         }
 
         x = x->forw[0];
-        return (x != NULL && x->key == key)? x : NULL;
+        ret = (x != NULL && x->key == key)? x : NULL;
+        return ret;
+    }
+
+    /*
+     * Delete Element from Skip List
+     */
+    void remove_internal(Key_t key)
+    {
+        SkipNode<Key_t> *x = head;
+        SkipNode<Key_t> *update[MAX_LEVEL + 1];
+        memset (update, 0, sizeof(SkipNode<Key_t>*) * (MAX_LEVEL + 1));
+
+        for (int i = level; i >= 0; i--)
+        {
+            while (x->forw[i] != NULL && x->forw[i]->key < key)
+            {
+                x = x->forw[i];
+            }
+            update[i] = x;
+        }
+
+        x = x->forw[0];
+
+        if (x != NULL && x->key == key) 
+        {
+            for (int i = 0;i <= level;i++)
+            {
+                if (update[i]->forw[i] != x)
+                    break;
+
+                update[i]->forw[i] = x->forw[i];
+            }
+
+            delete x;
+            ctr--;
+            while (level > 0 && head->forw[level] == NULL)
+            {
+                level--;
+            }
+        }
     }
 
 	int volatile lock_;	// CAS spin lock
