@@ -32,6 +32,22 @@ bool
 TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set<uint64_t> &peerSet,
                         boost::scoped_array<KVLayout*> &writeSet)
 {
+    TxEntry tx(1,1);
+    if (getNextPendingTx(idIn, idOut, tx)) {
+        meta.pStamp = tx.getPStamp();
+        meta.sStamp = tx.getSStamp();
+        meta.cStamp = tx.getCTS();
+        peerSet =   tx.getPeerSet();
+        writeSet.reset(new KVLayout*[tx.getWriteSetIndex()]);
+        memcpy(writeSet.get(), tx.getWriteSet().get(), sizeof(KVLayout*) * tx.getWriteSetIndex()); 
+        return true;
+    }
+    return false;
+}
+
+bool
+TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, TxEntry &txOut)
+{
     uint32_t dlen;
     uint64_t off = idIn;
     TxLogHeader_t * hdr;
@@ -41,16 +57,9 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
         off += hdr->length;
 
         inMemStream in((uint8_t*)&hdr[1], dlen - sizeof(hdr));
-        TxEntry tx(1,1);
-        tx.deSerialize( in );
-        if (tx.getTxState() == TxEntry::TX_PENDING) {
+        txOut.deSerialize( in );
+        if (txOut.getTxState() == TxEntry::TX_PENDING) {
             idOut = off;
-            meta.pStamp = tx.getPStamp();
-            meta.sStamp = tx.getSStamp();
-            meta.cStamp = tx.getCTS();
-            peerSet =   tx.getPeerSet();
-            writeSet.reset(new KVLayout*[tx.getWriteSetIndex()]);
-            memcpy(writeSet.get(), tx.getWriteSet().get(), sizeof(KVLayout*) * tx.getWriteSetIndex()); 
             return true;
         }
     }
