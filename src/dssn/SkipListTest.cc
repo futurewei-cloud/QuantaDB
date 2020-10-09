@@ -187,7 +187,7 @@ TEST_F(SkiplistTest, benchGetCTS) {
 
 }
 
-void multiThreadTest(SkiplistTest *t)
+void threadSafeTest(SkiplistTest *t)
 {
     int foo;
     srand((uint64_t)&foo >> 32);
@@ -204,14 +204,79 @@ void multiThreadTest(SkiplistTest *t)
     }
 }
 
-TEST_F(SkiplistTest, MtTest) {
-    std::thread t1(multiThreadTest, this);
-    std::thread t2(multiThreadTest, this);
-    std::thread t3(multiThreadTest, this);
+TEST_F(SkiplistTest, MtSafeTest) {
+    std::thread t1(threadSafeTest, this);
+    std::thread t2(threadSafeTest, this);
+    std::thread t3(threadSafeTest, this);
 
     t1.join();
     t2.join();
     t3.join();
+}
+
+void mtInsertTest(SkiplistTest *t, uint32_t start, uint32_t len)
+{
+    assert(start+len < t->loop);
+    for (uint32_t i = start; i < start+len; ++i) {
+        t->s.insert(i, t->buf[i]);
+    }
+}
+
+void mtPopTest(SkiplistTest *t, uint32_t len)
+{
+    for (uint32_t i = 0; i < len; ++i) {
+        t->s.pop();
+    }
+}
+
+void mtRemoveTest(SkiplistTest *t, uint32_t start, uint32_t len)
+{
+    assert(start+len < t->loop);
+    for (uint32_t i = start; i < start+len; ++i) {
+        t->s.remove(i);
+    }
+}
+
+void emptySkipList(SkipList<uint64_t> *s)
+{
+    while (s->ctr > 0)
+        s->pop();
+
+    assert(s->pop() == NULL);
+}
+
+TEST_F(SkiplistTest, MtCorrectnessTest) {
+    emptySkipList(&s);
+
+    std::thread t1(mtInsertTest, this, 0, 100);
+    std::thread t2(mtInsertTest, this, 101, 100);
+    std::thread t3(mtInsertTest, this, 201, 100);
+
+    t1.join();
+    t2.join();
+    t3.join();
+
+    EXPECT_EQ(s.ctr, (uint32_t)300);
+
+    std::thread t4(mtPopTest, this, 50);
+    std::thread t5(mtPopTest, this, 50);
+    std::thread t6(mtPopTest, this, 50);
+
+    t4.join();
+    t5.join();
+    t6.join();
+
+    EXPECT_EQ(s.ctr, (uint32_t)150);
+
+    std::thread t7(mtRemoveTest, this, 0, 100);
+    std::thread t8(mtRemoveTest, this, 101, 100);
+    std::thread t9(mtRemoveTest, this, 201, 100);
+
+    t7.join();
+    t8.join();
+    t9.join();
+
+    EXPECT_EQ(s.ctr, (uint32_t)0);
 }
 
 }  // namespace RAMCloud
