@@ -253,11 +253,13 @@ Validator::scheduleDistributedTxs() {
     //expressed in the cluster time unit (due to current sequencer implementation).
     //During testing, ignore the timing constraint imposed by the local clock.
     TxEntry *txEntry;
+    TxEntry *prevTxEntry = NULL;
     uint64_t lastTick = 0;
     do {
         if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (__uint128_t)-1 : get128bClockValue()))) {
             if (txEntry->getCTS() <= lastScheduledTxCTS) {
                 assert(txEntry->getCTS() != lastScheduledTxCTS); //no duplicate CTS from sequencer
+                assert(prevTxEntry != txEntry);
 
                 //abort this CI, which has arrived later than a scheduled CI
                 //aborting is fine because its SSN info has never been sent to its peers
@@ -270,6 +272,7 @@ Validator::scheduleDistributedTxs() {
             }
             while (!distributedTxSet.add(txEntry));
             lastScheduledTxCTS = txEntry->getCTS();
+            prevTxEntry = txEntry;
         }
 
         //log counters every 10s
