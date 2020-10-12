@@ -29,6 +29,9 @@ MONITOR ?= no
 # set to yes to enable DSSN start in recovery mode
 DSSNTXRECOVERY ?= no
 
+## Set to yes to enable using PTP clock
+USE_PTP_CLOCK ?= no
+
 ## Create a separate build directory for each git branch and for each arch
 OBJSUFFIX := $(shell git symbolic-ref -q HEAD | \
 	       sed -e s,refs/heads/,.,)
@@ -86,12 +89,17 @@ endif
 ifeq ($(DSSNTX), yes)
 COMFLAGS += -DDSSNTX
 endif
+
 ifeq ($(MONITOR), yes)
 COMFLAGS += -DMONITOR
 endif
 
 ifeq ($(DSSNTXRECOVERY), yes)
 COMFLAGS += -DDSSNTXRECOVERY
+endif
+
+ifeq ($(USE_PTP_CLOCK), yes)
+COMFLAGS += -DUSE_PTP_CLOCK
 endif
 
 # Google sanitizers are not compatible with each other, so only apply one at a
