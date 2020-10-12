@@ -33,7 +33,7 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
                         boost::scoped_array<KVLayout*> &writeSet)
 {
     TxEntry tx(1,1);
-    if (getNextPendingTx(idIn, idOut, tx)) {
+    if (getNextPendingTx(idIn, idOut, &tx)) {
         meta.pStamp = tx.getPStamp();
         meta.sStamp = tx.getSStamp();
         meta.cStamp = tx.getCTS();
@@ -46,7 +46,7 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
 }
 
 bool
-TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, TxEntry &txOut)
+TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, TxEntry *txOut)
 {
     uint32_t dlen;
     uint64_t off = idIn;
@@ -57,8 +57,8 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, TxEntry &txOut)
         off += hdr->length;
 
         inMemStream in((uint8_t*)&hdr[1], dlen - sizeof(hdr));
-        txOut.deSerialize( in );
-        if (txOut.getTxState() == TxEntry::TX_PENDING) {
+        txOut->deSerialize( in );
+        if (txOut->getTxState() == TxEntry::TX_PENDING) {
             idOut = off;
             return true;
         }
