@@ -48,8 +48,15 @@ TEST_F(TxLogTest, TxLogUnitTest)
 
     EXPECT_EQ(ret, false);
 
-    KVLayout kv(32);
-    snprintf((char *)kv.getKey().key.get(), 32, "txlog-dump-key");
+    #define RWSetSize   10
+    KVLayout * writeKV[RWSetSize], * readKV[RWSetSize];
+
+    for (int idx = 0; idx < RWSetSize; idx++) {
+        writeKV[idx] = new KVLayout(32);
+        readKV[idx]  = new KVLayout(32);
+        snprintf((char *)writeKV[idx]->getKey().key.get(), 32, "TxLogUnitTest-wkey%d", idx);
+        snprintf((char *) readKV[idx]->getKey().key.get(), 32, "TxLogUnitTest-rkey%d", idx);
+    }
 
     for (uint64_t idx = 0; idx < NUM_ENTRY; idx++) {
         TxEntry tx(10,10);
@@ -59,8 +66,12 @@ TEST_F(TxLogTest, TxLogUnitTest)
         tx.setTxState(((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT); 
         tx.insertPeerSet(idx);
 
-        KVLayout *kv2 = kvStore.preput(kv);
-        tx.insertWriteSet(kv2, 0);
+        for (int kvidx = 0; kvidx < RWSetSize; kvidx++) {
+            KVLayout *kvR = kvStore.preput(*readKV[kvidx]);
+            KVLayout *kvW = kvStore.preput(*writeKV[kvidx]);
+            tx.insertWriteSet(kvW, kvidx);
+            tx.insertReadSet (kvR, kvidx);
+        }
 
         txlog->add(&tx);
     }
