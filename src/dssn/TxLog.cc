@@ -186,11 +186,28 @@ TxLog::dump(int fd)
                 dprintf(fd, "%02X ", kv->k.key.get()[kidx]);
             }
             dprintf(fd, "\n");
+            // dprintf(fd, "\t\t %s\n", kv->k.key.get());
             if (tx.getTxState() == TxEntry::TX_FABRICATED) {
                 dprintf(fd, "%s\n", kv->v.valuePtr);
             }
         }
+        dprintf(fd, "\n");
 
+        KVLayout **readSet = tx.getReadSet().get();
+        dprintf(fd, "\treadSet:\n");
+        for (uint32_t ridx = 0; ridx < tx.getReadSetSize(); ridx++) {
+            KVLayout *kv = readSet[ridx];
+            assert(kv);
+            dprintf(fd, "\t  key%02d: ", ridx+1);
+            for (uint32_t kidx = 0; kidx < kv->k.keyLength; kidx++) {
+                dprintf(fd, "%02X ", kv->k.key.get()[kidx]);
+            }
+            dprintf(fd, "\n");
+            // dprintf(fd, "\t\t %s\n", kv->k.key.get());
+            if (tx.getTxState() == TxEntry::TX_FABRICATED) {
+                dprintf(fd, "%s\n", kv->v.valuePtr);
+            }
+        }
         dprintf(fd, "\n");
     }
 }
