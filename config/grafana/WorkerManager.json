@@ -43,7 +43,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 12,
         "x": 0,
         "y": 0
@@ -204,10 +204,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 6
       },
       "id": 12,
       "options": {
@@ -370,12 +370,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 12
       },
-      "id": 16,
+      "id": 21,
       "options": {
         "displayMode": "gradient",
         "orientation": "auto",
@@ -391,7 +391,7 @@
       "pluginVersion": "7.1.3",
       "targets": [
         {
-          "expr": "sum(workermanager_rpc_latency_bucket{label=\"RPC_processing_latency\"}) by (le)",
+          "expr": "sum(workermanager_rpc_latency_bucket{label=\"RPC_preprocessing_latency\"}) by (le)",
           "format": "heatmap",
           "instant": false,
           "interval": "",
@@ -402,7 +402,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "RPC Processing Latency (usec)",
+      "title": "RPC PreProcessing Latency (usec)",
       "type": "bargauge"
     },
     {
@@ -506,6 +506,74 @@
       "fieldConfig": {
         "defaults": {
           "custom": {},
+          "mappings": [
+            {
+              "from": "",
+              "id": 0,
+              "operator": "",
+              "text": "",
+              "to": "",
+              "type": 1
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      },
+      "id": 16,
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      },
+      "pluginVersion": "7.1.3",
+      "targets": [
+        {
+          "expr": "sum(workermanager_rpc_latency_bucket{label=\"RPC_processing_latency\"}) by (le)",
+          "format": "heatmap",
+          "instant": false,
+          "interval": "",
+          "intervalFactor": 3,
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "RPC Processing Latency (usec)",
+      "type": "bargauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -525,7 +593,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 12,
         "x": 0,
         "y": 24
@@ -678,10 +746,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 30
       },
       "id": 20,
       "options": {
@@ -735,10 +803,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 36
       },
       "id": 19,
       "options": {
