@@ -48,12 +48,17 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
 bool
 TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, TxEntry *txOut)
 {
-    uint32_t dlen;
+    uint32_t dlen, retry = 0;
     uint64_t off = idIn;
     TxLogHeader_t * hdr;
 
     while ((hdr = (TxLogHeader_t*)log->getaddr (off, &dlen))) {
-        assert(hdr->sig == TX_LOG_HEAD_SIG);
+        if (hdr->sig != TX_LOG_HEAD_SIG) {
+            usleep(1); // Log writer in progress
+            assert (retry++ < 100);
+            continue;
+        }
+        retry = 0;
         off += hdr->length;
 
         inMemStream in((uint8_t*)&hdr[1], dlen - sizeof(hdr));
@@ -69,15 +74,20 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, TxEntry *txOut)
 uint32_t
 TxLog::getTxState(__uint128_t cts)
 {
-    uint32_t dlen;
+    uint32_t dlen, retry = 0;
     TxLogTailer_t * tal;
     size_t hdrsz = sizeof(TxLogTailer_t) + sizeof(TxLogHeader_t);
 
     // Search backward to find the latest matching Tx
     size_t tail_off = size() - sizeof(TxLogTailer_t);;
     while ((tail_off > 0) && (tal = (TxLogTailer_t*)log->getaddr (tail_off, &dlen))) {
+        if (tal->sig != TX_LOG_TAIL_SIG) {
+            usleep(1);
+            assert(retry++ < 100);
+            continue;
+        }
+        retry = 0;
         tail_off -= tal->length; // next tail
-        assert(tal->sig == TX_LOG_TAIL_SIG);
 
         inMemStream in((uint8_t*)tal - tal->length + hdrsz, dlen + tal->length - hdrsz);
         TxEntry tx(1,1);
@@ -92,15 +102,20 @@ TxLog::getTxState(__uint128_t cts)
 bool
 TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t &sStamp)
 {
-    uint32_t dlen;
+    uint32_t dlen, retry = 0;
     TxLogTailer_t * tal;
     size_t hdrsz = sizeof(TxLogTailer_t) + sizeof(TxLogHeader_t);
 
     // Search backward to find the latest matching Tx
     size_t tail_off = size() - sizeof(TxLogTailer_t);;
     while ((tail_off > 0) && (tal = (TxLogTailer_t*)log->getaddr (tail_off, &dlen))) {
+        if (tal->sig != TX_LOG_TAIL_SIG) {
+            usleep(1);
+            assert(retry++ < 100);
+            continue;
+        }
+        retry = 0;
         tail_off -= tal->length; // next tail
-        assert(tal->sig == TX_LOG_TAIL_SIG);
 
         inMemStream in((uint8_t*)tal - tal->length + hdrsz, dlen + tal->length - hdrsz);
         TxEntry tx(1,1);
