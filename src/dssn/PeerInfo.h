@@ -57,8 +57,8 @@ class PeerInfo {
     tbb::concurrent_unordered_map<CTS, PeerEntry *> peerInfo;
     std::mutex mutexForPeerAdd;
     uint64_t lastTick = 0;
-    uint64_t tickUnit = 1000000; //1ms per tick
-    uint64_t alertThreshold = 1000 * tickUnit;
+    uint64_t tickUnit = 10000000; //10ms per tick
+    uint64_t alertThreshold = 100 * tickUnit;
 
     //evaluate the new states of the commit intent; caller is supposed to hold the mutex
     inline bool evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator);
@@ -70,6 +70,12 @@ class PeerInfo {
     ///txEntry may or may not be NULL
     bool add(CTS cts, TxEntry* txEntry, Validator* validator);
 
+    bool addPartial(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t eta, uint64_t pi,
+            Validator *validator);
+
+    //remove corresponding peer info
+    bool remove(CTS cts, Validator* validator);
+
     //for iteration
     TxEntry* getFirst(PeerInfoIterator &it);
     TxEntry* getNext(PeerInfoIterator &it);
@@ -80,9 +86,9 @@ class PeerInfo {
     //send tx SSN info to peers
     bool send(Validator *validator);
 
-    //update peer info of a tx identified by cts and return true if peer entry is found
-    bool update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t eta, uint64_t pi,
-            TxEntry *&txEntry, Validator *validator);
+    //update peer info of a tx identified by cts
+    TxEntry* update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t eta, uint64_t pi,
+            Validator *validator, bool &isFound);
 
     //current capacity
     uint32_t size();

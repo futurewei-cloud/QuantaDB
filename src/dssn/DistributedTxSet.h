@@ -68,8 +68,8 @@ class DistributedTxSet {
 	inline bool addToIndependentTxs(TxEntry *txEntry);
 
     PUBLIC:
-    uint64_t addedTxCount = 0;
-    uint64_t removedTxCount = 0;
+    std::atomic<uint64_t> addedTxCount{0};
+    std::atomic<uint64_t> removedTxCount{0};
 
     // return true if the CI is added successfully
     bool add(TxEntry *txEntry);

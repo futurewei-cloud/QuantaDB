@@ -38,42 +38,44 @@ class PeerInfo;
  */
 
 struct Counters {
-    uint64_t serverId = 0;
-    uint64_t initialWrites = 0;
-    uint64_t rejectedWrites = 0;
-    uint64_t precommitReads = 0;
-    uint64_t precommitWrites = 0;
-    uint64_t commitIntents = 0;
-    uint64_t recovers = 0;
-    uint64_t trivialAborts = 0;
-    uint64_t busyAborts = 0;
-    uint64_t ctsSets = 0;
-    uint64_t addPeers = 0;
-    uint64_t earlyPeers = 0;
-    uint64_t matchEarlyPeers = 0;
-    uint64_t deletedPeers = 0;
-    uint64_t queuedDistributedTxs = 0;
+    std::atomic<uint64_t> serverId{0};
+    std::atomic<uint64_t> initialWrites{0};
+    std::atomic<uint64_t> rejectedWrites{0};
+    std::atomic<uint64_t> precommitReads{0};
+    std::atomic<uint64_t> precommitWrites{0};
+    std::atomic<uint64_t> commitIntents{0};
+    std::atomic<uint64_t> recovers{0};
+    std::atomic<uint64_t> trivialAborts{0};
+    std::atomic<uint64_t> busyAborts{0};
+    std::atomic<uint64_t> ctsSets{0};
+    std::atomic<uint64_t> addPeers{0};
+    std::atomic<uint64_t> earlyPeers{0};
+    std::atomic<uint64_t> matchEarlyPeers{0};
+    std::atomic<uint64_t> latePeers{0};
+    std::atomic<uint64_t> deletedPeers{0};
+    std::atomic<uint64_t> queuedDistributedTxs{0};
     // scheduledDistributedTxs tracked by distributedTxSet
     // evaluatedDistributedTxs tracked bydistributedT
     // queuedLocalTxs tracked by localTxQueue
     // evaluatedLocalTxs tracked by localTxQueue
-    uint64_t infoSends = 0;
-    uint64_t infoReceives = 0;
-    uint64_t infoRequests = 0;
-    uint64_t infoReplies = 0;
-    uint64_t precommitReadErrors = 0;
-    uint64_t precommitWriteErrors = 0;
-    uint64_t preputErrors = 0;
-    uint64_t lateScheduleErrors = 0;
-    uint64_t readVersionErrors = 0;
-    uint64_t concludeErrors = 0;
-    uint64_t alertAborts = 0;
-    uint64_t commits = 0;
-    uint64_t aborts = 0;
-    uint64_t commitReads = 0;
-    uint64_t commitWrites = 0;
-    uint64_t commitOverwrites = 0;
-    uint64_t commitDeletes = 0;
+    std::atomic<uint64_t> infoSends{0};
+    std::atomic<uint64_t> infoReceives{0};
+    std::atomic<uint64_t> infoRequests{0};
+    std::atomic<uint64_t> infoReplies{0};
+    std::atomic<uint64_t> infoLogReplies{0};
+    std::atomic<uint64_t> precommitReadErrors{0};
+    std::atomic<uint64_t> precommitWriteErrors{0};
+    std::atomic<uint64_t> preputErrors{0};
+    std::atomic<uint64_t> lateScheduleErrors{0};
+    std::atomic<uint64_t> readVersionErrors{0};
+    std::atomic<uint64_t> concludeErrors{0};
+    std::atomic<uint64_t> alertAborts{0};
+    std::atomic<uint64_t> commits{0};
+    std::atomic<uint64_t> aborts{0};
+    std::atomic<uint64_t> commitReads{0};
+    std::atomic<uint64_t> commitWrites{0};
+    std::atomic<uint64_t> commitOverwrites{0};
+    std::atomic<uint64_t> commitDeletes{0};
 };
 
 /*enum LogLevel {
@@ -135,7 +137,7 @@ class Validator {
 
     // handle validation commit/abort conclusion
     /// move committed data into backing store and update meta data
-    bool conclude(TxEntry& txEntry);
+    bool conclude(TxEntry *txEntry);
 
     // handle garbage collection
     void peer();
@@ -178,7 +180,9 @@ class Validator {
     bool insertTxEntry(TxEntry *txEntry);
     bool updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
     bool insertConcludeQueue(TxEntry *txEntry);
-    TxEntry* receiveSSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
+    TxEntry* receiveSSNInfo(uint64_t peerId, __uint128_t cts,
+            uint64_t pstamp, uint64_t sstamp, uint32_t peerTxState,
+            uint64_t &myPStamp, uint64_t &mySStamp, uint32_t &myTxState);
     void replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
     void sendTxCommitReply(TxEntry *txEntry);
 

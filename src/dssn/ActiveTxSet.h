@@ -22,8 +22,8 @@ namespace DSSN {
 class ActiveTxSet {
     PROTECTED:
     CountBloomFilter<uint8_t> cbf;
-    uint64_t removedTxCount = 0;
-    uint64_t addedTxCount = 0;
+    std::atomic<uint64_t> removedTxCount{0};
+    std::atomic<uint64_t> addedTxCount{0};
 
     PUBLIC:
     // false if the key is failed to be added due to overflow
@@ -36,6 +36,7 @@ class ActiveTxSet {
 
     // for testing
     uint64_t getRemovedTxCount() { return removedTxCount; }
+    uint64_t getCount() { return addedTxCount - removedTxCount; }
 
     // for testing
     bool clear() { return cbf.clear(); }

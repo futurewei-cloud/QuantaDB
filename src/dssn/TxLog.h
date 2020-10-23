@@ -20,6 +20,7 @@ class TxLog {
     #define TXLOG_DIR   "/dev/shm/txlog"
     #define TXLOG_CHUNK_SIZE (1024*1024*1024)
     public:
+    std::mutex logMutex;
 
     TxLog(bool recovery_mode, std::string logid = "")
     {

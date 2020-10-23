@@ -74,6 +74,19 @@ TxEntry::insertWriteSet(KVLayout* kv, uint32_t i) {
     return true;
 }
 
+bool
+TxEntry::correctReadSet(uint32_t size) {
+    //This is a workaround function to correct the size of a possibly over-provisioned readSet.
+    //Because scoped_array vars are used, we do not need to worry about memory leak.
+    //If there is over-provisioning, the null elements will be at the tail of the arrays.
+    //By changing the readSetSize, the handling of the readSet will be the same as if there
+    //were no over-provisioning at all.
+    //The proper solution is to have the commit intent pass the correct readSet size
+    //so that txEntry will have the correct readSet size at instantiation.
+    readSetSize = size;
+    return true;
+}
+
 uint32_t 
 TxEntry::serializeSize()
 {

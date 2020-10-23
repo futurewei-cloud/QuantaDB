@@ -824,6 +824,10 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     }
 
     if (respHdr->common.status == STATUS_OK) {
+        //This is a workaround to correct the effect of over-provisioning the readSet.
+        //A proper solution is to have the txCommit message to pass in the exact readSet size.
+        txEntry->correctReadSet(readSetIdx);
+
         if (validator->insertTxEntry(txEntry)) {
             while (validator->testRun()) {
                 if (txEntry->getTxCIState() < TxEntry::TX_CI_FINISHED)
@@ -976,6 +980,7 @@ DSSNService::requestDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
         assert(target != getServerId());
         Notifier::notify(context, WireFormat::DSSN_REQUEST_INFO_ASYNC,
                 msg, length, sid);
+        RAMCLOUD_LOG(NOTICE, "notify cts %lu to peer %lu", (uint64_t)(txEntry->getCTS() >> 64), target);
     } else {
         std::set<uint64_t>::iterator it;
         for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
@@ -998,7 +1003,11 @@ DSSNService::handleSendInfoAsync(Rpc* rpc)
     if (reqHdr == NULL)
         throw MessageTooShortError(HERE);
     assert(reqHdr->senderPeerId != getServerId());
-    validator->receiveSSNInfo(reqHdr->senderPeerId, reqHdr->cts, reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState);
+    uint64_t myPStamp, mySStamp;
+    uint32_t myTxState;
+    validator->receiveSSNInfo(reqHdr->senderPeerId, reqHdr->cts,
+            reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState,
+            myPStamp, mySStamp, myTxState);
 }
 
 void
