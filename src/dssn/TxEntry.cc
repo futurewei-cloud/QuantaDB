@@ -101,6 +101,13 @@ TxEntry::serializeSize()
                 sz += writeSet[i]->serializeSize();
         }
 
+        // readSet
+        sz += sizeof(uint32_t);
+        for (uint32_t i = 0; i < getReadSetSize(); i++) {
+            if (readSet[i])
+                sz += readSet[i]->serializeSize();
+        }
+
         // peerSet
         sz += sizeof(uint32_t);
         sz += peerSet.size() * sizeof(uint64_t);
@@ -134,6 +141,20 @@ TxEntry::serialize( outMemStream& out )
             writeSet[i]->serialize(out);
         }
 
+        // count readSet #entry
+        uint32_t nReadSet = 0;
+        for (uint32_t i = 0; i < getReadSetSize(); i++) {
+            if (readSet[i])
+                nReadSet++;
+        }
+
+        // readSet
+        out.write(&nReadSet, sizeof(nReadSet));
+        for (uint32_t i = 0; i < nReadSet; i++) {
+            assert (readSet[i]);
+            readSet[i]->serialize(out);
+        }
+
         // peerSet
         uint32_t peerSetSize = peerSet.size();
         out.write(&peerSetSize, sizeof(peerSetSize));
@@ -156,7 +177,7 @@ TxEntry::deSerialize_common( inMemStream& in )
 void
 TxEntry::deSerialize_additional( inMemStream& in )
 {
-    uint32_t nWriteSet;
+    uint32_t nWriteSet, nReadSet;
 
     in.read(&commitIntentState, sizeof(commitIntentState));
 
@@ -168,6 +189,16 @@ TxEntry::deSerialize_additional( inMemStream& in )
         KVLayout* kv = new KVLayout(0);
         kv->deSerialize(in);
         writeSet[i] = kv;
+    }
+
+    // readSet
+    in.read(&nReadSet, sizeof(nReadSet));
+    readSetSize = nReadSet;
+    readSet.reset(new KVLayout *[nReadSet]);
+    for (uint32_t i = 0; i < nReadSet; i++) {
+        KVLayout* kv = new KVLayout(0);
+        kv->deSerialize(in);
+        readSet[i] = kv;
     }
 
     // peerSet

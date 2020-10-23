@@ -15,6 +15,7 @@
 
 #include <errno.h>
 #include <sys/time.h>
+#include <fstream>
 
 #include "ShortMacros.h"
 #include "Common.h"
@@ -29,6 +30,37 @@ double Cycles::mockCyclesPerSec = 0;
 static Initialize _(Cycles::init);
 
 /**
+ * Return the nominal frequency of the CPU from /proc/cpuinfo
+ */
+double
+Cycles::getNominalCPUFreq()
+{
+    string line;
+    double hZ = 0;
+    std::ifstream cpuInfo("/proc/cpuinfo");
+
+    if (cpuInfo.is_open()) {
+        while (getline(cpuInfo, line)) {
+	    if (line.find("model name") != std::string::npos) {
+	        std::size_t freqPos = line.find("@");
+		if (freqPos != std::string::npos) {
+		    string freqStr = line.substr(freqPos + 2);
+		    std::size_t unitPos = freqStr.find("GHz");
+		    if (unitPos != std::string::npos) {
+		        string numStr = freqStr.substr(0, freqStr.length()-3);
+			hZ = std::stod(numStr);
+			hZ = hZ * 1e9;
+			break;
+		    }
+		}
+
+	    }
+	}
+	cpuInfo.close();
+    }
+    return hZ;
+}
+/**
  * Perform once-only overall initialization for the Cycles class, such
  * as calibrating the clock frequency.  This method is invoked automatically
  * during initialization, but it may be invoked explicitly by other modules
@@ -37,6 +69,8 @@ static Initialize _(Cycles::init);
  */
 void
 Cycles::init() {
+    //First try to determine the nominal frequency from /proc/cpuinfo first
+    cyclesPerSec = getNominalCPUFreq();
     if (cyclesPerSec != 0)
         return;
 

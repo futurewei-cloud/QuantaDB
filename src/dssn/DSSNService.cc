@@ -453,7 +453,8 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
     // By design, our response will be shorter than the request. This ensures
     // that the response can go back in a single RPC.
     assert(rpc->replyPayload->size() <= Transport::MAX_RPC_LEN);
-
+    Transport::ServerRpc* srpc = handle->getServerRpc();
+    srpc->endRpcPreProcessingTimer();
     if (validator->insertTxEntry(txEntry)) {
         while (validator->testRun()) {
             if (txEntry->getTxCIState() < TxEntry::TX_CI_FINISHED)
@@ -566,6 +567,8 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
     KVLayout *nkv = kvStore->preput(pkv);
     if (nkv != NULL) {
         txEntry->insertWriteSet(nkv, 0);
+	Transport::ServerRpc* srpc = handle->getServerRpc();
+	srpc->endRpcPreProcessingTimer();
         if (validator->insertTxEntry(txEntry)) {
             while (validator->testRun()) {
                 if (txEntry->getTxCIState() < TxEntry::TX_CI_FINISHED)
@@ -828,6 +831,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
         //A proper solution is to have the txCommit message to pass in the exact readSet size.
         txEntry->correctReadSet(readSetIdx);
 
+        Transport::ServerRpc* srpc = handle->getServerRpc();
+        srpc->endRpcPreProcessingTimer();
         if (validator->insertTxEntry(txEntry)) {
             while (validator->testRun()) {
                 if (txEntry->getTxCIState() < TxEntry::TX_CI_FINISHED)
