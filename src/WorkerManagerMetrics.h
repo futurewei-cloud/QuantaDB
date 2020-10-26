@@ -58,6 +58,7 @@ enum WmmTcMetric {
     WMM_TC_WORKER_HANDOFF_LATENCY,
     WMM_TC_RPC_PREPROC_LATENCY,
     WMM_TC_RPC_PROC_LATENCY,
+    WMM_TC_RPC_PROC_QUEUE_LATENCY,
     WMM_TC_EGRESS_LATENCY,
     WMM_TC_POLL_LATENCY,
     WMM_TC_MAX
@@ -69,6 +70,7 @@ static const char* WmmTcMetricLabels[] = {
     "RPC_worker_handoff_latency",
     "RPC_preprocessing_latency",
     "RPC_processing_latency",
+    "RPC_processing_queue_latency",
     "RPC_egress_latency",
     "worker_manager_poll_latency",
     "Invalid"

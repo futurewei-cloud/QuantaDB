@@ -1028,5 +1028,14 @@ DSSNService::handleRequestInfoAsync(Rpc* rpc)
     validator->replySSNInfo(reqHdr->senderPeerId, reqHdr->cts, reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState);
 }
 
+void
+DSSNService::recordTxCommitDispatch(TxEntry *txEntry)
+{
+#ifdef MONITOR
+    RpcHandle *handle = static_cast<RpcHandle *>(txEntry->getRpcHandle());
+    Transport::ServerRpc* rpc = handle->getServerRpc();
+    rpc->endRpcProcessingQueueTimer();
+#endif
+}
 
 } //end DSSNService class

@@ -312,6 +312,9 @@ Validator::serialize() {
         uint64_t it;
         txEntry = localTxQueue.findFirst(it);
         while (txEntry) {
+	    if (rpcService) {
+	        rpcService->recordTxCommitDispatch(txEntry);
+	    }
             assert(txEntry->getPeerSet().size() == 0);
             if (!activeTxSet.blocks(txEntry)) {
                 /* There is no need to update activeTXs because this tx is validated

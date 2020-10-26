@@ -141,6 +141,7 @@ class Transport {
 	    mIngressQueueingDelay = 0;
 	    mRpcProcessingTime = 0;
 	    mRpcPreProcessingTime = 0;
+	    mRpcProcessingQueueTime = 0;
 	    mEgressQueueingDelay = 0;
 	    mStartTime = 0;
 	    mIndex++;
@@ -191,6 +192,25 @@ class Transport {
 	    if (!isTracing()) return 0;
 
 	    return Cycles::toPreciseMicroseconds(mRpcPreProcessingTime);
+	}
+	/**
+	 * End the rpc processing queue time and reset the timer
+	 * for the next stage
+	 */
+	inline void endRpcProcessingQueueTimer() {
+	    if (!isTracing()) return;
+
+	    uint64_t now = Cycles::rdtsc();
+	    mRpcProcessingQueueTime = now - mStartTime;
+	    mStartTime = now;
+	}
+	/**
+	 * Return the amount of time this RPC is being queued up in the validator
+	 */
+	inline double getRpcProcessingQueueTime() {
+	    if (!isTracing()) return 0;
+
+	    return Cycles::toPreciseMicroseconds(mRpcProcessingQueueTime);
 	}
 	/**
 	 * End the rpc processing time and reset the timer
@@ -262,6 +282,7 @@ class Transport {
 	    if (mEgressQueueingDelay) {
 	        return Cycles::toPreciseMicroseconds(mIngressQueueingDelay +
 						     mRpcPreProcessingTime +
+						     mRpcProcessingQueueTime +
 						     mRpcProcessingTime +
 						     mEgressQueueingDelay);
 	    }
@@ -314,6 +335,7 @@ class Transport {
 	uint64_t mWorkerHandoffTs;
 	uint64_t mWorkerHandoffDelay;
 	uint64_t mRpcPreProcessingTime;
+	uint64_t mRpcProcessingQueueTime;
 	uint64_t mRpcProcessingTime;
 	uint64_t mEgressQueueingDelay;
       PRIVATE:
