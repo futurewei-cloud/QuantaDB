@@ -49,7 +49,7 @@ bool HashmapKVStore::putNew(KVLayout *kv, __uint128_t cts, uint64_t pi)
      * non-lossy mode where put() may fail when the designated bucket was full.
      * We can't work with lossy mode. So we added an check below and force a segfault when put() failed.
      */
-    if (lptr.ptr_ != NULL)
+    if (lptr.ptr_ == NULL)
         *(int*)0 = 0;
     return lptr.ptr_ != NULL;
 }
