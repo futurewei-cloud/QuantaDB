@@ -30,7 +30,7 @@ public:
     HashmapKVStore(uint32_t nbucket = DEFAULT_BUCKET_COUNT)
     {
         bucket_count = nbucket;
-        my_hashtable = new hash_table<KVLayout, KLayout, VLayout, HashKLayout>(bucket_count);
+        my_hashtable = new hash_table<KVLayout, KLayout, VLayout, HashKLayout>(bucket_count, false/*non-lossy*/);
         if (!hash_inited) {
             clhash_random =  get_random_key_for_clhash(uint64_t(0x23a23cf5033c3c81),uint64_t(0xb3816f6a2c68e530));
             hash_inited = true;
