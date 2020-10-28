@@ -174,22 +174,22 @@ int main(void)
 		printf("========== Hash Map MT Lookup Benchmark - contention:%d ==\n", i);
 
 		total = run_parallel(1, 10 /* #sec */, mt_lookup_test);
-		printf("1      thread  total (insert/sec) = %'lu\n", total); fflush(stdout);
+		printf("1      thread  total (lookup/sec) = %'lu\n", total); fflush(stdout);
 
 		total = run_parallel(2, 10 /* #sec */, mt_lookup_test);
-		printf("2      thread  total (insert/sec) = %'lu\n", total); fflush(stdout);
+		printf("2      thread  total (lookup/sec) = %'lu\n", total); fflush(stdout);
 
 		total = run_parallel(4, 10 /* #sec */, mt_lookup_test);
-		printf("4      threads total (insert/sec) = %'lu\n", total); fflush(stdout);
+		printf("4      threads total (lookup/sec) = %'lu\n", total); fflush(stdout);
 
 		total = run_parallel(8, 10 /* #sec */, mt_lookup_test);
-		printf("8      threads total (insert/sec) = %'lu\n", total); fflush(stdout);
+		printf("8      threads total (lookup/sec) = %'lu\n", total); fflush(stdout);
 
 		total = run_parallel(16, 10 /* #sec */, mt_lookup_test);
-		printf("16     threads total (insert/sec) = %'lu\n", total); fflush(stdout);
+		printf("16     threads total (lookup/sec) = %'lu\n", total); fflush(stdout);
 
 		total = run_parallel(32, 10 /* #sec */, mt_lookup_test);
-		printf("32     threads total (insert/sec) = %'lu\n", total); fflush(stdout);
+		printf("32     threads total (lookup/sec) = %'lu\n", total); fflush(stdout);
 
 		//total = run_parallel(64, 10 /* #sec */, mt_lookup_test);
 		//printf("64     threads total (insert/sec) = %'lu\n", total); fflush(stdout);
