@@ -35,7 +35,7 @@ ActiveTxSet::add(TxEntry *txEntry) {
             return false;
         }
     }
-    addedTxCount++;
+    addedTxCount.fetch_add(1);
     return true;
 }
 
@@ -47,7 +47,7 @@ ActiveTxSet::remove(TxEntry *txEntry) {
     for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
         assert(cbf.remove(txEntry->getWriteSetHash()[i]));
     }
-    removedTxCount++;
+    removedTxCount.fetch_add(1);
     return true;
 }
 

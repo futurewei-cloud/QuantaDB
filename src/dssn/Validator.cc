@@ -7,6 +7,7 @@
 #include "sstream"
 #include "Validator.h"
 #include <thread>
+#include "Logger.h"
 
 namespace DSSN {
 
@@ -90,7 +91,7 @@ Validator::updateTxPStampSStamp(TxEntry &txEntry) {
     auto &readSet = txEntry.getReadSet();
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
         if (readSet[i] == NULL)
-            continue; //the array may be over-provisioned due to read-modify-write tx handling
+            abort(); //make sure the size of over-provisioned array has been corrected
 
         KVLayout *kv = kvStore.fetch(readSet[i]->k);
         if (kv) {
@@ -223,12 +224,18 @@ Validator::read(KLayout& k, KVLayout *&kv) {
         return true;
     }
     counters.precommitReadErrors++;
+    RAMCLOUD_LOG(NOTICE, "precommitReadErr");
     return false;
 }
 
 bool
 Validator::insertConcludeQueue(TxEntry *txEntry) {
-    return concludeQueue.push(txEntry);
+      concludeQueue.push(txEntry);
+      RAMCLOUD_LOG(NOTICE, "insert concludeQueue  cts %lu %lu in %lu out %lu",
+              (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
+              concludeQueue.inCount.load(), concludeQueue.outCount.load());
+      return true;
+//    return concludeQueue.push(txEntry);
 }
 
 
@@ -258,19 +265,23 @@ Validator::scheduleDistributedTxs() {
     do {
         if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (__uint128_t)-1 : get128bClockValue()))) {
             if (txEntry->getCTS() <= lastScheduledTxCTS) {
-                assert(txEntry->getCTS() != lastScheduledTxCTS); //no duplicate CTS from sequencer
+                RAMCLOUD_LOG(NOTICE, "late %lu last %lu",
+                        (uint64_t)(txEntry->getCTS() >> 64),
+                        (uint64_t)(lastScheduledTxCTS >> 64));
+
                 assert(prevTxEntry != txEntry);
+                assert(txEntry->getCTS() != lastScheduledTxCTS); //no duplicate CTS from sequencer
 
                 //abort this CI, which has arrived later than a scheduled CI
                 //aborting is fine because its SSN info has never been sent to its peers
                 //although, in recovery case, SSN info could have been sent to its peers, the order of recovery should be preserved
                 //set the states and let peerInfo handling thread to do the rest
                 txEntry->setTxState(TxEntry::TX_OUTOFORDER);
-                txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
                 counters.lateScheduleErrors++;
                 continue;
             }
             while (!distributedTxSet.add(txEntry));
+            RAMCLOUD_LOG(NOTICE, "schedule %lu",(uint64_t)(txEntry->getCTS() >> 64));
             lastScheduledTxCTS = txEntry->getCTS();
             prevTxEntry = txEntry;
         }
@@ -301,6 +312,9 @@ Validator::serialize() {
         uint64_t it;
         txEntry = localTxQueue.findFirst(it);
         while (txEntry) {
+	    if (rpcService) {
+	        rpcService->recordTxCommitDispatch(txEntry);
+	    }
             assert(txEntry->getPeerSet().size() == 0);
             if (!activeTxSet.blocks(txEntry)) {
                 /* There is no need to update activeTXs because this tx is validated
@@ -316,7 +330,7 @@ Validator::serialize() {
 
                 validateLocalTx(*txEntry);
 
-                if (conclude(*txEntry)) {
+                if (conclude(txEntry)) {
                     logTx(LOG_DEBUG, txEntry); //for debugging only, not for recovery
                     localTxQueue.remove(it, txEntry);
                 }
@@ -332,50 +346,69 @@ Validator::serialize() {
 
             //enable sending SSN info to peer
             txEntry->setTxCIState(TxEntry::TX_CI_SCHEDULED);
-
             hasEvent = true;
+
+            RAMCLOUD_LOG(NOTICE, "activate  cts %lu %lu cnt %lu",
+                         (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
+                         activeTxSet.getRemovedTxCount());
         }
 
         while (concludeQueue.try_pop(txEntry)) {
-            conclude(*txEntry);
+            conclude(txEntry);
+
+            RAMCLOUD_LOG(NOTICE, "pop concludeQueue  cts %lu %lu in %lu  out %lu",
+                    (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
+                    concludeQueue.inCount.load(), concludeQueue.outCount.load());
             hasEvent = true;
         }
     } //end while(true)
 }
 
 bool
-Validator::conclude(TxEntry& txEntry) {
+Validator::conclude(TxEntry *txEntry) {
     //record results and meta data
-    if (txEntry.getTxState() == TxEntry::TX_COMMIT) {
-        updateKVReadSetPStamp(txEntry);
-        updateKVWriteSet(txEntry);
+    if (txEntry->getTxState() == TxEntry::TX_COMMIT) {
+        updateKVReadSetPStamp(*txEntry);
+        updateKVWriteSet(*txEntry);
     }
 
-    if (txEntry.getPeerSet().size() >= 1) {
+    if (txEntry->getPeerSet().size() >= 1) {
         //for late cross-shard tx, it is never added to activeTxSet; just convert the state
-        if (txEntry.getTxState() == TxEntry::TX_OUTOFORDER)
-            txEntry.setTxState(TxEntry::TX_ABORT);
-        else
-            activeTxSet.remove(&txEntry);
+        if (txEntry->getTxState() == TxEntry::TX_OUTOFORDER) {
+            txEntry->setTxState(TxEntry::TX_ABORT);
+        } else {
+            activeTxSet.remove(txEntry);
+        }
+
+        RAMCLOUD_LOG(NOTICE, "conclude distTx %lu state %u", (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState());
+    } else {
+        RAMCLOUD_LOG(NOTICE, "conclude localTx %lu state %u", (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState());
     }
 
-    sendTxCommitReply(&txEntry);
+    sendTxCommitReply(txEntry);
 
-    if (txEntry.getTxState() == TxEntry::TX_COMMIT)
+    if (txEntry->getTxState() == TxEntry::TX_COMMIT)
         counters.commits++;
-    else if (txEntry.getTxState() == TxEntry::TX_ABORT)
+    else if (txEntry->getTxState() == TxEntry::TX_ABORT)
         counters.aborts++;
     else {
         counters.concludeErrors++;
-        assert(0);
+        RAMCLOUD_LOG(NOTICE, "concludeErr %lu %u peerSet %lu", (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(), txEntry->getPeerSet().size());
+        abort();
     }
 
-    txEntry.setTxCIState(TxEntry::TX_CI_FINISHED);
+    txEntry->setTxCIState(TxEntry::TX_CI_FINISHED);
+
+    if (txEntry->getPeerSet().size() >= 1) {
+        peerInfo.remove(txEntry->getCTS(), this);
+    }
 
     //for ease of managing memory, do not free during unit test
-    if (!isUnderTest)
-        delete &txEntry;
+    if (isUnderTest) {
+        return true;
+    }
 
+    delete txEntry;
     return true;
 }
 
@@ -384,20 +417,19 @@ Validator::peer() {
     PeerInfoIterator it;
     do {
         peerInfo.send(this);
-        peerInfo.sweep(this);
-        this_thread::yield();
+        //this_thread::yield();
     } while (isAlive && !isUnderTest);
 }
 
 bool
 Validator::insertTxEntry(TxEntry *txEntry) {
-    counters.commitIntents++;
+    counters.commitIntents.fetch_add(1);
 
     if ((txEntry->getPStamp() >= txEntry->getSStamp())
             && (txEntry->getPStamp() >= (txEntry->getCTS() >> 64) &&  txEntry->getCTS() != 0)) {
         //Clearly the commit intent will be aborted -- the client should not even have
         //initiated, and we should not further burden the pipeline.
-        counters.trivialAborts++;
+        counters.trivialAborts.fetch_add(1);
         txEntry->setTxState(TxEntry::TX_ABORT);
         txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
         return false; //skip queueing
@@ -405,8 +437,11 @@ Validator::insertTxEntry(TxEntry *txEntry) {
 
     if (txEntry->getPeerSet().size() == 0) {
         //single-shard tx
+        RAMCLOUD_LOG(NOTICE, "insert localTx cts %lu txEntry %lu cnt %lu",
+                (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry,
+                localTxQueue.addedTxCount.load());
         if (!localTxQueue.add(txEntry)) {
-            counters.busyAborts++;
+            counters.busyAborts.fetch_add(1);
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
             return false; //fail to be queued
@@ -414,17 +449,21 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
     } else {
         //cross-shard tx
+        RAMCLOUD_LOG(NOTICE, "insert distTx cts %lu txEntry %lu cnt %lu",
+                (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry,
+                counters.queuedDistributedTxs.load());
         if (!reorderQueue.insert(txEntry->getCTS(), txEntry)) {
-            counters.busyAborts++;
+            counters.busyAborts.fetch_add(1);
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
             return false; //fail to be queued
         }
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
 
-        assert(peerInfo.add(txEntry->getCTS(), txEntry, this));
+        //assert(peerInfo.add(txEntry->getCTS(), txEntry, this));
+        peerInfo.add(txEntry->getCTS(), txEntry, this);
 
-        counters.queuedDistributedTxs++;
+        counters.queuedDistributedTxs.fetch_add(1);
     }
     return true;
 }
@@ -441,18 +480,39 @@ Validator::get128bClockValue() {
 }
 
 TxEntry*
-Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
+Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
+        uint64_t pstamp, uint64_t sstamp, uint32_t peerTxState,
+        uint64_t &myPStamp, uint64_t &mySStamp, uint32_t &myTxState) {
+    RAMCLOUD_LOG(NOTICE, "receive cts %lu from %lu peerState %u ",
+            (uint64_t)(cts >> 64), peerId, peerTxState);
+
     TxEntry *txEntry = NULL;
-    if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this)) {
+    bool isFound;
+    if ((txEntry = peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, this, isFound)) == NULL) {
+        if (txEntry != NULL) abort();
+        if (txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp)
+                && myTxState != TxEntry::TX_PENDING) {
+            //The commit intent is concluded
+            counters.latePeers++;
+            return NULL;
+        }
+
         //Handle the fact that peer info is received before its tx commit intent is received,
         //hence not finding an existing peer entry,
         //by creating a peer entry without commit intent txEntry
         //and then updating the peer entry.
-        peerInfo.add(cts, NULL, this); //create a peer entry without commit intent txEntry
-        assert(peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, txEntry, this));
+        /////peerInfo.addPartial(cts, peerId, peerTxState, pstamp, sstamp, this); //Fixme
+        peerInfo.add(cts, NULL, this);
+
+        //Because the global mutex has been unlocked above, the CI might have been processed
+        //by other threads before the following call is completed, so the peerEntry may or may not be
+        //found, and the returning txEntry may or may not be found.
+        txEntry = peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, this, isFound);
+
         counters.earlyPeers++;
     }
     counters.infoReceives++;
+    if (txEntry && txEntry->getCTS() != cts) abort();
     return txEntry;
 }
 
@@ -463,18 +523,23 @@ Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint6
     if (rpcService == NULL) //unit test may make rpcService NULL
         return;
 
-    TxEntry *txEntry = receiveSSNInfo(peerId, cts, pstamp, sstamp, peerTxState);
-    uint32_t txState;
-    uint64_t pStamp, sStamp;
+    uint32_t myTxState = TxEntry::TX_PENDING;
+    uint64_t myPStamp, mySStamp;
+    TxEntry *txEntry = receiveSSNInfo(peerId, cts, pstamp, sstamp, peerTxState,
+            myPStamp, mySStamp, myTxState);
+
     if (txEntry) {
         rpcService->sendDSSNInfo(cts, txEntry, true, peerId);
         counters.infoReplies++;
-    } else if (txLog.getTxInfo(cts, txState, pStamp, sStamp)) {
-        rpcService->sendDSSNInfo(cts, txState, pStamp, sStamp, peerId);
-        counters.infoReplies++;
+    } else if (myTxState != TxEntry::TX_PENDING) {
+        //This is the case when a conclusion is found in txLog
+        rpcService->sendDSSNInfo(cts, myTxState, myPStamp, mySStamp, peerId);
+        RAMCLOUD_LOG(NOTICE, "infoLogReplies %lu %u", (uint64_t)(cts >> 64), myTxState);
+        counters.infoLogReplies++;
     } else {
         //This is the case when the local CI has not been created
         //no reply at all
+        RAMCLOUD_LOG(NOTICE, "cannot replySSNInfo %lu", (uint64_t)(cts >> 64));
     }
 }
 
@@ -485,7 +550,8 @@ Validator::sendSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t targetPeerId)
             rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry);
         else
             rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry, true, targetPeerId);
-        counters.infoSends++;
+        RAMCLOUD_LOG(NOTICE, "send: cts %lu target %lu", (uint64_t)(txEntry->getCTS() >> 64), targetPeerId);
+        counters.infoSends.fetch_add(1);
     }
 }
 
@@ -493,7 +559,8 @@ void
 Validator::requestSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t targetPeerId) {
     if (rpcService) {
         rpcService->requestDSSNInfo(txEntry, isSpecific, targetPeerId);
-        counters.infoRequests++;
+        RAMCLOUD_LOG(NOTICE, "request: cts %lu target %lu", (uint64_t)(txEntry->getCTS() >> 64), targetPeerId);
+        counters.infoRequests.fetch_add(1);
     }
 }
 
@@ -501,6 +568,7 @@ void
 Validator::sendTxCommitReply(TxEntry *txEntry) {
     if (rpcService) {
         rpcService->sendTxCommitReply(txEntry);
+        RAMCLOUD_LOG(NOTICE, "commitReply: cts %lu", (uint64_t)(txEntry->getCTS() >> 64));
     }
 }
 
@@ -513,7 +581,7 @@ Validator::recover() {
             txEntry->getWriteSet())) {
         txEntry->setTxState(TxEntry::TX_ALERT); //indicate a recovered entry
         insertTxEntry(txEntry);
-        counters.recovers++;
+        counters.recovers.fetch_add(1);
         txEntry = new TxEntry(0, 0);
     }
     delete txEntry;
@@ -526,44 +594,48 @@ Validator::logCounters() {
     if (logLevel < LOG_INFO)
         return false;
     char key[] = {1};
-    char val[2048];
+    char val[3000];
     int c = 0;
     int s = sizeof(val);
-    c += snprintf(val + c, s - c, "serverId:%lu, ", counters.serverId);
-    c += snprintf(val + c, s - c, "initialWrites:%lu, ", counters.initialWrites);
-    c += snprintf(val + c, s - c, "rejectedWrites:%lu, ", counters.rejectedWrites);
-    c += snprintf(val + c, s - c, "precommitReads:%lu, ", counters.precommitReads);
-    c += snprintf(val + c, s - c, "commitIntents:%lu, ", counters.commitIntents);
-    c += snprintf(val + c, s - c, "recovers:%lu, ", counters.recovers);
-    c += snprintf(val + c, s - c, "trivialAborts:%lu, ", counters.trivialAborts);
-    c += snprintf(val + c, s - c, "busyAborts:%lu, ", counters.busyAborts);
-    c += snprintf(val + c, s - c, "ctsSets:%lu, ", counters.ctsSets);
+    c += snprintf(val + c, s - c, "serverId:%lu, ", counters.serverId.load());
+    c += snprintf(val + c, s - c, "initialWrites:%lu, ", counters.initialWrites.load());
+    c += snprintf(val + c, s - c, "rejectedWrites:%lu, ", counters.rejectedWrites.load());
+    c += snprintf(val + c, s - c, "precommitReads:%lu, ", counters.precommitReads.load());
+    c += snprintf(val + c, s - c, "commitIntents:%lu, ", counters.commitIntents.load());
+    c += snprintf(val + c, s - c, "recovers:%lu, ", counters.recovers.load());
+    c += snprintf(val + c, s - c, "trivialAborts:%lu, ", counters.trivialAborts.load());
+    c += snprintf(val + c, s - c, "busyAborts:%lu, ", counters.busyAborts.load());
+    c += snprintf(val + c, s - c, "ctsSets:%lu, ", counters.ctsSets.load());
     c += snprintf(val + c, s - c, "queuedLocalTxs:%lu, ", localTxQueue.addedTxCount.load());
-    c += snprintf(val + c, s - c, "evaluatedLocalTxs:%lu, ", localTxQueue.removedTxCount);
-    c += snprintf(val + c, s - c, "addPeers:%lu, ", counters.addPeers);
-    c += snprintf(val + c, s - c, "earlyPeers:%lu, ", counters.earlyPeers);
-    c += snprintf(val + c, s - c, "matchEarlyPeers:%lu, ", counters.matchEarlyPeers);
-    c += snprintf(val + c, s - c, "deletedPeers:%lu, ", counters.deletedPeers);
-    c += snprintf(val + c, s - c, "queuedDistributedTxs:%lu, ", counters.queuedDistributedTxs);
-    c += snprintf(val + c, s - c, "scheduledDistributedTxs:%lu, ", distributedTxSet.addedTxCount);
-    c += snprintf(val + c, s - c, "evaluatedDistributedTxs:%lu, ", distributedTxSet.removedTxCount);
-    c += snprintf(val + c, s - c, "infoSends:%lu, ", counters.infoSends);
-    c += snprintf(val + c, s - c, "infoReceives:%lu, ", counters.infoReceives);
-    c += snprintf(val + c, s - c, "infoRequests:%lu, ", counters.infoRequests);
-    c += snprintf(val + c, s - c, "infoReplies:%lu, ", counters.infoReplies);
-    c += snprintf(val + c, s - c, "precommitReadErrors:%lu, ", counters.precommitReadErrors);
-    c += snprintf(val + c, s - c, "precommitWriteErrors:%lu, ", counters.precommitWriteErrors);
-    c += snprintf(val + c, s - c, "preputErrors:%lu, ", counters.preputErrors);
-    c += snprintf(val + c, s - c, "lateScheduleErrors:%lu, ", counters.lateScheduleErrors);
-    c += snprintf(val + c, s - c, "readVersionErrors:%lu, ", counters.readVersionErrors);
-    c += snprintf(val + c, s - c, "concludeErrors:%lu, ", counters.concludeErrors);
-    c += snprintf(val + c, s - c, "alertAborts:%lu, ", counters.alertAborts);
-    c += snprintf(val + c, s - c, "commits:%lu, ", counters.commits);
-    c += snprintf(val + c, s - c, "aborts:%lu, ", counters.aborts);
-    c += snprintf(val + c, s - c, "commitReads:%lu, ", counters.commitReads);
-    c += snprintf(val + c, s - c, "commitWrites:%lu, ", counters.commitWrites);
-    c += snprintf(val + c, s - c, "commitOverwrites:%lu, ", counters.commitOverwrites);
-    c += snprintf(val + c, s - c, "commitDeletes:%lu, ", counters.commitDeletes);
+    c += snprintf(val + c, s - c, "evaluatedLocalTxs:%lu, ", localTxQueue.removedTxCount.load());
+    c += snprintf(val + c, s - c, "addPeers:%lu, ", counters.addPeers.load());
+    c += snprintf(val + c, s - c, "earlyPeers:%lu, ", counters.earlyPeers.load());
+    c += snprintf(val + c, s - c, "matchEarlyPeers:%lu, ", counters.matchEarlyPeers.load());
+    c += snprintf(val + c, s - c, "latePeers:%lu, ", counters.latePeers.load());
+    c += snprintf(val + c, s - c, "deletedPeers:%lu, ", counters.deletedPeers.load());
+    c += snprintf(val + c, s - c, "queuedDistributedTxs:%lu, ", counters.queuedDistributedTxs.load());
+    c += snprintf(val + c, s - c, "scheduledDistributedTxs:%lu, ", distributedTxSet.addedTxCount.load());
+    c += snprintf(val + c, s - c, "evaluatedDistributedTxs:%lu, ", distributedTxSet.removedTxCount.load());
+    c += snprintf(val + c, s - c, "concludeQueueIns:%lu, ", concludeQueue.inCount.load());
+    c += snprintf(val + c, s - c, "concludeQueueOuts:%lu, ", concludeQueue.outCount.load());
+    c += snprintf(val + c, s - c, "infoSends:%lu, ", counters.infoSends.load());
+    c += snprintf(val + c, s - c, "infoReceives:%lu, ", counters.infoReceives.load());
+    c += snprintf(val + c, s - c, "infoRequests:%lu, ", counters.infoRequests.load());
+    c += snprintf(val + c, s - c, "infoReplies:%lu, ", counters.infoReplies.load());
+    c += snprintf(val + c, s - c, "infoLogReplies:%lu, ", counters.infoLogReplies.load());
+    c += snprintf(val + c, s - c, "precommitReadErrors:%lu, ", counters.precommitReadErrors.load());
+    c += snprintf(val + c, s - c, "precommitWriteErrors:%lu, ", counters.precommitWriteErrors.load());
+    c += snprintf(val + c, s - c, "preputErrors:%lu, ", counters.preputErrors.load());
+    c += snprintf(val + c, s - c, "lateScheduleErrors:%lu, ", counters.lateScheduleErrors.load());
+    c += snprintf(val + c, s - c, "readVersionErrors:%lu, ", counters.readVersionErrors.load());
+    c += snprintf(val + c, s - c, "concludeErrors:%lu, ", counters.concludeErrors.load());
+    c += snprintf(val + c, s - c, "alertAborts:%lu, ", counters.alertAborts.load());
+    c += snprintf(val + c, s - c, "commits:%lu, ", counters.commits.load());
+    c += snprintf(val + c, s - c, "aborts:%lu, ", counters.aborts.load());
+    c += snprintf(val + c, s - c, "commitReads:%lu, ", counters.commitReads.load());
+    c += snprintf(val + c, s - c, "commitWrites:%lu, ", counters.commitWrites.load());
+    c += snprintf(val + c, s - c, "commitOverwrites:%lu, ", counters.commitOverwrites.load());
+    c += snprintf(val + c, s - c, "commitDeletes:%lu, ", counters.commitDeletes.load());
 
     assert(s >= c);
     assert(strlen(val) < sizeof(val));

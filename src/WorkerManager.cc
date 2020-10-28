@@ -288,6 +288,7 @@ WorkerManager::handleRpcDone(Transport::ServerRpc* rpc)
         mMetrics->observeTcValue(WMM_TC_RPC_LATENCY, rpc->getTotalLatency());
 	mMetrics->observeTcValue(WMM_TC_INGRESS_LATENCY, rpc->getIngressQueueingDelay());
 	mMetrics->observeTcValue(WMM_TC_RPC_PREPROC_LATENCY, rpc->getRpcPreProcessingTime());
+	mMetrics->observeTcValue(WMM_TC_RPC_PROC_QUEUE_LATENCY, rpc->getRpcProcessingQueueTime());
 	mMetrics->observeTcValue(WMM_TC_RPC_PROC_LATENCY, rpc->getRpcProcessingTime());
 	mMetrics->observeTcValue(WMM_TC_EGRESS_LATENCY, rpc->getEgressQueueingDelay());
 	mMetrics->observeTcValue(WMM_TC_WORKER_HANDOFF_LATENCY, rpc->getWorkerHandoffDelay());

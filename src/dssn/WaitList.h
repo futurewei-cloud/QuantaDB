@@ -39,7 +39,7 @@ class WaitList {
 
     PUBLIC:
     std::atomic<uint64_t> addedTxCount{0};
-    uint64_t removedTxCount = 0;
+    std::atomic<uint64_t> removedTxCount{0};
 
     // return true if the CI is added successfully
     bool add(TxEntry *txEntry) {
@@ -50,16 +50,20 @@ class WaitList {
          * head beyond a txs[] that would have been populated later.
          */
         assert(txEntry != NULL);
-        std::lock_guard<std::mutex> lock(mutexForAdd);
+        mutexForAdd.lock();
         uint32_t oldTail = tail.load();
-        if ((oldTail + 1) % size == head)
+        if ((oldTail + 1) % size == head) {
+            mutexForAdd.unlock();
             return false; //because there is no room
+        }
         if (tail.compare_exchange_strong(oldTail, (oldTail + 1) % size)) {
             assert(txs[oldTail] == 0);
             txs[oldTail] = txEntry;
-            addedTxCount++;
+            addedTxCount.fetch_add(1);
+            mutexForAdd.unlock();
             return true;
         }
+        mutexForAdd.unlock();
         return false; //let caller retry if needed
     }
 
@@ -77,6 +81,7 @@ class WaitList {
 
     // return NULL if iteration stops or fails to find a valid entry
     TxEntry* findNext(uint64_t &it) {
+        it = (it + 1) % size;
         while (it != tail) {
             if (txs[it] != NULL) {
                 return txs[it];
@@ -91,7 +96,7 @@ class WaitList {
         assert(txs[it] == target);
         assert(txs[it] != NULL);
         txs[it] = NULL;
-        removedTxCount++;
+        removedTxCount.fetch_add(1);
         while (txs[head] == NULL) {
             uint32_t oldHead = head;
             if (oldHead == (size - 1))

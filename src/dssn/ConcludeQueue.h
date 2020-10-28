@@ -16,30 +16,42 @@ namespace DSSN {
  * of validated cross-shard transactions.
  */
 class ConcludeQueue {
+    // Fixme: This section is sometimes observed with loss of event in the queue -- however,
+    // we should not trust the counters.
+    // Later, experiment getting rid of the mutex.
+
     PROTECTED:
-	boost::lockfree::queue<TxEntry*> inQueue{10000};
-	std::atomic<uint32_t> inCount{0};
-    std::atomic<uint32_t> outCount{0};
+    boost::lockfree::queue<TxEntry*> inQueue{10000};
+    std::mutex mutex;
 
     PUBLIC:
-	ConcludeQueue() { ; }
+    std::atomic<uint64_t> inCount{0};
+    std::atomic<uint64_t> outCount{0};
 
-	//for dequeueing by the consumer
+    ConcludeQueue() { ; }
+
+    //for dequeueing by the consumer
     bool try_pop(TxEntry *&txEntry) {
-    	if ((inCount - outCount) > 0 && inQueue.pop(txEntry)) {
-        	outCount++;
-        	return true;
-    	}
-    	return false;
+        mutex.lock();
+        if ((inCount - outCount) > 0 && inQueue.pop(txEntry)) {
+            outCount++;
+            mutex.unlock();
+            return true;
+        }
+        mutex.unlock();
+        return false;
     }
 
     //for enqueueing by producers
     bool push(TxEntry *txEntry) {
-    	if (inQueue.push(txEntry)) {
-    		inCount++;
-    		return true;
-    	}
-    	return false;
+        mutex.lock();
+        if (inQueue.push(txEntry)) {
+            inCount++;
+            mutex.unlock();
+            return true;
+        }
+        mutex.unlock();
+        return false;
     }
 }; // end ConcludeQueue class
 

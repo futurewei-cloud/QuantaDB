@@ -3,8 +3,8 @@
  * All rights are reserved.
  */
 
-
 #include "DistributedTxSet.h"
+#include "Logger.h"
 
 namespace DSSN {
 
@@ -74,7 +74,7 @@ DistributedTxSet::addToHotTxs(TxEntry *txEntry) {
 		return false;
     if (addToCBF(hotDependCBF, txEntry)) {
     	assert(hotDependQueue.add(txEntry));
-    	addedTxCount++;
+    	addedTxCount.fetch_add(1);
     	return true;
     }
 	return false; //limited by CBF depth
@@ -86,7 +86,7 @@ DistributedTxSet::addToColdTxs(TxEntry *txEntry) {
 		return false;
     if (addToCBF(coldDependCBF, txEntry)) {
     	assert(coldDependQueue.add(txEntry));
-    	addedTxCount++;
+    	addedTxCount.fetch_add(1);
     	return true;
     }
 	return addToHotTxs(txEntry); //limited by CBF depth, move it to hot queue
@@ -98,7 +98,7 @@ DistributedTxSet::addToIndependentTxs(TxEntry *txEntry) {
 		return false;
     if (addToCBF(independentCBF, txEntry)) {
     	assert(independentQueue.add(txEntry));
-    	addedTxCount++;
+    	addedTxCount.fetch_add(1);
     	return true;
     }
 	return addToColdTxs(txEntry); //limited by CBF depth, move it to cold queue
@@ -129,8 +129,9 @@ TxEntry*
 DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 
 	//skip scanning if there is no change that matters
-	if ((addedTxCount + removedTxCount + activeTxSet.getRemovedTxCount()) == activitySignature)
-		return NULL;
+    //Fixme: since the counters are not trustworthy, disabling this optimization for now
+	//if ((addedTxCount + removedTxCount + activeTxSet.getRemovedTxCount()) == activitySignature)
+	//    return NULL;
 	activitySignature = addedTxCount + removedTxCount + activeTxSet.getRemovedTxCount();
 
 	uint64_t itHot, itCold, itIndepend;
@@ -142,7 +143,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 			&& (!txIndepend || txHot->getCTS() < txIndepend->getCTS())
 			&& !activeTxSet.blocks(txHot)) {
 		hotDependQueue.remove(itHot, txHot);
-		removedTxCount++;
+		removedTxCount.fetch_add(1);
 		return txHot;
 	}
 
@@ -150,7 +151,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 			&& (!txIndepend || txCold->getCTS() < txIndepend->getCTS())
 			&& !activeTxSet.blocks(txCold)) {
 		coldDependQueue.remove(itCold, txCold);
-		removedTxCount++;
+		removedTxCount.fetch_add(1);
 		return txCold;
 	}
 
@@ -158,7 +159,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 		do {
 			if (!activeTxSet.blocks(txIndepend)) {
 				independentQueue.remove(itIndepend, txIndepend);
-				removedTxCount++;
+				removedTxCount.fetch_add(1);
 				return txIndepend;
 			}
 		} while ((txIndepend = independentQueue.findNext(itIndepend)));

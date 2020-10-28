@@ -177,6 +177,14 @@ opcodeSymbol(Buffer* buffer)
     const RequestCommon* header = buffer->getStart<RequestCommon>();
     if (header == NULL)
         return "null";
+    if (header->opcode == DSSN_COMMIT) {
+        const TxPrepare::Request* req = buffer->getStart<TxPrepare::Request>();
+	static char str[256];
+	memset(str, 0, sizeof(str));
+	snprintf(str, sizeof(str), "DSSN_COMMIT (ctx=%lu %lu)",
+		 (uint64_t)(req->meta.cts >> 64), (uint64_t)(req->meta.cts));
+	return (const char *)str;
+    }
     return opcodeSymbol(header->opcode);
 }
 /**
