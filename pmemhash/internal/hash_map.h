@@ -13,17 +13,16 @@
 #define BUCKET_SIZE 32
 #define VICTIM_LIST_SIZE (BUCKET_SIZE)
 
-#ifdef NDEBUG
+//#define PMEMHASH_STAT
+
+#ifdef PMEMHASH_STAT
+    #define LOOKUP_CNT_INCR() { lookup_ctr_++; }
+    #define CLT_BELEM_SRCH_CNT_INCR(delta) {culminated_search_ctr_ += delta; }
+    #warning  "PMEMHASH_STAT turned on. This will greatly reduce pmemhash benchmark result."
+#else
     #define LOOKUP_CNT_INCR() do {} while(0)
     #define CLT_BELEM_SRCH_CNT_INCR(delta) do {} while(0)
-#else
-    #define LOOKUP_CNT_INCR() { lookup_ctr_++;  }
-    #define CLT_BELEM_SRCH_CNT_INCR(delta) {	\
-        culminated_search_ctr_ += delta;		\
-        }
 #endif
-
-const uint8_t SIG_INVALID = 0xFF;
 
 struct bucket_header
 {
@@ -138,9 +137,9 @@ public:
             ((buckets_[bucket].hdr_.valid_ & (1 << hint.slot_)) != 0) ) { // this slot is still valid.
             if (buckets_[bucket].ptr_[hint.slot_] == hint.ptr_) {
                 buckets_[bucket].ptr_[hint.slot_] = ptr;
-                #ifndef  NDEBUG
+                #ifndef  PMEMHASH_STAT
                 update_ctr_++;
-                #endif  // NDEBUG
+                #endif  // PMEMHASH_STAT
                 return true;
             }
         }
@@ -150,7 +149,7 @@ public:
 
     elem_pointer<Elem> insert_internal(const K & key, Elem *ptr, elem_pointer<Elem> hint) {
         bool successful;
-        #ifndef NDEBUG
+        #ifndef PMEMHASH_STAT
         bool evict;
         #endif
         uint8_t l_slot, l_victim_slot;
@@ -176,13 +175,11 @@ public:
             // find an empty slot, if successfully found, its signature should be set to INVALID by
             // previous victimization step.
             l_slot = find_empty(l_valid);
-            //assert(l_slot != ::end);
-            //FIXME assert(buckets_[bucket].sig_.sig8_[l_slot] == SIG_INVALID);
 
             // pick the next victim.
             l_victim_slot = l_victim_list[l_victim_idx];
 
-            #ifndef NDEBUG
+            #ifndef PMEMHASH_STAT
             evict = (l_valid & (1ULL << l_victim_slot)) != 0;
             #endif
 
@@ -194,13 +191,12 @@ public:
             successful = __sync_bool_compare_and_swap((uint64_t*)hdr_ptr, (uint64_t)l_hdr.hdr64, (uint64_t)l_new_hdr.hdr64);
         } while (!successful);
 
-        #ifndef  NDEBUG
+        #ifndef  PMEMHASH_STAT
         insert_ctr_++;
         if (evict)
             evict_ctr_++;
-        #endif  // NDEBUG
+        #endif
 
-        // buckets_[bucket].sig_.sig8_[l_victim_slot] = SIG_INVALID;
         buckets_[bucket].ptr_[l_slot] = ptr; //new index
         buckets_[bucket].sig_.sig8_[l_slot] = signature(key);
         ret.slot_ = l_slot;
