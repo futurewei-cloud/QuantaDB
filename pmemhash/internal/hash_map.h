@@ -13,19 +13,16 @@
 #define BUCKET_SIZE 32
 #define VICTIM_LIST_SIZE (BUCKET_SIZE)
 
-#ifdef NDEBUG
-#define LOOKUP_CNT_INCR() do {} while(0)
-#define CLT_BELEM_SRCH_CNT_INCR(delta) do {} while(0)
-#else
-#define LOOKUP_CNT_INCR() {			\
-  lookup_ctr_++;				\
-}
-#define CLT_BELEM_SRCH_CNT_INCR(delta) {	\
-    culminated_search_ctr_ += delta;		\
-}
-#endif
+//#define PMEMHASH_STAT
 
-const uint8_t SIG_INVALID = 0xFF;
+#ifdef PMEMHASH_STAT
+    #define LOOKUP_CNT_INCR() { lookup_ctr_++; }
+    #define CLT_BELEM_SRCH_CNT_INCR(delta) {culminated_search_ctr_ += delta; }
+    #warning  "PMEMHASH_STAT turned on. This will greatly reduce pmemhash benchmark result."
+#else
+    #define LOOKUP_CNT_INCR() do {} while(0)
+    #define CLT_BELEM_SRCH_CNT_INCR(delta) do {} while(0)
+#endif
 
 struct bucket_header
 {
@@ -69,7 +66,7 @@ template <typename Elem, typename K, typename V, typename Hash>
 class hash_table
 {
 public:
-    hash_table(uint32_t bucket_count=DEFAULT_BUCKET_COUNT)
+    hash_table(uint32_t bucket_count=DEFAULT_BUCKET_COUNT, bool lossy_mode = true)
     {
         buckets_ = new hash_bucket<Elem>[bucket_count];
         victim_.resize(VICTIM_LIST_SIZE);
@@ -80,8 +77,9 @@ public:
 		for (uint32_t idx = 0; idx < bucket_count; idx++) {
 			buckets_[idx].hdr_.valid_ = 0;
 		}
+        lossy_mode_ = lossy_mode;
         evict_ctr_ = insert_ctr_ = update_ctr_ = 0;
-	culminated_search_ctr_ = lookup_ctr_ = 0;
+	    culminated_search_ctr_ = lookup_ctr_ = 0;
     }
 
     ~hash_table()
@@ -139,9 +137,9 @@ public:
             ((buckets_[bucket].hdr_.valid_ & (1 << hint.slot_)) != 0) ) { // this slot is still valid.
             if (buckets_[bucket].ptr_[hint.slot_] == hint.ptr_) {
                 buckets_[bucket].ptr_[hint.slot_] = ptr;
-                #ifndef  NDEBUG
+                #ifndef  PMEMHASH_STAT
                 update_ctr_++;
-                #endif  // NDEBUG
+                #endif  // PMEMHASH_STAT
                 return true;
             }
         }
@@ -150,38 +148,38 @@ public:
     }
 
     elem_pointer<Elem> insert_internal(const K & key, Elem *ptr, elem_pointer<Elem> hint) {
-
-        elem_pointer<Elem> ret;
         bool successful;
-        #ifndef NDEBUG
+        #ifndef PMEMHASH_STAT
         bool evict;
         #endif
         uint8_t l_slot, l_victim_slot;
 
         // find the bucket.
-        auto bucket = bucketize(key);
+        uint32_t bucket = bucketize(key);
+        struct bucket_header * hdr_ptr = &(buckets_[bucket].hdr_);
         std::vector<int> & l_victim_list = victim_; // or use at()
 
-        ret.bucket_ = bucket;
+        elem_pointer<Elem> ret = {bucket, 0, NULL};
 
         do {
-            struct bucket_header * hdr_ptr = &(buckets_[bucket].hdr_);
             union bucket_hdr64 l_hdr;
             l_hdr.hdr = *hdr_ptr;
 
-            auto l_valid = hdr_ptr->valid_;
             auto l_victim_idx = hdr_ptr->victim_idx_;
+            auto l_valid = hdr_ptr->valid_;
+
+            if (!lossy_mode_ && bucket_is_full(l_valid)) {
+                return ret;
+            }
 
             // find an empty slot, if successfully found, its signature should be set to INVALID by
             // previous victimization step.
             l_slot = find_empty(l_valid);
-            //assert(l_slot != ::end);
-            //FIXME assert(buckets_[bucket].sig_.sig8_[l_slot] == SIG_INVALID);
 
             // pick the next victim.
             l_victim_slot = l_victim_list[l_victim_idx];
 
-            #ifndef NDEBUG
+            #ifndef PMEMHASH_STAT
             evict = (l_valid & (1ULL << l_victim_slot)) != 0;
             #endif
 
@@ -193,13 +191,12 @@ public:
             successful = __sync_bool_compare_and_swap((uint64_t*)hdr_ptr, (uint64_t)l_hdr.hdr64, (uint64_t)l_new_hdr.hdr64);
         } while (!successful);
 
-        #ifndef  NDEBUG
+        #ifndef  PMEMHASH_STAT
         insert_ctr_++;
         if (evict)
             evict_ctr_++;
-        #endif  // NDEBUG
+        #endif
 
-        buckets_[bucket].sig_.sig8_[l_victim_slot] = SIG_INVALID;
         buckets_[bucket].ptr_[l_slot] = ptr; //new index
         buckets_[bucket].sig_.sig8_[l_slot] = signature(key);
         ret.slot_ = l_slot;
@@ -223,18 +220,18 @@ public:
         __m256i l_cmpeq_ret = _mm256_cmpeq_epi8(l_bucket.sig_.sig256_, l_sig256);
         uint32_t sig_matching_bits = _mm256_movemask_epi8(l_cmpeq_ret);
         uint32_t valid_matching_sig = sig_matching_bits & l_bucket.hdr_.valid_;
-	uint32_t search_cnt = 0;
-	LOOKUP_CNT_INCR ();
+	    uint32_t search_cnt = 0;
+	    LOOKUP_CNT_INCR ();
 
         do {
-	    search_cnt++;
+	        search_cnt++;
             l_slot = __builtin_ffs(valid_matching_sig);
             if (l_slot == 0) break;
             Elem *l_ptr = l_bucket.ptr_[l_slot-1];
 
             //FIXME: make this getKey to be in a KeyExtractor
             if (l_ptr->getKey() == key) {
-                CLT_BELEM_SRCH_CNT_INCR (search_cnt);
+                    CLT_BELEM_SRCH_CNT_INCR (search_cnt);
                 return elem_pointer<Elem>(bucket, l_slot-1, l_ptr);
             }
             valid_matching_sig &= ~(1ULL << (l_slot-1));
@@ -250,21 +247,36 @@ public:
     uint64_t get_lookup_count() { return lookup_ctr_; }
     uint32_t get_avg_elem_iter_len() {
         if (lookup_ctr_) {
-	    uint64_t c_search_count = culminated_search_ctr_;
-	    uint64_t search_count = lookup_ctr_;
-	    return c_search_count/search_count;
-	}
-	return 0;
+	        uint64_t c_search_count = culminated_search_ctr_;
+	        uint64_t search_count = lookup_ctr_;
+	        return c_search_count/search_count;
+	    }
+	    return 0;
     }
 
-    int bucketize(const K & key) { return Hash{}(key) % bucket_count_; }
     uint8_t signature(const K & key) { return (Hash{}(key) / bucket_count_) & 0xFF; }
-    int find_empty(uint32_t valid) { return __builtin_ffs(~valid) - 1; }
-
 private:
+    int bucketize(const K & key) { return Hash{}(key) % bucket_count_; }
+    int find_empty(uint32_t valid) { return __builtin_ffs(~valid) - 1; }
+    inline bool bucket_is_full(uint32_t valid_mask)
+    {
+        uint32_t n_avail = 0;
+        uint32_t avail = ~valid_mask;
+        assert(avail != 0);
+        while (avail) {
+            if (++n_avail > 1)
+                return false;
+            avail &= avail - 1;
+        }
+        assert(n_avail == 1);
+        return true;
+    }
+
+    // Variables
     uint32_t bucket_count_;
     hash_bucket<Elem> *buckets_;
     std::vector<int> victim_;
+    bool lossy_mode_;
     std::atomic<uint32_t> evict_ctr_;
     std::atomic<uint32_t> insert_ctr_;
     std::atomic<uint32_t> update_ctr_;

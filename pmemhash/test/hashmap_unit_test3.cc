@@ -60,7 +60,9 @@ int main(void)
     if (elem_ret.ptr_!=NULL) {
         printf("get key:%s bucket:%i slot:%i key:%s, value:%s\n", key, elem_ret.bucket_, elem_ret.slot_,
             elem_ret.ptr_->key, elem_ret.ptr_->value.c_str());
-	}
+	} else {
+        printf("get key:%s failed\n", key);
+    }
 
     key = (char *)"1";
     elem_ret = my_hashtable.get(key);

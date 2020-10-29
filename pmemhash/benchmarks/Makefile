@@ -2,7 +2,7 @@ TOP=..
 CC=g++
 
 #CFLAGS=-g -O3 -I $(TOP)/internal --std=c++17 -mavx2 -Wall
-CFLAGS= -O3 -I $(TOP)/internal -I$(TOP)/utils --std=c++17 -mavx2 -Wall
+CFLAGS= -O3 -I $(TOP)/internal -I$(TOP)/utils --std=c++17 -mavx2 -Wall -DNDEBUG
 
 %.o: %.cc
 	$(CC) -c $(CFLAGS) -o $@ $<
