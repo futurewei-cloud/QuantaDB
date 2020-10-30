@@ -31,7 +31,13 @@ class TxLogTest : public ::testing::Test {
 
   };
 
-  ~TxLogTest() {};
+  ~TxLogTest() {
+    for (int idx = 0; idx < RWSetSize; idx++) {
+        delete writeKV[idx];
+        delete readKV[idx];
+    }
+    delete txlog;
+  };
 
   HashmapKVStore kvStore;
   TxLog *txlog;
@@ -41,8 +47,8 @@ class TxLogTest : public ::testing::Test {
 
 class TxLogRecoveryTest : public ::testing::Test {
   public:
-  TxLogRecoveryTest() { txlog = new TxLog(true, "unittest"); };
-  ~TxLogRecoveryTest() {};
+  TxLogRecoveryTest()  { txlog = new TxLog(true, "unittest"); };
+  ~TxLogRecoveryTest() { delete txlog; };
 
   TxLog *txlog;
 
@@ -71,9 +77,10 @@ TEST_F(TxLogTest, TxLogUnitTest)
         tx.setTxState(((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT); 
         tx.insertPeerSet(idx);
 
+        KVLayout *kvR, *kvW;
         for (int kvidx = 0; kvidx < RWSetSize; kvidx++) {
-            KVLayout *kvR = kvStore.preput(*readKV[kvidx]);
-            KVLayout *kvW = kvStore.preput(*writeKV[kvidx]);
+            kvR = kvStore.preput(*readKV[kvidx]);
+            kvW = kvStore.preput(*writeKV[kvidx]);
             tx.insertWriteSet(kvW, kvidx);
             tx.insertReadSet (kvR, kvidx);
         }
@@ -162,9 +169,10 @@ void writeToLog(TxLogTest *c, int sid)
         tx.setTxState(((stamp % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT); 
         tx.insertPeerSet(stamp);
 
+        KVLayout *kvR, *kvW;
         for (int kvidx = 0; kvidx < RWSetSize; kvidx++) {
-            KVLayout *kvR = c->kvStore.preput(*c->readKV[kvidx]);
-            KVLayout *kvW = c->kvStore.preput(*c->writeKV[kvidx]);
+            kvR = c->kvStore.preput(*c->readKV[kvidx]);
+            kvW = c->kvStore.preput(*c->writeKV[kvidx]);
             tx.insertWriteSet(kvW, kvidx);
             tx.insertReadSet (kvR, kvidx);
         }
