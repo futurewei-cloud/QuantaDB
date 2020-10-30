@@ -193,7 +193,7 @@ class DLog {
         if (length == 0)
             length = size();
         uint64_t remain = length;
-        chunk_t * tmp, * old_head;
+        chunk_t * tmp, *old_tmp, * old_head;
         tmp = old_head = chunk_head;
         while (tmp) {
             if (tmp->hdr->dsize >= remain) {
@@ -211,8 +211,9 @@ class DLog {
         // Remove trim'ed chunks
         tmp = old_head;
         while (tmp && (tmp != chunk_head)) {
-            tmp->remove();
+            old_tmp = tmp;
             tmp = tmp->next;
+            old_tmp->remove();
         }
         mtx.unlock();
         return length - remain;
@@ -454,6 +455,8 @@ class DLog {
                     insert_chunk(chunkp);
            }
         }
+
+        closedir(dir);
     }
 
     void clean_chunks (const char *logdir)
@@ -474,6 +477,8 @@ class DLog {
                 assert(ret == 0);
            }
         }
+
+        closedir(dir);
     }
 
     // private variables
