@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <stdint.h>
+#include <string.h>
 #include <immintrin.h>
 #include <functional>
 #include <atomic>
@@ -76,6 +77,7 @@ public:
         bucket_count_ = bucket_count;
 		for (uint32_t idx = 0; idx < bucket_count; idx++) {
 			buckets_[idx].hdr_.valid_ = 0;
+            memset(&buckets_[idx].sig_, 0xFF, sizeof(__m256));
 		}
         lossy_mode_ = lossy_mode;
         evict_ctr_ = insert_ctr_ = update_ctr_ = 0;
@@ -148,7 +150,7 @@ public:
     }
 
     elem_pointer<Elem> insert_internal(const K & key, Elem *ptr, elem_pointer<Elem> hint) {
-        bool successful;
+        bool successful = true;
         #ifndef PMEMHASH_STAT
         bool evict;
         #endif
