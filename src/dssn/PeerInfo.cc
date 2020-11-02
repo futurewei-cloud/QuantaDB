@@ -269,6 +269,10 @@ PeerInfo::send(Validator *validator) {
     uint64_t nsTime = validator->getClockValue();
     uint64_t currentTick = nsTime / tickUnit;
 
+    //the use of iterator of concurrent_unordered_map while another thread doing erase
+    //is observed with a lock-up problem with mutexForPeerUpdate. For now let's protect
+    //the whole section with mutexForPeerAdd.
+
     mutexForPeerAdd.lock();
     auto itr = peerInfo.begin();
     while (itr != peerInfo.end()) {
@@ -280,7 +284,6 @@ PeerInfo::send(Validator *validator) {
         }
 
         peerEntry->mutexForPeerUpdate.lock();
-        mutexForPeerAdd.unlock();
 
         if (currentTick > lastTick)
             RAMCLOUD_LOG(NOTICE, "finding: cts %lu states %u %u %u",
@@ -330,7 +333,6 @@ PeerInfo::send(Validator *validator) {
 
         peerEntry->mutexForPeerUpdate.unlock();
 
-        mutexForPeerAdd.lock();
         itr++;
     }
     mutexForPeerAdd.unlock();
