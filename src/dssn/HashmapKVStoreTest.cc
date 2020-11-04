@@ -87,6 +87,7 @@ TEST_F(HashmapKVTest, put) {
     uint8_t * val = (uint8_t *)malloc(256); 
     bool ret = KVStore.put(&kvIn, 0, 0, val, vallen);
     EXPECT_EQ(ret, true);
+    free(val);
 }
 
 TEST_F(HashmapKVTest, fetch) {

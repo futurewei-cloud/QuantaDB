@@ -8,6 +8,7 @@ public:
     uint64_t value;
 
     Element(uint64_t k, uint64_t v) { key=k; value=v; }
+    Element() { key=0; value=0; }
 
     inline uint64_t getKey() { return key; }
 };
@@ -65,8 +66,11 @@ int main(void)
         printf("get key:%lu failed\n", key);
 #endif
     printf("========== Test Phase 2 ==========\n");
-    for (int i = 1; i < 65536; i+=4096) {
-        Element *elem = new Element(i, i);
+    #define ELEM_SIZE   65536
+    Element elem_array[ELEM_SIZE];
+    for (int i = 1; i < ELEM_SIZE; i+=4096) {
+        Element *elem = &elem_array[i];
+        elem->key = elem->value = i;
         elem_ret = my_hashtable.put(elem->key, elem);
         uint8_t sig = my_hashtable.signature(elem->key);
         printf("put key:%lu sig:%i bucket:%i slot:%i value:%li\n", elem->key, sig, elem_ret.bucket_, elem_ret.slot_, elem->value);
@@ -84,7 +88,7 @@ int main(void)
         }
     }
 
-    for (int i = 1; i < 65536; i+=4096) {
+    for (int i = 1; i < ELEM_SIZE; i+=4096) {
         uint64_t key = i;
         elem_ret = my_hashtable.get(key);
         if (elem_ret.ptr_!=NULL)

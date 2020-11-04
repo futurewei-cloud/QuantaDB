@@ -13,12 +13,15 @@ bool operator == (const KLayout &lhs, const KLayout &rhs)
 }
 
 KVStore::KVStore() {
+    /*
 	hotKVStore = new HotKVType();
 	assert(hotKVStore);
+    */
 }
 
 KVLayout*
 KVStore::preput(KVLayout &kvIn) {
+    /*
     KVLayout* kvOut = new KVLayout(kvIn.k.keyLength);
     if (kvOut == NULL)
         return NULL;
@@ -33,21 +36,25 @@ KVStore::preput(KVLayout &kvIn) {
     kvOut->v.meta = kvIn.v.meta;
     kvOut->v.isTombstone = kvIn.v.isTombstone;
     return kvOut;
+    */
+    return NULL;
 }
 
 KVLayout *
 KVStore::fetch(KLayout& k) {
-
+    /*
 	HotKVType::KeyType key = (char *)k.key.get();
 	idx::contenthelpers::OptionalValue<KVLayout*> ret = ((HotKVType *)hotKVStore)->lookup(key);
 	if (ret.mIsValid) {
 		return ret.mValue;
 	}
+    */
 	return 0;
 }
 
 bool
 KVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi) {
+    /*
 	kv->meta().cStamp = kv->meta().pStamp = cts;
 	kv->meta().pStampPrev = 0;
 	kv->meta().sStampPrev = pi;
@@ -57,11 +64,13 @@ KVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi) {
 	idx::contenthelpers::OptionalValue<DSSN::KVLayout*> ret = ((HotKVType *)hotKVStore)->upsert(kv);
 	if (!ret.mIsValid)
 		return false;
+    */
 	return true;
 }
 
 bool
 KVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength) {
+    /*
 	kv->meta().cStamp = kv->meta().pStamp = cts;
 	kv->meta().pStampPrev = kv->meta().pStamp;
 	kv->meta().sStampPrev = pi;
@@ -71,6 +80,7 @@ KVStore::put(KVLayout *kv, uint64_t cts, uint64_t pi, uint8_t *valuePtr, uint32_
 	kv->v.valuePtr = valuePtr;
 	if (valuePtr == NULL || valueLength == 0)
 		kv->v.isTombstone = true;
+    */
 	return true;
 }
 
