@@ -44,6 +44,7 @@ struct Counters {
     std::atomic<uint64_t> precommitReads{0};
     std::atomic<uint64_t> precommitWrites{0};
     std::atomic<uint64_t> commitIntents{0};
+    std::atomic<uint64_t> duplicates{0};
     std::atomic<uint64_t> recovers{0};
     std::atomic<uint64_t> trivialAborts{0};
     std::atomic<uint64_t> busyAborts{0};
