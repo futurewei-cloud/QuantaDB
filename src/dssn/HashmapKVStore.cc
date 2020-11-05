@@ -47,10 +47,12 @@ bool HashmapKVStore::putNew(KVLayout *kv, __uint128_t cts, uint64_t pi)
      * Normally, in a production system, a KV put should always be successful. Here we use pmemhash KV for
      * its speed. Pmemhash KV either works in lossy mode where put() would always be successful, or in
      * non-lossy mode where put() may fail when the designated bucket was full.
-     * We can't work with lossy mode. So we added an check below and force a segfault when put() failed.
+     * We can't work with lossy mode. So we added an check below and exit if put failed.
      */
-    if (lptr.ptr_ == NULL)
-        *(int*)0 = 0;
+    if (lptr.ptr_ == NULL) {
+        printf("FatalError: pmemhash bucket full\n");
+        exit(1);
+    }
     return lptr.ptr_ != NULL;
 }
 

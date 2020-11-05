@@ -15,8 +15,9 @@ public:
     inline uint64_t getKey() { return key; }
 };
 
-#define ELEM_BOUND 65536
-Element elem[ELEM_BOUND*64];
+uint64_t TOTAL_ELEM_SIZE;
+uint32_t ELEM_BOUND;
+Element *elem;
 
 hash_table<Element, uint64_t, uint64_t, std::hash<uint64_t>> my_hashtable;
 volatile int thread_run_run = 0;			// global switch
@@ -127,7 +128,7 @@ uint64_t run_parallel(int nthreads, int run_time/* #sec */, thread_func_t func)
 
 void init_elem(bool contention)
 {
-	for (uint32_t i = 0; i < ELEM_BOUND * 64; i++) {
+	for (uint32_t i = 0; i < TOTAL_ELEM_SIZE; i++) {
 		if (contention) {
 			elem[i].key = rand();
 			elem[i].value = elem[i].key << 2;
@@ -138,8 +139,18 @@ void init_elem(bool contention)
 	}
 }
 
-int main(void)
+int main(int ac, char *av[])
 {
+    ELEM_BOUND = (ac == 1)? 65536 : atoi(av[1]);
+    TOTAL_ELEM_SIZE  = ELEM_BOUND * 32;
+
+    if ((elem = new Element[TOTAL_ELEM_SIZE]) == NULL) {
+        printf("Mem alloc failed\n");
+        exit(1);
+    }
+
+    printf("Pmemhash benchmark. Elem bound = %d\n", ELEM_BOUND);
+
 	uint64_t total;
 
 	setlocale(LC_NUMERIC, "");

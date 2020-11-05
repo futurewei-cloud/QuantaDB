@@ -130,10 +130,8 @@ public:
     bool insert_or_update(const K &key, Elem *ptr) { return true; }
 
     bool update_internal(const K & key, Elem *ptr, elem_pointer<Elem> hint) {
-
         // find the bucket.
         auto bucket = bucketize(key);
-        //std::vector<int> & l_victim_list = victim_; // or use at()
 
         if (hint.ptr_ != NULL && // valid hint, replace old ptr if neccessary
             ((buckets_[bucket].hdr_.valid_ & (1 << hint.slot_)) != 0) ) { // this slot is still valid.
@@ -151,44 +149,41 @@ public:
 
     elem_pointer<Elem> insert_internal(const K & key, Elem *ptr, elem_pointer<Elem> hint) {
         bool successful = true;
-        #ifndef PMEMHASH_STAT
-        bool evict;
-        #endif
-        uint8_t l_slot, l_victim_slot;
+        bool evict = false;;
+        uint8_t l_slot;
 
         // find the bucket.
         uint32_t bucket = bucketize(key);
         struct bucket_header * hdr_ptr = &(buckets_[bucket].hdr_);
-        std::vector<int> & l_victim_list = victim_; // or use at()
 
         elem_pointer<Elem> ret = {bucket, 0, NULL};
 
         do {
-            union bucket_hdr64 l_hdr;
-            l_hdr.hdr = *hdr_ptr;
-
-            auto l_victim_idx = hdr_ptr->victim_idx_;
+            union bucket_hdr64 l_hdr, l_new_hdr;
+            uint32_t victim_mask = 0; // default no victim
             auto l_valid = hdr_ptr->valid_;
 
-            if (!lossy_mode_ && bucket_is_full(l_valid)) {
-                return ret;
+            l_new_hdr.hdr = l_hdr.hdr = *hdr_ptr;
+
+            if (bucket_is_full(l_valid)) {
+                if (!lossy_mode_)
+                    return ret; // bucket is full, return error
+                evict = true;
             }
 
-            // find an empty slot, if successfully found, its signature should be set to INVALID by
-            // previous victimization step.
+            // find an empty slot.
             l_slot = find_empty(l_valid);
 
-            // pick the next victim.
-            l_victim_slot = l_victim_list[l_victim_idx];
+            if (evict) { // pick the next victim.
+                uint8_t  victim_slot;
+                uint32_t l_victim_idx = hdr_ptr->victim_idx_;
+                victim_slot = victim_[l_victim_idx];
+                victim_mask = 1ULL << victim_slot;
+                l_new_hdr.hdr.victim_idx_ = (l_victim_idx +1) % VICTIM_LIST_SIZE;
+            }
 
-            #ifndef PMEMHASH_STAT
-            evict = (l_valid & (1ULL << l_victim_slot)) != 0;
-            #endif
-
-            union bucket_hdr64 l_new_hdr;
-            l_new_hdr.hdr.victim_idx_ = (l_victim_idx +1) % VICTIM_LIST_SIZE;
-            l_new_hdr.hdr.valid_ = ((l_valid | (1ULL << l_slot))     // set my slot
-                                & ~(1ULL << l_victim_slot));            // and clear victim's
+            l_new_hdr.hdr.valid_ = ((l_valid | (1ULL << l_slot)) // set my slot
+                                    & ~victim_mask);             // and clear victim's
 
             successful = __sync_bool_compare_and_swap((uint64_t*)hdr_ptr, (uint64_t)l_hdr.hdr64, (uint64_t)l_new_hdr.hdr64);
         } while (!successful);
