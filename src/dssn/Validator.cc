@@ -443,25 +443,25 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         RAMCLOUD_LOG(NOTICE, "insert localTx cts %lu txEntry %lu cnt %lu",
                 (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry,
                 localTxQueue.addedTxCount.load());
+        txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
         if (!localTxQueue.add(txEntry)) {
             counters.busyAborts.fetch_add(1);
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
             return false; //fail to be queued
         }
-        txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
     } else {
         //cross-shard tx
         RAMCLOUD_LOG(NOTICE, "insert distTx cts %lu txEntry %lu cnt %lu",
                 (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry,
                 counters.queuedDistributedTxs.load());
+        txEntry->setTxCIState(TxEntry::TX_CI_QUEUED); //set it before inserting to queue lest another thread might set CIState first
         if (!reorderQueue.insert(txEntry->getCTS(), txEntry)) {
             counters.busyAborts.fetch_add(1);
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
             return false; //fail to be queued
         }
-        txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
 
         //assert(peerInfo.add(txEntry->getCTS(), txEntry, this));
         peerInfo.add(txEntry->getCTS(), txEntry, this);
