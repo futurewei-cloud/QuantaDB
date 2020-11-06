@@ -27,6 +27,7 @@
 #include "Cycles.h"
 #include "ClusterTimeService.h"
 
+#if (0) // DISABLE PTP Code 
 
 #ifdef USE_PTP_CLOCK
 
@@ -148,6 +149,8 @@ static clockid_t get_ptp_clock_id()
 }
 #endif // USE_PTP_CLOCK
 
+#endif // DISABLE PTP code
+
 static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
         unsigned int *ecx, unsigned int *edx)
 {
@@ -216,6 +219,7 @@ unsigned int intel_model_duplicates(unsigned int model)
     return model;
 }
 
+#if (0) // DISABLE TS_TRACKER
 static double getTSCHz()
 {
     uint32_t max_level, genuine_intel, max_extended_level, crystal_hz;
@@ -305,12 +309,14 @@ static double getTSCHz()
 
     return tsc_hz;
 }
+#endif // DISABLE TS_TRACKER
 
 namespace DSSN {
 using namespace RAMCloud;
 
 #define TRACKER_SLEEP_USEC  1
 
+#if (0) // DISABLE TS_TRACKER
 void * ClusterTimeService::update_ts_tracker(void *arg)
 {
     ClusterTimeService *ctsp = (ClusterTimeService*)arg;
@@ -375,9 +381,11 @@ void * ClusterTimeService::update_ts_tracker(void *arg)
     }
     return NULL;
 }
+#endif // DISABLE TS_TRACKER
 
 ClusterTimeService::ClusterTimeService()
 {
+#if (0) // DISABLE TS_TRACKER
     int fd;
 
     // attached to shared delta tracker
@@ -406,10 +414,12 @@ ClusterTimeService::ClusterTimeService()
 
     while(!tracker_init)
         usleep(1);
+#endif // DISABLE TS_TRACKER
 }
 
 ClusterTimeService::~ClusterTimeService()
 {
+#if (0) // DISABLE TS_TRACKER
     if (thread_run_run && tp->tracker_id == my_tracker_id) {
         void * ret;
         thread_run_run = false;
@@ -417,6 +427,7 @@ ClusterTimeService::~ClusterTimeService()
     }
     // printf("~ClusterTimeService uctr=%ld nctr=%ld\n", uctr, nctr);
     munmap(tp, sizeof(ts_tracker_t));
+#endif // DISABLE TS_TRACKER
 }
 
 } // DSSN

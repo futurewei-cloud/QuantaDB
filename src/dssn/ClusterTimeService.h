@@ -70,15 +70,18 @@ class ClusterTimeService {
     // return a local system clock time stamp
     inline uint64_t getLocalTime()
     {
+        return getnsec();
+        /*
         nt_pair_t *ntp = &tp->nt[tp->pingpong];
         uint64_t last_clock      = ntp->last_clock;
         uint64_t last_clock_tsc  = ntp->last_clock_tsc;
         return last_clock + Cycles::toNanoseconds(rdtscp() - last_clock_tsc, tp->cyclesPerSec);
+        */
     }
 
     private:
 
-    static void* update_ts_tracker(void *);
+    // static void* update_ts_tracker(void *);
 
     // Fast (~25ns) about only at usec precision
     static inline uint64_t getusec()
@@ -92,7 +95,7 @@ class ClusterTimeService {
     inline uint64_t getnsec()
     {
         timespec ts;
-        clock_gettime(tp->clockid, &ts);
+        clock_gettime(CLOCK_REALTIME, &ts);
         return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
     }
 
@@ -101,7 +104,7 @@ class ClusterTimeService {
     {
         timespec ts;
         uint64_t tsc1 = rdtscp();
-        clock_gettime(tp->clockid, &ts);
+        clock_gettime(CLOCK_REALTIME, &ts);
         uint64_t tsc2 = rdtscp();
         *tsc = (tsc1 + tsc2) / 2;
         return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
@@ -112,7 +115,7 @@ class ClusterTimeService {
         uint32_t aux;
         return __rdtscp(&aux);
     }
-
+#if (0) // DISABLE TS_TRACKER
     #define TS_TRACKER_NAME  "DSSN_TS_Tracker"
     typedef struct {
         uint64_t last_clock;           // nano-sec from the last update
@@ -128,12 +131,13 @@ class ClusterTimeService {
         clockid_t clockid;             //
     } ts_tracker_t;
 
-    // 
+    
     ts_tracker_t * tp;                // pointing to a shared ts_tracker
     pthread_t tid;
     int my_tracker_id;
     bool thread_run_run;
     bool tracker_init;
+#endif
     uint64_t uctr, nctr;              // statistics
 }; // ClusterTimeService
 

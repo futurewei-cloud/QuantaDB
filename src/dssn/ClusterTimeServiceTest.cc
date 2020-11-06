@@ -111,11 +111,13 @@ TEST_F(ClusterTimeServiceTest, BenchMTAtomicInc) {
 }
 
 TEST_F(ClusterTimeServiceTest, benchGenClusterTime) {
-    int loop = 1024*1024;
+    int loop = 1;
     uint64_t start, stop;
-    //
-    start = Cycles::rdtsc();
-    for (int i = 0; i < loop; i += 10) {
+ 
+    start = Cycles::rdtscp();
+    for (int i = 0; i < loop; i += 1) {
+        clock.getLocalTime();
+        /*
         clock.getLocalTime();
         clock.getLocalTime();
         clock.getLocalTime();
@@ -125,11 +127,11 @@ TEST_F(ClusterTimeServiceTest, benchGenClusterTime) {
         clock.getLocalTime();
         clock.getLocalTime();
         clock.getLocalTime();
-        clock.getLocalTime();
+        */
     }
-    stop = Cycles::rdtsc();
+    stop = Cycles::rdtscp();
     GTEST_COUT << "getLocalTime: "
-    << Cycles::toNanoseconds(stop - start)/(1024*1024) << " nano sec " << std::endl;
+    << Cycles::toNanoseconds(stop - start)/loop << " nano sec " << std::endl;
 }
 
 }  // namespace RAMCloud
