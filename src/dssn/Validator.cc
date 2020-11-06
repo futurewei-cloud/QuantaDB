@@ -264,13 +264,12 @@ Validator::scheduleDistributedTxs() {
     uint64_t lastTick = 0;
     do {
         if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (__uint128_t)-1 : get128bClockValue()))) {
-            if (txEntry->getCTS() <= lastScheduledTxCTS) {
+            if (txEntry->getCTS() < lastScheduledTxCTS) {
                 RAMCLOUD_LOG(NOTICE, "late %lu last %lu",
                         (uint64_t)(txEntry->getCTS() >> 64),
                         (uint64_t)(lastScheduledTxCTS >> 64));
 
                 assert(prevTxEntry != txEntry);
-                assert(txEntry->getCTS() != lastScheduledTxCTS); //no duplicate CTS from sequencer
 
                 //abort this CI, which has arrived later than a scheduled CI
                 //aborting is fine because its SSN info has never been sent to its peers
@@ -279,6 +278,10 @@ Validator::scheduleDistributedTxs() {
                 txEntry->setTxState(TxEntry::TX_OUTOFORDER);
                 counters.lateScheduleErrors++;
                 continue;
+            } else if (txEntry->getCTS() == lastScheduledTxCTS) {
+                RAMCLOUD_LOG(NOTICE, "duplicate %lu", (uint64_t)(txEntry->getCTS() >> 64));
+                counters.duplicates++;
+                continue; //ignore the duplicate
             }
             while (!distributedTxSet.add(txEntry));
             RAMCLOUD_LOG(NOTICE, "schedule %lu",(uint64_t)(txEntry->getCTS() >> 64));
@@ -440,25 +443,25 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         RAMCLOUD_LOG(NOTICE, "insert localTx cts %lu txEntry %lu cnt %lu",
                 (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry,
                 localTxQueue.addedTxCount.load());
+        txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
         if (!localTxQueue.add(txEntry)) {
             counters.busyAborts.fetch_add(1);
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
             return false; //fail to be queued
         }
-        txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
     } else {
         //cross-shard tx
         RAMCLOUD_LOG(NOTICE, "insert distTx cts %lu txEntry %lu cnt %lu",
                 (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry,
                 counters.queuedDistributedTxs.load());
+        txEntry->setTxCIState(TxEntry::TX_CI_QUEUED); //set it before inserting to queue lest another thread might set CIState first
         if (!reorderQueue.insert(txEntry->getCTS(), txEntry)) {
             counters.busyAborts.fetch_add(1);
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
             return false; //fail to be queued
         }
-        txEntry->setTxCIState(TxEntry::TX_CI_QUEUED);
 
         //assert(peerInfo.add(txEntry->getCTS(), txEntry, this));
         peerInfo.add(txEntry->getCTS(), txEntry, this);
@@ -603,6 +606,7 @@ Validator::logCounters() {
     c += snprintf(val + c, s - c, "precommitReads:%lu, ", counters.precommitReads.load());
     c += snprintf(val + c, s - c, "commitIntents:%lu, ", counters.commitIntents.load());
     c += snprintf(val + c, s - c, "recovers:%lu, ", counters.recovers.load());
+    c += snprintf(val + c, s - c, "duplicates:%lu, ", counters.duplicates.load());
     c += snprintf(val + c, s - c, "trivialAborts:%lu, ", counters.trivialAborts.load());
     c += snprintf(val + c, s - c, "busyAborts:%lu, ", counters.busyAborts.load());
     c += snprintf(val + c, s - c, "ctsSets:%lu, ", counters.ctsSets.load());
