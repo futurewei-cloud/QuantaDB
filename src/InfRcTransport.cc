@@ -1313,6 +1313,10 @@ void
 InfRcTransport::ServerRpc::sendReply()
 {
     this->rpcServiceTime.stop();
+    if (!isRspReq()) {
+        transport->serverRpcPool.destroy(this);
+	return;
+    }
     ReadRequestHandle_MetricSet::Interval interval(
             &ReadRequestHandle_MetricSet::serviceReturnToPostSend);
 

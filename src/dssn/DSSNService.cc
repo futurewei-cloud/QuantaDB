@@ -82,12 +82,15 @@ DSSNService::dispatch(WireFormat::Opcode opcode, Rpc* rpc)
         break;
     case WireFormat::DSSN_NOTIFY_TEST:
         RAMCLOUD_LOG(NOTICE, "Received notify test message");
+	rpc->setNoRsp();
         break;
     case WireFormat::DSSNSendInfoAsync::opcode:
         handleSendInfoAsync(rpc);
+	rpc->setNoRsp();
         break;
     case WireFormat::DSSNRequestInfoAsync::opcode:
         handleRequestInfoAsync(rpc);
+	rpc->setNoRsp();
         break;
     default:
         throw UnimplementedRequestError(HERE);
