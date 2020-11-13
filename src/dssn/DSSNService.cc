@@ -82,12 +82,15 @@ DSSNService::dispatch(WireFormat::Opcode opcode, Rpc* rpc)
         break;
     case WireFormat::DSSN_NOTIFY_TEST:
         RAMCLOUD_LOG(NOTICE, "Received notify test message");
+	rpc->setNoRsp();
         break;
     case WireFormat::DSSNSendInfoAsync::opcode:
         handleSendInfoAsync(rpc);
+	rpc->setNoRsp();
         break;
     case WireFormat::DSSNRequestInfoAsync::opcode:
         handleRequestInfoAsync(rpc);
+	rpc->setNoRsp();
         break;
     default:
         throw UnimplementedRequestError(HERE);
@@ -592,11 +595,12 @@ DSSNService::takeTabletOwnership(const WireFormat::TakeTabletOwnershipDSSN::Requ
         Rpc* rpc)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
-
-    bool added = tabletManager->addTablet(reqHdr->tableId,
-            reqHdr->firstKeyHash, reqHdr->lastKeyHash,
-            TabletManager::NORMAL);
-    assert (added);
+    /**
+     * Since DSSN is not currently managing the table state,
+     * let Ramcloud backend handle it.
+     **/
+    RAMCloud::MasterService *s = (RAMCloud::MasterService *)context->services[WireFormat::MASTER_SERVICE];
+    s->takeTabletOwnership(reqHdr, respHdr, rpc);
 }
 
 void

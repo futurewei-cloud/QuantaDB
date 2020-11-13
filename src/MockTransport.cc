@@ -198,6 +198,10 @@ MockTransport::MockServerRpc::MockServerRpc(MockTransport* transport,
 void
 MockTransport::MockServerRpc::sendReply()
 {
+    if (!isRspReq()) {
+        delete this;
+	return;
+    }
     transport->appendToOutput(SERVER_REPLY, replyPayload);
     const WireFormat::ResponseCommon* responseHeader =
         replyPayload.getStart<WireFormat::ResponseCommon>();
