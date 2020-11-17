@@ -119,11 +119,13 @@ void
 TxEntry::serialize( outMemStream& out )
 {
     out.write(&cts, sizeof(cts));
-    out.write(&txState, sizeof(txState));
+    uint32_t tmp = txState;
+    out.write(&tmp, sizeof(txState));
     out.write(&pstamp,  sizeof(pstamp));
     out.write(&sstamp,  sizeof(sstamp));
     if (txState == TX_PENDING || txState == TX_FABRICATED) {
-        out.write(&commitIntentState, sizeof(commitIntentState));
+        tmp = commitIntentState;
+        out.write(&tmp, sizeof((uint32_t)commitIntentState));
 
         // count writeSet #entry
         uint32_t nWriteSet = 0;
@@ -169,7 +171,8 @@ void
 TxEntry::deSerialize_common( inMemStream& in )
 {
     in.read(&cts, sizeof(cts));
-    in.read(&txState, sizeof(txState));
+    uint32_t tmp = txState;
+    in.read(&tmp, sizeof(txState));
     in.read(&pstamp,  sizeof(pstamp));
     in.read(&sstamp,  sizeof(sstamp));
 }
@@ -179,7 +182,8 @@ TxEntry::deSerialize_additional( inMemStream& in )
 {
     uint32_t nWriteSet, nReadSet;
 
-    in.read(&commitIntentState, sizeof(commitIntentState));
+    uint32_t tmp = commitIntentState;
+    in.read(&tmp, sizeof(commitIntentState));
 
     // writeSet
     in.read(&nWriteSet, sizeof(nWriteSet));
