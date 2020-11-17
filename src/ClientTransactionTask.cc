@@ -22,6 +22,7 @@
 #include "RpcTracker.h"
 #include "ShortMacros.h"
 #include <bitset>
+#include <unordered_map>
 
 namespace RAMCloud {
 
@@ -485,8 +486,11 @@ ClientTransactionTask::sendDecisionRpc()
 void
 ClientTransactionTask::sendPrepareRpc()
 {
-    PrepareRpc* nextRpc = NULL;
+    PrepareRpc* rpc = NULL;
     Transport::SessionRef rpcSession;
+    std::unordered_map<std::string, PrepareRpc*> rpcTable;
+    std::unordered_map<std::string, PrepareRpc*>::const_iterator result;
+
     for (; nextCacheEntry != commitCache.end(); nextCacheEntry++) {
         const CacheKey* key = &nextCacheEntry->first;
         CacheEntry* entry = &nextCacheEntry->second;
@@ -499,33 +503,39 @@ ClientTransactionTask::sendPrepareRpc()
         if (entry->state == CacheEntry::PREPARE) {
             continue;
         }
+	rpcSession =
+	  ramcloud->clientContext->objectFinder->lookup(key->tableId,
+							key->keyHash);
+	result = rpcTable.find(rpcSession->serviceLocator);
 
-        // Batch is done naively assuming that tables are partitioned across
-        // servers into contiguous key-hash ranges (tablets).  The commit cache
-        // is iterated in key-hash order batching together prepare requests
-        // that share a destination server.
-        //
-        // This naive approach behaves poorly if the table is highly sharded
-        // resulting in poor batching.
-        if (nextRpc == NULL) {
-            rpcSession =
-                    ramcloud->clientContext->objectFinder->lookup(key->tableId,
-                                                                  key->keyHash);
-            prepareRpcs.emplace_back(ramcloud, rpcSession, this);
-            nextRpc = &prepareRpcs.back();
-        }
+	if (result != rpcTable.end()) {
+	    rpc = result->second;
+	    if (!rpc->appendOp(nextCacheEntry)) {
+#if DSSNTX
+	        //Exit, DSSN Validator expect 1 commit request per cts per server
+	        RAMCLOUD_LOG(ERROR, "Exceeded the payload of the RPC");
+		exit(1);
+#endif
+	        rpc->send();
+		//Allocate a new one
+		prepareRpcs.emplace_back(ramcloud, rpcSession, this);
+		rpc = &prepareRpcs.back();
+		rpcTable[rpcSession->serviceLocator] = rpc;
+		rpc->appendOp(nextCacheEntry);
+	    }
+	} else {
+	    prepareRpcs.emplace_back(ramcloud, rpcSession, this);
+            rpc = &prepareRpcs.back();
+	    rpcTable[rpcSession->serviceLocator] = rpc;
+	    rpc->appendOp(nextCacheEntry);
+	}
+    }
+    // Finish iterating through the list of KV set, now we can send all the RPCs out
+    for (auto iter = rpcTable.begin(); iter != rpcTable.end(); iter++) {
+        rpc = iter->second;
+	rpc->send();
+    }
 
-        Transport::SessionRef session =
-                ramcloud->clientContext->objectFinder->lookup(key->tableId,
-                                                              key->keyHash);
-        if (session->serviceLocator != rpcSession->serviceLocator
-                || !nextRpc->appendOp(nextCacheEntry)) {
-            break;
-        }
-    }
-    if (nextRpc) {
-        nextRpc->send();
-    }
 }
 
 // See RpcTracker::TrackedRpc for documentation.
