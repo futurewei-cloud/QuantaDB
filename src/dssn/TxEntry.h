@@ -36,8 +36,8 @@ class TxEntry {
     uint64_t sstamp; //with ns precision
 
     //DSSN tx states
-    uint32_t txState;
-    uint32_t commitIntentState;
+    volatile uint32_t txState;
+    volatile uint32_t commitIntentState;
 
     //RPC handle for replying to commit intent
     void *rpcHandle;
@@ -128,7 +128,7 @@ class TxEntry {
     inline uint32_t getTxCIState() { return commitIntentState; }
     inline void* getRpcHandle() { return rpcHandle; }
     inline void insertPeerSet(uint64_t peerId) { peerSet.insert(peerId); }
-    inline std::set<uint64_t>& getPeerSet() { return peerSet; }
+    inline  std::set< uint64_t>& getPeerSet() { return peerSet; }
     inline boost::scoped_array<KVLayout *>& getWriteSet() { return writeSet; }
     inline boost::scoped_array<KVLayout *>& getReadSet() { return readSet; }
     inline uint32_t getWriteSetSize() { return writeSetSize; }
