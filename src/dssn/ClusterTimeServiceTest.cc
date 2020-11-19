@@ -111,27 +111,32 @@ TEST_F(ClusterTimeServiceTest, BenchMTAtomicInc) {
 }
 
 TEST_F(ClusterTimeServiceTest, benchGenClusterTime) {
-    int loop = 1;
+    int loop = 1; // 1024*1024;
     uint64_t start, stop;
  
     start = Cycles::rdtscp();
-    for (int i = 0; i < loop; i += 1) {
-        clock.getLocalTime();
-        /*
-        clock.getLocalTime();
-        clock.getLocalTime();
-        clock.getLocalTime();
-        clock.getLocalTime();
-        clock.getLocalTime();
-        clock.getLocalTime();
-        clock.getLocalTime();
-        clock.getLocalTime();
-        clock.getLocalTime();
-        */
-    }
+    clock.getLocalTime();
     stop = Cycles::rdtscp();
-    GTEST_COUT << "getLocalTime: "
+    GTEST_COUT << "1st getLocalTime: "
     << Cycles::toNanoseconds(stop - start)/loop << " nano sec " << std::endl;
+
+    start = Cycles::rdtscp();
+    clock.getLocalTime();
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "2nt getLocalTime: "
+    << Cycles::toNanoseconds(stop - start) << " nano sec " << std::endl;
+
+    start = Cycles::rdtscp();
+    clock.getLocalTime();
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "3rd getLocalTime: "
+    << Cycles::toNanoseconds(stop - start) << " nano sec " << std::endl;
+
+    start = Cycles::rdtscp();
+    clock.getLocalTime();
+    stop = Cycles::rdtscp();
+    GTEST_COUT << "4th getLocalTime: "
+    << Cycles::toNanoseconds(stop - start) << " nano sec " << std::endl;
 }
 
 }  // namespace RAMCloud

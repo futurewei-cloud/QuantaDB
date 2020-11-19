@@ -53,13 +53,17 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, TxEntry *txOut)
     uint32_t dlen, retry = 0;
     uint64_t off = idIn;
     TxLogHeader_t * hdr;
+    TxLogTailer_t * tal;
 
     while ((hdr = (TxLogHeader_t*)log->getaddr (off, &dlen))) {
-        if (hdr->sig != TX_LOG_HEAD_SIG) {
+        tal = (TxLogTailer_t*)((char *)hdr + hdr->length - sizeof(TxLogTailer_t));
+        if (tal->sig != TX_LOG_TAIL_SIG) {
             usleep(1); // Log writer in progress
             assert (retry++ < 100);
             continue;
         }
+        assert (hdr->sig == TX_LOG_HEAD_SIG);
+
         retry = 0;
         off += hdr->length;
 
