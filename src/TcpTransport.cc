@@ -939,6 +939,10 @@ void
 TcpTransport::TcpServerRpc::sendReply()
 {
     WorkerManager* wm = transport->context->workerManager;
+    if (!isRspReq()) {
+        transport->serverRpcPool.destroy(this);
+	return;
+    }
     try {
         Socket* socket = transport->sockets[fd];
 

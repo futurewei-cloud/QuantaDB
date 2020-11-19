@@ -77,6 +77,12 @@ class Service {
 	    worker->rpc = NULL;
 	    return handle;
 	}
+	/// Notify underlying transport, no response is required for this RPC.
+	void setNoRsp() {
+	    RpcHandle* handle = worker->rpc;
+	    Transport::ServerRpc* srHandle = handle->getServerRpc();
+	    srHandle->setNoRsp();
+	}
       private:
 	/// Enable this flag for async processing
 	bool async;

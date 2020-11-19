@@ -17,10 +17,16 @@ Notifier::notify(Context* context,
 		 const uint32_t length, ServerId& id)
 {
     NotificationRpc* rpc = NULL;
+    uint64_t sId = id.getId();
+    if (sId == 0) {
+        RAMCLOUD_LOG(ERROR, "Invalid participate server id: %lu",
+		     sId);
+	return;
+    }
     if (context->serverList) {
         Transport::SessionRef s = context->serverList->getSession(id);
 	if (s == FailSession::get()) {
-	    RAMCLOUD_LOG(ERROR, "Invalid participate server id: %ld",
+	    RAMCLOUD_LOG(ERROR, "can't locate participate server id: %lu",
 			 id.getId());
 	}
 	rpc = new NotificationRpc(context, s,

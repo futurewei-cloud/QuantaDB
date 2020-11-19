@@ -80,6 +80,7 @@ class Transport {
             , epoch(0)
             , activities(~0)
             , outstandingRpcListHook()
+	    , mIsRspReq(true)
         {}
 
       public:
@@ -128,7 +129,19 @@ class Transport {
 	{
 	    return (mStartTime != 0);
 	}
-
+	/**
+	 * Indicates if response is required for this RPC
+	 */
+	inline bool
+	isRspReq()
+	{
+	    return mIsRspReq;
+	}
+	inline void
+	setNoRsp()
+	{
+	    mIsRspReq = false;
+	}
 #define RPC_SAMPLING_FREQ (1000)
 
 	/**
@@ -343,6 +356,7 @@ class Transport {
 	 * The start time of the RPC operation
 	 */
 	std::atomic<uint64_t> mStartTime;
+	bool mIsRspReq;
         DISALLOW_COPY_AND_ASSIGN(ServerRpc);
     };
 

@@ -828,13 +828,15 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
     ///////////////////////////
     uint64_t startCycles = Cycles::rdtsc();
     Transaction t(ramcloud);
+    Transaction t2(ramcloud);
+    Transaction* pt =&t;
 
     Buffer buf_cid;
     int numCustomer = 0;
     uint32_t buf_idx = 0;
 
     if (byLastName) {
-        t.read(tableId[W_ID], &nameKey, static_cast<uint16_t>(sizeof(nameKey)),
+        pt->read(tableId[W_ID], &nameKey, static_cast<uint16_t>(sizeof(nameKey)),
                &buf_cid, &isObjectExist);
 
 	if (isObjectExist) {
@@ -849,6 +851,12 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
 	    cids = static_cast<uint32_t*>(buf_cid.getRange(buf_idx, numCustomer*4));
 	    in->C_ID = cids[(int)((numCustomer - 1) / 2)];
 	    C_ID = in->C_ID; //Update the C_ID associated with the LastName
+	} else {
+	    /* The transaction generation function has generated a invalid LastName,
+	     * fallback to the transaction by C_ID.  Use a new transaction handle
+	     * to avoid transaction abort
+	     */
+	    pt = &t2;
 	}
     }
     assert(C_ID);
@@ -863,7 +871,7 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
     Customer c(C_ID, C_D_ID, C_W_ID);
     readList.push_back(&c);
 
-    *outcome = readRows(&t, readList);
+    *outcome = readRows(pt, readList);
 
     if (!*outcome) {
         return 0;
@@ -873,10 +881,10 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
     // Process: Write.
     ///////////////////////////
     w.data.W_YTD += H_AMOUNT;
-    writeRow(&t, &w);
+    writeRow(pt, &w);
 
     d.data.D_YTD += H_AMOUNT;
-    writeRow(&t, &d);
+    writeRow(pt, &d);
 
     c.data.C_BALANCE -= H_AMOUNT;
     c.data.C_YTD_PAYMENT += H_AMOUNT;
@@ -892,7 +900,7 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
         memcpy(c.data.C_DATA, newDataStr.c_str(), newDataStr.size());
         c.data.C_DATA[500] = 0;
     }
-    writeRow(&t, &c);
+    writeRow(pt, &c);
 
     //TODO (seojin): allow multiple rows with same key. Prevent overwrite by
     //               adding sequence number to pKey.
@@ -907,15 +915,15 @@ Driver::txPayment(uint32_t W_ID, bool *outcome, InputPayment* in)
     h.data.H_W_ID = W_ID;
     h.data.H_AMOUNT = H_AMOUNT;
     h.data.H_DATE = time(NULL);
-    writeRow(&t, &h);
+    writeRow(pt, &h);
 
-    if (!t.commit()) {
+    if (!pt->commit()) {
         RAMCLOUD_LOG(DEBUG, "Payment TX aborted.");
         *outcome = false;
     } else {
         *outcome = true;
     }
-    t.sync();
+    pt->sync();
     uint64_t elapsed = Cycles::rdtsc() - startCycles;
     return Cycles::toSeconds(elapsed) *1e06;
 }
@@ -964,12 +972,14 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
     ///////////////////////////
     uint64_t startCycles = Cycles::rdtsc();
     Transaction t(ramcloud);
+    Transaction t2(ramcloud);
+    Transaction* pt = &t;
 
     Buffer buf_cid;
     int numCustomer = 0;
     uint32_t buf_idx = 0;
     if (byLastName) {
-        t.read(tableId[W_ID], &nameKey, static_cast<uint16_t>(sizeof(nameKey)),
+        pt->read(tableId[W_ID], &nameKey, static_cast<uint16_t>(sizeof(nameKey)),
                &buf_cid, &isObjectExist);
 	if (isObjectExist) {
 	    numCustomer = *(buf_cid.getStart<uint32_t>());
@@ -981,6 +991,12 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
 	    uint32_t* cids;
 	    cids = static_cast<uint32_t*>(buf_cid.getRange(buf_idx, numCustomer*4));
 	    in->C_ID = cids[(int)((numCustomer - 1) / 2)];
+	} else {
+	    /* The transaction generation function has generated a invalid LastName,
+	     * fallback to the transaction by C_ID.  Use a new transaction handle
+	     * to avoid transaction abort
+	     */
+	    pt = &t2;
 	}
         C_ID = in->C_ID;
     }
@@ -992,7 +1008,7 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
     readList.push_back(&c);
 
     Buffer buf_oid;
-    t.read(tableId[W_ID], c.pKey(), c.lastOidKeyLength(), &buf_oid,
+    pt->read(tableId[W_ID], c.pKey(), c.lastOidKeyLength(), &buf_oid,
 	   &isObjectExist);
     if (!isObjectExist) {
         *outcome = false;
@@ -1003,7 +1019,7 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
     Order o(O_ID, D_ID, W_ID);
     readList.push_back(&o);
 
-    *outcome = readRows(&t, readList);
+    *outcome = readRows(pt, readList);
     if (!*outcome) {
         return 0;
     }
@@ -1014,11 +1030,11 @@ Driver::txOrderStatus(uint32_t W_ID, bool *outcome, InputOrderStatus* in)
         ols[i].construct(O_ID, D_ID, W_ID, i);
         readList.push_back(ols[i].get());
     }
-    *outcome = readRows(&t, readList);
+    *outcome = readRows(pt, readList);
     if (!*outcome) {
         return 0;
     }
-    *outcome = t.commit();
+    *outcome = pt->commit();
     uint64_t elapsed = Cycles::rdtsc() - startCycles;
     return Cycles::toSeconds(elapsed) *1e06;
 }

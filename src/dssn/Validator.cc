@@ -455,6 +455,10 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         RAMCLOUD_LOG(NOTICE, "insert distTx cts %lu txEntry %lu cnt %lu",
                 (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry,
                 counters.queuedDistributedTxs.load());
+        std::set<uint64_t>::iterator it;
+        for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
+            RAMCLOUD_LOG(NOTICE, "peerId %lu", *it);
+        }
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED); //set it before inserting to queue lest another thread might set CIState first
         if (!reorderQueue.insert(txEntry->getCTS(), txEntry)) {
             counters.busyAborts.fetch_add(1);

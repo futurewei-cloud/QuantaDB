@@ -1546,7 +1546,7 @@ HomaTransport::ServerRpc::sendReply()
     timeTrace("sendReply invoked, clientId %u, sequence %u, length %u, "
             "%u outgoing responses", rpcId.clientId, rpcId.sequence,
             length, t->outgoingResponses.size());
-    if (cancelled) {
+    if (cancelled || !isRspReq()) {
         t->deleteServerRpc(this);
         return;
     }

@@ -53,8 +53,11 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
 
             RAMCLOUD_LOG(NOTICE, "matchPeer %lu %lu txEntry %lu", (uint64_t)(txEntry->getCTS() >> 64),
                     (uint64_t)(txEntry->getCTS() & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry);
-        } else
-            abort(); //should not have called add() with old CTS and should not have found non-zero txEntry
+        } else {
+            RAMCLOUD_LOG(NOTICE, "duplicate %lu txEntry new %lu old %lu",
+                    (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry, (uint64_t)it->second->txEntry);
+            exit(0); //should not have called add() with old CTS and should not have found non-zero txEntry
+        }
         existing->mutexForPeerUpdate.unlock();
     }
     mutexForPeerAdd.unlock();

@@ -112,7 +112,9 @@ Sequencer::Sequencer()
 // Return CTS
 __uint128_t Sequencer::getCTS()
 {
-    return ((__uint128_t)(clock.getLocalTime() + SEQUENCER_DELTA) << 64) + node_id;
+    uint64_t uniqueId;
+    uniqueId = (node_id << 48) | (getpid() & 0x0000FFFFFFFFFFFF);
+    return ((__uint128_t)(clock.getLocalTime() + SEQUENCER_DELTA) << 64) + uniqueId;
 }
 
 } // DSSN

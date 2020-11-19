@@ -63,6 +63,7 @@ class DistributedTxSet {
 	template <class T> inline bool dependsOnEarlierTxs(T &cbf, TxEntry *txEntry, uint32_t &count);
 	template <class T> inline bool dependsOnEarlierTxs(T &cbf, TxEntry *txEntry);
 	template <class T> inline bool addToCBF(T &cbf, TxEntry *txEntry);
+    template <class T> inline bool removeFromCBF(T &cbf, TxEntry *txEntry);
 	inline bool addToHotTxs(TxEntry *txEntry);
 	inline bool addToColdTxs(TxEntry *txEntry);
 	inline bool addToIndependentTxs(TxEntry *txEntry);

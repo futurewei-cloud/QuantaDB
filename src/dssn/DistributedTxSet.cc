@@ -68,6 +68,20 @@ DistributedTxSet::addToCBF(T &cbf, TxEntry *txEntry) {
 	return true;
 }
 
+template <class T>
+bool
+DistributedTxSet::removeFromCBF(T &cbf, TxEntry *txEntry) {
+    for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
+        bool success = cbf.remove(txEntry->getWriteSetHash()[i]);
+        assert(success);
+    }
+    for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
+        bool success = cbf.remove(txEntry->getReadSetHash()[i]);
+        assert(success);
+    }
+    return true;
+}
+
 bool
 DistributedTxSet::addToHotTxs(TxEntry *txEntry) {
 	if (hotDependQueue.isFull())
@@ -143,6 +157,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 			&& (!txIndepend || txHot->getCTS() < txIndepend->getCTS())
 			&& !activeTxSet.blocks(txHot)) {
 		hotDependQueue.remove(itHot, txHot);
+		removeFromCBF(hotDependCBF, txHot);
 		removedTxCount.fetch_add(1);
 		return txHot;
 	}
@@ -151,6 +166,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 			&& (!txIndepend || txCold->getCTS() < txIndepend->getCTS())
 			&& !activeTxSet.blocks(txCold)) {
 		coldDependQueue.remove(itCold, txCold);
+        removeFromCBF(coldDependCBF, txCold);
 		removedTxCount.fetch_add(1);
 		return txCold;
 	}
@@ -159,6 +175,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 		do {
 			if (!activeTxSet.blocks(txIndepend)) {
 				independentQueue.remove(itIndepend, txIndepend);
+		        removeFromCBF(independentCBF, txIndepend);
 				removedTxCount.fetch_add(1);
 				return txIndepend;
 			}
