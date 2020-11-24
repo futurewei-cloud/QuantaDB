@@ -1,13 +1,23 @@
 #!/bin/bash
 pidfile=/dev/shm/.$USER.$1.pid
 pid=$(cat $pidfile 2>/dev/null)
+cnt=0
 while [ -z $pid ]; do
+    ((cnt++))
+    if [ $cnt -eq 1000 ]; then
+	exit 0
+    fi
     sleep .01
     pid=$(cat $pidfile 2>/dev/null)
 done
 rm -f $pidfile
 kill $pid 2>/dev/null || exit 0
+cnt=0
 while true; do
+    ((cnt++))
+    if [ $cnt -eq 1000 ]; then
+	exit 0
+    fi
     sleep .01
     kill $pid 2>/dev/null || exit 0
 done
