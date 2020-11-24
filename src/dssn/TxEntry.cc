@@ -171,8 +171,9 @@ void
 TxEntry::deSerialize_common( inMemStream& in )
 {
     in.read(&cts, sizeof(cts));
-    uint32_t tmp = txState;
+    uint32_t tmp;
     in.read(&tmp, sizeof(txState));
+    txState = tmp;
     in.read(&pstamp,  sizeof(pstamp));
     in.read(&sstamp,  sizeof(sstamp));
 }
@@ -182,8 +183,9 @@ TxEntry::deSerialize_additional( inMemStream& in )
 {
     uint32_t nWriteSet, nReadSet;
 
-    uint32_t tmp = commitIntentState;
+    uint32_t tmp;
     in.read(&tmp, sizeof(commitIntentState));
+    commitIntentState = tmp;
 
     // writeSet
     in.read(&nWriteSet, sizeof(nWriteSet));

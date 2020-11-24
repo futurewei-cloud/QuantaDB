@@ -76,7 +76,7 @@ TEST_F(DSSNServiceTest, notification_invalid_serverid) {
     Notifier::notify(&context, WireFormat::DSSN_NOTIFY_TEST,
 		     const_cast<char*>(message.data()),
 		     message.length(), invalidId);
-    EXPECT_EQ("notify: Invalid participate server id: 99",
+    EXPECT_EQ("notify: can't locate participate server id: 99",
 	      TestLog::get());
 }
 
