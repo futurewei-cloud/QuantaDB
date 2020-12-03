@@ -420,7 +420,6 @@ Validator::peer() {
     PeerInfoIterator it;
     do {
         peerInfo.send(this);
-        this_thread::yield();
     } while (isAlive && !isUnderTest);
 }
 
