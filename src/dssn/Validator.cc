@@ -344,6 +344,9 @@ Validator::serialize() {
 
         // process due commit-intents on cross-shard transaction queue
         while ((txEntry = distributedTxSet.findReadyTx(activeTxSet))) {
+	    if (rpcService) {
+	        rpcService->recordTxCommitDispatch(txEntry);
+	    }
             //enable blocking incoming dependent transactions
             assert(activeTxSet.add(txEntry));
 
