@@ -63,6 +63,9 @@ class PeerInfo {
     //evaluate the new states of the commit intent; caller is supposed to hold the mutex
     inline bool evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator);
 
+    //log and send; caller is supposed to hold the mutex
+    inline bool logAndSend(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator);
+
     PUBLIC:
     ~PeerInfo();
 

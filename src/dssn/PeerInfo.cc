@@ -212,6 +212,25 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
     return true; //concluded
 }
 
+inline bool
+PeerInfo::logAndSend(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator) {
+    validator->updateTxPStampSStamp(*txEntry);
+
+    if (txEntry->getTxState() == TxEntry::TX_ALERT) {
+        //this is in recovery case; skip logging and sending in pending state
+        txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
+    } else if (validator->logTx(LOG_ALWAYS, txEntry)) { //log CI before initial sending
+        assert(txEntry->getTxState() == TxEntry::TX_PENDING);
+        validator->sendSSNInfo(txEntry);
+        txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
+    } else {
+        RAMCLOUD_LOG(NOTICE, "logTx failed: cts %lu", (uint64_t)(txEntry->getCTS() >> 64));
+        abort();
+        return false;
+    }
+    return true;
+}
+
 TxEntry*
 PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp, uint64_t sstamp,
         Validator *validator, bool &isFound) {
@@ -248,6 +267,11 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp,
                 if (txEntry->getCTS() != cts) abort(); //make sure txEntry contents not corrupted
                 txEntry->setPStamp(std::max(txEntry->getPStamp(), peerEntry->meta.pStamp));
                 txEntry->setSStamp(std::min(txEntry->getSStamp(), peerEntry->meta.sStamp));
+
+                if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
+                    logAndSend(peerEntry, txEntry, validator);
+                }
+
                 evaluate(peerEntry, txEntry, validator);
             }
             isFound = true;
@@ -294,20 +318,8 @@ PeerInfo::send(Validator *validator) {
                 txEntry->getTxCIState(), peerEntry->peerTxState);
 
         if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
-            validator->updateTxPStampSStamp(*txEntry);
-
-            if (txEntry->getTxState() == TxEntry::TX_ALERT) {
-                //this is in recovery case; skip logging and sending in pending state
-                txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
-            } else if (validator->logTx(LOG_ALWAYS, txEntry)) { //log CI before initial sending
-                assert(txEntry->getTxState() == TxEntry::TX_PENDING);
-                validator->sendSSNInfo(txEntry);
-                txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
-                evaluate(peerEntry, txEntry, validator);
-            } else {
-                RAMCLOUD_LOG(NOTICE, "logTx failed: cts %lu", (uint64_t)(txEntry->getCTS() >> 64));
-                abort();
-            }
+            logAndSend(peerEntry, txEntry, validator);
+            evaluate(peerEntry, txEntry, validator);
         }
 
         if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING) {
