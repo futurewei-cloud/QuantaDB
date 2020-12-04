@@ -7,6 +7,9 @@
 #include <errno.h>
 #include <time.h>
 #include "HashmapKVStore.h"
+#include "Logger.h"
+
+using namespace RAMCloud;
 
 namespace DSSN {
 
@@ -50,7 +53,7 @@ bool HashmapKVStore::putNew(KVLayout *kv, __uint128_t cts, uint64_t pi)
      * We can't work with lossy mode. So we added an check below and exit if put failed.
      */
     if (lptr.ptr_ == NULL) {
-        printf("FatalError: pmemhash bucket full\n");
+        RAMCLOUD_LOG(ERROR,"pmemhash bucket full\n");
         exit(1);
     }
     return lptr.ptr_ != NULL;
