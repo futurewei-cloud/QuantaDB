@@ -213,7 +213,7 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
 }
 
 inline bool
-PeerInfo::logAndSend(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator) {
+PeerInfo::logAndSend(TxEntry *txEntry, Validator *validator) {
     validator->updateTxPStampSStamp(*txEntry);
 
     if (txEntry->getTxState() == TxEntry::TX_ALERT) {
@@ -269,7 +269,7 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp,
                 txEntry->setSStamp(std::min(txEntry->getSStamp(), peerEntry->meta.sStamp));
 
                 if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
-                    logAndSend(peerEntry, txEntry, validator);
+                    logAndSend(txEntry, validator);
                 }
 
                 evaluate(peerEntry, txEntry, validator);
@@ -318,12 +318,13 @@ PeerInfo::send(Validator *validator) {
                 txEntry->getTxCIState(), peerEntry->peerTxState);
 
         if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
-            logAndSend(peerEntry, txEntry, validator);
+            logAndSend(txEntry, validator);
             evaluate(peerEntry, txEntry, validator);
         }
 
         if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING) {
             if (txEntry->getTxState() != TxEntry::TX_ALERT
+                && nsTime > (uint64_t)(txEntry->getCTS() >> 64)
                 && nsTime - (uint64_t)(txEntry->getCTS() >> 64) > alertThreshold) {
                 txEntry->setTxState(TxEntry::TX_ALERT);
             }
@@ -342,6 +343,8 @@ PeerInfo::send(Validator *validator) {
         if (txEntry->getTxCIState() == TxEntry::TX_CI_QUEUED
                 && txEntry->getTxState() == TxEntry::TX_OUTOFORDER) {
             //trigger conclusion, but keep state because this CI has never been added to activeTxSet
+            txEntry->setSStamp(0);
+            validator->sendSSNInfo(txEntry); //so that peers do not wait for alert
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
             evaluate(peerEntry, txEntry, validator);
         }

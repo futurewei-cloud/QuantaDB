@@ -64,7 +64,7 @@ class PeerInfo {
     inline bool evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator);
 
     //log and send; caller is supposed to hold the mutex
-    inline bool logAndSend(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator);
+    inline bool logAndSend(TxEntry *txEntry, Validator *validator);
 
     PUBLIC:
     ~PeerInfo();
