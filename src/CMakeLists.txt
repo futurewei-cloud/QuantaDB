@@ -1,3 +1,6 @@
+# Copyright (c) 2020 Futurewei Technologies, Inc.
+# All rights reserved.
+
 ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/dssn)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/RAMCloudLib.cmake)

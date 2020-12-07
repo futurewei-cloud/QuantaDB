@@ -1,3 +1,6 @@
+# Copyright (c) 2020 Futurewei Technologies, Inc.
+# All rights reserved.
+
 cmake_minimum_required(VERSION 2.8)
 
 # set the project name

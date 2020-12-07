@@ -1,3 +1,6 @@
+# Copyright (c) 2020 Futurewei Technologies, Inc.
+# All rights reserved.
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/../src)
 
 list(APPEND LIBS ramcloud ramcloudserver message "${CMAKE_SHARED_LINKER_FLAGS}")

@@ -1,3 +1,6 @@
+# Copyright (c) 2020 Futurewei Technologies, Inc.
+# All rights reserved.
+
 add_library(dssn SHARED "")
   target_sources(dssn
     PRIVATE
