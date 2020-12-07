@@ -1,3 +1,6 @@
+# Copyright (c) 2020 Futurewei Technologies, Inc.
+# All rights reserved.
+
 # This makefile system follows the structuring conventions
 # recommended by Peter Miller in his excellent paper:
 #
