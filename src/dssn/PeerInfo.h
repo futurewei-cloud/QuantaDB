@@ -10,6 +10,7 @@
 #include "TxEntry.h"
 #include "Validator.h"
 #include "tbb/concurrent_unordered_map.h"
+#include <boost/lockfree/queue.hpp>
 
 namespace DSSN {
 
@@ -58,7 +59,9 @@ class PeerInfo {
     std::mutex mutexForPeerAdd;
     uint64_t lastTick = 0;
     uint64_t tickUnit = 10000000; //10ms per tick
-    uint64_t alertThreshold = 100 * tickUnit;
+    uint64_t alertThreshold = 10 * tickUnit;
+    boost::lockfree::queue<CTS> activeTxQueue{1000};
+    std::queue<PeerEntry *> iteratorQueue;
 
     //evaluate the new states of the commit intent; caller is supposed to hold the mutex
     inline bool evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator);
@@ -79,13 +82,6 @@ class PeerInfo {
     //remove corresponding peer info
     bool remove(CTS cts, Validator* validator);
 
-    //for iteration
-    TxEntry* getFirst(PeerInfoIterator &it);
-    TxEntry* getNext(PeerInfoIterator &it);
-
-    //free txs which have been enqueued into conclusion queue
-    bool sweep(Validator *validator);
-
     //send tx SSN info to peers
     bool send(Validator *validator);
 
@@ -95,6 +91,9 @@ class PeerInfo {
 
     //current capacity
     uint32_t size();
+
+    //enable sending peer info
+    bool monitor(CTS cts, Validator *validator);
 
 }; // end PeerInfo class
 
