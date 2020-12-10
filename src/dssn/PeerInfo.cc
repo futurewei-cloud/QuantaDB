@@ -110,7 +110,8 @@ PeerInfo::remove(CTS cts, Validator *validator) {
         peerEntry->isValid = false;
         //delete peerEntry->txEntry;
         peerEntry->txEntry = NULL;
-        peerInfo.unsafe_erase(it);
+        //peerInfo.unsafe_erase(it);
+        peerInfo.unsafe_erase(cts);
         peerEntry->mutexForPeerUpdate.unlock();
         //delete peerEntry;
         //validator->getCounters().deletedPeers++;
@@ -118,6 +119,7 @@ PeerInfo::remove(CTS cts, Validator *validator) {
         return true;
     }
     //mutexForPeerAdd.unlock();
+    abort();
     return false;
 }
 
@@ -244,19 +246,20 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp,
                 evaluate(peerEntry, txEntry, validator);
             }
             isFound = true;
-            RAMCLOUD_LOG(NOTICE, "updatePeer %lu %lu txEntry %lu", (uint64_t)(cts >> 64),
-                    (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry);
+            RAMCLOUD_LOG(NOTICE, "updatePeer %lu %lu txEntry %lu peerId %lu cnt %u", (uint64_t)(cts >> 64),
+                    (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry,
+                    peerId, peerEntry->peerSeenSet.size());
         } else {
             isFound = true;
-            RAMCLOUD_LOG(NOTICE, "updatePeer failed: finished cts %lu %lu", (uint64_t)(cts >> 64),
-                    (uint64_t)(cts & (((__uint128_t)1<<64) -1)));
+            RAMCLOUD_LOG(NOTICE, "updatePeer ignored: finished cts %lu %lu peerId %lu", (uint64_t)(cts >> 64),
+                    (uint64_t)(cts & (((__uint128_t)1<<64) -1)), peerId);
         }
         peerEntry->mutexForPeerUpdate.unlock();
         return txEntry;
     }
     //mutexForPeerAdd.unlock();
     isFound = false;
-    RAMCLOUD_LOG(NOTICE, "updatePeer failed: no cts %lu", (uint64_t)(cts >> 64));
+    RAMCLOUD_LOG(NOTICE, "updatePeer ignored: no cts %lu peerId %lu", (uint64_t)(cts >> 64), peerId);
     return txEntry;
 }
 
