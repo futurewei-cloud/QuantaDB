@@ -264,6 +264,14 @@ Validator::scheduleDistributedTxs() {
     uint64_t lastTick = 0;
     do {
         if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (__uint128_t)-1 : get128bClockValue()))) {
+            if (txEntry->getCTS() == lastScheduledTxCTS) {
+                RAMCLOUD_LOG(NOTICE, "duplicate %lu", (uint64_t)(txEntry->getCTS() >> 64));
+                counters.duplicates++;
+                continue; //ignore the duplicate
+            }
+
+            peerInfo.monitor(txEntry->getCTS(), this);
+
             if (txEntry->getCTS() < lastScheduledTxCTS) {
                 RAMCLOUD_LOG(NOTICE, "late %lu last %lu",
                         (uint64_t)(txEntry->getCTS() >> 64),
@@ -278,10 +286,6 @@ Validator::scheduleDistributedTxs() {
                 txEntry->setTxState(TxEntry::TX_OUTOFORDER);
                 counters.lateScheduleErrors++;
                 continue;
-            } else if (txEntry->getCTS() == lastScheduledTxCTS) {
-                RAMCLOUD_LOG(NOTICE, "duplicate %lu", (uint64_t)(txEntry->getCTS() >> 64));
-                counters.duplicates++;
-                continue; //ignore the duplicate
             }
             while (!distributedTxSet.add(txEntry));
             RAMCLOUD_LOG(NOTICE, "schedule %lu",(uint64_t)(txEntry->getCTS() >> 64));
@@ -344,9 +348,10 @@ Validator::serialize() {
 
         // process due commit-intents on cross-shard transaction queue
         while ((txEntry = distributedTxSet.findReadyTx(activeTxSet))) {
-	    if (rpcService) {
-	        rpcService->recordTxCommitDispatch(txEntry);
-	    }
+            if (rpcService) {
+                rpcService->recordTxCommitDispatch(txEntry);
+            }
+
             //enable blocking incoming dependent transactions
             assert(activeTxSet.add(txEntry));
 
@@ -458,19 +463,20 @@ Validator::insertTxEntry(TxEntry *txEntry) {
                 (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry,
                 counters.queuedDistributedTxs.load());
         std::set<uint64_t>::iterator it;
-        for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
+        /*for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
             RAMCLOUD_LOG(NOTICE, "peerId %lu", *it);
-        }
+        }*/
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED); //set it before inserting to queue lest another thread might set CIState first
+
+        while (!peerInfo.add(txEntry->getCTS(), txEntry, this));
+
         if (!reorderQueue.insert(txEntry->getCTS(), txEntry)) {
             counters.busyAborts.fetch_add(1);
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
+            peerInfo.remove(txEntry->getCTS(), this);
             return false; //fail to be queued
         }
-
-        //assert(peerInfo.add(txEntry->getCTS(), txEntry, this));
-        peerInfo.add(txEntry->getCTS(), txEntry, this);
 
         counters.queuedDistributedTxs.fetch_add(1);
     }
@@ -511,7 +517,7 @@ Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
         //by creating a peer entry without commit intent txEntry
         //and then updating the peer entry.
         /////peerInfo.addPartial(cts, peerId, peerTxState, pstamp, sstamp, this); //Fixme
-        peerInfo.add(cts, NULL, this);
+        while (!peerInfo.add(cts, NULL, this));
 
         //Because the global mutex has been unlocked above, the CI might have been processed
         //by other threads before the following call is completed, so the peerEntry may or may not be
