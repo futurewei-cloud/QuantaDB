@@ -353,7 +353,9 @@ Validator::serialize() {
             }
 
             //enable blocking incoming dependent transactions
-            assert(activeTxSet.add(txEntry));
+            if (!activeTxSet.add(txEntry))
+		abort();
+
 
             //enable sending SSN info to peer
             txEntry->setTxCIState(TxEntry::TX_CI_SCHEDULED);

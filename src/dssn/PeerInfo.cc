@@ -82,7 +82,8 @@ PeerInfo::addPartial(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t eta
         entry->isValid = true;
         entry->txEntry = NULL;
         entry->meta.cStamp = cts >> 64;
-        assert(peerInfo.insert(std::make_pair(cts, entry)).second);
+        if (!peerInfo.insert(std::make_pair(cts, entry)).second)
+		abort();
         validator->getCounters().addPeers++;
         //mutexForPeerAdd.unlock();
 
@@ -164,7 +165,8 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
     if (txEntry->getTxCIState() == TxEntry::TX_CI_CONCLUDED) {
         if (validator->logTx(LOG_ALWAYS, txEntry)) {
             txEntry->setTxCIState(TxEntry::TX_CI_SEALED);
-            assert(validator->insertConcludeQueue(txEntry));
+            if (!validator->insertConcludeQueue(txEntry))
+		abort();
         } else
             abort();
     }
@@ -265,11 +267,12 @@ PeerInfo::send(Validator *validator) {
 
     while (!activeTxQueue.empty()) {
         CTS cts;
-        assert(activeTxQueue.pop(cts));
-        RAMCLOUD_LOG(NOTICE, "monitoring: cts %lu", (uint64_t)(cts >> 64));
-        PeerInfoIterator it;
-        it = peerInfo.find(cts);
-        if (it != peerInfo.end()) {
+	if (!activeTxQueue.pop(cts))
+	    abort();
+	RAMCLOUD_LOG(NOTICE, "monitoring: cts %lu", (uint64_t)(cts >> 64));
+	PeerInfoIterator it;
+	it = peerInfo.find(cts);
+	if (it != peerInfo.end()) {
             iteratorQueue.push(it->second);
         }
     }

@@ -5,6 +5,7 @@
 
 
 #include "ActiveTxSet.h"
+#include "Validator.h"
 
 namespace DSSN {
 
@@ -42,10 +43,14 @@ ActiveTxSet::add(TxEntry *txEntry) {
 bool
 ActiveTxSet::remove(TxEntry *txEntry) {
     for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
-        assert(cbf.remove(txEntry->getReadSetHash()[i]));
+        if (!cbf.remove(txEntry->getReadSetHash()[i]))
+	    abort();
+	    // RAMCLOUD_LOG(ERROR, "CBF failed to remove entry: %lu, readset %d", (uint64_t)(txEntry->getCTS() >> 64), i);
     }
     for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
-        assert(cbf.remove(txEntry->getWriteSetHash()[i]));
+        if (!cbf.remove(txEntry->getWriteSetHash()[i]))
+	    abort();
+	    // RAMCLOUD_LOG(ERROR, "CBF failed to remove entry: %lu, writeset %d", (uint64_t)(txEntry->getCTS() >> 64), i);
     }
     removedTxCount.fetch_add(1);
     return true;

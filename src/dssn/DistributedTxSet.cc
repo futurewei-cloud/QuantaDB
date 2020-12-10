@@ -4,6 +4,7 @@
  */
 
 #include "DistributedTxSet.h"
+#include "Validator.h"
 #include "Logger.h"
 
 namespace DSSN {
@@ -47,7 +48,9 @@ DistributedTxSet::addToCBF(T &cbf, TxEntry *txEntry) {
         if (!success) {
             // undo effects
             for (int j = i - 1; j >= 0; j--) {
-            	assert(cbf.remove(txEntry->getWriteSetHash()[j]));
+            	if (!cbf.remove(txEntry->getWriteSetHash()[j]))
+		    abort();
+		    //RAMCLOUD_LOG(ERROR, "CBF failed to remove entry: %lu, writeset %d", (uint64_t)(txEntry->getCTS() >> 64), j);
             }
             return false;
         }
@@ -57,10 +60,14 @@ DistributedTxSet::addToCBF(T &cbf, TxEntry *txEntry) {
         if (!success) {
             // undo effects
             for (int j = i - 1; j >= 0; j--) {
-            	assert(cbf.remove(txEntry->getReadSetHash()[j]));
+		if (!cbf.remove(txEntry->getReadSetHash()[j]))
+		    abort();
+		    // RAMCLOUD_LOG(ERROR, "CBF failed to remove entry: %lu, readset %d", (uint64_t)(txEntry->getCTS() >> 64), j);
             }
             for (uint32_t j = 0; j < txEntry->getWriteSetSize(); j++) {
-            	assert(cbf.remove(txEntry->getWriteSetHash()[j]));
+		if (!cbf.remove(txEntry->getWriteSetHash()[j]))
+		    abort();
+		    // RAMCLOUD_LOG(ERROR, "CBF failed to remove entry: %lu, writeset %d", (uint64_t)(txEntry->getCTS() >> 64), j);
             }
             return false;
         }
@@ -84,34 +91,52 @@ DistributedTxSet::removeFromCBF(T &cbf, TxEntry *txEntry) {
 
 bool
 DistributedTxSet::addToHotTxs(TxEntry *txEntry) {
-	if (hotDependQueue.isFull())
-		return false;
+    if (hotDependQueue.isFull()) {
+	RAMCLOUD_LOG(ERROR, "queue is full");
+	return false;
+    }
     if (addToCBF(hotDependCBF, txEntry)) {
-    	assert(hotDependQueue.add(txEntry));
+	if (!hotDependQueue.add(txEntry)) {
+	    // RAMCLOUD_LOG(ERROR, "Failed to add into hotQueue");
+	    // return false;
+	    abort();
+	}
     	addedTxCount.fetch_add(1);
     	return true;
     }
-	return false; //limited by CBF depth
+    return false; //limited by CBF depth
 }
 
 bool
 DistributedTxSet::addToColdTxs(TxEntry *txEntry) {
-	if (coldDependQueue.isFull())
-		return false;
+    if (coldDependQueue.isFull()) {
+	RAMCLOUD_LOG(ERROR, "queue is full");
+	return false;
+    }
     if (addToCBF(coldDependCBF, txEntry)) {
-    	assert(coldDependQueue.add(txEntry));
+	if (!coldDependQueue.add(txEntry)) {
+	    // RAMCLOUD_LOG(ERROR, "Failed to add into coldQueue");
+	    // return false;
+	    abort();
+	}
     	addedTxCount.fetch_add(1);
     	return true;
     }
-	return addToHotTxs(txEntry); //limited by CBF depth, move it to hot queue
+    return addToHotTxs(txEntry); //limited by CBF depth, move it to hot queue
 }
 
 bool
 DistributedTxSet::addToIndependentTxs(TxEntry *txEntry) {
-	if (independentQueue.isFull())
-		return false;
+    if (independentQueue.isFull()) {
+	RAMCLOUD_LOG(ERROR, "queue is full");
+	return false;
+    }
     if (addToCBF(independentCBF, txEntry)) {
-    	assert(independentQueue.add(txEntry));
+	if (!independentQueue.add(txEntry)) {
+	    // RAMCLOUD_LOG(ERROR, "fail to add into indepQueue");
+	    // return false;
+	    abort();
+	}
     	addedTxCount.fetch_add(1);
     	return true;
     }
@@ -129,6 +154,7 @@ DistributedTxSet::add(TxEntry *txEntry) {
 		if (count >= hotThreshold) {
 			return addToHotTxs(txEntry);
 		}
+
 		return (count >= coldDependCBF.countLimit() ? false : addToColdTxs(txEntry));
 	}
 
@@ -143,7 +169,7 @@ TxEntry*
 DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 
 	//skip scanning if there is no change that matters
-    //Fixme: since the counters are not trustworthy, disabling this optimization for now
+	//Fixme: since the counters are not trustworthy, disabling this optimization for now
 	//if ((addedTxCount + removedTxCount + activeTxSet.getRemovedTxCount()) == activitySignature)
 	//    return NULL;
 	activitySignature = addedTxCount + removedTxCount + activeTxSet.getRemovedTxCount();
@@ -166,7 +192,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 			&& (!txIndepend || txCold->getCTS() < txIndepend->getCTS())
 			&& !activeTxSet.blocks(txCold)) {
 		coldDependQueue.remove(itCold, txCold);
-        removeFromCBF(coldDependCBF, txCold);
+		removeFromCBF(coldDependCBF, txCold);
 		removedTxCount.fetch_add(1);
 		return txCold;
 	}
@@ -175,7 +201,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
 		do {
 			if (!activeTxSet.blocks(txIndepend)) {
 				independentQueue.remove(itIndepend, txIndepend);
-		        removeFromCBF(independentCBF, txIndepend);
+				removeFromCBF(independentCBF, txIndepend);
 				removedTxCount.fetch_add(1);
 				return txIndepend;
 			}
