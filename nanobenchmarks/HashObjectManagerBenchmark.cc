@@ -1,3 +1,8 @@
+/* Copyright (c) 2020 Futurewei Technologies, Inc.
+ *
+ * All rights reserved.
+ */
+
 /* Copyright (c) 2010-2016 Stanford University
  *
  * Permission to use, copy, modify, and distribute this software for any
