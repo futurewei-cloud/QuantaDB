@@ -66,7 +66,6 @@ SHARED_SRCFILES := \
 		   src/CodeLocation.cc \
 		   src/Common.cc \
 		   src/Cycles.cc \
-		   src/DataBlock.cc \
 		   src/Dispatch.cc \
 		   src/DispatchExec.cc \
 		   src/Driver.cc \
@@ -91,7 +90,6 @@ SHARED_SRCFILES := \
 		   src/dssn/PeerInfo.cc \
 		   src/dssn/DSSNService.cc \
 		   src/dssn/DSSNServiceMonitor.cc \
-		   src/dssn/BlockedTxSet.cc \
 		   src/dssn/DistributedTxSet.cc \
 		   src/dssn/TxLog.cc \
 		   src/IndexKey.cc \

@@ -16,7 +16,6 @@ add_library(dssn SHARED "")
   target_sources(dssn
     PRIVATE
     ActiveTxSet.cc
-    BlockedTxSet.cc
     clhash.cc
     ClusterTimeService.cc
     CountBloomFilter.cc
