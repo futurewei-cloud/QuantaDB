@@ -33,7 +33,7 @@ namespace DSSN {
  *
  */
 
-#define SEQUENCER_DELTA 1000    // 1 usec delay
+#define SEQUENCER_DELTA 1000000    // 1 usec delay
 
 class Sequencer {
     public:
