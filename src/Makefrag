@@ -78,20 +78,20 @@ SHARED_SRCFILES := \
 		   src/FileLogger.cc \
 		   src/HashTable.cc \
 		   src/HomaTransport.cc \
-		   src/dssn/CountBloomFilter.cc \
-		   src/dssn/ActiveTxSet.cc \
-		   src/dssn/TxEntry.cc \
-		   src/dssn/Validator.cc \
-		   src/dssn/Sequencer.cc \
-		   src/dssn/ClusterTimeService.cc \
-		   src/dssn/HashmapKVStore.cc \
-		   src/dssn/clhash.cc \
-		   src/dssn/KVStore.cc \
-		   src/dssn/PeerInfo.cc \
-		   src/dssn/DSSNService.cc \
-		   src/dssn/DSSNServiceMonitor.cc \
-		   src/dssn/DistributedTxSet.cc \
-		   src/dssn/TxLog.cc \
+		   src/quantadb/CountBloomFilter.cc \
+		   src/quantadb/ActiveTxSet.cc \
+		   src/quantadb/TxEntry.cc \
+		   src/quantadb/Validator.cc \
+		   src/quantadb/Sequencer.cc \
+		   src/quantadb/ClusterTimeService.cc \
+		   src/quantadb/HashmapKVStore.cc \
+		   src/quantadb/clhash.cc \
+		   src/quantadb/KVStore.cc \
+		   src/quantadb/PeerInfo.cc \
+		   src/quantadb/DSSNService.cc \
+		   src/quantadb/DSSNServiceMonitor.cc \
+		   src/quantadb/DistributedTxSet.cc \
+		   src/quantadb/TxLog.cc \
 		   src/IndexKey.cc \
 		   src/IndexletManager.cc \
 		   src/IndexLookup.cc \

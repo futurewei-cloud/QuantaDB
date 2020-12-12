@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/dssn)
+ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/quantadb)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/RAMCloudLib.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/RAMCloudCoord.cmake)

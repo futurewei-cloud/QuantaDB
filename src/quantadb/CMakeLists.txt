@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-add_library(dssn SHARED "")
-  target_sources(dssn
+add_library(quantadb SHARED "")
+  target_sources(quantadb
     PRIVATE
     ActiveTxSet.cc
     clhash.cc
@@ -31,7 +31,7 @@ add_library(dssn SHARED "")
     Validator.cc
     )
 
-install(TARGETS dssn
+install(TARGETS quantadb
   PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
               GROUP_EXECUTE GROUP_READ GROUP_WRITE
 	      WORLD_EXECUTE

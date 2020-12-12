@@ -1,11 +1,11 @@
 TOP = ../..
 
-CFLAGS = -I$(TOP)/src/dssn -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TOP)/obj.master -I$(TOP)/prometheus-cpp/core/include/ -I$(TOP)/prometheus-cpp/pull/include/ -I$(TOP)/prometheus-cpp/build/pull/include/ -I$(TOP)/prometheus-cpp/build/core/include/
+CFLAGS = -I$(TOP)/src/quantadb -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TOP)/obj.master -I$(TOP)/prometheus-cpp/core/include/ -I$(TOP)/prometheus-cpp/pull/include/ -I$(TOP)/prometheus-cpp/build/pull/include/ -I$(TOP)/prometheus-cpp/build/core/include/
 
 %.o:$(TOP)/src/%.cc
 	g++ -c $(CFLAGS) $< -o $@
 
-%.o:$(TOP)/src/dssn/%.cc
+%.o:$(TOP)/src/quantadb/%.cc
 	g++ -c $(CFLAGS) $< -o $@
 
 %:%.o
@@ -18,7 +18,7 @@ all: $(TARGETS)
 txlog.o: txlog.cc
 	g++ -c $(CFLAGS) $< -o $@
 
-datalog.o: datalog.cc $(TOP)/src/dssn/DataLog.h
+datalog.o: datalog.cc $(TOP)/src/quantadb/DataLog.h
 	g++ -c $(CFLAGS) $< -o $@
 
 txlog: txlog.o TxLog.o TxEntry.o MurmurHash3.o

@@ -31,24 +31,24 @@ endif
 ifeq ($(DSSNTX),yes)
 #DSSN specific test files
 TESTS_SRCFILES := \
-          src/dssn/MemStreamIoTest.cc \
-    	  src/dssn/DataLogTest.cc \
-    	  src/dssn/TxLogTest.cc \
-		  src/dssn/DLogTest.cc \
-		  src/dssn/SkipListTest.cc \
-		  src/dssn/HashmapTest.cc \
-		  src/dssn/HashmapKVStoreTest.cc \
-		  src/dssn/ClusterTimeServiceTest.cc \
-		  src/dssn/DSSNServiceTest.cc \
-		  src/dssn/RamCloudDSSNTest.cc \
-          src/dssn/MultiOpTest.cc \
-          src/dssn/MultiReadTest.cc \
-          src/dssn/MultiWriteTest.cc \
-          src/dssn/MultiRemoveTest.cc \
-	      src/dssn/TpcCDSSNTest.cc \
-		  src/dssn/TransactionDSSNTest.cc \
-		  src/dssn/SequencerTest.cc \
-		  src/dssn/ValidatorTest.cc \
+          src/quantadb/MemStreamIoTest.cc \
+    	  src/quantadb/DataLogTest.cc \
+    	  src/quantadb/TxLogTest.cc \
+		  src/quantadb/DLogTest.cc \
+		  src/quantadb/SkipListTest.cc \
+		  src/quantadb/HashmapTest.cc \
+		  src/quantadb/HashmapKVStoreTest.cc \
+		  src/quantadb/ClusterTimeServiceTest.cc \
+		  src/quantadb/DSSNServiceTest.cc \
+		  src/quantadb/RamCloudDSSNTest.cc \
+          src/quantadb/MultiOpTest.cc \
+          src/quantadb/MultiReadTest.cc \
+          src/quantadb/MultiWriteTest.cc \
+          src/quantadb/MultiRemoveTest.cc \
+	      src/quantadb/TpcCDSSNTest.cc \
+		  src/quantadb/TransactionDSSNTest.cc \
+		  src/quantadb/SequencerTest.cc \
+		  src/quantadb/ValidatorTest.cc \
 		  src/MockCluster.cc \
 		  src/MockTransport.cc \
 		  src/TestRunner.cc \

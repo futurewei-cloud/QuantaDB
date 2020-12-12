@@ -15,7 +15,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 # set the project name
-project(DSSN)
+project(QuantaDB)
 
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 14)
@@ -97,7 +97,7 @@ include_directories(hot/third-party/tbb/include)
 include_directories(pmemhash/internal)
 include_directories(pmemhash/utils)
 include_directories(src)
-include_directories(src/dssn)
+include_directories(src/quantadb)
 include_directories(prometheus-cpp/core/include)
 include_directories(prometheus-cpp/build/core/include)
 include_directories(prometheus-cpp/pull/include)

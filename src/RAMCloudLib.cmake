@@ -54,7 +54,6 @@ add_library(ramcloud SHARED
   HashObjectManager.cc
   HashTable.cc
   HomaTransport.cc
-  dssn/HOTKV.cc
   IndexKey.cc
   IndexletManager.cc
   IndexLookup.cc
@@ -163,5 +162,5 @@ if(INFINIBAND)
     InfUdDriver.cc)
 endif(INFINIBAND)
 
-target_link_libraries(ramcloud dssn "${CMAKE_SHARED_LINKER_FLAGS}" prometheus-cpp-pull)
+target_link_libraries(ramcloud quantadb "${CMAKE_SHARED_LINKER_FLAGS}" prometheus-cpp-pull)
 add_dependencies(ramcloud prometheus-build)

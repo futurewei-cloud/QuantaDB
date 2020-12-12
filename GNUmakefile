@@ -186,7 +186,7 @@ INCLUDES := -I$(TOP)/src \
             -I$(TOP)/$(OBJDIR) \
             -I$(GTEST_DIR)/include \
             -I/usr/local/openonload-201405/src/include \
-	    -I$(TOP)/src/dssn/ \
+	    -I$(TOP)/src/quantadb/ \
 	    -I$(TOP)/pmemhash/internal \
 	    -I$(TOP)/pmemhash/utils \
 	    -I$(TOP)/hot/third-party/tbb/include/ \
@@ -501,8 +501,8 @@ INSTALL_INCLUDES := \
     src/CoordinatorClient.h \
     src/CoordinatorRpcWrapper.h \
     src/Crc32C.h \
-    src/dssn/ClusterTimeService.h \
-    src/dssn/Sequencer.h \
+    src/quantadb/ClusterTimeService.h \
+    src/quantadb/Sequencer.h \
     src/Exception.h \
     src/Fence.h \
     src/Key.h \

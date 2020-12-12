@@ -48,8 +48,8 @@ CLIENT_SRCFILES := \
 		   src/Dispatch.cc \
 		   src/DispatchExec.cc \
 		   src/Driver.cc \
-		   src/dssn/Sequencer.cc \
-		   src/dssn/ClusterTimeService.cc \
+		   src/quantadb/Sequencer.cc \
+		   src/quantadb/ClusterTimeService.cc \
 		   src/ExternalStorage.cc \
 		   src/FailSession.cc \
 		   src/FileLogger.cc \
