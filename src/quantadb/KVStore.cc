@@ -14,11 +14,12 @@
  */
 
 #include "KVStore.h"
-#include <hot/rowex/HOTRowex.hpp>
+//#include <hot/rowex/HOTRowex.hpp>
 
 namespace QDB
 {
-using HotKVType = hot::rowex::HOTRowex<QDB::KVLayout*, HOTKeyExtractor>;
+/*using HotKVType = hot::rowex::HOTRowex<QDB::KVLayout*, HOTKeyExtractor>;
+ */
 
 bool operator == (const KLayout &lhs, const KLayout &rhs)
 {
