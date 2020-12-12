@@ -440,6 +440,19 @@ ClientTransactionTask::processPrepareRpcResults()
         // Destroy object.
         it = prepareRpcs.erase(it);
     }
+#if DSSNTX
+    if (decision != WireFormat::TxDecision::UNDECIDED) {
+        /*
+	 * One of the participants of the transaction has already voted.  For DSSN,
+	 * the client can now conclude the transaction without getting reply from all.
+	 */
+        it = prepareRpcs.begin();
+        for (; it != prepareRpcs.end(); it++) {
+	    prepareRpcs.erase(it);
+	}
+	//RAMCLOUD_LOG(NOTICE, "Decision has been made, Skip response from other server");
+    }
+#endif
 }
 
 /**
