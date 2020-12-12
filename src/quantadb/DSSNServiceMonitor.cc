@@ -17,7 +17,7 @@
 #include "DSSNService.h"
 #include "DSSNServiceMonitor.h"
 
-namespace DSSN {
+namespace QDB {
 using namespace prometheus;
 
 DSSNServiceMonitor::DSSNServiceMonitor(DSSNService *service, Exposer* exposer) {

@@ -23,7 +23,7 @@
 #include <mutex>
 #include <iostream>
 
-namespace DSSN {
+namespace QDB {
 /*
  * DLog (DSSN Log) Design Highlights:
  * - DLog is a local log device. No remote access.
@@ -501,5 +501,5 @@ class DLog {
     chunk_t * chunk_head, * chunk_tail;
 };
 
-} // End DSSN namespace
+} // End QDB namespace
 

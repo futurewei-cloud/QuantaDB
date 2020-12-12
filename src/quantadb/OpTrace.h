@@ -17,7 +17,7 @@
 
 #include "Cycles.h"
 
-namespace DSSN {
+namespace QDB {
 
 struct Metric {
     Metric()

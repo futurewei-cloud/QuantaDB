@@ -31,7 +31,7 @@
 #include "TxLog.h"
 #include <stdarg.h>
 
-namespace DSSN {
+namespace QDB {
 
 //forward declaration to resolve interdependency
 class DSSNService;
@@ -220,7 +220,7 @@ class Validator {
     bool testRun();
 }; // end Validator class
 
-} // end namespace DSSN
+} // end namespace QDB
 
 #endif  /* VALIDATOR_H */
 

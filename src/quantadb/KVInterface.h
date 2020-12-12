@@ -20,7 +20,7 @@
 #include <memory>
 #include <atomic>
 
-namespace DSSN
+namespace QDB
 {
     struct DSSNMeta {
     	uint64_t pStamp; //eta

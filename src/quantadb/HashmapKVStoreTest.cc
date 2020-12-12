@@ -21,7 +21,7 @@
 
 namespace RAMCloud {
 
-using namespace DSSN;
+using namespace QDB;
 
 class HashmapKVTest : public ::testing::Test {
   public:

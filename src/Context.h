@@ -36,7 +36,7 @@
 #include "WireFormat.h"
 #include <prometheus/exposer.h>
 
-namespace DSSN {
+namespace QDB {
     class ClusterTimeService;
 }
 
@@ -170,7 +170,7 @@ class Context {
     prometheus::Exposer* metricExposer;
 
     /// Clock from the Cluster Time Service
-    DSSN::ClusterTimeService* ctsClock;
+    QDB::ClusterTimeService* ctsClock;
     /**
      * Returns the BackupService associated with this context, if
      * there is one, or NULL if there is none.

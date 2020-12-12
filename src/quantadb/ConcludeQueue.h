@@ -19,7 +19,7 @@
 #include <boost/lockfree/queue.hpp>
 #include "TxEntry.h"
 
-namespace DSSN {
+namespace QDB {
 
 /**
  * This class implements (multi-prodcuer-single-consumer) queueing
@@ -65,7 +65,7 @@ class ConcludeQueue {
     }
 }; // end ConcludeQueue class
 
-} // end namespace DSSN
+} // end namespace QDB
 
 #endif  /* CONCLUDE_QUEUE_H */
 

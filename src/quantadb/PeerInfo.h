@@ -21,7 +21,7 @@
 #include "tbb/concurrent_unordered_map.h"
 #include <boost/lockfree/queue.hpp>
 
-namespace DSSN {
+namespace QDB {
 
 /**
  * The class implements a search-able table of tx entries undergoing
@@ -106,7 +106,7 @@ class PeerInfo {
 
 }; // end PeerInfo class
 
-} // end namespace DSSN
+} // end namespace QDB
 
 #endif  /* PEER_INFO_H */
 

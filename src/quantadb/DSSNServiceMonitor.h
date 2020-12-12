@@ -23,7 +23,7 @@
 
 #include "OpTrace.h"
 
-namespace DSSN {
+namespace QDB {
 class DSSNService;
   
 enum DSSNServiceOp {

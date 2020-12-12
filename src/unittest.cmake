@@ -27,24 +27,24 @@ target_sources(gtest
 
 if(DSSNTX)
   file(GLOB unittest
-    dssn/ClusterTimeServiceTest.cc
-    dssn/DataLogTest.cc
-    dssn/DLogTest.cc
-    dssn/DSSNServiceTest.cc
-    dssn/HashmapKVStoreTest.cc
-    dssn/HashmapTest.cc
-    dssn/MemStreamIoTest.cc
-    dssn/MultiOpTest.cc
-    dssn/MultiReadTest.cc
-    dssn/MultiRemoveTest.cc
-    dssn/MultiWriteTest.cc
-    dssn/RamCloudDSSNTest.cc
-    dssn/SequencerTest.cc
-    dssn/SkipListTest.cc
-    dssn/TpcCDSSNTest.cc
-    dssn/TransactionDSSNTest.cc
-    dssn/TxLogTest.cc
-    dssn/ValidatorTest.cc
+    quantadb/ClusterTimeServiceTest.cc
+    quantadb/DataLogTest.cc
+    quantadb/DLogTest.cc
+    quantadb/DSSNServiceTest.cc
+    quantadb/HashmapKVStoreTest.cc
+    quantadb/HashmapTest.cc
+    quantadb/MemStreamIoTest.cc
+    quantadb/MultiOpTest.cc
+    quantadb/MultiReadTest.cc
+    quantadb/MultiRemoveTest.cc
+    quantadb/MultiWriteTest.cc
+    quantadb/RamCloudDSSNTest.cc
+    quantadb/SequencerTest.cc
+    quantadb/SkipListTest.cc
+    quantadb/TpcCDSSNTest.cc
+    quantadb/TransactionDSSNTest.cc
+    quantadb/TxLogTest.cc
+    quantadb/ValidatorTest.cc
     MockCluster.cc
     MockDriver.cc
     MockExternalStorage.cc

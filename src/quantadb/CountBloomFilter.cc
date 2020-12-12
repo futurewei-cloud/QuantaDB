@@ -16,7 +16,7 @@
 #include "CountBloomFilter.h"
 #include "MurmurHash3.h"
 
-namespace DSSN {
+namespace QDB {
 
 template <class T>
 CountBloomFilter<T>::CountBloomFilter() {

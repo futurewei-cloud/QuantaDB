@@ -17,7 +17,7 @@
 #include "Validator.h"
 #include "Logger.h"
 
-namespace DSSN {
+namespace QDB {
 
 template <class T>
 bool

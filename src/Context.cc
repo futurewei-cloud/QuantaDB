@@ -133,7 +133,7 @@ Context::Context(bool hasDedicatedDispatchThread,
         // portAlarmTimer = new PortAlarmTimer(this);
 
         coordinatorSession = new CoordinatorSession(this);
-	ctsClock = new DSSN::ClusterTimeService();
+	ctsClock = new QDB::ClusterTimeService();
 
         for (int i = 0; i < WireFormat::INVALID_SERVICE; i++) {
             services[i] = NULL;

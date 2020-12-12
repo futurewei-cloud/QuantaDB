@@ -20,7 +20,7 @@
 #include "KVStore.h"
 #include <mutex>
 
-namespace DSSN {
+namespace QDB {
 
 /**
  * Each TxEntry object represents a single transaction.
@@ -45,7 +45,7 @@ class TxEntry {
     uint64_t pstamp; //with ns precision
     uint64_t sstamp; //with ns precision
 
-    //DSSN tx states
+    //QDB tx states
     volatile uint32_t txState;
     volatile uint32_t commitIntentState;
 
@@ -176,7 +176,7 @@ class TxComparator {
 	}
 };
 
-} // end namespace DSSN
+} // end namespace QDB
 
 #endif  /* TX_ENTRY_H */
 

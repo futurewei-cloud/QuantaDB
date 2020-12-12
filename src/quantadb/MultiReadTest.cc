@@ -350,8 +350,8 @@ TEST_F(MultiReadTest, readNullAndEmptyValues) {
     values[0]->getValue(&valueLength);
     EXPECT_EQ(9U, valueLength);
 
-    #if (1) // DSSN treats a "" value as '\0' of value length
-            // But RamCloud read RPC pass "" as a length 0 value which DSSN treats as tombstone
+    #if (1) // QDB treats a "" value as '\0' of value length
+            // But RamCloud read RPC pass "" as a length 0 value which QDB treats as tombstone
     EXPECT_STREQ("STATUS_OBJECT_DOESNT_EXIST",
             statusToSymbol(objects[6].status));
     #else
@@ -361,7 +361,7 @@ TEST_F(MultiReadTest, readNullAndEmptyValues) {
     EXPECT_EQ(0U, valueLength);
     #endif // 
 
-    #if (1) // DSSN treats a nullptr value as tombstone
+    #if (1) // QDB treats a nullptr value as tombstone
     EXPECT_STREQ("STATUS_OBJECT_DOESNT_EXIST",
             statusToSymbol(objects[7].status));
     #else

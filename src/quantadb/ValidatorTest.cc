@@ -25,7 +25,7 @@
 #include <string>
 #define GTEST_COUT  std::cerr << std::scientific << "[ INFO ] "
 
-namespace DSSN {
+namespace QDB {
 
 using namespace RAMCloud;
 
@@ -36,7 +36,7 @@ class ValidatorTest : public ::testing::Test {
     MockCluster cluster;
     ClusterClock clusterClock;
     HashmapKVStore kvStore;
-    DSSN::Validator validator;
+    QDB::Validator validator;
     TxEntry *txEntry[1000000];
     uint8_t dataBlob[512];
 

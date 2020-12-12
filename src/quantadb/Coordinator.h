@@ -20,7 +20,7 @@
 #include "KVStore.h"
 #include "Buffer.h"
 
-namespace DSSN {
+namespace QDB {
 
 typedef RAMCloud::Buffer Buffer;
 
@@ -28,7 +28,7 @@ typedef RAMCloud::Buffer Buffer;
  * Coordinator instance is used as a lib, tracking one transaction at a time for its client,
  * as the initiator of the DSSN commit protocol.
  *
- * This is the DSSN-equivalent of the RAMCloud::Transaction class.
+ * This is the QDB-equivalent of the RAMCloud::Transaction class.
  *
  * It does early-abort by performing SSN exclusion check upon each read operation.
  *
@@ -93,7 +93,7 @@ class Coordinator {
 
 }; // end Coordinator class
 
-} // end namespace DSSN
+} // end namespace QDB
 
 #endif  /* COORDINATOR_H */
 

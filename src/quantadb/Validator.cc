@@ -18,7 +18,7 @@
 #include <thread>
 #include "Logger.h"
 
-namespace DSSN {
+namespace QDB {
 
 const uint64_t maxTimeStamp = std::numeric_limits<uint64_t>::max();
 const uint64_t minTimeStamp = 0;

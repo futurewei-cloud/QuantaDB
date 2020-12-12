@@ -102,7 +102,7 @@ out:
     return ret;
 }
 
-namespace DSSN {
+namespace QDB {
 
 Sequencer::Sequencer()
 {
@@ -127,5 +127,5 @@ __uint128_t Sequencer::getCTS()
     return ((__uint128_t)(clock.getLocalTime() + SEQUENCER_DELTA) << 64) + uniqueId;
 }
 
-} // DSSN
+} // QDB
 

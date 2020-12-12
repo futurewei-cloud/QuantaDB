@@ -15,7 +15,7 @@
 
 #include "TxLog.h"
 
-namespace DSSN {
+namespace QDB {
 
 bool
 TxLog::add(TxEntry *txEntry)

@@ -20,7 +20,7 @@
 #include "MemStreamIo.h"
 #include <boost/scoped_array.hpp>
 
-namespace DSSN {
+namespace QDB {
 
 struct DSSNMeta {
 	uint64_t pStamp; //eta
@@ -249,6 +249,6 @@ class KVStore {
     bool remove(KLayout& k, DSSNMeta &meta);
 
 }; //end class KVStore
-} //end namespace DSSN
+} //end namespace QDB
 
 #endif /* __KVSTORE_H__ */

@@ -18,7 +18,7 @@
 #include "MasterService.h"  //TODO: Remove
 #include "Validator.h"
 
-namespace DSSN {
+namespace QDB {
 
 DSSNService::DSSNService(Context* context, ServerList* serverList,
         const ServerConfig* serverConfig)

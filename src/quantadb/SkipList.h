@@ -29,7 +29,7 @@
 
 using namespace std;
 
-namespace DSSN {
+namespace QDB {
 
 /*
  * Skip Node Declaration
@@ -294,4 +294,4 @@ class SkipList {
     inline void unlock() { assert(lock_ == 1); while (!__sync_bool_compare_and_swap (&lock_, 1, 0)); }
 };
 
-} // DSSN
+} // QDB

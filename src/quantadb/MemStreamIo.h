@@ -19,7 +19,7 @@
 #include <assert.h>
 #include <vector>
 
-namespace DSSN {
+namespace QDB {
 
 class inMemStream {
     public:

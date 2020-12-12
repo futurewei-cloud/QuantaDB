@@ -25,7 +25,7 @@
 #include "TabletManager.h"
 #include "Notifier.h"
 
-namespace DSSN {
+namespace QDB {
 using namespace RAMCloud;
 
 class Validator; //forward declaration to resolve interdependency

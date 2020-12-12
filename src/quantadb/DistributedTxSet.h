@@ -21,7 +21,7 @@
 #include "CountBloomFilter.h"
 #include "WaitList.h"
 
-namespace DSSN {
+namespace QDB {
 
 const uint32_t independentQueueSize = 65536;
 const uint32_t coldDependQueueSize = 65536;
@@ -98,6 +98,6 @@ class DistributedTxSet {
 
 }; 
 
-} // end namespace DSSN
+} // end namespace QDB
 
 #endif  // DISTRIBUTEDTXSET_H

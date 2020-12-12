@@ -18,7 +18,7 @@
 
 #include "TxEntry.h"
 
-namespace DSSN {
+namespace QDB {
 
 /*
  * The class is purpose-built for holding commit intents (CIs) before moving
@@ -155,6 +155,6 @@ class WaitList {
     }
 }; // end WaitList class
 
-} // end namespace DSSN
+} // end namespace QDB
 
 #endif  // WAITLIST_H

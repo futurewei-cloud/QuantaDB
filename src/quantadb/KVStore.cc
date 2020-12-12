@@ -16,9 +16,9 @@
 #include "KVStore.h"
 #include <hot/rowex/HOTRowex.hpp>
 
-namespace DSSN
+namespace QDB
 {
-using HotKVType = hot::rowex::HOTRowex<DSSN::KVLayout*, HOTKeyExtractor>;
+using HotKVType = hot::rowex::HOTRowex<QDB::KVLayout*, HOTKeyExtractor>;
 
 bool operator == (const KLayout &lhs, const KLayout &rhs)
 {
@@ -74,7 +74,7 @@ KVStore::putNew(KVLayout *kv, uint64_t cts, uint64_t pi) {
 	kv->meta().sStamp = 0xffffffffffffffff;
 	if (kv->v.valuePtr == NULL || kv->v.valueLength == 0)
 		kv->v.isTombstone = true;
-	idx::contenthelpers::OptionalValue<DSSN::KVLayout*> ret = ((HotKVType *)hotKVStore)->upsert(kv);
+	idx::contenthelpers::OptionalValue<QDB::KVLayout*> ret = ((HotKVType *)hotKVStore)->upsert(kv);
 	if (!ret.mIsValid)
 		return false;
     */

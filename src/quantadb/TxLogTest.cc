@@ -22,7 +22,7 @@
 
 namespace RAMCloud {
 
-using namespace DSSN;
+using namespace QDB;
 
 class TxLogTest : public ::testing::Test {
   public:

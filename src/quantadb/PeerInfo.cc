@@ -17,7 +17,7 @@
 #include "PeerInfo.h"
 #include "Logger.h"
 
-namespace DSSN {
+namespace QDB {
 
 PeerInfo::~PeerInfo() {
     auto itr = peerInfo.begin();

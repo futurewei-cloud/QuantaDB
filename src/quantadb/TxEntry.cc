@@ -17,7 +17,7 @@
 #include "TxEntry.h"
 #include "MurmurHash3.h"
 
-namespace DSSN {
+namespace QDB {
 
 TxEntry::TxEntry(uint32_t _readSetSize, uint32_t _writeSetSize) {
     sstamp = std::numeric_limits<uint64_t>::max();

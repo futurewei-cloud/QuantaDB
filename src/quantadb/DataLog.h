@@ -20,7 +20,7 @@
 #include "Common.h"
 #include "DLog.h"
 
-namespace DSSN {
+namespace QDB {
 /**
  * This class provides data logging services.
  * Logged data can later be referenced by its address, i.e., <logid, offset>.
@@ -205,4 +205,4 @@ class DataLog {
 
 }; // DataLog
 
-} // end namespace DSSN
+} // end namespace QDB

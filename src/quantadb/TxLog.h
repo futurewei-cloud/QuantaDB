@@ -19,7 +19,7 @@
 #include "TxEntry.h"
 #include "DLog.h"
 
-namespace DSSN {
+namespace QDB {
 /**
  * This class provides transaction logging service for storage node restart recovery.
  *
@@ -97,4 +97,4 @@ class TxLog {
     DLog<TXLOG_CHUNK_SIZE> *log;
 }; // TxLog
 
-} // end namespace DSSN
+} // end namespace QDB

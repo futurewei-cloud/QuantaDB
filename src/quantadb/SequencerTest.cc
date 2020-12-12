@@ -21,7 +21,7 @@
 
 namespace RAMCloud {
 
-using namespace DSSN;
+using namespace QDB;
 
 class SequencerTest : public ::testing::Test {
   public:

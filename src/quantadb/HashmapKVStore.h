@@ -25,7 +25,7 @@
 #define	ROUND_DOWN(n,p)			(n & ~(p-1))
 #define	ROUND_UP(n,p)			((n + p - 1) & ~(p - 1))
 
-namespace DSSN {
+namespace QDB {
 
 extern void *clhash_random;
 
@@ -69,4 +69,4 @@ private:
     static bool hash_inited;
 };
 
-} // DSSN
+} // QDB

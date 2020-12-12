@@ -18,7 +18,7 @@
 
 #include "Common.h"
 
-namespace DSSN {
+namespace QDB {
 
 /**
  * Counting Bloom Filter
@@ -61,7 +61,7 @@ class CountBloomFilter {
 
 }; // end CountBloomFilter class
 
-} // end namespace DSSN
+} // end namespace QDB
 
 #endif  /* COUNT_BLOOM_FILTER_H */
 

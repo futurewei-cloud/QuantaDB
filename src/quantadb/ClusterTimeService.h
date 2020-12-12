@@ -29,20 +29,20 @@
 
 using namespace RAMCloud;
 
-namespace DSSN {
+namespace QDB {
 /**
- * DSSN Cluster Time Service:
+ * QDB Cluster Time Service:
  * - High speed and high precision (nano-second) cluster time service
  * - Issues cluster unique time stamp (logical time stamp, explained below)
  * - Issues node local time stamp (real clock time stamp) in nanosecond precision.
  * - Convertion utility converse between logical time stamp and the corresponding real time.
  *
- * DSSN Cluster Time Service relies on an underlying time synchronization module to sync time to sub-microsecond
+ * QDB Cluster Time Service relies on an underlying time synchronization module to sync time to sub-microsecond
  * precision. There are a few existing such protocols. In this implementation, we use the PTP (IEEE1588) protocol
  * to synchronize system clocks in the cluster.
  *
  * A logical time-stamp is a 64-bit value consisted of <54-bit real clock time in nano-sec><10-bit node id>.
- * A logical time-stamp is monotonically increasing and unique across the DSSN cluster. 
+ * A logical time-stamp is monotonically increasing and unique across the QDB cluster. 
  *
  * The 10-bit node id field ensures logical time stamp is unique among the cluster nodes. 10 bits implies a
  * maximum of 1024 nodes can be supported. 
@@ -153,4 +153,4 @@ class ClusterTimeService {
     uint64_t uctr, nctr;              // statistics
 }; // ClusterTimeService
 
-} // end namespace DSSN
+} // end namespace QDB

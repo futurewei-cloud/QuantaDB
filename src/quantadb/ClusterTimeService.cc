@@ -321,7 +321,7 @@ static double getTSCHz()
 }
 #endif // DISABLE TS_TRACKER
 
-namespace DSSN {
+namespace QDB {
 using namespace RAMCloud;
 
 #define TRACKER_SLEEP_USEC  1
@@ -440,5 +440,5 @@ ClusterTimeService::~ClusterTimeService()
 #endif // DISABLE TS_TRACKER
 }
 
-} // DSSN
+} // QDB
 

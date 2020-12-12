@@ -19,7 +19,7 @@
 #include "CountBloomFilter.h"
 #include "TxEntry.h"
 
-namespace DSSN {
+namespace QDB {
 
 /**
  * It is an approximate membership set of transactions undergoing validation.
@@ -55,7 +55,7 @@ class ActiveTxSet {
 
 }; // end ActiveTxSet class
 
-} // end namespace DSSN
+} // end namespace QDB
 
 #endif  /* ACTIVE_TX_SET_H */
 

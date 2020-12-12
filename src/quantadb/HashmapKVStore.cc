@@ -22,7 +22,7 @@
 
 using namespace RAMCloud;
 
-namespace DSSN {
+namespace QDB {
 
 void *clhash_random;
 bool HashmapKVStore::hash_inited = 0;
@@ -92,4 +92,4 @@ KVLayout * HashmapKVStore::fetch(KLayout& k)
     return lptr.ptr_;
 }
 
-} // DSSN
+} // QDB

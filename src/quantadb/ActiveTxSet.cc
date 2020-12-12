@@ -16,7 +16,7 @@
 #include "ActiveTxSet.h"
 #include "Validator.h"
 
-namespace DSSN {
+namespace QDB {
 
 bool
 ActiveTxSet::add(TxEntry *txEntry) {

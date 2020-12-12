@@ -215,7 +215,7 @@ class RamCloud {
      * It is used to assign the commit transaction timestamp (CTS)
      */
 #if DSSNTX
-    DSSN::Sequencer sequencer;
+    QDB::Sequencer sequencer;
 #endif
 
   public:

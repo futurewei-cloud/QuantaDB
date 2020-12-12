@@ -19,11 +19,11 @@
 #include <stdint.h>
 #include "ClusterTimeService.h"
 
-namespace DSSN {
+namespace QDB {
 /**
- * DSSN Sequencer Description - ver 3
+ * QDB Sequencer Description - ver 3
  *
- * A DSSN Sequencer generates Commit Time Stamp (CTS) value.
+ * A QDB Sequencer generates Commit Time Stamp (CTS) value.
  *
  * CTS must be globally unique for a cross-shard transaction. Therefore it is made up with a Cluster
  * Time Stamp. A CTS also needs to be set slightly ahead of Validator's local clock, so that the Tx won't be
@@ -46,4 +46,4 @@ class Sequencer {
     uint64_t    node_id;
 }; // Sequencer
 
-} // end namespace DSSN
+} // end namespace QDB

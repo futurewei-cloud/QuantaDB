@@ -24,7 +24,7 @@
 
 namespace RAMCloud {
 
-using namespace DSSN;
+using namespace QDB;
 
 class MemStreamIoTest : public ::testing::Test {
   public:

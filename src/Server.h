@@ -117,7 +117,7 @@ class Server {
      * The DSSNService running on this Server, if requested, else empty.
      * See config.services.
      */
-    Tub<DSSN::DSSNService> dssnMaster;
+    Tub<QDB::DSSNService> dssnMaster;
 #endif
     /**
      * The BackupService running on this Server, if requested, else empty.

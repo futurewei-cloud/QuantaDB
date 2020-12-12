@@ -33,7 +33,7 @@ class DSSNServiceTest : public ::testing::Test {
     MockCluster cluster;
     Tub<RamCloud> ramcloud;
     ServerConfig dssnConfig;
-    DSSN::DSSNService* service;
+    QDB::DSSNService* service;
     Server* dssnServer;
 
     mutable std::mutex mutex;
@@ -93,7 +93,7 @@ TEST_F(DSSNServiceTest, notification_invalid_serverid) {
 
 TEST_F(DSSNServiceTest, notification_send_dssn_info) {
     TestLog::reset();
-    DSSN::TxEntry txEntry(1,1);
+    QDB::TxEntry txEntry(1,1);
     WireFormat::DSSNRequestInfoAsync::Request req;
     req.cts = txEntry.getCTS();
     req.pstamp = txEntry.getPStamp();
@@ -108,10 +108,10 @@ TEST_F(DSSNServiceTest, notification_send_dssn_info) {
 }
 
 TEST_F(DSSNServiceTest, OpTrace) {
-    DSSN::Metric td1;
-    DSSN::Metric td2;
+    QDB::Metric td1;
+    QDB::Metric td2;
     {
-        DSSN::OpTrace d(&td1);
+        QDB::OpTrace d(&td1);
 	int i = 0;
 	i++;
     }
@@ -120,13 +120,13 @@ TEST_F(DSSNServiceTest, OpTrace) {
     EXPECT_TRUE(td1.sCount == 0);
     EXPECT_TRUE(td1.fCount == 0);
     {
-        DSSN::OpTrace d(&td2);
+        QDB::OpTrace d(&td2);
 	for(int i = 0; i < 1000; i++);
     }
     EXPECT_TRUE(td2.latency > td1.latency);
     {
         bool result;
-	DSSN::OpTrace d(&td1, &result);
+	QDB::OpTrace d(&td1, &result);
 	result = true;
     }
     EXPECT_TRUE(td1.count == 2);
@@ -134,7 +134,7 @@ TEST_F(DSSNServiceTest, OpTrace) {
     EXPECT_TRUE(td1.fCount == 0);
     {
         bool result;
-	DSSN::OpTrace d(&td1, &result);
+	QDB::OpTrace d(&td1, &result);
 	result = false;
     };
     EXPECT_TRUE(td1.count == 3);
