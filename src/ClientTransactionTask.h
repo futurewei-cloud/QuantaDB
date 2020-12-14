@@ -65,7 +65,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
         /// this object should abort.
         RejectRules rejectRules;
         /// DSSN specific Meta data
-        WireFormat::QDBTxMeta meta;
+        WireFormat::QDBXmitMeta meta;
 
         /// The rpcId to uniquely identify this operation.
         uint64_t rpcId;
@@ -107,7 +107,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
 
     // Check if the Tx is valid.  Called by commit or sync
     bool isTxValid();
-    void updateSSNReadMeta(WireFormat::QDBTxMeta& v);
+    void updateSSNReadMeta(WireFormat::QDBXmitMeta& v);
 
   PRIVATE:
     // Forward declaration of RPCs
@@ -118,7 +118,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
     RamCloud* ramcloud;
 
     // DSSN TX metadata
-    WireFormat::QDBTxMeta mMeta;
+    WireFormat::QDBXmitMeta mMeta;
     __uint128_t dssnCTS;
 
   PUBLIC:

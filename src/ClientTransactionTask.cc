@@ -912,7 +912,7 @@ ClientTransactionTask::isTxValid()
 }
 
 void
-ClientTransactionTask::updateSSNReadMeta(WireFormat::QDBTxMeta& v)
+ClientTransactionTask::updateSSNReadMeta(WireFormat::QDBXmitMeta& v)
 {
     if (v.cstamp > mMeta.pstamp) {
         mMeta.pstamp= v.cstamp;

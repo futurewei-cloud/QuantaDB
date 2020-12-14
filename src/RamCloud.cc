@@ -2119,7 +2119,7 @@ ReadRpc::ReadRpc(RamCloud* ramcloud, uint64_t tableId,
  */
 void
 ReadRpc::wait(uint64_t* version, bool* objectExists,
-	      WireFormat::QDBTxMeta* meta)
+	      WireFormat::QDBXmitMeta* meta)
 {
     if (objectExists != NULL)
         *objectExists = true;
@@ -2204,7 +2204,7 @@ ReadKeysAndValueRpc::ReadKeysAndValueRpc(RamCloud* ramcloud, uint64_t tableId,
  *      indicating the existence of the object is returned here.
  */
 void
-ReadKeysAndValueRpc::wait(uint64_t* version, bool* objectExists, WireFormat::QDBTxMeta* meta)
+ReadKeysAndValueRpc::wait(uint64_t* version, bool* objectExists, WireFormat::QDBXmitMeta* meta)
 {
     if (objectExists != NULL)
         *objectExists = true;

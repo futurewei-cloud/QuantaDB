@@ -377,7 +377,7 @@ Transaction::ReadOp::wait(bool* objectExists)
     }
 
     ClientTransactionTask* task = transaction->taskPtr.get();
-    WireFormat::QDBTxMeta meta = {QDB_MD_INITIAL, QDB_MD_INITIAL,
+    WireFormat::QDBXmitMeta meta = {QDB_MD_INITIAL, QDB_MD_INITIAL,
 				   QDB_MD_INITIAL};
 
     Key keyObj(tableId, keyBuf, 0, keyLength);
