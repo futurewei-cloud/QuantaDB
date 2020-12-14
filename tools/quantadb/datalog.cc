@@ -19,7 +19,7 @@
 #include <algorithm>
 #include "DataLog.h"
 
-using namespace DSSN;
+using namespace QDB;
 
 DataLog *log;
 

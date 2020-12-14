@@ -21,7 +21,7 @@
 #include <dirent.h>
 #include "TxLog.h"
 
-using namespace DSSN;
+using namespace QDB;
 
 TxLog *txlog;
 
