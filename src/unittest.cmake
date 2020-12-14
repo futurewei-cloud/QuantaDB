@@ -25,7 +25,7 @@ target_sources(gtest
   ${CMAKE_CURRENT_SOURCE_DIR}/../gtest/src/gtest_main.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/../gtest/src/gtest.cc)
 
-if(DSSNTX)
+if(QDBTX)
   file(GLOB unittest
     quantadb/ClusterTimeServiceTest.cc
     quantadb/DataLogTest.cc
@@ -227,7 +227,7 @@ else()
     WorkerTimerTest.cc
     ZooStorageTest.cc
     )
-endif(DSSNTX)
+endif(QDBTX)
 
 if(INFINIBAND)
   file(GLOB ibtransporttest

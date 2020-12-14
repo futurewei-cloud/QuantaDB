@@ -25,9 +25,6 @@ target_link_libraries(Echo ${LIBS})
 add_executable(HashTableBenchmark HashTableBenchmark.cc)
 target_link_libraries(HashTableBenchmark ${LIBS})
 
-add_executable(HOTKVBenchmark HOTKVBenchmark.cc)
-target_link_libraries(HOTKVBenchmark ${LIBS})
-
 add_executable(LogCleanerBenchmark LogCleanerBenchmark.cc)
 target_link_libraries(LogCleanerBenchmark ${LIBS})
 
@@ -46,6 +43,6 @@ target_link_libraries(RecoverSegmentBenchmark ${LIBS})
 
 Message("${INSTALL_DIR}")
 install(TARGETS CleanerCompactionBenchmark Echo HashTableBenchmark
-  HOTKVBenchmark LogCleanerBenchmark MigrateTabletBenchmark
+  LogCleanerBenchmark MigrateTabletBenchmark
   HashObjectManagerBenchmark Perf RecoverSegmentBenchmark
 RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/nanobenchmarks)

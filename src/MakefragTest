@@ -28,8 +28,8 @@ endif
 
 
 
-ifeq ($(DSSNTX),yes)
-#DSSN specific test files
+ifeq ($(QDBTX),yes)
+#QDB specific test files
 TESTS_SRCFILES := \
           src/quantadb/MemStreamIoTest.cc \
     	  src/quantadb/DataLogTest.cc \

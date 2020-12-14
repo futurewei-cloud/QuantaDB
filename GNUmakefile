@@ -100,16 +100,16 @@ else ifeq ($(LINKER),bfd)
 LDFLAGS += -fuse-ld=bfd
 endif
 
-ifeq ($(DSSNTX), yes)
-COMFLAGS += -DDSSNTX
+ifeq ($(QDBTX), yes)
+COMFLAGS += -DQDBTX
 endif
 
 ifeq ($(MONITOR), yes)
 COMFLAGS += -DMONITOR
 endif
 
-ifeq ($(DSSNTXRECOVERY), yes)
-COMFLAGS += -DDSSNTXRECOVERY
+ifeq ($(QDBTXRECOVERY), yes)
+COMFLAGS += -DQDBTXRECOVERY
 endif
 
 ifeq ($(USE_PTP_CLOCK), yes)
