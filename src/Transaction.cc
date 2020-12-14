@@ -377,8 +377,8 @@ Transaction::ReadOp::wait(bool* objectExists)
     }
 
     ClientTransactionTask* task = transaction->taskPtr.get();
-    WireFormat::DSSNTxMeta meta = {DSSN_MD_INITIAL, DSSN_MD_INITIAL,
-				   DSSN_MD_INITIAL};
+    WireFormat::QDBTxMeta meta = {QDB_MD_INITIAL, QDB_MD_INITIAL,
+				   QDB_MD_INITIAL};
 
     Key keyObj(tableId, keyBuf, 0, keyLength);
     ClientTransactionTask::CacheEntry* entry = task->findCacheEntry(keyObj);
@@ -439,7 +439,7 @@ Transaction::ReadOp::wait(bool* objectExists)
 #else
 	    entry->meta = meta;
 	    entry->rejectRules.cstamp = meta.cstamp;
-	    assert(entry->meta.sstamp == DSSN_MD_INFINITY);
+	    assert(entry->meta.sstamp == QDB_MD_INFINITY);
 #endif
         } else {
 
@@ -449,9 +449,9 @@ Transaction::ReadOp::wait(bool* objectExists)
 	    objectFound = false;
 #ifdef QDBTX
 	    //DSSN: abort this transaction
-	    entry->meta = {DSSN_MD_INFINITY, DSSN_MD_INFINITY,
-			   DSSN_MD_INFINITY};
-	    entry->rejectRules.cstamp = DSSN_MD_INFINITY;
+	    entry->meta = {QDB_MD_INFINITY, QDB_MD_INFINITY,
+			   QDB_MD_INFINITY};
+	    entry->rejectRules.cstamp = QDB_MD_INFINITY;
 #endif
         }
 

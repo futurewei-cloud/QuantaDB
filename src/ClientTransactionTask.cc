@@ -49,7 +49,7 @@ namespace RAMCloud {
  */
 ClientTransactionTask::ClientTransactionTask(RamCloud* ramcloud)
     : ramcloud(ramcloud)
-    , mMeta({DSSN_MD_INITIAL,DSSN_MD_INFINITY,DSSN_MD_INITIAL})
+    , mMeta({QDB_MD_INITIAL,QDB_MD_INFINITY,QDB_MD_INITIAL})
     , readOnly(true)
     , participantCount(0)
     , participantList()
@@ -912,7 +912,7 @@ ClientTransactionTask::isTxValid()
 }
 
 void
-ClientTransactionTask::updateSSNReadMeta(WireFormat::DSSNTxMeta& v)
+ClientTransactionTask::updateSSNReadMeta(WireFormat::QDBTxMeta& v)
 {
     if (v.cstamp > mMeta.pstamp) {
         mMeta.pstamp= v.cstamp;

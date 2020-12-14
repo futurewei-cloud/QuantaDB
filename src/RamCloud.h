@@ -776,7 +776,7 @@ struct MultiReadObject : public MultiOpObject {
     /**
      * SSN Meta data
      */
-    WireFormat::DSSNTxMeta meta;
+    WireFormat::QDBTxMeta meta;
 
     MultiReadObject(uint64_t tableId, const void* key, uint16_t keyLength,
             Tub<ObjectBuffer>* value, const RejectRules* rejectRules = NULL)
@@ -784,14 +784,14 @@ struct MultiReadObject : public MultiOpObject {
         , value(value)
         , rejectRules(rejectRules)
         , version()
-        , meta({DSSN_MD_INITIAL,DSSN_MD_INITIAL,DSSN_MD_INITIAL})
+        , meta({QDB_MD_INITIAL,QDB_MD_INITIAL,QDB_MD_INITIAL})
       {}
 
     MultiReadObject()
         : value()
         , rejectRules()
         , version()
-        , meta({DSSN_MD_INITIAL,DSSN_MD_INITIAL,DSSN_MD_INITIAL})
+        , meta({QDB_MD_INITIAL,QDB_MD_INITIAL,QDB_MD_INITIAL})
     {}
 
     MultiReadObject(const MultiReadObject& other)
@@ -1006,7 +1006,7 @@ class ReadRpc : public ObjectRpcWrapper {
             const RejectRules* rejectRules = NULL);
     ~ReadRpc() {}
     void wait(uint64_t* version = NULL, bool* objectExists = NULL,
-	      WireFormat::DSSNTxMeta* meta = NULL);
+	      WireFormat::QDBTxMeta* meta = NULL);
 
   PRIVATE:
     DISALLOW_COPY_AND_ASSIGN(ReadRpc);
@@ -1024,7 +1024,7 @@ class ReadKeysAndValueRpc : public ObjectRpcWrapper {
             const RejectRules* rejectRules = NULL);
     ~ReadKeysAndValueRpc() {}
     void wait(uint64_t* version = NULL, bool* objectExists = NULL,
-	      WireFormat::DSSNTxMeta* meta = NULL);
+	      WireFormat::QDBTxMeta* meta = NULL);
 
   PRIVATE:
     DISALLOW_COPY_AND_ASSIGN(ReadKeysAndValueRpc);
