@@ -69,7 +69,7 @@ struct ServerConfig {
         : coordinatorLocator()
         , localLocator()
         , clusterName("__unnamed__")
-#if DSSNTX
+#if QDBTX
         , services{WireFormat::MASTER_SERVICE, WireFormat::BACKUP_SERVICE,
                    WireFormat::ADMIN_SERVICE, WireFormat::DSSN_SERVICE}
 #else
@@ -98,7 +98,7 @@ struct ServerConfig {
         : coordinatorLocator()
         , localLocator()
         , clusterName("__unnamed__")
-#if DSSNTX
+#if QDBTX
         , services{WireFormat::MASTER_SERVICE, WireFormat::BACKUP_SERVICE,
 	           WireFormat::ADMIN_SERVICE, WireFormat::DSSN_SERVICE}
 #else

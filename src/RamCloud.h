@@ -184,7 +184,7 @@ class RamCloud {
     void poll();
     __uint128_t getCTS() {
         __uint128_t cts = 0;
-#if DSSNTX
+#if QDBTX
         cts = sequencer.getCTS();
 #endif
 	return cts;
@@ -214,7 +214,7 @@ class RamCloud {
      * DSSN Sequencer.
      * It is used to assign the commit transaction timestamp (CTS)
      */
-#if DSSNTX
+#if QDBTX
     QDB::Sequencer sequencer;
 #endif
 

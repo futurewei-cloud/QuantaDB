@@ -190,7 +190,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
     uint64_t startTime;
 
     void initTask();
-    void initTaskDSSN();
+    void initTaskQDB();
     void processDecisionRpcResults();
     void processPrepareRpcResults();
     void sendDecisionRpc();
@@ -221,7 +221,7 @@ class ClientTransactionTask : public RpcTracker::TrackedRpc {
 
         /// Information about all of the ops that are being requested
         /// in this RPC.
-#if defined(DSSNTX) || !defined(TESTING)
+#if defined(QDBTX) || !defined(TESTING)
 	static const uint32_t MAX_OBJECTS_PER_RPC = 75;
 #else
 	static const uint32_t MAX_OBJECTS_PER_RPC = 3;

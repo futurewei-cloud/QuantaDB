@@ -229,7 +229,7 @@ Transaction::write(uint64_t tableId, const void* key, uint16_t keyLength,
         entry->objectBuf.reset();
         Object::appendKeysAndValueToBuffer(
                 keyObj, buf, length, &entry->objectBuf, true);
-#ifdef DSSNTX
+#ifdef QDBTX
 	if (entry->type == ClientTransactionTask::CacheEntry::READ) {
 	    entry->type = ClientTransactionTask::CacheEntry::READ_MODIFY_WRITE;
 	    return;
@@ -432,7 +432,7 @@ Transaction::ReadOp::wait(bool* objectExists)
         entry = task->insertCacheEntry(keyObj, data, dataLength);
         entry->type = ClientTransactionTask::CacheEntry::READ;
         if (objectFound) {
-#ifndef DSSNTX
+#ifndef QDBTX
             entry->rejectRules.doesntExist = true;
             entry->rejectRules.givenVersion = version;
             entry->rejectRules.versionNeGiven = true;
@@ -447,7 +447,7 @@ Transaction::ReadOp::wait(bool* objectExists)
             // reject (abort) the transaction if it does exist.
             entry->rejectRules.exists = true;
 	    objectFound = false;
-#ifdef DSSNTX
+#ifdef QDBTX
 	    //DSSN: abort this transaction
 	    entry->meta = {DSSN_MD_INFINITY, DSSN_MD_INFINITY,
 			   DSSN_MD_INFINITY};

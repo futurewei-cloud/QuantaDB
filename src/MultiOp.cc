@@ -464,7 +464,7 @@ MultiOp::PartRpc::PartRpc(RamCloud* ramcloud,
     , ramcloud(ramcloud)
     , session(session)
     , requests()
-#ifdef DSSNTX
+#ifdef QDBTX
     , reqHdr(allocHeader<WireFormat::MultiOpDSSN>())
 #else
     , reqHdr(allocHeader<WireFormat::MultiOp>())

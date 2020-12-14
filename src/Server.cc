@@ -55,7 +55,7 @@ Server::Server(Context* context, const ServerConfig* config)
     , serverList(NULL)
     , failureDetector()
     , master()
-#ifdef DSSNTX
+#ifdef QDBTX
     , dssnMaster()
 #endif
     , backup()
@@ -163,7 +163,7 @@ Server::createAndRegisterServices()
     if (context->serverList == NULL) {
         serverList = new ServerList(context);
     }
-#ifdef DSSNTX
+#ifdef QDBTX
     if (config.services.has(WireFormat::DSSN_SERVICE)) {
         LOG(NOTICE, "Master is using %u backups", config.master.numReplicas);
         dssnMaster.construct(context,

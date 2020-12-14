@@ -112,7 +112,7 @@ class Server {
      * See config.services.
      */
     Tub<MasterService> master;
-#ifdef DSSNTX
+#ifdef QDBTX
     /**
      * The DSSNService running on this Server, if requested, else empty.
      * See config.services.

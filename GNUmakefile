@@ -35,13 +35,13 @@ SANITIZER ?= none
 VALGRIND ?= no
 ONLOAD_DIR ?= /usr/local/openonload-201405
 
-#set to yes to enable DSSN style of transaction
-DSSNTX ?= yes
+#set to yes to enable QuantaDB style of transaction
+QDBTX ?= yes
 #set to yes to enable performance monitoring
 MONITOR ?= no
 
-# set to yes to enable DSSN start in recovery mode
-DSSNTXRECOVERY ?= no
+# set to yes to enable QDB start in recovery mode
+QDBTXRECOVERY ?= no
 
 ## Set to yes to enable using PTP clock
 USE_PTP_CLOCK ?= no

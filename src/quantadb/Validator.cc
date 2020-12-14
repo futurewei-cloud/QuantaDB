@@ -33,7 +33,7 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
   activeTxSet(*new ActiveTxSet()),
   peerInfo(*new PeerInfo()),
   concludeQueue(*new ConcludeQueue()),
-#ifdef  DSSNTXRECOVERY
+#ifdef  QDBTXRECOVERY
   txLog(*new TxLog(true, _rpcService ?_rpcService->getServerAddress() : "0.0.0.0")) {
 #else
   txLog(*new TxLog(false, _rpcService ?_rpcService->getServerAddress() : "0.0.0.0")) {
@@ -42,7 +42,7 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
 
     // Fixme: may need to use TBB to pin the threads to specific cores LATER
     if (!isUnderTest) {
-#ifdef  DSSNTXRECOVERY
+#ifdef  QDBTXRECOVERY
         recover();
 #endif
         serializeThread = std::thread(&Validator::serialize, this);

@@ -288,7 +288,7 @@ main(int argc, char *argv[])
             DIE("Can't specify both -B and -M options");
 
         if (masterOnly) {
-#if DSSNTX
+#if QDBTX
             config.services = {WireFormat::MASTER_SERVICE,
                                WireFormat::ADMIN_SERVICE,
 			       WireFormat::DSSN_SERVICE};
@@ -300,7 +300,7 @@ main(int argc, char *argv[])
             config.services = {WireFormat::BACKUP_SERVICE,
                                WireFormat::ADMIN_SERVICE};
         } else {
-#if DSSNTX
+#if QDBTX
             config.services = {WireFormat::MASTER_SERVICE,
                                WireFormat::BACKUP_SERVICE,
                                WireFormat::ADMIN_SERVICE,

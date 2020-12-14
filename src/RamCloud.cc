@@ -2095,7 +2095,7 @@ ReadRpc::ReadRpc(RamCloud* ramcloud, uint64_t tableId,
             sizeof(WireFormat::Read::Response), value)
 {
     value->reset();
-#ifdef DSSNTX
+#ifdef QDBTX
     WireFormat::Read::Request* reqHdr(allocHeader<WireFormat::ReadDSSN>());
 #else
     WireFormat::Read::Request* reqHdr(allocHeader<WireFormat::Read>());
@@ -2179,7 +2179,7 @@ ReadKeysAndValueRpc::ReadKeysAndValueRpc(RamCloud* ramcloud, uint64_t tableId,
             sizeof(WireFormat::ReadKeysAndValue::Response), value)
 {
     value->reset();
-#ifdef DSSNTX
+#ifdef QDBTX
     WireFormat::ReadKeysAndValue::Request* reqHdr(allocHeader<
                             WireFormat::ReadKeysAndValueDSSN>());
 #else
@@ -2287,7 +2287,7 @@ RemoveRpc::RemoveRpc(RamCloud* ramcloud, uint64_t tableId,
     : LinearizableObjectRpcWrapper(ramcloud, true, tableId, key, keyLength,
             sizeof(WireFormat::Remove::Response))
 {
-#ifdef DSSNTX
+#ifdef QDBTX
     WireFormat::Remove::Request* reqHdr(allocHeader<WireFormat::RemoveDSSN>());
 #else
     WireFormat::Remove::Request* reqHdr(allocHeader<WireFormat::Remove>());
@@ -3040,7 +3040,7 @@ WriteRpc::WriteRpc(RamCloud* ramcloud, uint64_t tableId,
     : LinearizableObjectRpcWrapper(ramcloud, true, tableId, key,
             keyLength, sizeof(WireFormat::Write::Response))
 {
-#ifdef DSSNTX
+#ifdef QDBTX
     WireFormat::Write::Request* reqHdr(allocHeader<WireFormat::WriteDSSN>());
 #else
     WireFormat::Write::Request* reqHdr(allocHeader<WireFormat::Write>());
@@ -3106,7 +3106,7 @@ WriteRpc::WriteRpc(RamCloud* ramcloud, uint64_t tableId,
             keyList[0].key, keyList[0].keyLength,
             sizeof(WireFormat::Write::Response))
 {
-#ifdef DSSNTX
+#ifdef QDBTX
     WireFormat::Write::Request* reqHdr(allocHeader<WireFormat::WriteDSSN>());
 #else
     WireFormat::Write::Request* reqHdr(allocHeader<WireFormat::Write>());

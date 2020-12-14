@@ -142,8 +142,8 @@ ClientTransactionTask::performTask()
             startTime = Cycles::rdtsc();
 
             // Build participant list
-#ifdef DSSNTX
-	    initTaskDSSN();
+#ifdef QDBTX
+	    initTaskQDB();
 #else
             initTask();
 #endif
@@ -155,7 +155,7 @@ ClientTransactionTask::performTask()
             processPrepareRpcResults();
             if (prepareRpcs.empty() && nextCacheEntry == commitCache.end()) {
                 switch (decision) {
-#ifdef DSSNTX
+#ifdef QDBTX
 		   case WireFormat::TxDecision::UNDECIDED:
 		        //For DSSN, it doesn't support this mode
 		        RAMCLOUD_LOG(ERROR, "Validator returns undecided decision");
@@ -281,7 +281,7 @@ ClientTransactionTask::initTask()
 }
 
 void
-ClientTransactionTask::initTaskDSSN()
+ClientTransactionTask::initTaskQDB()
 {
     std::bitset<4096> participantSet;
     lease = ramcloud->clientLeaseAgent->getLease();
@@ -440,7 +440,7 @@ ClientTransactionTask::processPrepareRpcResults()
         // Destroy object.
         it = prepareRpcs.erase(it);
     }
-#if DSSNTX
+#if QDBTX
     if (decision != WireFormat::TxDecision::UNDECIDED) {
         /*
 	 * One of the participants of the transaction has already voted.  For DSSN,
@@ -539,7 +539,7 @@ ClientTransactionTask::sendPrepareRpc()
 	if (result != rpcTable.end()) {
 	    rpc = result->second;
 	    if (!rpc->appendOp(nextCacheEntry)) {
-#if DSSNTX
+#if QDBTX
 	        //Exit, DSSN Validator expect 1 commit request per cts per server
 	        RAMCLOUD_LOG(ERROR, "Exceeded the payload of the RPC");
 		exit(1);
@@ -656,7 +656,7 @@ ClientTransactionTask::DecisionRpc::DecisionRpc(RamCloud* ramcloud,
                                   session,
                                   task,
                                   sizeof(WireFormat::TxDecision::Response))
-#ifdef DSSNTX
+#ifdef QDBTX
     , reqHdr(allocHeader<WireFormat::TxDecisionDSSN>())
 #else
     , reqHdr(allocHeader<WireFormat::TxDecision>())
@@ -758,7 +758,7 @@ ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
                                   session,
                                   task,
                                   sizeof(WireFormat::TxDecision::Response))
-#ifdef DSSNTX
+#ifdef QDBTX
     , reqHdr(allocHeader<WireFormat::TxCommitDSSN>())
 #else
     , reqHdr(allocHeader<WireFormat::TxPrepare>())
@@ -770,7 +770,7 @@ ClientTransactionTask::PrepareRpc::PrepareRpc(RamCloud* ramcloud,
     reqHdr->opCount = 0;
     reqHdr->readOpCount = 0;
     request.appendExternal(&task->participantList);
-#ifdef DSSNTX
+#ifdef QDBTX
     reqHdr->meta.pstamp = task->mMeta.pstamp;
     reqHdr->meta.sstamp = task->mMeta.sstamp;
     reqHdr->meta.cts = task->dssnCTS;
@@ -898,7 +898,7 @@ ClientTransactionTask::isTxValid()
 {
     bool result = true;
 
-#ifdef DSSNTX
+#ifdef QDBTX
     if (mMeta.sstamp > mMeta.pstamp) {
         return result;
     }

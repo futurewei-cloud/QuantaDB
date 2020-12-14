@@ -965,7 +965,7 @@ TakeTabletOwnershipRpc::TakeTabletOwnershipRpc(
     : ServerIdRpcWrapper(context, serverId,
             sizeof(WireFormat::TakeTabletOwnership::Response))
 {
-#ifdef DSSNTX
+#ifdef QDBTX
     WireFormat::TakeTabletOwnership::Request* reqHdr(
             allocHeader<WireFormat::TakeTabletOwnershipDSSN>(serverId));
 #else
