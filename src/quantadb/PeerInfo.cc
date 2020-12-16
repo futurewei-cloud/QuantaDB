@@ -76,7 +76,7 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
     mutexForPeerAdd.unlock();
     return true;
 }
-
+/*
 //Fixme: unused currently
 bool
 PeerInfo::addPartial(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t eta, uint64_t pi,
@@ -105,7 +105,7 @@ PeerInfo::addPartial(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t eta
         //mutexForPeerAdd.unlock();
     }
     return true;
-}
+}*/
 
 bool
 PeerInfo::remove(CTS cts, Validator *validator) {
@@ -176,8 +176,7 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
     if (txEntry->getTxCIState() == TxEntry::TX_CI_CONCLUDED) {
         if (validator->logTx(LOG_ALWAYS, txEntry)) {
             txEntry->setTxCIState(TxEntry::TX_CI_SEALED);
-            if (!validator->insertConcludeQueue(txEntry))
-		abort();
+            validator->conclude(txEntry);
         } else
             abort();
     }
@@ -211,9 +210,9 @@ PeerInfo::logAndSend(TxEntry *txEntry, Validator *validator) {
     return true;
 }
 
-TxEntry*
-PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp, uint64_t sstamp,
-        Validator *validator, bool &isFound) {
+bool
+PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp, uint64_t sstamp,
+        uint32_t &myTxState, uint64_t &myPStamp, uint64_t &mySStamp, Validator *validator) {
     TxEntry *txEntry= NULL;
     PeerInfoIterator it;
 
@@ -243,6 +242,11 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp,
                 peerEntry->peerTxState = TxEntry::TX_COMMIT;
             }
             txEntry = peerEntry->txEntry;
+
+            RAMCLOUD_LOG(NOTICE, "updatePeer %lu %lu txEntry %lu peerId %lu cnt %lu", (uint64_t)(cts >> 64),
+                    (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry,
+                    peerId, peerEntry->peerSeenSet.size());
+
             if (txEntry != NULL) {
                 if (txEntry->getCTS() != cts) abort(); //make sure txEntry contents not corrupted
                 txEntry->setPStamp(std::max(txEntry->getPStamp(), peerEntry->meta.pStamp));
@@ -253,23 +257,21 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t pstamp,
                 }
 
                 evaluate(peerEntry, txEntry, validator);
+
+                myTxState = txEntry->getTxState();
+                myPStamp = txEntry->getPStamp();
+                mySStamp = txEntry->getSStamp();
             }
-            isFound = true;
-            RAMCLOUD_LOG(NOTICE, "updatePeer %lu %lu txEntry %lu peerId %lu cnt %lu", (uint64_t)(cts >> 64),
-                    (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry,
-                    peerId, peerEntry->peerSeenSet.size());
         } else {
-            isFound = true;
             RAMCLOUD_LOG(NOTICE, "updatePeer ignored: finished cts %lu %lu peerId %lu", (uint64_t)(cts >> 64),
                     (uint64_t)(cts & (((__uint128_t)1<<64) -1)), peerId);
         }
         peerEntry->mutexForPeerUpdate.unlock();
-        return txEntry;
+        return true;
     }
     mutexForPeerAdd.unlock();
-    isFound = false;
     RAMCLOUD_LOG(NOTICE, "updatePeer ignored: no cts %lu peerId %lu", (uint64_t)(cts >> 64), peerId);
-    return txEntry;
+    return false;
 }
 
 bool

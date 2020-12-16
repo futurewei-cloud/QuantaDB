@@ -95,8 +95,8 @@ class PeerInfo {
     bool send(Validator *validator);
 
     //update peer info of a tx identified by cts
-    TxEntry* update(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t eta, uint64_t pi,
-            Validator *validator, bool &isFound);
+    bool update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi,
+            uint32_t &myTxState, uint64_t &myEta, uint64_t &myPi, Validator *validator);
 
     //current capacity
     uint32_t size();

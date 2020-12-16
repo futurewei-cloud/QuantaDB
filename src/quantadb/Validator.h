@@ -145,10 +145,6 @@ class Validator {
     // perform SSN validation on a local transaction
     bool validateLocalTx(TxEntry& txEntry);
 
-    // handle validation commit/abort conclusion
-    /// move committed data into backing store and update meta data
-    bool conclude(TxEntry *txEntry);
-
     // handle garbage collection
     void peer();
 
@@ -189,9 +185,11 @@ class Validator {
     bool initialWrite(KVLayout &kv);
     bool insertTxEntry(TxEntry *txEntry);
     bool updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
+    bool conclude(TxEntry *txEntry);
     bool insertConcludeQueue(TxEntry *txEntry);
-    TxEntry* receiveSSNInfo(uint64_t peerId, __uint128_t cts,
-            uint64_t pstamp, uint64_t sstamp, uint32_t peerTxState,
+    bool finish(TxEntry *txEntry);    // handle validation commit/abort conclusion
+    bool receiveSSNInfo(uint64_t peerId, __uint128_t cts,
+            uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState,
             uint64_t &myPStamp, uint64_t &mySStamp, uint32_t &myTxState);
     void replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
     void sendTxCommitReply(TxEntry *txEntry);
