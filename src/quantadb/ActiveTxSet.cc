@@ -52,14 +52,18 @@ ActiveTxSet::add(TxEntry *txEntry) {
 bool
 ActiveTxSet::remove(TxEntry *txEntry) {
     for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
-        if (!cbf.remove(txEntry->getReadSetHash()[i]))
-	    abort();
-	    // RAMCLOUD_LOG(ERROR, "CBF failed to remove entry: %lu, readset %d", (uint64_t)(txEntry->getCTS() >> 64), i);
+        if (!cbf.remove(txEntry->getReadSetHash()[i])) {
+            //abort();
+            RAMCLOUD_LOG(ERROR, "CBF failed to remove entry: %lu, readset %d", (uint64_t)(txEntry->getCTS() >> 64), i);
+            return false;
+        }
     }
     for (uint32_t i = 0; i < txEntry->getWriteSetSize(); i++) {
-        if (!cbf.remove(txEntry->getWriteSetHash()[i]))
-	    abort();
-	    // RAMCLOUD_LOG(ERROR, "CBF failed to remove entry: %lu, writeset %d", (uint64_t)(txEntry->getCTS() >> 64), i);
+        if (!cbf.remove(txEntry->getWriteSetHash()[i])) {
+            //abort();
+            RAMCLOUD_LOG(ERROR, "CBF failed to remove entry: %lu, writeset %d", (uint64_t)(txEntry->getCTS() >> 64), i);
+            return false;
+        }
     }
     removedTxCount.fetch_add(1);
     return true;

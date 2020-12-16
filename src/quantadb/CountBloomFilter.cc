@@ -48,6 +48,16 @@ CountBloomFilter<T>::clear() {
 
 template <class T>
 bool
+CountBloomFilter<T>::isClean() {
+    for (uint32_t i = 0; i < size; i++) {
+        if (counters[i] > 0)
+            return false;
+    }
+    return true;
+}
+
+template <class T>
+bool
 CountBloomFilter<T>::add(uint64_t hash) {
 	//overflow protection here is not necessary if the caller uses shoudlNotAdd() properly
 	uint64_t idx1 = (hash >> 32) % size, idx2 = (hash & 0xffffffff) % size;

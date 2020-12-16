@@ -57,6 +57,8 @@ class CountBloomFilter {
 
     bool clear();
 
+    bool isClean();
+
     void createIndexesFromKey(const uint8_t *key, uint32_t size, uint64_t *idx1, uint64_t *idx2);
 
 }; // end CountBloomFilter class

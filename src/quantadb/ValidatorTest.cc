@@ -24,6 +24,7 @@
 #include <ostream>
 #include <string>
 #define GTEST_COUT  std::cerr << std::scientific << "[ INFO ] "
+#define NUM 200000
 
 namespace QDB {
 
@@ -37,7 +38,7 @@ class ValidatorTest : public ::testing::Test {
     ClusterClock clusterClock;
     HashmapKVStore kvStore;
     QDB::Validator validator;
-    TxEntry *txEntry[1000000];
+    TxEntry *txEntry[NUM];
     uint8_t dataBlob[512];
 
     ValidatorTest()
@@ -356,6 +357,57 @@ TEST_F(ValidatorTest, BATActiveTxSet) {
 }
 
 
+void activeTxSetAdd(ValidatorTest *test)
+{
+    for(int ii = 0; ii < NUM; ii++) {
+        if (!test->validator.activeTxSet.add(test->txEntry[ii]))
+            GTEST_COUT << "activeTxSet.add failed " << std::endl;
+        test->txEntry[ii]->setTxCIState(TxEntry::TX_CI_CONCLUDED);
+    }
+}
+
+void activeTxSetRemove(ValidatorTest *test, uint32_t th)
+{
+    while (test->validator.activeTxSet.getCount() < 1000); //delay start
+    for(int ii = th; ii < NUM; ii+=4) {
+        //while (test->validator.activeTxSet.getCount() == 0);
+        while (test->txEntry[ii]->getTxCIState() != TxEntry::TX_CI_CONCLUDED);
+        bool ret = test->validator.activeTxSet.remove(test->txEntry[ii]);
+        if (!ret) {
+            for (uint32_t j = 0; j < test->txEntry[ii]->getReadSetSize(); j++) {
+                uint64_t val = test->txEntry[ii]->getReadSetHash()[j];
+                GTEST_COUT << "activeTxSet.remove read failed " << ii << " " << val << std::endl;
+            }
+            for (uint32_t j = 0; j < test->txEntry[ii]->getWriteSetSize(); j++) {
+                uint64_t val = test->txEntry[ii]->getWriteSetHash()[j];
+                GTEST_COUT << "activeTxSet.remove write failed " << ii << " " << val << std::endl;
+            }
+        }
+    }
+}
+
+TEST_F(ValidatorTest, BATActiveTxSetMulti) {
+    fillTxEntry(NUM, 20, 0);
+
+    EXPECT_EQ(true, validator.activeTxSet.isClean());
+
+    std::thread t1(activeTxSetAdd, this);
+    std::thread t2(activeTxSetRemove, this, 0);
+    std::thread t3(activeTxSetRemove, this, 1);
+    std::thread t4(activeTxSetRemove, this, 2);
+    std::thread t5(activeTxSetRemove, this, 3);
+
+    t1.join();
+    t2.join();
+    t3.join();
+    t4.join();
+    t5.join();
+
+    EXPECT_EQ(true, validator.activeTxSet.isClean());
+
+    freeTxEntry(NUM);
+}
+
 TEST_F(ValidatorTest, BATPeerInfo) {
 
 	fillTxEntry(5, 10, 2); //5 txs of 10 keys and 2 peers
@@ -549,7 +601,6 @@ TEST_F(ValidatorTest, BATRecover) {
     freeTxEntry(size);
 }
 
-/*
 TEST_F(ValidatorTest, BATDependencyMatrix) {
 	fillTxEntry(35, 20, 2); //35 txs of 20 keys and 2 peers
 

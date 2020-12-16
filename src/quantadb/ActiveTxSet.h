@@ -27,7 +27,6 @@ namespace QDB {
  * reduces the amount of locks at the cost of a small amount of false positives.
  * It supports single incrementer and multi decrementers.
  *
- * LATER: may have caller to provide idx1 and idx2 if the caller pre-calculates and stores hash values
  */
 class ActiveTxSet {
     PROTECTED:
@@ -50,6 +49,7 @@ class ActiveTxSet {
 
     // for testing
     bool clear() { return cbf.clear(); }
+    bool isClean() { return cbf.isClean(); }
 
     ActiveTxSet() {}
 
