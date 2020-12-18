@@ -442,13 +442,13 @@ TEST_F(ValidatorTest, BATPeerInfo2) {
     uint32_t myTxState;
 
     validator.peerInfo.add(txEntry[0]->getCTS(), txEntry[0], &validator);
-    TxEntry* txEnt = validator.receiveSSNInfo(0, txEntry[0]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING,
+    bool ret = validator.receiveSSNInfo(0, txEntry[0]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING,
             myPStamp, mySStamp, myTxState);
-    EXPECT_EQ(txEntry[0], txEnt);
+    EXPECT_EQ(true, ret);
 
-    txEnt = validator.receiveSSNInfo(0, txEntry[1]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING,
+    validator.receiveSSNInfo(0, txEntry[1]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING,
             myPStamp, mySStamp, myTxState);
-    bool ret = validator.peerInfo.add(txEntry[1]->getCTS(), txEntry[1], &validator);
+    ret = validator.peerInfo.add(txEntry[1]->getCTS(), txEntry[1], &validator);
     EXPECT_EQ(true, ret);
 
     freeTxEntry(2);
@@ -458,12 +458,13 @@ TEST_F(ValidatorTest, BATPeerInfoReceivedEarly) {
     uint64_t myPStamp, mySStamp;
     uint32_t myTxState;
     __uint128_t cts = (__uint128_t)123 << 64;
-    TxEntry *txEntry = validator.receiveSSNInfo(1 /*peerId*/,
+    bool ret = validator.receiveSSNInfo(1 /*peerId*/,
             cts,
             0, 0xfffffff, /*pstamp, sstamp*/
             TxEntry::TX_PENDING,
             myPStamp, mySStamp, myTxState);
-    EXPECT_EQ(true, txEntry == NULL);
+    EXPECT_EQ(true, ret);
+    EXPECT_EQ(1, (int)validator.getCounters().earlyPeers);
 }
 
 TEST_F(ValidatorTest, BATValidateDistributedTxs) {
@@ -497,8 +498,7 @@ TEST_F(ValidatorTest, BATValidateDistributedTxs) {
 }
 
 TEST_F(ValidatorTest, BATDistributedTxSetPerf) {
-    //int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
-    int size = 500000;
+    int size = (int)(sizeof(txEntry) / sizeof(TxEntry *));
     uint64_t start, stop;
 
     fillTxEntry(size, 20, 2);
@@ -522,7 +522,7 @@ TEST_F(ValidatorTest, BATDistributedTxSetPerf) {
 
     EXPECT_EQ(10, (int)validator.distributedTxSet.independentQueueCount());
     EXPECT_EQ(threshold * 10, (int)validator.distributedTxSet.coldQueueCount());
-    EXPECT_EQ(500000 - 10 - threshold * 10, (int)validator.distributedTxSet.hotQueueCount());
+    EXPECT_EQ(size - 10 - threshold * 10, (int)validator.distributedTxSet.hotQueueCount());
     EXPECT_EQ(validator.distributedTxSet.count(),
     		validator.distributedTxSet.independentQueueCount() +
 			validator.distributedTxSet.coldQueueCount() +
@@ -568,7 +568,7 @@ TEST_F(ValidatorTest, BATLateDistributedTxs) {
     validator.testRun();
 
     //the older tx is aborted
-    EXPECT_EQ(TxEntry::TX_OUTOFORDER, txEntry[0]->getTxState());
+    EXPECT_EQ(TxEntry::TX_ABORT, txEntry[0]->getTxState());
 
     //the younger tx taking too long to complete is put in ALERT state
     EXPECT_EQ(TxEntry::TX_ALERT, txEntry[1]->getTxState());
