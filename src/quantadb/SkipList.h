@@ -296,7 +296,16 @@ class SkipList {
     }
 
 	int volatile lock_;	// CAS spin lock
-    inline void lock() { while (!__sync_bool_compare_and_swap (&lock_, 0, 1)) sched_yield(); }
+    inline void lock()
+    {
+        uint32_t ntry = 0;
+        while (!__sync_bool_compare_and_swap (&lock_, 0, 1)) {
+            if (ntry++ > 20) {
+                sched_yield();
+                ntry = 0;
+            }
+        }
+    }
     inline void unlock() { assert(lock_ == 1); while (!__sync_bool_compare_and_swap (&lock_, 1, 0)); }
 };
 
