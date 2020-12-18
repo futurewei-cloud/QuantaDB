@@ -111,6 +111,13 @@ class SkipList {
      */
     bool insert(Key_t key, void *value)
     {
+        SkipNode<Key_t> *new_node = new SkipNode<Key_t>(key, value);
+
+        if (!new_node)
+            return false;
+
+        int lvl = random_level();
+
         lock();
         SkipNode<Key_t> *x = head;	
         SkipNode<Key_t> *update[MAX_LEVEL + 1];
@@ -129,7 +136,6 @@ class SkipList {
 
         if (x == NULL || x->key != key) 
         {        
-            int lvl = random_level();
             if (lvl > level) 
             {
                 for (int i = level + 1;i <= lvl;i++) 
@@ -140,11 +146,7 @@ class SkipList {
             }
 
             // x = new SkipNode(lvl, key, value);
-            x = new SkipNode<Key_t>(key, value);
-            if (x == NULL) {
-                unlock();
-                return false;
-            }
+            x = new_node;
             ctr++;
 
             for (int i = 0;i <= lvl;i++) 
@@ -156,6 +158,8 @@ class SkipList {
             x->value = value;
         }
         unlock();
+        if (x != new_node)
+            delete new_node;
         return true;
     }
 
@@ -193,14 +197,16 @@ class SkipList {
 
     inline void * try_pop(Key_t key)
     {
-        void * val = NULL;
+      void * val = NULL;
+      if (head->forw[0]) {
         lock();
         if (head->forw[0] && (key >= head->forw[0]->key)) {
             val = head->forw[0]->value;
             remove_internal(head->forw[0]->key);
         }
         unlock();
-        return val;
+      }
+      return val;
     }
 
     inline uint64_t firstkey()  { return (head->forw[0])?  head->forw[0]->key : head->key; }
