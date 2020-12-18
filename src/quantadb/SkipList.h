@@ -168,8 +168,10 @@ class SkipList {
      */
     void remove(Key_t key) 
     {
+        SkipNode<Key_t> *update[MAX_LEVEL + 1];
+        memset (update, 0, sizeof(SkipNode<Key_t>*) * (MAX_LEVEL + 1));
         lock();
-        remove_internal(key);
+        remove_internal(key, update);
         unlock();
     }
 
@@ -186,10 +188,12 @@ class SkipList {
     inline void * pop()
     {
         void * val = NULL;
+        SkipNode<Key_t> *update[MAX_LEVEL + 1];
+        memset (update, 0, sizeof(SkipNode<Key_t>*) * (MAX_LEVEL + 1));
         lock();
         if (head->forw[0]) { 
             val = head->forw[0]->value;
-            remove_internal(head->forw[0]->key);
+            remove_internal(head->forw[0]->key, update);
         }
         unlock();
         return val;
@@ -199,10 +203,12 @@ class SkipList {
     {
       void * val = NULL;
       if (head->forw[0]) {
+        SkipNode<Key_t> *update[MAX_LEVEL + 1];
+        memset (update, 0, sizeof(SkipNode<Key_t>*) * (MAX_LEVEL + 1));
         lock();
         if (head->forw[0] && (key >= head->forw[0]->key)) {
             val = head->forw[0]->value;
-            remove_internal(head->forw[0]->key);
+            remove_internal(head->forw[0]->key, update);
         }
         unlock();
       }
@@ -259,11 +265,12 @@ class SkipList {
     /*
      * Delete Element from Skip List
      */
-    void remove_internal(Key_t key)
+    void remove_internal(Key_t key, SkipNode<Key_t> **update)
     {
         SkipNode<Key_t> *x = head;
-        SkipNode<Key_t> *update[MAX_LEVEL + 1];
-        memset (update, 0, sizeof(SkipNode<Key_t>*) * (MAX_LEVEL + 1));
+        /* The update buffer (below 2 lines) is now passed in by the caller to shorten critical section */
+        // SkipNode<Key_t> *update[MAX_LEVEL + 1];
+        // memset (update, 0, sizeof(SkipNode<Key_t>*) * (MAX_LEVEL + 1));
 
         for (int i = level; i >= 0; i--)
         {
