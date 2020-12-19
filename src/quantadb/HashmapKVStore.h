@@ -28,7 +28,7 @@
 namespace QDB {
 
 struct HashKLayout{
-    uint32_t operator()(const KLayout &k) { return clhash(clhash_random, (const char*)k.key.get(), k.keyLength); }
+    uint32_t operator()(const KLayout &k) { return clhash(clhash_random, k.getkeybuf(), k.keyLength); }
 };
 
 #define MAX_KEYLEN  127

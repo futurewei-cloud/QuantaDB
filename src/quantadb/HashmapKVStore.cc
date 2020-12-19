@@ -30,8 +30,7 @@ KVLayout* HashmapKVStore::preput(KVLayout &kvIn)
     KVLayout* kvOut = new KVLayout(kvIn.k.keyLength);
     if (kvOut == NULL)
         return NULL;
-    std::memcpy((void *)kvOut->k.key.get(), (void *)kvIn.k.key.get(), kvOut->k.keyLength);
-    kvOut->k.keyhash     = kvIn.k.keyhash;
+    kvOut->k.setkey(kvIn.k.getkeybuf(), kvOut->k.keyLength, 0);
     kvOut->v.valueLength = kvIn.v.valueLength;
     if (kvIn.v.valueLength > 0) {
         //Fixme: need to allocate from "persistent memory" and report any failure

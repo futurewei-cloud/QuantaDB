@@ -158,7 +158,7 @@ TxLog::fabricate(__uint128_t cts, uint8_t *key, uint32_t keyLength, uint8_t *val
     txEntry->setCTS(cts);
     txEntry->setTxState(TxEntry::TX_FABRICATED);
     KVLayout *kvLayout = new KVLayout(keyLength);
-    std::memcpy(kvLayout->getKey().key.get(), key, keyLength);
+    kvLayout->k.setkey(key, keyLength, 0);
     kvLayout->v.valuePtr = value;
     kvLayout->v.valueLength = valueLength;
     txEntry->insertWriteSet(kvLayout, 0);
@@ -220,7 +220,7 @@ TxLog::dump(int fd)
             assert(kv);
             dprintf(fd, "\t  key%02d: ", widx+1);
             for (uint32_t kidx = 0; kidx < kv->k.keyLength; kidx++) { 
-                dprintf(fd, "%02X ", kv->k.key.get()[kidx]);
+                dprintf(fd, "%02X ", kv->k.getkeybuf()[kidx]);
             }
             dprintf(fd, "\n");
             // dprintf(fd, "\t\t %s\n", kv->k.key.get());
@@ -237,7 +237,7 @@ TxLog::dump(int fd)
             assert(kv);
             dprintf(fd, "\t  key%02d: ", ridx+1);
             for (uint32_t kidx = 0; kidx < kv->k.keyLength; kidx++) {
-                dprintf(fd, "%02X ", kv->k.key.get()[kidx]);
+                dprintf(fd, "%02X ", kv->k.getkeybuf()[kidx]);
             }
             dprintf(fd, "\n");
             // dprintf(fd, "\t\t %s\n", kv->k.key.get());

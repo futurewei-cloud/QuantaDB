@@ -70,7 +70,7 @@ TxEntry::insertReadSet(KVLayout* kv, uint32_t i) {
     assert(i < readSetSize);
     readSet[i] = kv;
     uint64_t indexes[2];
-    RAMCloud::MurmurHash3_x64_128(kv->k.key.get(), kv->k.keyLength, 0, indexes);
+    RAMCloud::MurmurHash3_x64_128(kv->k.getkeybuf(), kv->k.keyLength, 0, indexes);
     readSetHash[i] = ((indexes[0] << 32) | (indexes[1] & 0xffffffff));
     return true;
 }
@@ -80,7 +80,7 @@ TxEntry::insertWriteSet(KVLayout* kv, uint32_t i) {
     assert(i < writeSetSize);
     writeSet[i] = kv;
     uint64_t indexes[2];
-    RAMCloud::MurmurHash3_x64_128(kv->k.key.get(), kv->k.keyLength, 0, indexes);
+    RAMCloud::MurmurHash3_x64_128(kv->k.getkeybuf(), kv->k.keyLength, 0, indexes);
     writeSetHash[i] = ((indexes[0] << 32) | (indexes[1] & 0xffffffff));
     return true;
 }

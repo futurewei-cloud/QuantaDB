@@ -79,8 +79,9 @@ struct VLayout {
 
 struct KLayout {
 	uint32_t keyLength = 0;
-	boost::scoped_array<uint8_t> key;
+    #ifdef  PMEMHASH_PREHASH
     uint32_t keyhash;
+    #endif
 
     friend bool operator==(const KLayout &lhs, const KLayout &rhs);
 
@@ -98,8 +99,13 @@ struct KLayout {
     {
         assert((len + off) <= keyLength);
         std::memcpy(key.get() + off, k, len);
+        #ifdef  PMEMHASH_PREHASH
         keyhash = clhash(clhash_random, (const char*)key.get(), keyLength);
+        #endif
     }
+
+    const char *getkeybuf() const { return (const char *)key.get(); }
+    const char *getkeybuf()       { return (const char *)key.get(); }
 
     inline uint32_t serializeSize()
     {
@@ -120,6 +126,9 @@ struct KLayout {
         key.get()[keyLength] = 0; // null termination
         keyhash = clhash(clhash_random, (const char*)key.get(), keyLength);
     }
+
+  private:
+	boost::scoped_array<uint8_t> key;
 };
 
 bool operator == (const KLayout &lhs, const KLayout &rhs);
@@ -156,6 +165,7 @@ struct KVLayout {
     }
 };
 
+/*
 //The helper structure to extract key from the stored key value
 template<typename KVType>
 struct HOTKeyExtractor {
@@ -171,11 +181,12 @@ struct HOTKeyExtractor {
 	const char* operator() (const KVType &kv) const {
 		static char s = 0;
 		if (kv != 0) {
-			return (char *)kv->k.key.get();
+			return (char *)kv->k.getkeybuf();
 		}
 		return &s;
 	}
 };
+*/
 
 /*
  * This class contains a k-v store whose structure is optimized for using it

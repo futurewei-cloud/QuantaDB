@@ -37,8 +37,11 @@ class TxLogTest : public ::testing::Test {
     for (int idx = 0; idx < RWSetSize; idx++) {
         writeKV[idx] = new KVLayout(32);
         readKV[idx]  = new KVLayout(32);
-        snprintf((char *)writeKV[idx]->getKey().key.get(), 32, "TxLogUnitTest-wkey%d", idx);
-        snprintf((char *) readKV[idx]->getKey().key.get(), 32, "TxLogUnitTest-rkey%d", idx);
+        char wkey[32], rkey[32];
+        snprintf(wkey, sizeof(wkey), "TxLogUnitTest-wkey%d", idx);
+        snprintf(wkey, sizeof(wkey), "TxLogUnitTest-rkey%d", idx);
+        writeKV[idx]->getKey().setkey(wkey, sizeof(wkey), 0);
+        readKV[idx]->getKey().setkey(rkey, sizeof(rkey), 0);
     }
 
   };

@@ -18,15 +18,14 @@
 
 namespace QDB
 {
-/*using HotKVType = hot::rowex::HOTRowex<QDB::KVLayout*, HOTKeyExtractor>;
- */
+// using HotKVType = hot::rowex::HOTRowex<DSSN::KVLayout*, HOTKeyExtractor>;
 
 void *clhash_random = NULL;
 bool hash_inited = false;
 
 bool operator == (const KLayout &lhs, const KLayout &rhs)
 {
-    return (lhs.keyLength == rhs.keyLength && (memcmp(lhs.key.get(), rhs.key.get(), lhs.keyLength)==0));
+    return (lhs.keyLength == rhs.keyLength && (memcmp(lhs.getkeybuf(), rhs.getkeybuf(), lhs.keyLength)==0));
 }
 
 KVStore::KVStore() {

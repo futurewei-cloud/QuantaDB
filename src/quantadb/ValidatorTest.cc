@@ -109,11 +109,11 @@ class ValidatorTest : public ::testing::Test {
         	if (txEntry[i] == 0)
         		break;
         	for (uint32_t j = 0; j < txEntry[i]->getReadSetSize(); j++) {
-        		std::string str((char *)txEntry[i]->readSet[j]->k.key.get());
+                std::string str(txEntry[i]->readSet[j]->k.getkeybuf());
         		GTEST_COUT << "read key: " << str  << std::endl;
         	}
         	for (uint32_t j = 0; j < txEntry[i]->getWriteSetSize(); j++) {
-        		std::string str((char *)txEntry[i]->writeSet[j]->k.key.get());
+                std::string str(txEntry[i]->writeSet[j]->k.getkeybuf());
         	    GTEST_COUT << "write key: " << str  << std::endl;
         	}
         }
@@ -189,7 +189,7 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
 
     fillTxEntry(1);
     KLayout k(txEntry[0]->getWriteSet()[0]->k.keyLength);
-    k.setkey(txEntry[0]->getWriteSet()[0]->k.key.get(), k.keyLength, 0);
+    k.setkey(txEntry[0]->getWriteSet()[0]->k.getkeybuf(), k.keyLength, 0);
 
     validator.localTxQueue.add(txEntry[0]);
     validator.serialize();
