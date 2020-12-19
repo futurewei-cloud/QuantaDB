@@ -17,10 +17,14 @@
 #define __KVSTORE_H__
 
 #include "Common.h"
+#include "clhash.h"
 #include "MemStreamIo.h"
 #include <boost/scoped_array.hpp>
 
 namespace QDB {
+
+extern void *clhash_random;
+extern bool hash_inited;
 
 struct DSSNMeta {
 	uint64_t pStamp; //eta
@@ -76,10 +80,26 @@ struct VLayout {
 struct KLayout {
 	uint32_t keyLength = 0;
 	boost::scoped_array<uint8_t> key;
+    uint32_t keyhash;
 
     friend bool operator==(const KLayout &lhs, const KLayout &rhs);
-	KLayout() {}
+
+	KLayout()
+    {
+        if (!hash_inited) {
+            clhash_random =  get_random_key_for_clhash(uint64_t(0x23a23cf5033c3c81),uint64_t(0xb3816f6a2c68e530));
+            hash_inited = true;
+        }
+    }
+
 	explicit KLayout(uint32_t keySize) : keyLength(keySize), key(new uint8_t[keySize+1]) { bzero(key.get(), keySize+1);}
+
+    void setkey(const void *k, uint32_t len, uint32_t off)
+    {
+        assert((len + off) <= keyLength);
+        std::memcpy(key.get() + off, k, len);
+        keyhash = clhash(clhash_random, (const char*)key.get(), keyLength);
+    }
 
     inline uint32_t serializeSize()
     {

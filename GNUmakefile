@@ -39,6 +39,8 @@ ONLOAD_DIR ?= /usr/local/openonload-201405
 QDBTX ?= yes
 #set to yes to enable performance monitoring
 MONITOR ?= no
+# set to yes to enable pememhash pre-hash feature
+PMEMHASH_PREHASH ?= yes
 
 # set to yes to enable QDB start in recovery mode
 QDBTXRECOVERY ?= no
@@ -114,6 +116,10 @@ endif
 
 ifeq ($(USE_PTP_CLOCK), yes)
 COMFLAGS += -DUSE_PTP_CLOCK
+endif
+
+ifeq ($(PMEMHASH_PREHASH), yes)
+COMFLAGS += -DPMEMHASH_PREHASH
 endif
 
 # Google sanitizers are not compatible with each other, so only apply one at a

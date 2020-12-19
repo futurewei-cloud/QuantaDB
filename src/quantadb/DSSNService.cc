@@ -125,8 +125,8 @@ DSSNService::read(const WireFormat::ReadDSSN::Request* reqHdr,
 
     uint64_t tableId = reqHdr->tableId;
     KLayout k(reqHdr->keyLength + sizeof(tableId)); //make room composite key in KVStore
-    std::memcpy(k.key.get(), &tableId, sizeof(tableId));
-    std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
+    k.setkey(&tableId, sizeof(tableId), 0);
+    k.setkey(stringKey, reqHdr->keyLength, sizeof(tableId));
 
     KVLayout *kv;
     if (!validator->read(k, kv)) {
@@ -170,8 +170,8 @@ DSSNService::readKeysAndValue(const WireFormat::ReadKeysAndValueDSSN::Request* r
 
     uint64_t tableId = reqHdr->tableId;
     KLayout k(reqHdr->keyLength + sizeof(tableId)); //make room composite key in KVStore
-    std::memcpy(k.key.get(), &tableId, sizeof(tableId));
-    std::memcpy(k.key.get() + sizeof(tableId), stringKey,  reqHdr->keyLength);
+    k.setkey(&tableId, sizeof(tableId), 0);
+    k.setkey(stringKey, reqHdr->keyLength, sizeof(tableId));
 
     KVLayout *kv;
     if (!validator->read(k, kv)) {
@@ -298,8 +298,8 @@ DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
         // ---- get value of the current key -----
         uint64_t tableId = currentReq->tableId;
         KLayout k(currentReq->keyLength + sizeof(tableId)); //make room composite key in KVStore
-        std::memcpy(k.key.get(), &tableId, sizeof(tableId));
-        std::memcpy(k.key.get() + sizeof(tableId), stringKey,  currentReq->keyLength);
+        k.setkey(&tableId, sizeof(tableId), 0);
+        k.setkey(stringKey, currentReq->keyLength, sizeof(tableId));
 
         KVLayout *kv;
         if (!validator->read(k, kv)) {
@@ -436,8 +436,8 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
         const void* pKey = object.getKey(0, &pKeyLen);
 
         KVLayout pkv(pKeyLen + sizeof(tableId)); //make room for composite key in KVStore
-        std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
-        std::memcpy(pkv.getKey().key.get() + sizeof(tableId), pKey, pKeyLen);
+        pkv.k.setkey(&tableId, sizeof(tableId), 0);
+        pkv.k.setkey(pKey, pKeyLen, sizeof(tableId));
         pkv.v.valueLength = pValLen;
         pkv.v.valuePtr = (uint8_t*)const_cast<void*>(pVal);
 
@@ -558,8 +558,8 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
 
 
     KVLayout pkv(pKeyLen + sizeof(tableId)); //make room composite key in KVStore
-    std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
-    std::memcpy(pkv.getKey().key.get() + sizeof(tableId), pKey, pKeyLen);
+    pkv.k.setkey(&tableId, sizeof(tableId), 0);
+    pkv.k.setkey(pKey, pKeyLen, sizeof(tableId));
     pkv.v.valueLength = pValLen;
     pkv.v.valuePtr = (uint8_t*)const_cast<void*>(pVal);
 
@@ -706,8 +706,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             }
 
             KVLayout pkv(currentReq->keyLength + sizeof(tableId)); //make room composite key in KVStore
-            std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
-            std::memcpy(pkv.getKey().key.get() + sizeof(tableId), stringKey, currentReq->keyLength);
+            pkv.k.setkey(&tableId, sizeof(tableId), 0);
+            pkv.k.setkey(stringKey, currentReq->keyLength, sizeof(tableId));
             pkv.meta().cStamp = currentReq->GetCStamp();
             KVLayout *nkv = kvStore->preput(pkv);
             if (nkv == NULL) {
@@ -748,8 +748,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
 
             //a remove is treated as a tombstone entry without value
             KVLayout pkv(currentReq->keyLength + sizeof(tableId)); //make room composite key in KVStore
-            std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
-            std::memcpy(pkv.getKey().key.get() + sizeof(tableId), stringKey, currentReq->keyLength);
+            pkv.k.setkey(&tableId, sizeof(tableId), 0);
+            pkv.k.setkey(stringKey, currentReq->keyLength, sizeof(tableId));
             pkv.v.isTombstone = true;
             KVLayout *nkv = kvStore->preput(pkv);
             if (nkv == NULL) {
@@ -796,8 +796,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             }
 
             KVLayout pkv(keyLen + sizeof(tableId)); //make room composite key in KVStore
-            std::memcpy(pkv.getKey().key.get(), &tableId, sizeof(tableId));
-            std::memcpy(pkv.getKey().key.get() + sizeof(tableId), pKey, keyLen);
+            pkv.k.setkey(&tableId, sizeof(tableId), 0);
+            pkv.k.setkey( pKey, keyLen, sizeof(tableId));
             if (valLen == 0) {
                 pkv.getVLayout().isTombstone = true;
             } else {

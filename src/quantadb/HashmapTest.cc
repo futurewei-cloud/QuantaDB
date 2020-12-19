@@ -18,10 +18,25 @@
 #include "c_str_util_classes.h"
 #include "Cycles.h"
 
-#define	HASH_TABLE_TEMPLATE		Element, char *, uint64_t, hash_c_str
+#define	HASH_TABLE_TEMPLATE		Element, Key, uint64_t, HashKey
 #define GTEST_COUT  std::cerr << "[ INFO ] "
 
 namespace RAMCloud {
+
+class Key {
+   public:
+    char key[64];
+    uint32_t keyhash;
+    void hash() { keyhash = hash_c_str{}(key); }
+    bool operator == (const Key &lhs)
+    {
+        return (strcmp(lhs.key, key) == 0);
+    }
+};
+
+struct HashKey{
+    uint32_t operator()(const Key &k) { return hash_c_str{}(k.key); }
+};
 
 class Element {
   public:
@@ -33,9 +48,9 @@ class Element {
     {
         // delete kv;
     }
-    char *getKey() {return key;}
+    Key getKey() {return key;}
     void * v;
-    char key[64];
+    Key key;
   private:
 };
 
@@ -49,7 +64,8 @@ class HashmapTest : public ::testing::Test {
     elems = new Element[ELEM_SIZE];
 
     for (int idx = 0; idx < ELEM_SIZE; idx++) {
-        sprintf(elems[idx].key, "HashmapTest-key-%04d", idx);
+        sprintf(elems[idx].key.key, "HashmapTest-key-%04d", idx);
+        elems[idx].key.hash();
         elems[idx].v = (void *)(uint64_t)idx;
     }
   };

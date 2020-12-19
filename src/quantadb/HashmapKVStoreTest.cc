@@ -36,8 +36,9 @@ class HashmapKVTest : public ::testing::Test {
 TEST_F(HashmapKVTest, preput) {
     GTEST_COUT << "HashmapKVTest" << std::endl;
     int keySize = 32;
+    const char * keystr = "HashmapKVTest-kvIn-key1";
     KVLayout kvIn(keySize), *kvOut;
-    snprintf((char *)kvIn.getKey().key.get(), keySize, "HashmapKVTest-kvIn-key1");
+    kvIn.k.setkey(keystr, strlen(keystr), 0);
     kvOut = KVStore.preput(kvIn);
     delete kvOut;
 }
@@ -46,8 +47,7 @@ TEST_F(HashmapKVTest, putNew) {
     int keySize = 32;
     const char *key = "HashmapKVTest-key-1";
     KVLayout kv(keySize);
-    kv.k.keyLength = strlen(key);
-    memcpy((char *)kv.k.key.get(), key, kv.k.keyLength);
+    kv.k.setkey(key, strlen(key), 0);
     bool ret = KVStore.putNew(&kv, 0, 0); 
     EXPECT_EQ(ret, true);
     ret = KVStore.putNew(&kv, 0, 0);
@@ -62,7 +62,9 @@ TEST_F(HashmapKVTest, putNewBench) {
     //
     start = __rdtsc();
     for(int idx = 0; idx < loop; idx++) {
-        snprintf((char *)kv.k.key.get(), keySize - 1, "HashmapKVTest-key-%04d", idx);
+        char kbuf[keySize];
+        snprintf((char *)kbuf, keySize - 1, "HashmapKVTest-key-%04d", idx);
+        kv.k.setkey(kbuf, strlen(kbuf), 0);
         KVLayout * ret = NULL;
         EXPECT_EQ(ret, (KVLayout*)NULL);
     }
@@ -71,7 +73,9 @@ TEST_F(HashmapKVTest, putNewBench) {
     //
     start = __rdtsc();
     for(int idx = 0; idx < loop; idx++) {
-        snprintf((char *)kv.k.key.get(), keySize - 1, "HashmapKVTest-key-%04d", idx);
+        char kbuf[keySize];
+        snprintf((char *)kbuf, keySize - 1, "HashmapKVTest-key-%04d", idx);
+        kv.k.setkey(kbuf, strlen(kbuf), 0);
         bool ret = KVStore.putNew(&kv, 0, 0); 
         EXPECT_EQ(ret, true);
     }
@@ -81,7 +85,9 @@ TEST_F(HashmapKVTest, putNewBench) {
 
     start = __rdtsc();
     for(int idx = 0; idx < loop; idx++) {
-        snprintf((char *)kv.k.key.get(), keySize - 1, "HashmapKVTest-key-%04d", idx);
+        char kbuf[keySize];
+        snprintf((char *)kbuf, keySize - 1, "HashmapKVTest-key-%04d", idx);
+        kv.k.setkey(kbuf, strlen(kbuf), 0);
         KVLayout * ret = KVStore.fetch(kv.k);
         EXPECT_NE(ret, (KVLayout*)NULL);
     }
@@ -93,7 +99,9 @@ TEST_F(HashmapKVTest, putNewBench) {
 TEST_F(HashmapKVTest, put) {
     int keySize = 32;
     KVLayout kvIn(keySize);
-    snprintf((char *)kvIn.getKey().key.get(), keySize, "HashmapKVTest-kvIn-key1");
+    char kbuf[keySize];
+    snprintf((char *)kbuf, keySize - 1, "HashmapKVTest-kvIn-key1");
+    kvIn.k.setkey(kbuf, strlen(kbuf), 0);
     int vallen = 256;
     uint8_t * val = (uint8_t *)malloc(256); 
     bool ret = KVStore.put(&kvIn, 0, 0, val, vallen);
@@ -104,7 +112,9 @@ TEST_F(HashmapKVTest, put) {
 TEST_F(HashmapKVTest, fetch) {
     int keySize = 32;
     KVLayout kvIn(keySize), *kvOut;
-    snprintf((char *)kvIn.getKey().key.get(), keySize, "HashmapKVTest-kvIn-key1");
+    char kbuf[keySize];
+    snprintf((char *)kbuf, keySize - 1, "HashmapKVTest-kvIn-key1");
+    kvIn.k.setkey(kbuf, strlen(kbuf), 0);
 
     kvOut = KVStore.fetch(kvIn.k);
     EXPECT_EQ(kvOut, (KVLayout*)0);

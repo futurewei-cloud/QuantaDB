@@ -27,8 +27,6 @@
 
 namespace QDB {
 
-extern void *clhash_random;
-
 struct HashKLayout{
     uint32_t operator()(const KLayout &k) { return clhash(clhash_random, (const char*)k.key.get(), k.keyLength); }
 };
@@ -66,7 +64,6 @@ public:
 private:
     hash_table<KVLayout, KLayout, VLayout, HashKLayout> * my_hashtable;
     uint32_t            bucket_count;
-    static bool hash_inited;
 };
 
 } // QDB

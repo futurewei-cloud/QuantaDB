@@ -30,6 +30,12 @@
 #define VICTIM_LIST_SIZE (BUCKET_SIZE)
 
 //#define PMEMHASH_STAT
+/*
+ * #define PMEMHASH_PREHASH
+ * Pre-calculate hash and store in the K type.
+ * This saves pmemhash from having to calaulate key hash value at insert/get time.
+ * This option requires the K class has a public member of uint32_t keyhash.
+ */
 
 #ifdef PMEMHASH_STAT
     #define LOOKUP_CNT_INCR() { lookup_ctr_++; }
@@ -266,9 +272,18 @@ public:
 	    return 0;
     }
 
+#ifdef  PMEMHASH_PREHASH
+    uint8_t signature(const K & key) { return (key.keyhash / bucket_count_) & 0xFF; }
+#else
     uint8_t signature(const K & key) { return (Hash{}(key) / bucket_count_) & 0xFF; }
+#endif
+
 private:
+#ifdef  PMEMHASH_PREHASH
+    int bucketize(const K & key) { return key.keyhash % bucket_count_; }
+#else
     int bucketize(const K & key) { return Hash{}(key) % bucket_count_; }
+#endif
     int find_empty(uint32_t valid) { return __builtin_ffs(~valid) - 1; }
     inline bool bucket_is_full(uint32_t valid_mask)
     {

@@ -24,9 +24,6 @@ using namespace RAMCloud;
 
 namespace QDB {
 
-void *clhash_random;
-bool HashmapKVStore::hash_inited = 0;
-
 KVLayout* HashmapKVStore::preput(KVLayout &kvIn)
 {
     //Fixme: need to allocate from a garbage-collecting pool and report any failure
@@ -34,6 +31,7 @@ KVLayout* HashmapKVStore::preput(KVLayout &kvIn)
     if (kvOut == NULL)
         return NULL;
     std::memcpy((void *)kvOut->k.key.get(), (void *)kvIn.k.key.get(), kvOut->k.keyLength);
+    kvOut->k.keyhash     = kvIn.k.keyhash;
     kvOut->v.valueLength = kvIn.v.valueLength;
     if (kvIn.v.valueLength > 0) {
         //Fixme: need to allocate from "persistent memory" and report any failure
