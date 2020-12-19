@@ -64,10 +64,10 @@ class ValidatorTest : public ::testing::Test {
         	txEntry[i]->setCTS(ctsBase);
         	ctsBase += (__uint128_t)1 << 64; //increased by 1ns
         	for (int j = 0; j < noKeys; j++) {
+                char kbuf[keySize];
                 KVLayout kv(keySize);
-                snprintf((char *)kv.k.key.get(),
-                		keySize, "%d$%d0123456789abcdef0123456789abcdef", i % batchSize, j);
-                kv.k.keyLength = keySize;
+                snprintf(kbuf, keySize, "%d$%d0123456789abcdef0123456789abcdef", i % batchSize, j);
+                kv.k.setkey(kbuf, keySize, 0);
                 kv.v.valuePtr = (uint8_t *)dataBlob;
                 kv.v.valueLength = sizeof(dataBlob);
                 KVLayout *kvOut = validator.kvStore.preput(kv);
@@ -189,7 +189,7 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
 
     fillTxEntry(1);
     KLayout k(txEntry[0]->getWriteSet()[0]->k.keyLength);
-    std::memcpy(k.key.get(), txEntry[0]->getWriteSet()[0]->k.key.get(), k.keyLength);
+    k.setkey(txEntry[0]->getWriteSet()[0]->k.key.get(), k.keyLength, 0);
 
     validator.localTxQueue.add(txEntry[0]);
     validator.serialize();

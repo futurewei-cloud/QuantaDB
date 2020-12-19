@@ -118,6 +118,7 @@ struct KLayout {
         key.reset(new uint8_t[keyLength+1]);
         in.read(key.get(), keyLength);
         key.get()[keyLength] = 0; // null termination
+        keyhash = clhash(clhash_random, (const char*)key.get(), keyLength);
     }
 };
 

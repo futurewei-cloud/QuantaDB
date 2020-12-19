@@ -46,7 +46,7 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
     const char *keystr = (const char *)"MemStreamIoTestKey";
     uint8_t *valstr = const_cast<uint8_t *>((const uint8_t*)"MemStreamIoTestValue");
 
-    memcpy(k1.key.get(), keystr, strlen(keystr));
+    k1.setkey(keystr, strlen(keystr), 0);
     outMemStream out(buf, sizeof(buf));
     k1.serialize(out);
 
@@ -58,7 +58,7 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
 
     // KVLayout
     KVLayout kv1(30), kv2(30);
-    memcpy(kv1.k.key.get(), keystr, strlen(keystr));
+    kv1.k.setkey(keystr, strlen(keystr), 0);
     kv1.v.valuePtr = valstr;
     kv1.v.valueLength = strlen((char *)valstr);
     kv1.v.meta.pStamp = 0xF0F0F0F0;
@@ -86,7 +86,7 @@ TEST_F(MemStreamIoTest, MemStreamIoUnitTest)
     for (uint32_t idx = 0; idx < WRITESET_SIZE; idx++) {
         KVLayout kvbuf(30);
         sprintf(kbuf, "MemStreamIoTestKey-%d", idx);
-        memcpy(kvbuf.k.key.get(), kbuf, strlen(kbuf));
+        kvbuf.k.setkey(kbuf, strlen(kbuf), 0);
         kvbuf.v.valuePtr = valstr;
         kvbuf.v.valueLength = strlen((char *)valstr);
 
