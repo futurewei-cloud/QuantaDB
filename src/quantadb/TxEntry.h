@@ -48,6 +48,7 @@ class TxEntry {
     //QDB tx states
     volatile uint32_t txState;
     volatile uint32_t commitIntentState;
+    volatile uint32_t commitResult;     // commit result
 
     //RPC handle for replying to commit intent
     void *rpcHandle;
@@ -76,6 +77,8 @@ class TxEntry {
     uint32_t readSetIndex;
 
     PUBLIC:
+    // local timer to track performance 
+    uint64_t local_commit = 0; 
     enum {
     	//TX_CI_xxx states are for validator internal use to track the progress
     	//through the processing stages. The sequential order must be maintained.
@@ -129,6 +132,18 @@ class TxEntry {
         TX_FABRICATED = 99
     };
 
+     enum {
+	TX_UNCOMMIT = 10,       // Commit: all in from INIT.
+	TX_COMMIT_INIT = 11,    // Commit: all in from INIT.
+	TX_COMMIT_PEER = 12,    // Commit: all in from INIT.
+	TX_ABORT_ALERT = 13,    // Abort from consensused ALERT.
+	TX_ABORT_PEER = 14,     // Abort from peer abort.
+	TX_ABORT_PISI = 15,     // Abort from Si-Pi conflict.
+	TX_ABORT_PISI_INIT = 16, // Abort from initial Si-Pi conflict
+	TX_ABORT_CONFLICT = 17, // Abort from initial Si-Pi conflict
+	TX_ABORT_TRIVIAL = 18,  // Abort for trivial reason.
+     };
+
     TxEntry(uint32_t readSetSize, uint32_t writeSetSize);
     ~TxEntry();
     inline __uint128_t getCTS() { return cts; }
@@ -154,6 +169,7 @@ class TxEntry {
     inline void setPStamp(uint64_t val) { pstamp = val; }
     inline void setTxState(uint32_t val) { txState = val; }
     inline void setTxCIState(uint32_t val) { commitIntentState = val; }
+    inline void setTxResult(uint32_t val) { commitResult = val; }
     inline void setRpcHandle(void *rpc) { rpcHandle = rpc; }
     inline bool isExclusionViolated() { return sstamp <= pstamp; }
     bool insertWriteSet(KVLayout* kv, uint32_t i);
@@ -161,6 +177,34 @@ class TxEntry {
     inline void insertWriteSetInStore(KVLayout* kv, uint32_t i) { writeSetInStore[i] = kv; }
     inline void insertReadSetInStore(KVLayout* kv, uint32_t i) { readSetInStore[i] = kv; }
     bool correctReadSet(uint32_t size);
+ 
+
+    const char *getTxResult() {
+	switch (commitResult) {
+		case TX_UNCOMMIT:
+			return ("TX_UNCOMMIT");
+		case TX_COMMIT_INIT:
+			return ("TX_COMMIT_INIT");
+		case TX_COMMIT_PEER:
+			return ("TX_COMMIT_PEER");
+		case TX_ABORT_ALERT:
+			return ("TX_ABORT_ALERT");
+		case TX_ABORT_PEER:
+			return ("TX_ABORT_PEER");
+		case TX_ABORT_PISI:
+			return ("TX_ABORT_PISI");
+		case TX_ABORT_PISI_INIT:
+			return ("TX_ABORT_PISI_INIT");
+		case TX_ABORT_CONFLICT:
+			return ("TX_ABORT_CONFLICT");
+		case TX_ABORT_TRIVIAL:
+			return ("TX_ABORT_TRIVIAL");
+		default:
+			static char output[20];
+			sprintf(output, "Failure: %d", commitResult);
+			return (output);
+	}
+    }
 
     //Fixme: move these functions into TxLog.cc to hide implementation details from TxEntry
     uint32_t serializeSize();

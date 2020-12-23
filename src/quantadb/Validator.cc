@@ -404,6 +404,7 @@ Validator::conclude(TxEntry *txEntry) {
         //for late cross-shard tx, it is never added to activeTxSet; just convert the state
         if (txEntry->getTxState() == TxEntry::TX_OUTOFORDER) {
             txEntry->setTxState(TxEntry::TX_ABORT);
+	    txEntry->setTxResult(TxEntry::TX_ABORT_CONFLICT);
         } else {
             activeTxSet.remove(txEntry);
         }
@@ -468,6 +469,7 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         counters.trivialAborts.fetch_add(1);
         txEntry->setTxState(TxEntry::TX_ABORT);
         txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
+	txEntry->setTxResult(TxEntry::TX_ABORT_TRIVIAL);
         return false; //skip queueing
     }
 
@@ -492,6 +494,9 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         /*for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
             RAMCLOUD_LOG(NOTICE, "peerId %lu", *it);
         }*/
+	// Only tracking the cross shard tx
+	txEntry->local_commit = getClockValue();
+	txEntry->setTxResult(TxEntry::TX_UNCOMMIT);
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED); //set it before inserting to queue lest another thread might set CIState first
 
         while (!peerInfo.add(txEntry->getCTS(), txEntry, this));
@@ -500,6 +505,7 @@ Validator::insertTxEntry(TxEntry *txEntry) {
             counters.busyAborts.fetch_add(1);
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
+	    txEntry->setTxResult(TxEntry::TX_ABORT_TRIVIAL);
             peerInfo.remove(txEntry->getCTS(), this);
             return false; //fail to be queued
         }
@@ -597,7 +603,14 @@ void
 Validator::sendTxCommitReply(TxEntry *txEntry) {
     if (rpcService) {
         rpcService->sendTxCommitReply(txEntry);
-        RAMCLOUD_LOG(NOTICE, "commitReply: cts %lu", (uint64_t)(txEntry->getCTS() >> 64));
+	if (txEntry->local_commit != 0) {
+	    RAMCLOUD_LOG(NOTICE, "commitReply: cts %lu local_commit: %lu latency %lu us %s",
+		(uint64_t)(txEntry->getCTS() >> 64), txEntry->local_commit,
+		(getClockValue() - txEntry->local_commit)/1000,
+		txEntry->getTxResult());
+	} else {
+	    RAMCLOUD_LOG(NOTICE, "commitReply: cts %lu", (uint64_t)(txEntry->getCTS() >> 64));
+	}
     }
 }
 
