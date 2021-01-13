@@ -33,7 +33,9 @@ enum DSSNServiceOp {
     DSSNServiceReadMulti,
     DSSNServiceSendTxReply,
     DSSNServiceSendDSSNInfo,
-    DSSNServiceRequestDSSNInfo,
+    DSSNServiceRecvDSSNInfo,
+    DSSNServiceSendDSSNInfoReq,
+    DSSNServiceRecvDSSNInfoReq,
     DSSNServiceWrite,
     DSSNServiceWriteMulti,
     DSSNServiceOpsMax
@@ -46,7 +48,9 @@ static const char* DssnOpLabels[] = {
     "read_multiops",
     "send_txreply",
     "send_dssninfo",
-    "request_dssninfo",
+    "recv_dssninfo",
+    "send_dssninfo_request",
+    "recv_dssninfo_request",
     "write",
     "write_multiops",
     "invalid"
@@ -59,6 +63,7 @@ class DSSNServiceMonitor {
      Metric* getOpMetric(DSSNServiceOp op) {
          return &mOps[op];
      }
+     void collectDxMetrics();
      void collectPfMetrics();
      void collectTcMetrics();
      void clearMetrics();
@@ -69,6 +74,12 @@ class DSSNServiceMonitor {
      static void sample(DSSNServiceMonitor* mon);
      DSSNService* getDSSNService() { return mService; }
    private:
+     /**
+     * Helper function to add a diagnostic metric
+     */
+    void addDxMetric(DSSNServiceOp type) {
+        mPDxCounterHandle[type] = &mPDxCounters->Add({{"label", DssnOpLabels[type]}});
+    }
     /**
      * Helper function to add a performane metric
      */
@@ -83,6 +94,12 @@ class DSSNServiceMonitor {
 	    130, 160, 200};
 	mPTcCounterHandle[type] = &mPTcCounters->Add({{"label", DssnOpLabels[type]}}, bucketsInMicroSec);
     }
+    /**
+     * The Diagnostic related counter
+     */
+    std::shared_ptr<prometheus::Registry> mPDxRegistry;
+    prometheus::Family<prometheus::Gauge>* mPDxCounters = nullptr;
+    prometheus::Gauge* mPDxCounterHandle[DSSNServiceOpsMax];
     /**
      * The Performance related counter
      */

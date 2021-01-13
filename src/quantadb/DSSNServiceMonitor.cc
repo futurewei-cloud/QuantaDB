@@ -27,6 +27,18 @@ DSSNServiceMonitor::DSSNServiceMonitor(DSSNService *service, Exposer* exposer) {
 #ifdef MONITOR
     bool startSampler = false;
     if (exposer) {
+      if (IS_DIAG_MONITOR_ENABLED()) {
+	    //Create the list of performance Metrics
+	    mPDxRegistry = std::make_shared<Registry>();
+	    mPDxCounters = &BuildGauge()
+	      .Name("DSSNService_diagnostic")
+	      .Help("Diagnostic metrics for the DSSNService Module")
+	      .Register(*mPDxRegistry);
+	    for (uint32_t i = 0; i < DSSNServiceOpsMax; i++)
+	        addDxMetric((DSSNServiceOp)i);
+	    exposer->RegisterCollectable(mPDxRegistry);
+	    startSampler = true;
+	}
         if (IS_PERF_MONITOR_ENABLED()) {
 	    //Create the list of performance Metrics
 	    mPPfRegistry = std::make_shared<Registry>();
@@ -72,6 +84,18 @@ DSSNServiceMonitor::collectPfMetrics() {
 }
 
 void
+DSSNServiceMonitor::collectDxMetrics() {
+#ifdef MONITOR
+  if (mEnabled) {
+      for(uint32_t i = 0; i < DSSNServiceOpsMax; i++) {
+	  double count = ((double)mOps[i].count)*1000/MONITOR_SAMPLING_INTERVAL_IN_MS;
+	  mPDxCounterHandle[i]->Set((double)count);
+      }
+  }
+#endif
+}
+
+void
 DSSNServiceMonitor::collectTcMetrics() {
 #ifdef MONITOR
   if (mEnabled) {
@@ -99,6 +123,7 @@ DSSNServiceMonitor::sample(DSSNServiceMonitor* mon) {
     while(mon->isEnabled()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(MONITOR_SAMPLING_INTERVAL_IN_MS));
         if (IS_DIAG_MONITOR_ENABLED()) {
+	    mon->collectDxMetrics();
 	}
 	if (IS_PERF_MONITOR_ENABLED()) {
 	    mon->collectPfMetrics();

@@ -95,13 +95,21 @@ DSSNService::dispatch(WireFormat::Opcode opcode, Rpc* rpc)
 	rpc->setNoRsp();
         break;
     case WireFormat::DSSNSendInfoAsync::opcode:
+      {
+	Metric* m = mMonitor->getOpMetric(DSSNServiceRecvDSSNInfo);
+        OpTrace t(m);
         handleSendInfoAsync(rpc);
 	rpc->setNoRsp();
-        break;
+      }
+      break;
     case WireFormat::DSSNRequestInfoAsync::opcode:
+      {
+	Metric* m = mMonitor->getOpMetric(DSSNServiceRecvDSSNInfoReq);
+        OpTrace t(m);
         handleRequestInfoAsync(rpc);
 	rpc->setNoRsp();
-        break;
+      }
+      break;
     default:
         throw UnimplementedRequestError(HERE);
     }
@@ -983,7 +991,7 @@ DSSNService::sendDSSNInfo(__uint128_t cts, uint8_t txState, uint64_t pStamp, uin
 bool
 DSSNService::requestDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
 {
-    Metric* m = mMonitor->getOpMetric(DSSNServiceRequestDSSNInfo);
+    Metric* m = mMonitor->getOpMetric(DSSNServiceSendDSSNInfoReq);
     OpTrace t(m);
     WireFormat::DSSNRequestInfoAsync::Request req;
     req.cts = txEntry->getCTS();
