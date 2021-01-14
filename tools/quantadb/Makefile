@@ -1,6 +1,12 @@
 TOP = ../..
 
-CFLAGS = -I$(TOP)/src/quantadb -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TOP)/obj.master -I$(TOP)/prometheus-cpp/core/include/ -I$(TOP)/prometheus-cpp/pull/include/ -I$(TOP)/prometheus-cpp/build/pull/include/ -I$(TOP)/prometheus-cpp/build/core/include/
+## Figure out the build directory
+TOPOBJSUFFIX := $(shell git symbolic-ref -q HEAD | \
+	       sed -e s,refs/heads/,.,)
+
+TOPOBJDIR	:= obj$(TOPOBJSUFFIX)
+
+CFLAGS = -I$(TOP)/src/quantadb -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TOP)/$(TOPOBJDIR) -I$(TOP)/prometheus-cpp/core/include/ -I$(TOP)/prometheus-cpp/pull/include/ -I$(TOP)/prometheus-cpp/build/pull/include/ -I$(TOP)/prometheus-cpp/build/core/include/
 
 %.o:$(TOP)/src/%.cc
 	g++ -c $(CFLAGS) $< -o $@
