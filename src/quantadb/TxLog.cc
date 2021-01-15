@@ -20,7 +20,6 @@ namespace QDB {
 bool
 TxLog::add(TxEntry *txEntry)
 {
-    logMutex.lock();
     uint32_t logsize = txEntry->serializeSize();
     uint32_t totalsz = logsize + sizeof(TxLogHeader_t) + sizeof(TxLogTailer_t);
     TxLogHeader_t hdr = {TX_LOG_HEAD_SIG, totalsz};
@@ -31,7 +30,6 @@ TxLog::add(TxEntry *txEntry)
     out.write(&hdr, sizeof(hdr));
     txEntry->serialize( out );
     out.write(&tal, sizeof(tal));
-    logMutex.unlock();
     return true;
 }
 
@@ -124,7 +122,6 @@ TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t 
     TxLogTailer_t * tal;
     size_t hdrsz = sizeof(TxLogTailer_t) + sizeof(TxLogHeader_t);
 
-    logMutex.lock();
     // Search backward to find the latest matching Tx
     size_t tail_off = size() - sizeof(TxLogTailer_t);;
     while ((tail_off > 0) && (tal = (TxLogTailer_t*)log->getaddr (tail_off, &dlen))) {
@@ -143,11 +140,9 @@ TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t 
             txState = tx.getTxState();
             pStamp = tx.getPStamp();
             sStamp = tx.getSStamp();
-            logMutex.unlock();
             return true;
         }
     }
-    logMutex.unlock();
     return false; // indicating not found here
 }
 
