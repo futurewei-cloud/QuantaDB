@@ -28,7 +28,7 @@ class DLogTest : public ::testing::Test {
   DLogTest() {};
   ~DLogTest() { delete log; };
 
-  DLog<256> * log = new DLog<256>("/dev/shm", false); // Use small chunk size to stress boundary condition.
+  DLog<256> * log = new DLog<256>("/dev/shm/dlog", false); // Use small chunk size to stress boundary condition.
 
   DISALLOW_COPY_AND_ASSIGN(DLogTest);
 };
@@ -39,11 +39,11 @@ class DLogBench : public ::testing::Test {
   ~DLogBench() { delete log; delete log2; };
 
   #define DLOG_CHUNK_SIZE (uint64_t)1024*1024*1024*100
-  #define DLOG_DIR        "/dev/shm"
+  #define DLOG_DIR        "/dev/shm/dlog"
   DLog<DLOG_CHUNK_SIZE> * log = new DLog<DLOG_CHUNK_SIZE>(DLOG_DIR, false);
 
   #define DLOG2_CHUNK_SIZE (uint64_t)1024*1024*1024*100
-  #define DLOG2_DIR        "/dev/shm/2"
+  #define DLOG2_DIR        "/dev/shm/dlog2"
   DLog<DLOG2_CHUNK_SIZE> * log2 = new DLog<DLOG2_CHUNK_SIZE>(DLOG2_DIR, false);
 
   DISALLOW_COPY_AND_ASSIGN(DLogBench);
