@@ -310,6 +310,11 @@ class DLog {
 
         void * maddr = mmap(NULL, current_chunk_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);  
 
+        if (maddr == MAP_FAILED) {
+            printf("FatalError: mmap(2) failed in %s line %d\n", __FILE__, __LINE__);
+            exit (1);
+        }
+
         close(fd);
 
         chunk_hdr_t * hdr = (chunk_hdr_t *)maddr;
