@@ -156,6 +156,14 @@ class DLog {
     {
         uint32_t oldsize;
         chunk_t * chunk;
+
+        if (len >= chunk_size - sizeof(chunk_hdr_t)) {
+            printf("FatalError: reserve size (%d) is greater than chunk max data size (%ld)\n",
+                    len, chunk_size - sizeof(chunk_hdr_t));
+            assert(0);
+            return NULL;
+        }
+
         do {
             chunk = chunk_tail;
             if (chunk->hdr->sealed) {
@@ -246,20 +254,25 @@ class DLog {
     // The output argument 'len' stores continuous buffer length
     void * getaddr (uint64_t off, uint32_t *len = NULL)
     {
+        assert(off >= 0);
+
+        uint64_t dsize = size();
+        if (off >= dsize) {
+            if (len)
+                *len = 0;
+            return NULL;
+        }
+
         chunk_t * tmp = chunk_head;
         uint64_t remain = off;
+
+        assert(tmp);
         while (tmp && (remain > 0)) {
             if ((tmp->hdr->dsize) > remain) {
                 break;
             }
             remain -= tmp->hdr->dsize;
             tmp = tmp->next;
-        }
-
-        if (!tmp || (size() == 0)) {
-            if (len)
-                *len = 0;
-            return NULL; // log is empty or off is beyond the log size
         }
 
         if (len)
@@ -291,27 +304,28 @@ class DLog {
     bool add_new_chunk_file()
     {
         char chunk_name[128];
+
+        mtx.lock();
         uint32_t seqno = next_seqno++;
         sprintf(chunk_name, "%s/DLog-%06d", topdir.c_str(), seqno);
 
         int fd = open(chunk_name, O_RDWR|O_CREAT, 0666);
 
         if (fd < 0) {
-            std::cout << "Failed to open Log file: " << chunk_name << std::endl;
-            return false;
+            printf("FatalError: failed to create log file %s at %s::%d\n", chunk_name, __FILE__, __LINE__);
+            exit (1);
         }
 
         uint64_t current_chunk_size = chunk_size;
         if (ftruncate(fd, current_chunk_size) != 0) {
-            std::cout << "Failed to set Log file size: " << chunk_name << std::endl;
-            close(fd);
-            return false;
+            printf("FatalError: ) failed set log file size at %s::%d\n", __FILE__, __LINE__);
+            exit (1);
         }
 
         void * maddr = mmap(NULL, current_chunk_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);  
 
         if (maddr == MAP_FAILED) {
-            printf("FatalError: mmap(2) failed in %s line %d\n", __FILE__, __LINE__);
+            printf("FatalError: mmap(2) failed in %s::%d\n", __FILE__, __LINE__);
             exit (1);
         }
 
@@ -334,6 +348,7 @@ class DLog {
         chunkp->next =  NULL;
 
         insert_chunk(chunkp);
+        mtx.unlock();
 
         return true;
     }
@@ -399,7 +414,6 @@ class DLog {
     // Insert a chunk to chunk_head list
     void insert_chunk(chunk_t *chunkp)
     {
-        mtx.lock();
         // Insert chunk to chunk list
         chunk_t **cur = &chunk_head;
         while( *cur ) {
