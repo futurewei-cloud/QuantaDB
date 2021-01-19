@@ -16,18 +16,36 @@
 
 # QuantaDB
 # What is QuantaDB?
-Coming Soon.
+QuantaDB is a cloud-scale distributed transactional engine. It is
+designed for applications that need low-latency transaction to a large distributed
+datastore, ranging from rack-scale deployment to geo-distributed deployment.
+  * [Intro](docs/Intro.md)
+  * [Background](docs/Background.md)
+  * [Theory](docs/DSSN.md)
+  * [Architecture](docs/Arch.md)
+  * [Cookbook](docs/Cookbood.md)
 
+# Prerequisites
+  * protobuf
+  * OpenJDK8 
+  * boost
+  * libtbb
 
 # Build Instruction
 - **Checkout the Submodules**
+```
 git submodule update --init --recursive
+```
 
 - **Build Prometheus**
+```
 cd prometheus-cpp
 mkdir build
 cd build; cmake ..; make -j 20
+```
 
 - **Build QuantaDB**
-make
+```
+make -j 20
+```
 
