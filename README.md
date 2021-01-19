@@ -23,7 +23,7 @@ datastore, ranging from rack-scale deployment to geo-distributed deployment.
   * [Background](docs/Background.md)
   * [Theory](docs/DSSN.md)
   * [Architecture](docs/Arch.md)
-  * [Cookbook](docs/Cookbood.md)
+  * [Cookbook](docs/Cookbook.md)
 
 # Prerequisites
   * protobuf
