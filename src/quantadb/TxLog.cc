@@ -185,13 +185,20 @@ TxLog::dump(int fd)
     size_t hdrsz = sizeof(TxLogTailer_t) + sizeof(TxLogHeader_t);
     std::set<uint64_t> peerSet;
 
-    dprintf(fd, "Dumping TxLog backward\n\n");
+    dprintf(fd, "Dumping TxLog backward. Log size: %ld bytes\n\n", size());
 
     // Search backward to find the latest matching Tx
     int64_t tail_off = size() - sizeof(TxLogTailer_t);;
     while ((tail_off > 0) && (tal = (TxLogTailer_t*)log->getaddr (tail_off, &dlen))) {
-        tail_off -= tal->length; // next tail
         assert(tal->sig == TX_LOG_TAIL_SIG);
+        TxLogHeader_t *hdr = (TxLogHeader_t*) ((char*)tal - tal->length + sizeof(TxLogHeader_t));
+        assert(hdr->sig == TX_LOG_HEAD_SIG);
+        assert(tal->length == hdr->length);
+
+        dprintf(fd, "Head off %ld, Tail_off %ld, dlen: %d\n",
+                tail_off - tal->length + sizeof(TxLogHeader_t), tail_off, tal->length);
+
+        tail_off -= tal->length; // next tail
 
         inMemStream in((uint8_t*)tal - tal->length + hdrsz, dlen + tal->length - hdrsz);
         TxEntry tx(0,0);
