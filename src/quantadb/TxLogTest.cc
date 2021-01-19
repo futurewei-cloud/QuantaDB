@@ -38,8 +38,10 @@ class TxLogTest : public ::testing::Test {
         writeKV[idx] = new KVLayout(32);
         readKV[idx]  = new KVLayout(32);
         char wkey[32], rkey[32];
+        bzero(&wkey, sizeof(wkey));
+        bzero(&rkey, sizeof(rkey));
         snprintf(wkey, sizeof(wkey), "TxLogUnitTest-wkey%d", idx);
-        snprintf(wkey, sizeof(wkey), "TxLogUnitTest-rkey%d", idx);
+        snprintf(rkey, sizeof(rkey), "TxLogUnitTest-rkey%d", idx);
         writeKV[idx]->getKey().setkey(wkey, sizeof(wkey), 0);
         readKV[idx]->getKey().setkey(rkey, sizeof(rkey), 0);
     }
@@ -84,23 +86,26 @@ TEST_F(TxLogTest, TxLogUnitTest)
 
     EXPECT_EQ(ret, false);
 
+    TxEntry *tx;
     for (uint64_t idx = 0; idx < NUM_ENTRY; idx++) {
-        TxEntry tx(10,10);
-        tx.setCTS(idx);
-        tx.setPStamp(idx);
-        tx.setSStamp(idx);
-        tx.setTxState(((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT); 
-        tx.insertPeerSet(idx);
+        tx = new TxEntry(10,10);
+        tx->setCTS(idx);
+        tx->setPStamp(idx);
+        tx->setSStamp(idx);
+        tx->setTxState(((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT);
+        tx->insertPeerSet(idx);
 
         KVLayout *kvR, *kvW;
         for (int kvidx = 0; kvidx < RWSetSize; kvidx++) {
             kvR = kvStore.preput(*readKV[kvidx]);
             kvW = kvStore.preput(*writeKV[kvidx]);
-            tx.insertWriteSet(kvW, kvidx);
-            tx.insertReadSet (kvR, kvidx);
+            tx->insertWriteSet(kvW, kvidx);
+            tx->insertReadSet (kvR, kvidx);
         }
 
-        txlog->add(&tx);
+        txlog->add(tx);
+
+        delete tx;
     }
 
     // getTxState
@@ -175,24 +180,27 @@ TEST_F(TxLogRecoveryTest, TxLogRecoveryTest)
 
 void writeToLog(TxLogTest *c, int sid)
 {
-    TxEntry tx(RWSetSize, RWSetSize);
+    TxEntry *tx;
     for (__uint128_t idx = 0; idx < NUM_ENTRY; idx++) {
         __uint128_t stamp = idx + (NUM_ENTRY * sid);
-        tx.setCTS(stamp);
-        tx.setPStamp(stamp);
-        tx.setSStamp(stamp);
-        tx.setTxState(((stamp % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT); 
-        tx.insertPeerSet(stamp);
+        tx = new TxEntry(RWSetSize,RWSetSize);
+        tx->setCTS(stamp);
+        tx->setPStamp(stamp);
+        tx->setSStamp(stamp);
+        tx->setTxState(((stamp % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT);
+        tx->insertPeerSet(stamp);
 
         KVLayout *kvR, *kvW;
         for (int kvidx = 0; kvidx < RWSetSize; kvidx++) {
             kvR = c->kvStore.preput(*c->readKV[kvidx]);
             kvW = c->kvStore.preput(*c->writeKV[kvidx]);
-            tx.insertWriteSet(kvW, kvidx);
-            tx.insertReadSet (kvR, kvidx);
+            tx->insertWriteSet(kvW, kvidx);
+            tx->insertReadSet (kvR, kvidx);
         }
 
-        c->txlog->add(&tx);
+        c->txlog->add(tx);
+
+        delete tx;
     }
 }
 
