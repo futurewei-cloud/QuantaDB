@@ -225,8 +225,18 @@ void readBackwardFromLog(TxLogTest *c, int *run_run)
     {
         uint32_t txState;
         uint64_t pStamp, sStamp;
-        c->txlog->getTxInfo(100, txState, pStamp, sStamp);
-        c->txlog->getTxState(100);
+        for (__uint128_t cts = 0; cts < NUM_ENTRY; cts++) {
+            bool ret = c->txlog->getTxInfo(cts, txState, pStamp, sStamp);
+            if (ret) {
+                EXPECT_EQ(txState, ((cts % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT);
+                EXPECT_EQ(cts, pStamp);
+                EXPECT_EQ(cts, sStamp);
+            }
+            txState = c->txlog->getTxState(cts);
+            if (txState != TxEntry::TX_ALERT) {
+                EXPECT_EQ(txState, ((cts % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT);
+            }
+        }
     }
 }
 
