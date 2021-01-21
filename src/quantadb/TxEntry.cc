@@ -99,30 +99,38 @@ TxEntry::correctReadSet(uint32_t size) {
 }
 
 uint32_t 
-TxEntry::serializeSize()
+TxEntry::serializeSize(uint32_t *wsSzRet, uint32_t *rsSzRet, uint32_t *psSzRet)
 {
     uint32_t sz = sizeof(cts) + sizeof(txState) + sizeof(pstamp) + sizeof(sstamp);
+    uint32_t wsSz = 0, rsSz = 0, psSz = 0;
+
     if (txState == TX_PENDING || txState == TX_FABRICATED) {
         sz += sizeof(commitIntentState);
 
         // writeSet
-        sz += sizeof(uint32_t);
+        wsSz += sizeof(uint32_t);
         for (uint32_t i = 0; i < getWriteSetSize(); i++) {
             if (writeSet[i])
-                sz += writeSet[i]->serializeSize();
+                wsSz += writeSet[i]->serializeSize();
         }
+        sz += wsSz;
 
         // readSet
-        sz += sizeof(uint32_t);
+        rsSz += sizeof(uint32_t);
         for (uint32_t i = 0; i < getReadSetSize(); i++) {
             if (readSet[i])
-                sz += readSet[i]->serializeSize();
+                rsSz += readSet[i]->serializeSize();
         }
+        sz += rsSz;
 
         // peerSet
-        sz += sizeof(uint32_t);
-        sz += peerSet.size() * sizeof(uint64_t);
+        psSz += sizeof(uint32_t);
+        psSz += peerSet.size() * sizeof(uint64_t);
+        sz += psSz;
     }
+    if (wsSzRet) *wsSzRet = wsSz;
+    if (psSzRet) *psSzRet = psSz;
+    if (rsSzRet) *rsSzRet = rsSz;
     return sz;
 }
 
