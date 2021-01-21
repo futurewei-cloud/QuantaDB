@@ -22,8 +22,8 @@ TxLog::add(TxEntry *txEntry)
 {
     uint32_t logsize = txEntry->serializeSize();
     uint32_t totalsz = logsize + sizeof(TxLogHeader_t) + sizeof(TxLogTailer_t);
-    TxLogHeader_t hdr = {TX_LOG_HEAD_SIG, totalsz};
-    TxLogTailer_t tal = {TX_LOG_TAIL_SIG, totalsz};
+    TxLogHeader_t hdr = {totalsz, TX_LOG_HEAD_SIG};
+    TxLogTailer_t tal = {totalsz, TX_LOG_TAIL_SIG};
 
     void *dst = log->reserve(totalsz);
     outMemStream out((uint8_t*)dst, totalsz);
@@ -77,7 +77,7 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, TxEntry *txOut)
         retry = 0;
         off += hdr->length;
 
-        inMemStream in((uint8_t*)&hdr[1], dlen - sizeof(hdr));
+        inMemStream in((uint8_t*)&hdr[1], hdr->length - sizeof(hdr) - sizeof(tal));
         txOut->deSerialize( in );
         if (txOut->getTxState() == TxEntry::TX_PENDING) {
             idOut = off;
@@ -105,7 +105,7 @@ TxLog::getTxState(__uint128_t cts)
         retry = 0;
         tail_off -= tal->length; // next tail
 
-        inMemStream in((uint8_t*)tal - tal->length + hdrsz, dlen + tal->length - hdrsz);
+        inMemStream in((uint8_t*)tal - tal->length + hdrsz, tal->length - hdrsz);
         TxEntry tx(1,1);
         tx.deSerialize_common( in );
         if (tx.getCTS() == cts) { 
@@ -133,7 +133,7 @@ TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t 
         retry = 0;
         tail_off -= tal->length; // next tail
 
-        inMemStream in((uint8_t*)tal - tal->length + hdrsz, dlen + tal->length - hdrsz);
+        inMemStream in((uint8_t*)tal - tal->length + hdrsz, tal->length - hdrsz);
         TxEntry tx(1,1);
         tx.deSerialize_common( in );
         if (tx.getCTS() == cts) {
@@ -180,7 +180,6 @@ static const char *txStateToStr(uint32_t txState)
 void
 TxLog::dump(int fd)
 {
-    uint32_t dlen;
     TxLogTailer_t * tal;
     size_t hdrsz = sizeof(TxLogTailer_t) + sizeof(TxLogHeader_t);
     std::set<uint64_t> peerSet;
@@ -189,35 +188,38 @@ TxLog::dump(int fd)
 
     // Search backward to find the latest matching Tx
     int64_t tail_off = size() - sizeof(TxLogTailer_t);;
-    while ((tail_off > 0) && (tal = (TxLogTailer_t*)log->getaddr (tail_off, &dlen))) {
+    while ((tail_off > 0) && (tal = (TxLogTailer_t*)log->getaddr (tail_off))) {
         assert(tal->sig == TX_LOG_TAIL_SIG);
         TxLogHeader_t *hdr = (TxLogHeader_t*) ((char*)tal - tal->length + sizeof(TxLogHeader_t));
         assert(hdr->sig == TX_LOG_HEAD_SIG);
         assert(tal->length == hdr->length);
 
-        dprintf(fd, "Head off %ld, Tail_off %ld, dlen: %d\n",
-                tail_off - tal->length + sizeof(TxLogHeader_t), tail_off, tal->length);
+        inMemStream in((uint8_t*)tal - tal->length + hdrsz, tal->length - hdrsz);
+        TxEntry *tx = new TxEntry(0,0);
+        tx->deSerialize( in );
 
-        tail_off -= tal->length; // next tail
+        uint32_t txSz, wsetSz, rsetSz, peerSz;
+        txSz = tx->serializeSize(&wsetSz, &rsetSz, &peerSz);
 
-        inMemStream in((uint8_t*)tal - tal->length + hdrsz, dlen + tal->length - hdrsz);
-        TxEntry tx(0,0);
-        tx.deSerialize( in );
+        dprintf(fd, "Head_off %ld, Tail_off %ld, LogSz: %d, txSz:%d wrSetSz:%d rdSetSz:%d peerSetSz:%d \n",
+                tail_off - tal->length + sizeof(TxLogHeader_t), tail_off, tal->length,
+                txSz, wsetSz, rsetSz, peerSz);
 
         dprintf(fd, "CTS: %lu:%lu, TxState: %s, pStamp: %lu, sStamp: %lu\n",
-            (uint64_t)(tx.getCTS()>>64), (uint64_t)tx.getCTS(), txStateToStr(tx.getTxState()), tx.getPStamp(), tx.getSStamp());
+            (uint64_t)(tx->getCTS()>>64), (uint64_t)tx->getCTS(),
+            txStateToStr(tx->getTxState()), tx->getPStamp(), tx->getSStamp());
 
         dprintf(fd, "\tpeerSet: ");
-        peerSet =   tx.getPeerSet();
+        peerSet =   tx->getPeerSet();
         for(std::set<uint64_t>::iterator it = peerSet.begin(); it != peerSet.end(); it++) {
             uint64_t peer = *it;
             dprintf(fd, "%lu, ", peer);
         }
-        dprintf(fd, "\n");
+        dprintf(fd, "\n\n");
 
-        KVLayout **writeSet = tx.getWriteSet().get();
-        dprintf(fd, "\twriteSet:\n");
-        for (uint32_t widx = 0; widx < tx.getWriteSetSize(); widx++) {
+        KVLayout **writeSet = tx->getWriteSet().get();
+        dprintf(fd, "\twriteSet: \n");
+        for (uint32_t widx = 0; widx < tx->getWriteSetSize(); widx++) {
             KVLayout *kv = writeSet[widx];
             assert(kv);
             dprintf(fd, "\t  key%02d: ", widx+1);
@@ -226,15 +228,15 @@ TxLog::dump(int fd)
             }
             dprintf(fd, "\n");
             // dprintf(fd, "\t\t %s\n", kv->k.key.get());
-            if (tx.getTxState() == TxEntry::TX_FABRICATED) {
+            if (tx->getTxState() == TxEntry::TX_FABRICATED) {
                 dprintf(fd, "%s\n", kv->v.valuePtr);
             }
         }
         dprintf(fd, "\n");
 
-        KVLayout **readSet = tx.getReadSet().get();
-        dprintf(fd, "\treadSet:\n");
-        for (uint32_t ridx = 0; ridx < tx.getReadSetSize(); ridx++) {
+        KVLayout **readSet = tx->getReadSet().get();
+        dprintf(fd, "\treadSet: \n");
+        for (uint32_t ridx = 0; ridx < tx->getReadSetSize(); ridx++) {
             KVLayout *kv = readSet[ridx];
             assert(kv);
             dprintf(fd, "\t  key%02d: ", ridx+1);
@@ -243,11 +245,14 @@ TxLog::dump(int fd)
             }
             dprintf(fd, "\n");
             // dprintf(fd, "\t\t %s\n", kv->k.key.get());
-            if (tx.getTxState() == TxEntry::TX_FABRICATED) {
+            if (tx->getTxState() == TxEntry::TX_FABRICATED) {
                 dprintf(fd, "%s\n", kv->v.valuePtr);
             }
         }
         dprintf(fd, "\n");
+
+        tail_off -= tal->length; // next tail
+        delete tx;
     }
 }
 

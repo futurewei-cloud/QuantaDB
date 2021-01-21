@@ -88,8 +88,8 @@ class TxLog {
     typedef struct TxLogMarker {
         #define TX_LOG_HEAD_SIG 0xA5A5F0F0
         #define TX_LOG_TAIL_SIG 0xF0F0A5A5
-        uint32_t sig;   // signature
         uint32_t length;// Tx log record size, include header and tailer
+        uint32_t sig;   // signature
     } TxLogHeader_t, TxLogTailer_t;
 
     // private variables
