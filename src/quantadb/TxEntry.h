@@ -207,7 +207,7 @@ class TxEntry {
     }
 
     //Fixme: move these functions into TxLog.cc to hide implementation details from TxEntry
-    uint32_t serializeSize();
+    uint32_t serializeSize(uint32_t *ws = NULL, uint32_t *rs = NULL, uint32_t *ps = NULL);
     void serialize( outMemStream& out );
     void deSerialize_common( inMemStream& in );
     void deSerialize_additional( inMemStream& in );
