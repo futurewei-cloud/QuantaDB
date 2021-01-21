@@ -246,14 +246,22 @@ TEST_F(TxLogTest, TxLogMtRwTest)
     int run_run = 1;
     std::thread tR1(readBackwardFromLog, this, &run_run);
     std::thread tR2(readForwardFromLog, this, &run_run);
+    std::thread tR3(readBackwardFromLog, this, &run_run);
+    std::thread tR4(readForwardFromLog, this, &run_run);
     std::thread tW1(writeToLog, this, 0);
     std::thread tW2(writeToLog, this, 1);
+    std::thread tW3(writeToLog, this, 2);
+    std::thread tW4(writeToLog, this, 3);
 
     tW1.join();
     tW2.join();
+    tW3.join();
+    tW4.join();
     run_run = 0;
     tR1.join();
     tR2.join();
+    tR3.join();
+    tR4.join();
 }
 
 

@@ -33,6 +33,8 @@ namespace QDB {
  * - Supports concurrent append operation.
  * - Log append space can be reserved. Class object serialzation output can
  *   go directly into log buffer to save an intermediate stage.
+ * - To illiminate chunk replenish jitter, a background thread is making sure stand-by chunk is ready. When the
+ *   stand-by become active, the background thread is woken up to add a new stand-by.
  * Non-goals
  * - DLog is not a Plog simulator.
  * API
@@ -101,8 +103,8 @@ class DLog {
     {
         next_seqno = 0;
         chunk_head = chunk_tail = NULL;
-        chunk_size = CHUNK_SIZE;
 
+        // If logdir not already exists, create it.
         struct stat st;
         if (stat(topdir.c_str(), &st) != 0) {
             int ret = mkpath(topdir.c_str(), 0777);
@@ -115,19 +117,26 @@ class DLog {
         else
             clean_chunks(topdir.c_str());
 
-        // If no log yet, create one.
-        if (chunk_head == NULL) {
-            if (! add_new_chunk_file()) {
-                std::cout << "Failed to create log file" << std::endl;
-                exit (1);
-            }
+        set_chunk_size(CHUNK_SIZE);
+
+        // Start the replenisher thread
+	    pthread_create(&tid, NULL, chunk_replenisher, (void *)this);
+
+        // Start with a min free space
+        uint32_t loopcnt = 1;
+        while (free_space() < min_free_space) {
+            //printf("Wait replenisher %d chunk %ld free %ld min %ld\n", loopcnt, chunk_size, free_space(), min_free_space);
+            usleep(loopcnt++);
         }
         assert(chunk_head);
     }
 
     ~DLog()
     {
+        thread_run_run = false;
+        wakeup_replenisher();
         cleanup();
+	    pthread_join(tid, NULL);
     }
 
     // Return log data size
@@ -167,11 +176,15 @@ class DLog {
         do {
             chunk = chunk_tail;
             if (chunk->hdr->sealed) {
-                if (chunk->next) { // move chunk_tail to the next
-                    __sync_bool_compare_and_swap(&chunk_tail, chunk, chunk->next);
-                } else {
-                    add_new_chunk_file();
+                while (!chunk->next) {
+                    // If replenisher is working right, we should not come to here
+                    min_free_space += chunk_size;
+                    printf("Info: DLog min free space increase to %ld bytes\n", min_free_space);
+                    wakeup_replenisher();
+                    usleep(1);
                 }
+                // move chunk_tail to the next
+                __sync_bool_compare_and_swap(&chunk_tail, chunk, chunk->next);
                 continue;
             }
 
@@ -179,6 +192,7 @@ class DLog {
             uint64_t free_space = chunk->hdr->fsize - chunk->hdr->bgn_off - chunk->hdr->dsize;
             if (free_space < len) {
                 chunk->hdr->sealed = true; // insufficient space, sealed it.
+                wakeup_replenisher();
                 continue;
             }
 
@@ -209,7 +223,7 @@ class DLog {
     // Return trim'ed size.
     uint64_t trim (uint64_t length = 0)
     {
-        mtx.lock();
+        Omtx.lock();
         if (length == 0)
             length = size();
         uint64_t remain = length;
@@ -235,7 +249,7 @@ class DLog {
             tmp = tmp->next;
             old_tmp->remove();
         }
-        mtx.unlock();
+        Omtx.unlock();
         return length - remain;
     }
 
@@ -298,14 +312,18 @@ class DLog {
 
     void set_chunk_size(uint64_t size)
     {
+        #define MIN_FREE_SPACE (uint64_t)1024*1024
+        #define MAX_FREE_SPACE (uint64_t)1024*1024*1024*2
         chunk_size = size;
+        min_free_space = chunk_size << 1;
+        if      (min_free_space < MIN_FREE_SPACE) min_free_space = MIN_FREE_SPACE;
+        else if (min_free_space > MAX_FREE_SPACE) min_free_space = chunk_size;
     }
 
-    bool add_new_chunk_file()
+    void add_new_chunk_file()
     {
         char chunk_name[128];
 
-        mtx.lock();
         uint32_t seqno = next_seqno++;
         sprintf(chunk_name, "%s/DLog-%06d", topdir.c_str(), seqno);
 
@@ -348,9 +366,6 @@ class DLog {
         chunkp->next =  NULL;
 
         insert_chunk(chunkp);
-        mtx.unlock();
-
-        return true;
     }
 
   private:
@@ -414,6 +429,7 @@ class DLog {
     // Insert a chunk to chunk_head list
     void insert_chunk(chunk_t *chunkp)
     {
+        Omtx.lock();
         // Insert chunk to chunk list
         chunk_t **cur = &chunk_head;
         while( *cur ) {
@@ -435,8 +451,7 @@ class DLog {
         if (next_seqno <= chunkp->hdr->seqno) {
             next_seqno = chunkp->hdr->seqno + 1;
         }
-
-        mtx.unlock();
+        Omtx.unlock();
     }
 
     // Return starting log offset of the chunk
@@ -512,13 +527,44 @@ class DLog {
         closedir(dir);
     }
 
+    void wakeup_replenisher()
+    {
+        pthread_mutex_lock(&mtx);
+        pthread_cond_signal(&cond);
+        pthread_mutex_unlock(&mtx);
+    }
+
+    // bg thread
+    static void * chunk_replenisher(void *arg)
+    {
+        DLog *dlog = (DLog *)arg;
+        //printf("replenisher chunk size %ld!\n", dlog->chunk_size);
+
+        while (dlog->thread_run_run) {
+
+            while (dlog->free_space() <  dlog->min_free_space) {
+                //printf("replenisher add one chunk\n");
+                dlog->add_new_chunk_file();
+            }
+
+            pthread_mutex_lock(&dlog->mtx);
+            pthread_cond_wait(&dlog->cond, &dlog->mtx);
+            pthread_mutex_unlock(&dlog->mtx);
+        }
+        return NULL;
+    }
+
     // private variables
-    std::mutex mtx;
+    std::mutex Omtx;
     std::string topdir;
     std::atomic<uint32_t> next_seqno;
-    uint64_t chunk_size;
     chunk_t * chunk_head, * chunk_tail;
+    uint64_t chunk_size;
+    uint64_t min_free_space;
+    bool     thread_run_run = true;
+    pthread_t tid;
+    pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 };
 
 } // End QDB namespace
-
