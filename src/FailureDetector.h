@@ -65,7 +65,7 @@ class FailureDetector {
 
   PRIVATE:
     /// Number of microseconds between probes.
-    static const int PROBE_INTERVAL_USECS = 100 * 1000;
+    static const int PROBE_INTERVAL_USECS = 500 * 1000;
     /// Maximum tolerable clock drift between two servers.
     static const uint64_t MAX_CLOCK_DRIFT_NS = 100 * 1000;
 
@@ -77,7 +77,7 @@ class FailureDetector {
      * up becoming a bottleneck we may need to increase this timeout and move to
      * an asynchronous model.
      */
-    static const int TIMEOUT_USECS = 50 * 1000;
+    static const int TIMEOUT_USECS = 250 * 1000;
 
     static_assert(TIMEOUT_USECS <= PROBE_INTERVAL_USECS,
                   "Timeout us should be less than probe interval.");
