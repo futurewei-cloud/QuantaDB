@@ -119,11 +119,14 @@ class DLog {
         }
 
         set_chunk_size(CHUNK_SIZE);
+
         // Start with init free space
         while (free_space() < (CHUNK_SIZE * INIT_CHUNKS)) {
             add_new_chunk_file();
         }
         assert(chunk_head);
+
+        data_size = count_data_size();
 
         // Start the replenisher thread
 	    pthread_create(&tid, NULL, chunk_replenisher, (void *)this);
@@ -138,18 +141,14 @@ class DLog {
     {
         thread_run_run = false;
         wakeup_replenisher();
-        cleanup();
 	    pthread_join(tid, NULL);
+        cleanup();
     }
 
     // Return log data size
     inline uint64_t size(void)
     {
-        uint64_t lsize = 0;
-        for (chunk_t *tmp = chunk_head; tmp; tmp = tmp->next) {
-            lsize += tmp->hdr->dsize;
-        }
-        return lsize;
+        return data_size;
     }
 
     // Return free space
@@ -201,7 +200,8 @@ class DLog {
 
             oldsize = chunk->hdr->dsize;;
             if (__sync_bool_compare_and_swap(&chunk->hdr->dsize, oldsize, oldsize+len)) {
-                    break; // done
+                data_size += len;
+                break; // done
             }
         } while (true);
 
@@ -253,6 +253,7 @@ class DLog {
             old_tmp->remove();
         }
         Omtx.unlock();
+        data_size -= (length - remain);
         return length - remain;
     }
 
@@ -457,6 +458,15 @@ class DLog {
         Omtx.unlock();
     }
 
+    inline uint64_t count_data_size(void)
+    {
+        uint64_t lsize = 0;
+        for (chunk_t *tmp = chunk_head; tmp; tmp = tmp->next) {
+            lsize += tmp->hdr->dsize;
+        }
+        return lsize;
+    }
+
     // Return starting log offset of the chunk
     inline uint64_t chunk_offset(chunk_t *c)
     {
@@ -543,12 +553,14 @@ class DLog {
         DLog *dlog = (DLog *)arg;
         //printf("replenisher chunk size %ld!\n", dlog->chunk_size);
 
-        while (dlog->thread_run_run) {
-
-            while (dlog->free_space() <  dlog->min_free_space) {
+        while (true) {
+            while (dlog->thread_run_run && (dlog->free_space() <  dlog->min_free_space)) {
                 //printf("replenisher add one chunk\n");
                 dlog->add_new_chunk_file();
             }
+
+            if (!dlog->thread_run_run)
+                break;
 
             pthread_mutex_lock(&dlog->mtx);
             pthread_cond_wait(&dlog->cond, &dlog->mtx);
@@ -561,9 +573,10 @@ class DLog {
     std::mutex Omtx;
     std::string topdir;
     std::atomic<uint32_t> next_seqno;
+    std::atomic<uint64_t> data_size;
     chunk_t * chunk_head, * chunk_tail;
     uint64_t chunk_size;
-    uint64_t min_free_space;
+    uint64_t min_free_space = 0;
     bool     thread_run_run = true;
     pthread_t tid;
     pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;

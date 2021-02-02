@@ -136,11 +136,17 @@ TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t 
         inMemStream in((uint8_t*)tal - tal->length + hdrsz, tal->length - hdrsz);
         TxEntry tx(1,1);
         tx.deSerialize_common( in );
-        if (tx.getCTS() == cts) {
-            txState = tx.getTxState();
+        uint64_t myCTS = tx.getCTS();
+        uint32_t myState = tx.getTxState();
+        if (myCTS == cts) {
+            txState = myState;
             pStamp = tx.getPStamp();
             sStamp = tx.getSStamp();
             return true;
+        } else if ((myCTS < cts) && (myState ==  TxEntry::TX_PENDING)) {
+            // TX_PENDING records are sorted (by CYS) in the txlog.
+            // If we see an older TX_PENDING entry, no need to look further.
+            break;
         }
     }
     return false; // indicating not found here
