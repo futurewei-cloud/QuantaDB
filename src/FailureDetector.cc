@@ -83,7 +83,11 @@ FailureDetector::~FailureDetector()
 void
 FailureDetector::start()
 {
-    thread.construct(detectorThreadEntry, this, context);
+  /* TODO: Need to fine tune the timeout value.
+   * For now, temporary disabled failure detector
+   *
+   * thread.construct(detectorThreadEntry, this, context);
+   */
 }
 
 /**
