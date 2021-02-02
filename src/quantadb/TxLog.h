@@ -71,6 +71,8 @@ class TxLog {
     // Return data size of TxLog
     inline size_t size() { return log->size(); }
 
+    inline size_t free_space() { return log->free_space(); }
+
     // Clear TxLog. Remove all chunk files.
     inline void clear() { log->cleanup(); }
 

@@ -190,7 +190,7 @@ TxLog::dump(int fd)
     size_t hdrsz = sizeof(TxLogTailer_t) + sizeof(TxLogHeader_t);
     std::set<uint64_t> peerSet;
 
-    dprintf(fd, "Dumping TxLog backward. Log size: %ld bytes\n\n", size());
+    dprintf(fd, "Dumping TxLog backward. Log data size: %ld bytes, free space %ld bytes\n\n", size(), free_space());
 
     // Search backward to find the latest matching Tx
     int64_t tail_off = size() - sizeof(TxLogTailer_t);;

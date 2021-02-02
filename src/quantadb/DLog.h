@@ -113,9 +113,9 @@ class DLog {
         }
 
         if (recovery_mode) {
-            load_chunks(topdir.c_str()); // Load existing logs
+            load_chunk_files(topdir.c_str()); // Load existing logs
         } else {
-            clean_chunks(topdir.c_str());
+            clean_chunk_files(topdir.c_str());
         }
 
         set_chunk_size(CHUNK_SIZE);
@@ -228,7 +228,7 @@ class DLog {
     {
         Omtx.lock();
         if (length == 0)
-            length = size();
+            length = data_size;
         uint64_t remain = length;
         chunk_t * tmp, *old_tmp, * old_head;
         tmp = old_head = chunk_head;
@@ -274,8 +274,7 @@ class DLog {
     {
         assert(off >= 0);
 
-        uint64_t dsize = size();
-        if (off >= dsize) {
+        if (off >= data_size) {
             if (len)
                 *len = 0;
             return NULL;
@@ -301,7 +300,7 @@ class DLog {
     uint32_t read (uint64_t off, void *obuf, uint32_t len)
     {
         uint32_t todo, remain;
-        uint32_t logsize = size();
+        uint32_t logsize = data_size;
         todo = remain = (logsize > len)? len : logsize;
         while (remain) {
             uint32_t dlen;
@@ -448,8 +447,18 @@ class DLog {
         chunkp->next = (*cur);
         *cur = chunkp;
 
-        if (!chunk_tail || (chunkp->hdr->sealed && (chunk_tail->hdr->seqno < chunkp->hdr->seqno))) {
-            chunk_tail = chunkp;
+        bool runtime_adding_new_chunk = (chunk_tail && (chunk_tail->hdr->seqno + 1 == chunkp->hdr->seqno));
+        /*
+         * Update chunk_tail for two special conditions:
+         * 1) Loading the very first chunk, and
+         * 2) For log recovery, i.e., load_chunk_files().
+         */
+        if (!runtime_adding_new_chunk) {
+            chunk_tail = chunk_head;
+            while (chunk_tail->next && chunk_tail->hdr->sealed) {
+                chunk_tail = chunk_tail->next;
+                printf("move chunk tail to %d\n", chunk_tail->hdr->seqno); fflush(stdout);
+            }
         }
 
         if (next_seqno <= chunkp->hdr->seqno) {
@@ -493,7 +502,7 @@ class DLog {
         return mkdir(dir, mode);
     }
 
-    void load_chunks (const char *logdir)
+    void load_chunk_files (const char *logdir)
     {
         DIR * dir;
         
@@ -518,7 +527,7 @@ class DLog {
         closedir(dir);
     }
 
-    void clean_chunks (const char *logdir)
+    void clean_chunk_files (const char *logdir)
     {
         DIR * dir;
         
