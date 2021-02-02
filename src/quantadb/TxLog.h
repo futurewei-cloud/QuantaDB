@@ -37,7 +37,7 @@ class TxLog {
     {
         std::string txlog_id(TXLOG_DIR);
         txlog_id += "/" + logid;
-        log = new DLog<TXLOG_CHUNK_SIZE>(txlog_id, recovery_mode);
+        log = new DLog<TXLOG_CHUNK_SIZE, 16>(txlog_id, recovery_mode);
     }
 
     //add to the log, where txEntry->getTxState() decides the handling within
@@ -93,7 +93,7 @@ class TxLog {
     } TxLogHeader_t, TxLogTailer_t;
 
     // private variables
-    DLog<TXLOG_CHUNK_SIZE> *log;
+    DLog<TXLOG_CHUNK_SIZE, 16> *log;
 }; // TxLog
 
 } // end namespace QDB

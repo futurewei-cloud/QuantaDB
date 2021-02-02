@@ -33,8 +33,9 @@ namespace QDB {
  * - Supports concurrent append operation.
  * - Log append space can be reserved. Class object serialzation output can
  *   go directly into log buffer to save an intermediate stage.
- * - To illiminate chunk replenish jitter, a background thread is making sure stand-by chunk is ready. When the
- *   stand-by become active, the background thread is woken up to add a new stand-by.
+ * - Chunk repleniosher is run in the background so that log writers are not blocked by chunk replenish.
+ *   The replenisher make sure at least one stand-by chunk is ready. If log writers overrun the replenisher,
+ *   replenisher will increase the number of stand-by chunks.
  * Non-goals
  * - DLog is not a Plog simulator.
  * API
@@ -64,7 +65,7 @@ namespace QDB {
  *
  *   Return log buffer address at offset 'off'. The output argument 'len' stores buffer length
  */
-template <uint64_t CHUNK_SIZE = (16*1024*1024) >
+template <uint64_t CHUNK_SIZE = (16*1024*1024), uint32_t INIT_CHUNKS = 1>
 class DLog {
   private:
     /*
@@ -111,24 +112,26 @@ class DLog {
             assert(ret == 0);
         }
 
-        // Load existing logs
-        if (recovery_mode)
-            load_chunks(topdir.c_str());
-        else
+        if (recovery_mode) {
+            load_chunks(topdir.c_str()); // Load existing logs
+        } else {
             clean_chunks(topdir.c_str());
+        }
 
         set_chunk_size(CHUNK_SIZE);
+        // Start with init free space
+        while (free_space() < (CHUNK_SIZE * INIT_CHUNKS)) {
+            add_new_chunk_file();
+        }
+        assert(chunk_head);
 
         // Start the replenisher thread
 	    pthread_create(&tid, NULL, chunk_replenisher, (void *)this);
 
-        // Start with a min free space
-        uint32_t loopcnt = 1;
+        // Wait for replenisher
         while (free_space() < min_free_space) {
-            //printf("Wait replenisher %d chunk %ld free %ld min %ld\n", loopcnt, chunk_size, free_space(), min_free_space);
-            usleep(loopcnt++);
+            usleep(1);
         }
-        assert(chunk_head);
     }
 
     ~DLog()
@@ -313,11 +316,11 @@ class DLog {
     void set_chunk_size(uint64_t size)
     {
         #define MIN_FREE_SPACE (uint64_t)1024*1024
-        #define MAX_FREE_SPACE (uint64_t)1024*1024*1024*2
         chunk_size = size;
-        min_free_space = chunk_size << 1;
-        if      (min_free_space < MIN_FREE_SPACE) min_free_space = MIN_FREE_SPACE;
-        else if (min_free_space > MAX_FREE_SPACE) min_free_space = chunk_size;
+        if (min_free_space < chunk_size)
+            min_free_space = chunk_size;
+        if (min_free_space < MIN_FREE_SPACE)
+            min_free_space = MIN_FREE_SPACE;
     }
 
     void add_new_chunk_file()
