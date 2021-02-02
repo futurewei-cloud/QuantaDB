@@ -30,10 +30,10 @@ datalog.o: datalog.cc $(TOP)/src/quantadb/DataLog.h
 	g++ -c $(CFLAGS) $< -o $@
 
 txlog: txlog.o TxLog.o TxEntry.o MurmurHash3.o
-	g++ -o $@ $^
+	g++ -o $@ $^ -lpthread
 
 datalog: datalog.o
-	g++ -o $@ $^
+	g++ -o $@ $^ -lpthread
 
 rdtscp: rdtscp.o
 	g++ -o $@ $^ -lpthread
