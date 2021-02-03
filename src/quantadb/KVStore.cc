@@ -22,6 +22,7 @@ namespace QDB
 
 void *clhash_random = NULL;
 bool hash_inited = false;
+Slab * kslab = new Slab(MAX_KLENGTH + 1);
 
 bool operator == (const KLayout &lhs, const KLayout &rhs)
 {

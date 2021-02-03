@@ -20,8 +20,12 @@
 #include "clhash.h"
 #include "MemStreamIo.h"
 #include <boost/scoped_array.hpp>
+#include "Slab.h"
 
 namespace QDB {
+
+#define MAX_KLENGTH 48
+extern Slab *kslab;
 
 extern void *clhash_random;
 extern bool hash_inited;
@@ -93,19 +97,26 @@ struct KLayout {
         }
     }
 
-	explicit KLayout(uint32_t keySize) : keyLength(keySize), key(new uint8_t[keySize+1]) { bzero(key.get(), keySize+1);}
+	explicit KLayout(uint32_t keySize) : keyLength(keySize)
+    {
+        assert(keySize <= MAX_KLENGTH);
+        key = (char*)kslab->get();
+        bzero(key, keySize+1);
+    }
+
+    ~KLayout() { kslab->put(key); }
 
     void setkey(const void *k, uint32_t len, uint32_t off)
     {
         assert((len + off) <= keyLength);
-        std::memcpy(key.get() + off, k, len);
+        std::memcpy(key + off, k, len);
         #ifdef  PMEMHASH_PREHASH
-        keyhash = clhash(clhash_random, (const char*)key.get(), keyLength);
+        keyhash = clhash(clhash_random, (const char*)key, keyLength);
         #endif
     }
 
-    const char *getkeybuf() const { return (const char *)key.get(); }
-    const char *getkeybuf()       { return (const char *)key.get(); }
+    const char *getkeybuf() const { return (const char *)key; }
+    const char *getkeybuf()       { return (const char *)key; }
 
     inline uint32_t serializeSize()
     {
@@ -115,22 +126,23 @@ struct KLayout {
     inline void serialize( outMemStream & out )
     {
         out.write(&keyLength, sizeof(keyLength));
-        out.write(key.get(), keyLength);
+        out.write(key, keyLength);
     }
 
     inline void deSerialize( inMemStream & in )
     {
         in.read(&keyLength, sizeof(keyLength));
-        key.reset(new uint8_t[keyLength+1]);
-        in.read(key.get(), keyLength);
-        key.get()[keyLength] = 0; // null termination
+        assert(keyLength <= MAX_KLENGTH);
+        in.read(key, keyLength);
+        key[keyLength] = 0; // null termination
         #ifdef  PMEMHASH_PREHASH
-        keyhash = clhash(clhash_random, (const char*)key.get(), keyLength);
+        keyhash = clhash(clhash_random, (const char*)key, keyLength);
         #endif
     }
 
   private:
-	boost::scoped_array<uint8_t> key;
+	// boost::scoped_array<uint8_t> key;
+    char *key;
 };
 
 bool operator == (const KLayout &lhs, const KLayout &rhs);

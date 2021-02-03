@@ -23,14 +23,12 @@ namespace RAMCloud {
 
 using namespace QDB;
 
-#define SLAB_MAG_SIZE (1024*1024*16)
-
 class SlabTest : public ::testing::Test {
   public:
   SlabTest() {};
   ~SlabTest() { delete slab; };
 
-  Slab<256> * slab = new Slab<256>(32); // Use small chunk size to stress boundary condition.
+  Slab *slab = new Slab(32, 256); // Use small magacap size to stress boundary condition.
 
   DISALLOW_COPY_AND_ASSIGN(SlabTest);
 };
@@ -40,7 +38,8 @@ class SlabBench : public ::testing::Test {
   SlabBench() {};
   ~SlabBench() { delete slab; };
 
-  Slab<SLAB_MAG_SIZE> * slab = new Slab<SLAB_MAG_SIZE>(32); // Use small chunk size to stress boundary condition.
+  #define SLAB_MAG_SIZE (1024*1024*16)
+  Slab * slab = new Slab(32, SLAB_MAG_SIZE); // Large magacap for benchmark 
 
   DISALLOW_COPY_AND_ASSIGN(SlabBench);
 };
@@ -65,42 +64,105 @@ TEST_F(SlabTest, SlabUnitTest)
 TEST_F(SlabBench, SlabBench)
 {
     uint32_t loop = 1024*1024;
+    void ** foo = (void**)malloc(sizeof(void*) * loop);
     uint64_t start, stop;
     start = Cycles::rdtsc();
-    for (uint32_t i = 0; i < loop; i += 10) {
-        slab->get();
-        slab->get();
-        slab->get();
-        slab->get();
-        slab->get();
-        slab->get();
-        slab->get();
-        slab->get();
-        slab->get();
-        slab->get();
+    for (uint32_t i = 0; i < loop; i += 16) {
+        foo[i+0] = slab->get();
+        foo[i+1] = slab->get();
+        foo[i+2] = slab->get();
+        foo[i+3] = slab->get();
+        foo[i+4] = slab->get();
+        foo[i+5] = slab->get();
+        foo[i+6] = slab->get();
+        foo[i+7] = slab->get();
+        foo[i+8] = slab->get();
+        foo[i+9] = slab->get();
+        foo[i+10] = slab->get();
+        foo[i+11] = slab->get();
+        foo[i+12] = slab->get();
+        foo[i+13] = slab->get();
+        foo[i+14] = slab->get();
+        foo[i+15] = slab->get();
     }
     stop = Cycles::rdtsc();
     GTEST_COUT << "Slab get latency: "
-    << Cycles::toNanoseconds(stop - start)/loop << " nano sec "
+    << Cycles::toNanoseconds(stop - start)/loop << " nsec "
     << " free cnt: " << slab->count_free() 
     << std::endl;
 
     start = Cycles::rdtsc();
-    for (uint32_t i = 0; i < loop; i += 10) {
-        malloc(32);
-        malloc(32);
-        malloc(32);
-        malloc(32);
-        malloc(32);
-        malloc(32);
-        malloc(32);
-        malloc(32);
-        malloc(32);
-        malloc(32);
+    for (uint32_t i = 0; i < loop; i += 16) {
+        slab->put(foo[i+0]);
+        slab->put(foo[i+1]);
+        slab->put(foo[i+2]);
+        slab->put(foo[i+3]);
+        slab->put(foo[i+4]);
+        slab->put(foo[i+5]);
+        slab->put(foo[i+6]);
+        slab->put(foo[i+7]);
+        slab->put(foo[i+8]);
+        slab->put(foo[i+9]);
+        slab->put(foo[i+10]);
+        slab->put(foo[i+11]);
+        slab->put(foo[i+12]);
+        slab->put(foo[i+13]);
+        slab->put(foo[i+14]);
+        slab->put(foo[i+15]);
+    }
+    stop = Cycles::rdtsc();
+    GTEST_COUT << "Slab put latency: "
+    << Cycles::toNanoseconds(stop - start)/loop << " nsec "
+    << " free cnt: " << slab->count_free() 
+    << std::endl;
+
+    start = Cycles::rdtsc();
+    for (uint32_t i = 0; i < loop; i += 16) {
+        foo[i+0] = malloc(32);
+        foo[i+1] = malloc(32);
+        foo[i+2] = malloc(32);
+        foo[i+3] = malloc(32);
+        foo[i+4] = malloc(32);
+        foo[i+5] = malloc(32);
+        foo[i+6] = malloc(32);
+        foo[i+7] = malloc(32);
+        foo[i+8] = malloc(32);
+        foo[i+9] = malloc(32);
+        foo[i+10] = malloc(32);
+        foo[i+11] = malloc(32);
+        foo[i+12] = malloc(32);
+        foo[i+13] = malloc(32);
+        foo[i+14] = malloc(32);
+        foo[i+15] = malloc(32);
     }
     stop = Cycles::rdtsc();
     GTEST_COUT << "Malloc(32) latency: "
-    << Cycles::toNanoseconds(stop - start)/loop << " nano sec" << std::endl;
+    << Cycles::toNanoseconds(stop - start)/loop << " nsec" << std::endl;
+
+    start = Cycles::rdtsc();
+    for (uint32_t i = 0; i < loop; i += 16) {
+        free(foo[i+0]);
+        free(foo[i+1]);
+        free(foo[i+2]);
+        free(foo[i+3]);
+        free(foo[i+4]);
+        free(foo[i+5]);
+        free(foo[i+6]);
+        free(foo[i+7]);
+        free(foo[i+8]);
+        free(foo[i+9]);
+        free(foo[i+10]);
+        free(foo[i+11]);
+        free(foo[i+12]);
+        free(foo[i+13]);
+        free(foo[i+14]);
+        free(foo[i+15]);
+    }
+    stop = Cycles::rdtsc();
+    GTEST_COUT << "Free latency: "
+    << Cycles::toNanoseconds(stop - start)/loop << " nsec " << std::endl;
+
+    free (foo);
 }
 
 }  // namespace RAMCloud

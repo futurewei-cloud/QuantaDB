@@ -33,7 +33,7 @@ namespace QDB {
 #define ROUNDDOWN(x, align) ((x/align)*align)
 #define SIZEOF8(x) ROUNDUP(x,8)
 
-template<uint32_t MAGAZINE_CAPACITY = 1024*1024>
+//template<uint32_t MAGAZINE_CAPACITY = 1024*1024>
 class Slab {
   private:
     typedef struct objhdr {
@@ -50,17 +50,18 @@ class Slab {
     } magazine_t;
 
   public:
-    Slab(uint32_t objsize) {
-        objsz = objsize;
+    Slab(uint32_t objsize, uint32_t mag_capacity = 1024*1024) {
+        objsz   = objsize;
+        magacap = mag_capacity;
         bullet_size = sizeof(objhdr_t) + SIZEOF8(objsz);
         add_magazine();
     }
 
     ~Slab() {
-        while (head) {
-            magazine_t * mag = head;
+        while (maghead) {
+            magazine_t * mag = maghead;
             assert(mag->sig == SLAB_MAG_SIG);
-            head = head->next;
+            maghead = maghead->next;
             free(mag);
         }
     };
@@ -98,27 +99,26 @@ class Slab {
   private:
     void add_magazine()
     {
-        magazine_t *mag = (magazine_t *)malloc(sizeof(magazine_t) + bullet_size * MAGAZINE_CAPACITY);
+        magazine_t *mag = (magazine_t *)malloc(sizeof(magazine_t) + bullet_size * magacap);
         mag->sig    = SLAB_MAG_SIG;
         mag->objptr = (objhdr_t *)&mag[1]; 
 
-        mtx.lock();
-        mag->next = head;
-        head = mag;
-        mtx.unlock();
+        do {
+            mag->next = maghead;
+        } while (!__sync_bool_compare_and_swap(&maghead, mag->next, mag));
 
         objhdr_t *obj = mag->objptr;
-        for (uint32_t idx = 0; idx < MAGAZINE_CAPACITY; idx++) {
+        for (uint32_t idx = 0; idx < magacap; idx++) {
             obj->sig = SLAB_OBJ_SIG;
             put(&obj[1]);
             obj = (objhdr_t*)((uint64_t)obj + bullet_size);
         }
     }
 
-    objhdr_t * objfree = NULL;
-    magazine_t * head = NULL;
+    objhdr_t   * objfree = NULL;
+    magazine_t * maghead = NULL;
     uint32_t objsz; 
+    uint32_t magacap; // magazine capacity
     uint32_t bullet_size;
-    std::mutex mtx;
 };
 } // End QDB namespace
