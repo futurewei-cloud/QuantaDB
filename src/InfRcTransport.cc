@@ -1622,7 +1622,19 @@ InfRcTransport::Poller::poll()
             ServerRpc *r = t->serverRpcPool.construct(t, qp, header.nonce);
 
             uint32_t len = request->byte_len - sizeof32(header);
-            // It's very important that we don't let the receive buffer
+#if QDBTX
+	    // For small message, better to transfer the message to a new buffer
+	    // so that it doesn't hold up the limited received buffer
+	    if (t->numFreeServerSrqBuffers < 8 || len < 128) {
+                r->requestPayload.appendCopy(bd->buffer + sizeof(header), len);
+                if (len > LARGE_COPIED_BYTES) {
+                    LOG(WARNING, "running low on server RX buffers, "
+                            "copied %u bytes", len);
+                }
+                t->postSrqReceiveAndKickTransmit(t->serverSrq, bd);
+            }
+#else
+	    // It's very important that we don't let the receive buffer
             // queue get completely empty (if this happens, Infiniband
             // won't retry until after a long delay), so when the queue
             // starts running low we copy incoming packets in order to
@@ -1631,6 +1643,7 @@ InfRcTransport::Poller::poll()
             // Measurements of the YCSB benchmarks in 7/2015 suggest that
             // a value of 4 is (barely) okay, but we now use 8 to provide a
             // larger margin of safety, even if a burst of packets arrives.
+
             if (t->numFreeServerSrqBuffers < 8) {
                 r->requestPayload.appendCopy(bd->buffer + sizeof(header), len);
                 if (len > LARGE_COPIED_BYTES) {
@@ -1638,7 +1651,9 @@ InfRcTransport::Poller::poll()
                             "copied %u bytes", len);
                 }
                 t->postSrqReceiveAndKickTransmit(t->serverSrq, bd);
-            } else {
+            }
+#endif
+	    else {
                 // Let the request use the NIC's buffer directly in order
                 // to avoid copying; it will be returned when the request
                 // buffer is destroyed.
