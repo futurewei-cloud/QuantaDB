@@ -457,7 +457,6 @@ class DLog {
             chunk_tail = chunk_head;
             while (chunk_tail->next && chunk_tail->hdr->sealed) {
                 chunk_tail = chunk_tail->next;
-                printf("move chunk tail to %d\n", chunk_tail->hdr->seqno); fflush(stdout);
             }
         }
 
