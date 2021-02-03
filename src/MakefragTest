@@ -45,6 +45,7 @@ endif
 ifeq ($(QDBTX),yes)
 #QDB specific test files
 TESTS_SRCFILES := \
+          src/quantadb/SlabTest.cc \
           src/quantadb/MemStreamIoTest.cc \
     	  src/quantadb/DataLogTest.cc \
     	  src/quantadb/TxLogTest.cc \

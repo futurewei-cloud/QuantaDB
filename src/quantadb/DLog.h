@@ -65,6 +65,7 @@ namespace QDB {
  *
  *   Return log buffer address at offset 'off'. The output argument 'len' stores buffer length
  */
+
 template <uint64_t CHUNK_SIZE = (16*1024*1024), uint32_t INIT_CHUNKS = 1>
 class DLog {
   private:
