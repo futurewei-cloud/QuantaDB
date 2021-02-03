@@ -25,7 +25,6 @@
 namespace QDB {
 
 #define MAX_KLENGTH 48
-extern Slab *kslab;
 
 extern void *clhash_random;
 extern bool hash_inited;
@@ -100,11 +99,10 @@ struct KLayout {
 	explicit KLayout(uint32_t keySize) : keyLength(keySize)
     {
         assert(keySize <= MAX_KLENGTH);
-        key = (char*)kslab->get();
-        bzero(key, keySize+1);
+        bzero(key, sizeof(key));
     }
 
-    ~KLayout() { kslab->put(key); }
+    ~KLayout() {}
 
     void setkey(const void *k, uint32_t len, uint32_t off)
     {
@@ -142,7 +140,7 @@ struct KLayout {
 
   private:
 	// boost::scoped_array<uint8_t> key;
-    char *key;
+    char key[MAX_KLENGTH];
 };
 
 bool operator == (const KLayout &lhs, const KLayout &rhs);
