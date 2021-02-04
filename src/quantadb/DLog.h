@@ -146,11 +146,24 @@ class DLog {
         cleanup();
     }
 
+    #if (0) // Disable as this is suspected to be causing problem
     // Return log data size
     inline uint64_t size(void)
     {
         return data_size;
     }
+    #else
+    // Return log data size
+    inline uint64_t size(void)
+    {
+        uint64_t lsize = 0;
+        for (chunk_t *tmp = chunk_head; tmp; tmp = tmp->next) {
+            lsize += tmp->hdr->dsize;
+        }
+        return lsize;
+    }
+    #endif
+
 
     // Return free space
     inline uint64_t free_space(void)

@@ -143,10 +143,12 @@ TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t 
             pStamp = tx.getPStamp();
             sStamp = tx.getSStamp();
             return true;
+#if (0) // Disable, as this change is suspected to be causing problem. Needs to be verified.
         } else if ((myCTS < cts) && (myState ==  TxEntry::TX_PENDING)) {
             // TX_PENDING records are sorted (by CYS) in the txlog.
             // If we see an older TX_PENDING entry, no need to look further.
             break;
+#endif
         }
     }
     return false; // indicating not found here
