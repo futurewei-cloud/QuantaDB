@@ -140,9 +140,6 @@ class DLog {
 
     ~DLog()
     {
-        thread_run_run = false;
-        wakeup_replenisher();
-	    pthread_join(tid, NULL);
         cleanup();
     }
 
@@ -156,11 +153,7 @@ class DLog {
     // Return log data size
     inline uint64_t size(void)
     {
-        uint64_t lsize = 0;
-        for (chunk_t *tmp = chunk_head; tmp; tmp = tmp->next) {
-            lsize += tmp->hdr->dsize;
-        }
-        return lsize;
+        return count_data_size();
     }
     #endif
 
@@ -272,8 +265,10 @@ class DLog {
     }
 
     // Delete all chunks
-    void inline cleanup(void)
+    inline void cleanup(void)
     {
+        kill_replenisher(); // this is a side effect. For now, only the txlog cmd tool calls cleanup.
+
         chunk_t * tmp;
         while ((tmp = chunk_head) != NULL) {
             chunk_head = chunk_head->next;
@@ -562,11 +557,18 @@ class DLog {
         closedir(dir);
     }
 
-    void wakeup_replenisher()
+    inline void wakeup_replenisher()
     {
         pthread_mutex_lock(&mtx);
         pthread_cond_signal(&cond);
         pthread_mutex_unlock(&mtx);
+    }
+
+    inline void kill_replenisher()
+    {
+        thread_run_run = false;
+        wakeup_replenisher();
+	    pthread_join(tid, NULL);
     }
 
     // bg thread
