@@ -122,8 +122,6 @@ TEST_F(TxLogTest, TxLogUnitTest)
         uint32_t txState;
         uint64_t pStamp, sStamp;
         bool ret = txlog->getTxInfo(idx, txState, pStamp, sStamp);
-        if (!ret)
-            continue;
         EXPECT_EQ(ret, true);
         EXPECT_EQ(tx_state, txState);
         EXPECT_EQ(pStamp, idx);
