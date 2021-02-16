@@ -146,21 +146,21 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
             if (peerEntry->peerTxState == TxEntry::TX_COMMIT) {
                 txEntry->setTxState(TxEntry::TX_COMMIT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
-		txEntry->setTxResult(TxEntry::TX_COMMIT_PEER);
+                txEntry->setTxResult(TxEntry::TX_COMMIT_PEER);
             } else if (peerEntry->peerTxState == TxEntry::TX_ABORT) {
                 txEntry->setTxState(TxEntry::TX_ABORT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
                 validator->getCounters().alertAborts++;
-		txEntry->setTxResult(TxEntry::TX_ABORT_PEER);
-	    } else if (peerEntry->peerAlertSet == txEntry->getPeerSet()) {
+                txEntry->setTxResult(TxEntry::TX_ABORT_PEER);
+            } else if (peerEntry->peerAlertSet == txEntry->getPeerSet()) {
                 txEntry->setTxState(TxEntry::TX_ABORT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
                 validator->getCounters().alertAborts++;
-		txEntry->setTxResult(TxEntry::TX_ABORT_ALERT);
+                txEntry->setTxResult(TxEntry::TX_ABORT_ALERT);
             } else if (txEntry->isExclusionViolated()) {
                 txEntry->setTxState(TxEntry::TX_ABORT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
-		txEntry->setTxResult(TxEntry::TX_ABORT_PISI);
+                txEntry->setTxResult(TxEntry::TX_ABORT_PISI);
             }
         } else if (txEntry->getTxState() == TxEntry::TX_PENDING) {
             if (txEntry->isExclusionViolated()) {
@@ -195,8 +195,9 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
         txEntry->setTxState(TxEntry::TX_CONFLICT);
 	txEntry->setTxResult(TxEntry::TX_ABORT_CONFLICT);
     }
-    RAMCLOUD_LOG(NOTICE, "evaluate cts %lu  states %u %u %u",
-	(uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(), txEntry->getTxCIState(), peerEntry->peerTxState);
+    RAMCLOUD_LOG(NOTICE, "evaluate cts %lu  states %u %u %u %lu %lu",
+            (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(), txEntry->getTxCIState(), peerEntry->peerTxState,
+            peerEntry->peerSeenSet.size(), peerEntry->peerAlertSet.size());
     return true; //concluded
 }
 
@@ -250,10 +251,10 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
                 assert(peerEntry->peerTxState != TxEntry::TX_ABORT);
                 peerEntry->peerTxState = TxEntry::TX_COMMIT;
             }
-RAMCLOUD_LOG(NOTICE, "updatePeer %lu %lu peerState %u peerId %lu cnt %lu",
+RAMCLOUD_LOG(NOTICE, "updatePeer %lu %lu peerState %u peerId %lu cnt %lu %lu",
    (uint64_t)(cts >> 64),
    (uint64_t)(cts & (((__uint128_t)1<<64) -1)), peerEntry->peerTxState,
-   peerId, peerEntry->peerSeenSet.size());
+   peerId, peerEntry->peerSeenSet.size(), peerEntry->peerAlertSet.size());
             txEntry = peerEntry->txEntry;
 
             // RAMCLOUD_LOG(NOTICE, "updatePeer %lu %lu txEntry %lu peerId %lu cnt %lu", (uint64_t)(cts >> 64),

@@ -376,9 +376,9 @@ Validator::serialize() {
             txEntry->setTxCIState(TxEntry::TX_CI_SCHEDULED);
             hasEvent = true;
 
-            RAMCLOUD_LOG(NOTICE, "activate  cts %lu %lu cnt %lu",
+            RAMCLOUD_LOG(NOTICE, "activate  cts %lu %lu cnt %lu %lu",
                          (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
-                         activeTxSet.getRemovedTxCount());
+                         activeTxSet.getCount(), activeTxSet.getRemovedTxCount());
         }
 
         /*while (concludeQueue.try_pop(txEntry)) {
@@ -535,12 +535,17 @@ Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
 
     counters.infoReceives++;
     if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, myTxState, myPStamp, mySStamp, this)) {
-        if (txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp)
+        bool ret;
+        if ((ret = txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp))
                 && myTxState != TxEntry::TX_PENDING) {
             //The commit intent is concluded
             counters.latePeers++;
             return true;
         }
+
+        if (!ret)
+            RAMCLOUD_LOG(NOTICE, "receive cts %lu from %lu not in txlog",
+                    (uint64_t)(cts >> 64), peerId);
 
         //Handle the fact that peer info is received before its tx commit intent is received,
         //hence not finding an existing peer entry,
