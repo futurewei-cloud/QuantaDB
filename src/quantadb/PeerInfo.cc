@@ -322,6 +322,12 @@ PeerInfo::send(Validator *validator) {
         }
 
         TxEntry* txEntry = peerEntry->txEntry;
+        if (txEntry == NULL) {
+            iteratorQueue.push(peerEntry);
+            peerEntry->mutexForPeerUpdate.unlock();
+	        RAMCLOUD_LOG(NOTICE, "requeue: cts %lu", peerEntry->meta.cStamp);
+            continue;
+        }
 
         if (currentTick > lastTick)
             RAMCLOUD_LOG(NOTICE, "finding: cts %lu states %u %u %u now %lu",

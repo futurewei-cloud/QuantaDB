@@ -33,7 +33,7 @@ namespace QDB {
  *
  */
 
-#define SEQUENCER_DELTA 400000    // 400 usec delay
+#define SEQUENCER_DELTA 100000    // 100 usec delay
 
 class Sequencer {
     public:
