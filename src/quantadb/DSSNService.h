@@ -48,6 +48,11 @@ class DSSNService : public Service {
        static ServiceLocator sl(serverConfig->localLocator);
        return sl.getOption("host");
    }
+   DSSNServiceMonitor *getmMonitor()
+   {
+	   return mMonitor;
+   };
+
  private:
    inline uint64_t getServerId() {
        AdminService* admin = context->getAdminService();

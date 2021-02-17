@@ -62,6 +62,16 @@ DSSNServiceMonitor::DSSNServiceMonitor(DSSNService *service, Exposer* exposer) {
 	        addTcMetric((DSSNServiceOp)i);
 	    exposer->RegisterCollectable(mPTcRegistry);
 	}
+	if (IS_TRACING_MONITOR_ENABLED()) {
+	    //Create the list of latency Metrics for dist Tx.
+	    mPDlRegistry = std::make_shared<Registry>();
+	    mPDlCounter = &BuildHistogram()
+	      .Name("DSSNService_DT")
+	      .Help("Operation histogram")
+	      .Register(*mPDlRegistry);
+	    addDistLatency();
+	    exposer->RegisterCollectable(mPDlRegistry);
+	}
 	if (startSampler) {
 	    mSampler = new std::thread(sample, this);
 	}
@@ -104,6 +114,15 @@ DSSNServiceMonitor::collectTcMetrics() {
 	    mPTcCounterHandle[i]->Observe(Cycles::toMicroseconds(mOps[i].latency));
 	}
       }
+  }
+#endif
+}
+
+void
+DSSNServiceMonitor::collectDistTxLatency(uint64_t latency) {
+#ifdef MONITOR
+  if (mEnabled) {
+	mPDlHandle->Observe(latency/1000); // latency is in nanoseconds, not cycle. 
   }
 #endif
 }

@@ -66,6 +66,7 @@ class DSSNServiceMonitor {
      void collectDxMetrics();
      void collectPfMetrics();
      void collectTcMetrics();
+     void collectDistTxLatency(uint64_t latency);
      void clearMetrics();
      bool isEnabled() { return mEnabled; }
     /**
@@ -95,6 +96,13 @@ class DSSNServiceMonitor {
 	mPTcCounterHandle[type] = &mPTcCounters->Add({{"label", DssnOpLabels[type]}}, bucketsInMicroSec);
     }
     /**
+     * Helper function to add a tracing histogram
+     */
+    void addDistLatency() {
+        prometheus::Histogram::BucketBoundaries bucketsInMicroSec{10, 50, 100, 200, 300, 400, 500, 750, 1000, 5000, 10000, 50000, 100000, 500000};
+	mPDlHandle = &mPDlCounter->Add({{"label", "DistTxLatency"}}, bucketsInMicroSec);
+    }
+    /**
      * The Diagnostic related counter
      */
     std::shared_ptr<prometheus::Registry> mPDxRegistry;
@@ -103,19 +111,27 @@ class DSSNServiceMonitor {
     /**
      * The Performance related counter
      */
-     std::shared_ptr<prometheus::Registry> mPPfRegistry;
-     prometheus::Family<prometheus::Gauge>* mPPfCounters = nullptr;
-     prometheus::Gauge* mPPfCounterHandle[DSSNServiceOpsMax];
+    std::shared_ptr<prometheus::Registry> mPPfRegistry;
+    prometheus::Family<prometheus::Gauge>* mPPfCounters = nullptr;
+    prometheus::Gauge* mPPfCounterHandle[DSSNServiceOpsMax];
     /**
      * The Tracing related counter
      */
-     std::shared_ptr<prometheus::Registry> mPTcRegistry;
-     prometheus::Family<prometheus::Histogram>* mPTcCounters = nullptr;
-     prometheus::Histogram* mPTcCounterHandle[DSSNServiceOpsMax];
-     DSSNService* mService;
-     Metric mOps[DSSNServiceOpsMax];
-     std::thread* mSampler;
-     bool mEnabled;
+    std::shared_ptr<prometheus::Registry> mPTcRegistry;
+    prometheus::Family<prometheus::Histogram>* mPTcCounters = nullptr;
+    prometheus::Histogram* mPTcCounterHandle[DSSNServiceOpsMax];
+
+    /* 
+     * The latency tracing for Dist Tx.
+     */
+    std::shared_ptr<prometheus::Registry> mPDlRegistry;
+    prometheus::Family<prometheus::Histogram>* mPDlCounter = nullptr;
+    prometheus::Histogram* mPDlHandle = nullptr;
+
+    DSSNService* mService;
+    Metric mOps[DSSNServiceOpsMax];
+    std::thread* mSampler;
+    bool mEnabled;
 };
 
 }

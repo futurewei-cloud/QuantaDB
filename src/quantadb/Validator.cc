@@ -17,6 +17,7 @@
 #include "Validator.h"
 #include <thread>
 #include "Logger.h"
+#include "DSSNServiceMonitor.h"
 
 namespace QDB {
 
@@ -376,9 +377,9 @@ Validator::serialize() {
             txEntry->setTxCIState(TxEntry::TX_CI_SCHEDULED);
             hasEvent = true;
 
-            RAMCLOUD_LOG(NOTICE, "activate  cts %lu %lu cnt %lu %lu",
+            RAMCLOUD_LOG(NOTICE, "activate  cts %lu %lu cnt %lu",
                          (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
-                         activeTxSet.getCount(), activeTxSet.getRemovedTxCount());
+                         activeTxSet.getRemovedTxCount());
         }
 
         /*while (concludeQueue.try_pop(txEntry)) {
@@ -535,17 +536,12 @@ Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
 
     counters.infoReceives++;
     if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, myTxState, myPStamp, mySStamp, this)) {
-        bool ret;
-        if ((ret = txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp))
+        if (txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp)
                 && myTxState != TxEntry::TX_PENDING) {
             //The commit intent is concluded
             counters.latePeers++;
             return true;
         }
-
-        if (!ret)
-            RAMCLOUD_LOG(NOTICE, "receive cts %lu from %lu not in txlog",
-                    (uint64_t)(cts >> 64), peerId);
 
         //Handle the fact that peer info is received before its tx commit intent is received,
         //hence not finding an existing peer entry,
@@ -609,10 +605,15 @@ Validator::sendTxCommitReply(TxEntry *txEntry) {
     if (rpcService) {
         rpcService->sendTxCommitReply(txEntry);
 	if (txEntry->local_commit != 0) {
+	    uint64_t latency = getClockValue() - txEntry->local_commit;
 	    RAMCLOUD_LOG(NOTICE, "commitReply: cts %lu local_commit: %lu latency %lu us %s",
 		(uint64_t)(txEntry->getCTS() >> 64), txEntry->local_commit,
-		(getClockValue() - txEntry->local_commit)/1000,
-		txEntry->getTxResult());
+		latency/1000, txEntry->getTxResult());
+
+#ifdef MONITOR
+	    DSSNServiceMonitor *m = rpcService->getmMonitor();
+	    m->collectDistTxLatency(latency); 
+#endif
 	} else {
 	    RAMCLOUD_LOG(NOTICE, "commitReply: cts %lu", (uint64_t)(txEntry->getCTS() >> 64));
 	}
