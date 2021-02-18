@@ -495,9 +495,9 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         /*for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
             RAMCLOUD_LOG(NOTICE, "peerId %lu", *it);
         }*/
-	// Only tracking the cross shard tx
-	txEntry->local_commit = getClockValue();
-	txEntry->setTxResult(TxEntry::TX_UNCOMMIT);
+        // Only tracking the cross shard tx
+        txEntry->local_commit = getClockValue();
+        txEntry->setTxResult(TxEntry::TX_UNCOMMIT);
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED); //set it before inserting to queue lest another thread might set CIState first
 
         while (!peerInfo.add(txEntry->getCTS(), txEntry, this));
@@ -506,7 +506,7 @@ Validator::insertTxEntry(TxEntry *txEntry) {
             counters.busyAborts.fetch_add(1);
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
-	    txEntry->setTxResult(TxEntry::TX_ABORT_TRIVIAL);
+            txEntry->setTxResult(TxEntry::TX_ABORT_TRIVIAL);
             peerInfo.remove(txEntry->getCTS(), this);
             return false; //fail to be queued
         }
@@ -641,7 +641,6 @@ bool
 Validator::logCounters() {
     if (logLevel < LOG_INFO)
         return false;
-    char key[] = {1};
     char val[3000];
     int c = 0;
     int s = sizeof(val);
@@ -688,8 +687,8 @@ Validator::logCounters() {
 
     assert(s >= c);
     assert(strlen(val) < sizeof(val));
-    return txLog.fabricate(get128bClockValue(), (uint8_t *)key, (uint32_t)sizeof(key),
-            (uint8_t *)val, sizeof(val) /*(uint32_t)strlen(val) + 1*/);
+    RAMCLOUD_LOG(NOTICE, "%s", val);
+    return true;
 }
 
 bool

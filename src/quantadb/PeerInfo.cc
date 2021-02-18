@@ -344,9 +344,9 @@ PeerInfo::send(Validator *validator) {
                 && nsTime > (uint64_t)(txEntry->getCTS() >> 64)
                 && nsTime - (uint64_t)(txEntry->getCTS() >> 64) > alertThreshold) {
                 txEntry->setTxState(TxEntry::TX_ALERT);
-	    RAMCLOUD_LOG(NOTICE, "Timeout: cts %lu states %u %u %u now %lu",
-		(uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(),
-		txEntry->getTxCIState(), peerEntry->peerTxState, nsTime);
+                RAMCLOUD_LOG(NOTICE, "Timeout: cts %lu states %u %u %u now %lu",
+                        (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(),
+                        txEntry->getTxCIState(), peerEntry->peerTxState, nsTime);
             }
 
             if (txEntry->getTxState() == TxEntry::TX_ALERT) {
