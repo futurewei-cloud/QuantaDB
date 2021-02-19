@@ -9,6 +9,7 @@ TOPOBJDIR	:= obj$(TOPOBJSUFFIX)
 CFLAGS = -I$(TOP)/src/quantadb -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TOP)/$(TOPOBJDIR) -I$(TOP)/prometheus-cpp/core/include/ -I$(TOP)/prometheus-cpp/pull/include/ -I$(TOP)/prometheus-cpp/build/pull/include/ -I$(TOP)/prometheus-cpp/build/core/include/
 
 CFLAGS += -g
+#CFLaGS += -O3 -NDEBUG
 
 %.o:$(TOP)/src/%.cc
 	g++ -c $(CFLAGS) $< -o $@
@@ -16,10 +17,13 @@ CFLAGS += -g
 %.o:$(TOP)/src/quantadb/%.cc
 	g++ -c $(CFLAGS) $< -o $@
 
+%.o:%.cc
+	g++ -c $(CFLAGS) $< -o $@
+
 %:%.o
 	g++ -o $@ $^
 
-TARGETS = txlog datalog rdtscp rdtscp_test2 process_cpu phc_test
+TARGETS = txlog datalog rdtscp rdtscp_test2 process_cpu phc_test slab_bench slab_bench_je
 
 all: $(TARGETS)
 
@@ -43,6 +47,14 @@ rdtscp_test2: rdtscp_test2.o
 
 phc_test: phc_test.c
 	g++ -DMAIN_FUNCTION phc_test.c -o phc_test
+
+slab_bench_je: slab_bench.o
+	g++ $(CFLAGS) -o $@ $^ -lpthread -ljemalloc
+	./$@
+
+slab_bench: slab_bench.o
+	g++ $(CFLAGS) -o $@ $^ -lpthread
+	./$@
 
 clean:
 	rm -rf txlog_dumper *.o core $(TARGETS)

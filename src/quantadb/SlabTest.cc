@@ -162,6 +162,54 @@ TEST_F(SlabBench, SlabBench)
     GTEST_COUT << "Free latency: "
     << Cycles::toNanoseconds(stop - start)/loop << " nsec " << std::endl;
 
+    /* ----------------------- */
+
+    start = Cycles::rdtsc();
+    for (uint32_t i = 0; i < loop; i += 16) {
+        foo[i+0] = new char[32];
+        foo[i+1] = new char[32];
+        foo[i+2] = new char[32];
+        foo[i+3] = new char[32];
+        foo[i+4] = new char[32];
+        foo[i+5] = new char[32];
+        foo[i+6] = new char[32];
+        foo[i+7] = new char[32];
+        foo[i+8] = new char[32];
+        foo[i+9] = new char[32];
+        foo[i+10] = new char[32];
+        foo[i+11] = new char[32];
+        foo[i+12] = new char[32];
+        foo[i+13] = new char[32];
+        foo[i+14] = new char[32];
+        foo[i+15] = new char[32];
+    }
+    stop = Cycles::rdtsc();
+    GTEST_COUT << "new char[32] latency: "
+    << Cycles::toNanoseconds(stop - start)/loop << " nsec" << std::endl;
+
+    start = Cycles::rdtsc();
+    for (uint32_t i = 0; i < loop; i += 16) {
+        delete (char*)foo[i+0];
+        delete (char*)foo[i+1];
+        delete (char*)foo[i+2];
+        delete (char*)foo[i+3];
+        delete (char*)foo[i+4];
+        delete (char*)foo[i+5];
+        delete (char*)foo[i+6];
+        delete (char*)foo[i+7];
+        delete (char*)foo[i+8];
+        delete (char*)foo[i+9];
+        delete (char*)foo[i+10];
+        delete (char*)foo[i+11];
+        delete (char*)foo[i+12];
+        delete (char*)foo[i+13];
+        delete (char*)foo[i+14];
+        delete (char*)foo[i+15];
+    }
+    stop = Cycles::rdtsc();
+    GTEST_COUT << "delete latency: "
+    << Cycles::toNanoseconds(stop - start)/loop << " nsec " << std::endl;
+
     free (foo);
 }
 
