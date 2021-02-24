@@ -23,7 +23,7 @@ CFLAGS += -g
 %:%.o
 	g++ -o $@ $^
 
-TARGETS = txlog datalog rdtscp rdtscp_test2 process_cpu phc_test slab_bench slab_bench_je
+TARGETS = txlog datalog rdtscp rdtscp_test2 process_cpu phc_test slab_bench slab_bench_je slab_bench_tc
 
 all: $(TARGETS)
 
@@ -48,13 +48,26 @@ rdtscp_test2: rdtscp_test2.o
 phc_test: phc_test.c
 	g++ -DMAIN_FUNCTION phc_test.c -o phc_test
 
+slab_bench_tc: slab_bench.o
+	g++ $(CFLAGS) -o $@ $^ -lpthread -ltcmalloc
+
 slab_bench_je: slab_bench.o
 	g++ $(CFLAGS) -o $@ $^ -lpthread -ljemalloc
-	./$@
 
 slab_bench: slab_bench.o
 	g++ $(CFLAGS) -o $@ $^ -lpthread
-	./$@
+
+run_bench:
+	(for prog in slab_bench slab_bench_je slab_bench_tc; do \
+	  for type in malloc new slab; do \
+	    for size in 32 1024 vari; do \
+	        for nth in 1 4 8 16; do \
+	            echo $$prog $$type $$size $$nth; \
+	            ./$$prog $$type $$size $$nth; \
+	        done; \
+	    done; \
+	  done; \
+	done)
 
 clean:
 	rm -rf txlog_dumper *.o core $(TARGETS)
