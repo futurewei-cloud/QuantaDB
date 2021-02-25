@@ -251,23 +251,18 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
                 assert(peerEntry->peerTxState != TxEntry::TX_ABORT);
                 peerEntry->peerTxState = TxEntry::TX_COMMIT;
             }
-RAMCLOUD_LOG(NOTICE, "updatePeer %lu %lu peerState %u peerId %lu cnt %lu %lu",
-   (uint64_t)(cts >> 64),
-   (uint64_t)(cts & (((__uint128_t)1<<64) -1)), peerEntry->peerTxState,
-   peerId, peerEntry->peerSeenSet.size(), peerEntry->peerAlertSet.size());
+
             txEntry = peerEntry->txEntry;
 
-            // RAMCLOUD_LOG(NOTICE, "updatePeer %lu %lu txEntry %lu peerId %lu cnt %lu", (uint64_t)(cts >> 64),
-            //        (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry,
-            //        peerId, peerEntry->peerSeenSet.size());
+            RAMCLOUD_LOG(NOTICE, "updatePeer %lu txEntry %lu peerState %u peerId %lu cnt %lu %lu",
+                    (uint64_t)(cts >> 64),
+                    (uint64_t)txEntry, peerEntry->peerTxState,
+                    peerId, peerEntry->peerSeenSet.size(), peerEntry->peerAlertSet.size());
+
             if (txEntry != NULL) {
                 if (txEntry->getCTS() != cts) abort(); //make sure txEntry contents not corrupted
                 txEntry->setPStamp(std::max(txEntry->getPStamp(), peerEntry->meta.pStamp));
                 txEntry->setSStamp(std::min(txEntry->getSStamp(), peerEntry->meta.sStamp));
-
-                if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
-                    logAndSend(txEntry, validator);
-                }
 
                 evaluate(peerEntry, txEntry, validator);
 
