@@ -143,20 +143,11 @@ class DLog {
         cleanup();
     }
 
-    #if (0) // Disable as this is suspected to be causing problem
     // Return log data size
     inline uint64_t size(void)
     {
         return data_size;
     }
-    #else
-    // Return log data size
-    inline uint64_t size(void)
-    {
-        return count_data_size();
-    }
-    #endif
-
 
     // Return free space
     inline uint64_t free_space(void)
