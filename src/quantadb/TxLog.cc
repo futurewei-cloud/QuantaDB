@@ -20,12 +20,26 @@ namespace QDB {
 bool
 TxLog::add(TxEntry *txEntry)
 {
+    uint32_t cts_marking = 0;
+    __uint128_t cts = txEntry->getCTS();
+
     uint32_t logsize = txEntry->serializeSize();
     uint32_t totalsz = logsize + sizeof(TxLogHeader_t) + sizeof(TxLogTailer_t);
-    TxLogHeader_t hdr = {totalsz, TX_LOG_HEAD_SIG};
-    TxLogTailer_t tal = {totalsz, TX_LOG_TAIL_SIG};
 
-    void *dst = log->reserve(totalsz);
+    void *dst = log->reserve(totalsz); // First secure our position in the log space
+
+    while (cts > max_cts) {
+        __uint128_t curr_max = max_cts;
+        if ((cts > curr_max) &&
+            __sync_bool_compare_and_swap(&max_cts, curr_max, cts)) {
+            cts_marking = 0x80000000;
+            break;
+        }
+    }
+
+    TxLogHeader_t hdr = {totalsz|cts_marking, TX_LOG_HEAD_SIG};
+    TxLogTailer_t tal = {totalsz|cts_marking, TX_LOG_TAIL_SIG};
+
     outMemStream out((uint8_t*)dst, totalsz);
     out.write(&hdr, sizeof(hdr));
     txEntry->serialize( out );
@@ -66,7 +80,8 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, TxEntry *txOut)
     TxLogTailer_t * tal;
 
     while ((hdr = (TxLogHeader_t*)log->getaddr (off, &dlen))) {
-        tal = (TxLogTailer_t*)((char *)hdr + hdr->length - sizeof(TxLogTailer_t));
+        uint32_t record_length = LOG_RECORD_LENGTH(hdr->length);
+        tal = (TxLogTailer_t*)((char *)hdr + record_length - sizeof(TxLogTailer_t));
         if (tal->sig != TX_LOG_TAIL_SIG) {
             usleep(1); // Log writer in progress
             assert (retry++ < 100);
@@ -75,9 +90,9 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, TxEntry *txOut)
         assert (hdr->sig == TX_LOG_HEAD_SIG);
 
         retry = 0;
-        off += hdr->length;
+        off += record_length;
 
-        inMemStream in((uint8_t*)&hdr[1], hdr->length - sizeof(hdr) - sizeof(tal));
+        inMemStream in((uint8_t*)&hdr[1], record_length - sizeof(hdr) - sizeof(tal));
         txOut->deSerialize( in );
         if (txOut->getTxState() == TxEntry::TX_PENDING) {
             idOut = off;
@@ -103,9 +118,10 @@ TxLog::getTxState(__uint128_t cts)
             continue;
         }
         retry = 0;
-        tail_off -= tal->length; // next tail
+        uint32_t record_length = LOG_RECORD_LENGTH(tal->length);
+        tail_off -= record_length;
 
-        inMemStream in((uint8_t*)tal - tal->length + hdrsz, tal->length - hdrsz);
+        inMemStream in((uint8_t*)tal - record_length + hdrsz, record_length - hdrsz);
         TxEntry tx(1,1);
         tx.deSerialize_common( in );
         if (tx.getCTS() == cts) { 
@@ -131,9 +147,11 @@ TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t 
             continue;
         }
         retry = 0;
-        tail_off -= tal->length; // next tail
+        bool cts_marked = CTS_MARKED(tal->length);
+        uint32_t record_length = LOG_RECORD_LENGTH(tal->length);
+        tail_off -= record_length; // next tail
 
-        inMemStream in((uint8_t*)tal - tal->length + hdrsz, tal->length - hdrsz);
+        inMemStream in((uint8_t*)tal - record_length + hdrsz, record_length - hdrsz);
         TxEntry tx(1,1);
         tx.deSerialize_common( in );
         __uint128_t myCTS = tx.getCTS();
@@ -145,9 +163,9 @@ TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t 
             return true;
         }
 
-        if ((myCTS < cts) && (myState ==  TxEntry::TX_PENDING)) {
-            // TX_PENDING records are sorted (by CYS) in the txlog.
-            // If we see an older TX_PENDING entry, no need to look further.
+        if ((myCTS < cts) && cts_marked) {
+            // CTS_MARKED records are sorted (by CYS) in the txlog.
+            // If we see an older cts marked entry, no need to look further.
             break;
         }
     }
@@ -197,12 +215,13 @@ TxLog::dump(int fd)
     // Search backward to find the latest matching Tx
     int64_t tail_off = size() - sizeof(TxLogTailer_t);;
     while ((tail_off > 0) && (tal = (TxLogTailer_t*)log->getaddr (tail_off))) {
+        uint32_t record_length = LOG_RECORD_LENGTH(tal->length);
         assert(tal->sig == TX_LOG_TAIL_SIG);
-        TxLogHeader_t *hdr = (TxLogHeader_t*) ((char*)tal - tal->length + sizeof(TxLogHeader_t));
+        TxLogHeader_t *hdr = (TxLogHeader_t*) ((char*)tal - record_length + sizeof(TxLogHeader_t));
         assert(hdr->sig == TX_LOG_HEAD_SIG);
         assert(tal->length == hdr->length);
 
-        inMemStream in((uint8_t*)tal - tal->length + hdrsz, tal->length - hdrsz);
+        inMemStream in((uint8_t*)tal - record_length + hdrsz, record_length - hdrsz);
         TxEntry *tx = new TxEntry(0,0);
         tx->deSerialize( in );
 
@@ -210,12 +229,13 @@ TxLog::dump(int fd)
         txSz = tx->serializeSize(&wsetSz, &rsetSz, &peerSz);
 
         dprintf(fd, "Head_off %ld, Tail_off %ld, LogSz: %d, txSz:%d wrSetSz:%d rdSetSz:%d peerSetSz:%d \n",
-                tail_off - tal->length + sizeof(TxLogHeader_t), tail_off, tal->length,
+                tail_off - record_length + sizeof(TxLogHeader_t), tail_off, record_length,
                 txSz, wsetSz, rsetSz, peerSz);
 
-        dprintf(fd, "CTS: %lu:%lu, TxState: %s, pStamp: %lu, sStamp: %lu\n",
+        dprintf(fd, "CTS: %lu:%lu, TxState: %s, pStamp: %lu, sStamp: %lu, %s\n",
             (uint64_t)(tx->getCTS()>>64), (uint64_t)tx->getCTS(),
-            txStateToStr(tx->getTxState()), tx->getPStamp(), tx->getSStamp());
+            txStateToStr(tx->getTxState()), tx->getPStamp(), tx->getSStamp(),
+            CTS_MARKED(tal->length)? "CTS MArking" : "");
 
         dprintf(fd, "\tpeerSet: ");
         peerSet =   tx->getPeerSet();
@@ -259,7 +279,7 @@ TxLog::dump(int fd)
         }
         dprintf(fd, "\n");
 
-        tail_off -= tal->length; // next tail
+        tail_off -= record_length; // next tail
         delete tx;
     }
 }

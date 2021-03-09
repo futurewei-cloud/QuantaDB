@@ -38,6 +38,7 @@ class TxLog {
         std::string txlog_id(TXLOG_DIR);
         txlog_id += "/" + logid;
         log = new DLog<TXLOG_CHUNK_SIZE, 16>(txlog_id, recovery_mode);
+        max_cts = 0;
     }
 
     //add to the log, where txEntry->getTxState() decides the handling within
@@ -88,14 +89,20 @@ class TxLog {
     private:
     // private struct
     typedef struct TxLogMarker {
+        #define LOG_RECORD_LENGTH(len)  (len & 0x7FFFFFFF)
+        #define CTS_MARKED(len)         ((len & 0x80000000) != 0)
+        uint32_t length;// 31-bit Tx log record size, include header and tailer
+                        // The MSB is reserved for CTS Marking
         #define TX_LOG_HEAD_SIG 0xA5A5F0F0
         #define TX_LOG_TAIL_SIG 0xF0F0A5A5
-        uint32_t length;// Tx log record size, include header and tailer
         uint32_t sig;   // signature
     } TxLogHeader_t, TxLogTailer_t;
 
     // private variables
     DLog<TXLOG_CHUNK_SIZE, 16> *log;
+
+    // Max recorded CTS
+    __uint128_t max_cts;
 }; // TxLog
 
 } // end namespace QDB

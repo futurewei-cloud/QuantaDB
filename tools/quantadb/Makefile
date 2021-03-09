@@ -6,7 +6,7 @@ TOPOBJSUFFIX := $(shell git symbolic-ref -q HEAD | \
 
 TOPOBJDIR	:= obj$(TOPOBJSUFFIX)
 
-CFLAGS = -I$(TOP)/src/quantadb -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TOP)/$(TOPOBJDIR) -I$(TOP)/prometheus-cpp/core/include/ -I$(TOP)/prometheus-cpp/pull/include/ -I$(TOP)/prometheus-cpp/build/pull/include/ -I$(TOP)/prometheus-cpp/build/core/include/
+CFLAGS = -I$(TOP)/src/quantadb -I$(TOP)/src -I$(TOP)/install/include/ramcloud -I$(TOP)/$(TOPOBJDIR) -I$(TOP)/prometheus-cpp/core/include/ -I$(TOP)/prometheus-cpp/pull/include/ -I$(TOP)/prometheus-cpp/build/pull/include/ -I$(TOP)/prometheus-cpp/build/core/include/ -march=native
 
 CFLAGS += -g
 #CFLaGS += -O3 -NDEBUG
