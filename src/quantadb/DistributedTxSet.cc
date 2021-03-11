@@ -195,6 +195,10 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
         hotDependQueue.remove(itHot, txHot);
         removeFromCBF(hotDependCBF, txHot);
         removedTxCount.fetch_add(1);
+        if (txHot->getCTS() < lastActivated) {
+            //RAMCLOUD_LOG(NOTICE, "activate hot %lu less %lu", (uint64_t)(txHot->getCTS() >> 64), (uint64_t)(lastActivated >> 64));
+        } else
+            lastActivated = txHot->getCTS();
         return txHot;
     }
 
@@ -204,6 +208,10 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
         coldDependQueue.remove(itCold, txCold);
         removeFromCBF(coldDependCBF, txCold);
         removedTxCount.fetch_add(1);
+        if (txCold->getCTS() < lastActivated) {
+            //RAMCLOUD_LOG(NOTICE, "activate cold %lu less %lu", (uint64_t)(txCold->getCTS() >> 64), (uint64_t)(lastActivated >> 64));
+        } else
+            lastActivated = txCold->getCTS();
         return txCold;
     }
 
@@ -213,6 +221,11 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
                 independentQueue.remove(itIndepend, txIndepend);
                 removeFromCBF(independentCBF, txIndepend);
                 removedTxCount.fetch_add(1);
+                if (lastActivated != (__int128_t)-1 && txIndepend->getCTS() < lastActivated) {
+                    //RAMCLOUD_LOG(ERROR, "activate indep %lu less %lu", (uint64_t)(txIndepend->getCTS() >> 64), (uint64_t)(lastActivated >> 64));
+                } else
+                    lastActivated = txIndepend->getCTS();
+                    
                 return txIndepend;
             }
         } while ((txIndepend = independentQueue.findNext(itIndepend)));

@@ -69,6 +69,8 @@ class DistributedTxSet {
 	//for performance optimization
 	uint64_t activitySignature = -1;
 
+    __uint128_t lastActivated = (__uint128_t)-1;
+
 	template <class T> inline bool dependsOnEarlierTxs(T &cbf, TxEntry *txEntry, uint32_t &count);
 	template <class T> inline bool dependsOnEarlierTxs(T &cbf, TxEntry *txEntry);
 	template <class T> inline bool addToCBF(T &cbf, TxEntry *txEntry);

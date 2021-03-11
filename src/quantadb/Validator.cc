@@ -536,7 +536,8 @@ Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
 
     counters.infoReceives++;
     if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, myTxState, myPStamp, mySStamp, this)) {
-        if (txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp)
+        bool ret;
+        if ((ret = txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp))
                 && myTxState != TxEntry::TX_PENDING) {
             //The commit intent is concluded
             counters.latePeers++;
@@ -566,7 +567,7 @@ Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint6
     if (rpcService == NULL) //unit test may make rpcService NULL
         return;
 
-    uint32_t myTxState = TxEntry::TX_PENDING;
+    uint32_t myTxState = 0;
     uint64_t myPStamp = 0, mySStamp = -1;
     if (receiveSSNInfo(peerId, cts, pstamp, sstamp, peerTxState,
             myPStamp, mySStamp, myTxState)) {

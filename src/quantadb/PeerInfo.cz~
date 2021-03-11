@@ -29,8 +29,51 @@ PeerInfo::~PeerInfo() {
 }
 
 bool
+PeerInfo::poseEvent(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi, TxEntry *txEntry) {
+    PeerEvent *peerEvent = new PeerEvent();
+    peerEvent->cts = cts;
+    peerEvent->peerId = peerId;
+    peerEvent->peerTxState = peerTxState;
+    peerEvent->peerPStamp = eta;
+    peerEvent->peerSStamp = pi;
+    peerEvent->txEntry = txEntry;
+    inEvents++;
+    RAMCLOUD_LOG(NOTICE, "pose %lu txEntry %lu ins %lu outs %lu",
+            (uint64_t)(cts >> 64), (uint64_t)txEntry, inEvents.load(), outEvents.load());
+    return eventQueue.push(peerEvent);
+}
+
+bool
+PeerInfo::processEvent(Validator *validator) {
+    while (!eventQueue.empty()) {
+        PeerEvent *peerEvent;
+        if (!eventQueue.pop(peerEvent))
+            abort();
+
+        //Fixme can be simplied with better update()
+        RAMCLOUD_LOG(NOTICE, "event %lu txEntry %lu ins %lu outs %lu",
+                (uint64_t)(peerEvent->cts >> 64), (uint64_t)peerEvent->txEntry,
+                inEvents.load(), outEvents.load());
+        /*PeerInfoIterator it;
+        it = peerInfo.find(peerEvent->cts);
+        if (it == peerInfo.end()) {
+            add(peerEvent->cts, peerEvent->peerId, peerEvent->peerTxState,
+                    peerEvent->peerPStamp, peerEvent->peerSStamp, peerEvent->txEntry, validator);
+        } else {
+            update(peerEvent->cts, peerEvent->peerId, peerEvent->peerTxState,
+                    peerEvent->peerPStamp, peerEvent->peerSStamp, peerEvent->txEntry, validator);
+        }*/
+        update(peerEvent->cts, peerEvent->peerId, peerEvent->peerTxState,
+                            peerEvent->peerPStamp, peerEvent->peerSStamp, peerEvent->txEntry, validator);
+        delete peerEvent;
+    }
+    return true;
+}
+
+
+bool
 PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
-    mutexForPeerAdd.lock();
+//Fixme    mutexForPeerAdd.lock();
     PeerInfoIterator it = peerInfo.find(cts);
     if (it == peerInfo.end()) {
         RAMCLOUD_LOG(NOTICE, "addPeer %lu %lu txEntry %lu", (uint64_t)(cts >> 64),
@@ -73,68 +116,37 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
         }
         existing->mutexForPeerUpdate.unlock();
     }
-    mutexForPeerAdd.unlock();
+ //Fixme   mutexForPeerAdd.unlock();
     return true;
 }
-/*
-//Fixme: unused currently
-bool
-PeerInfo::addPartial(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t eta, uint64_t pi,
-        Validator *validator) {
-    //mutexForPeerAdd.lock();
-    PeerInfoIterator it = peerInfo.find(cts);
-    if (it == peerInfo.end()) {
-        RAMCLOUD_LOG(NOTICE, "addPartial %lu %lu ", (uint64_t)(cts >> 64),
-                (uint64_t)(cts & (((__uint128_t)1<<64) -1)));
-
-        PeerEntry* entry = new PeerEntry();
-        entry->isValid = true;
-        entry->txEntry = NULL;
-        entry->meta.cStamp = cts >> 64;
-        if (!peerInfo.insert(std::make_pair(cts, entry)).second)
-		abort();
-        validator->getCounters().addPeers++;
-        //mutexForPeerAdd.unlock();
-
-        //Because the global mutex has been unlocked above, the CI might have been processed
-        //by other threads before the following call is completed, so the peerEntry may or may not be
-        //found, and the returning txEntry may or may not be found.
-        bool isFound;
-        update(cts, peerId, peerTxState, eta, pi, validator, isFound);
-    } else {
-        //mutexForPeerAdd.unlock();
-    }
-    return true;
-}*/
 
 bool
 PeerInfo::remove(CTS cts, Validator *validator) {
-    mutexForPeerAdd.lock();
+    //mutexForPeerAdd.lock();
     PeerInfoIterator it = peerInfo.find(cts);
     if (it != peerInfo.end()) {
         PeerEntry* peerEntry = it->second;
         if (peerEntry == NULL) abort();
-        peerEntry->mutexForPeerUpdate.lock();
+        //peerEntry->mutexForPeerUpdate.lock();
         RAMCLOUD_LOG(NOTICE, "remove cts %lu", (uint64_t)(cts >> 64));
         peerEntry->isValid = false;
         //delete peerEntry->txEntry;
         peerEntry->txEntry = NULL;
         //peerInfo.unsafe_erase(it);
         peerInfo.unsafe_erase(cts);
-        peerEntry->mutexForPeerUpdate.unlock();
+        //peerEntry->mutexForPeerUpdate.unlock();
         //delete peerEntry;
         //validator->getCounters().deletedPeers++;
-        mutexForPeerAdd.unlock();
+        //mutexForPeerAdd.unlock();
         return true;
     }
-    mutexForPeerAdd.unlock();
-    abort();
+    //mutexForPeerAdd.unlock();
+    //It may never be created
     return false;
 }
 
 inline bool
 PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator) {
-
     //Currently only in the TX_CI_LISTENING state, the txEntry has updated its local
     //pstamp and sstamp and has been scheduled to use peer pstamp and sstamp to evaluate.
     if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING) {
@@ -146,35 +158,49 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
             if (peerEntry->peerTxState == TxEntry::TX_COMMIT) {
                 txEntry->setTxState(TxEntry::TX_COMMIT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
-                txEntry->setTxResult(TxEntry::TX_COMMIT_PEER);
+		txEntry->setTxResult(TxEntry::TX_COMMIT_PEER);
             } else if (peerEntry->peerTxState == TxEntry::TX_ABORT) {
                 txEntry->setTxState(TxEntry::TX_ABORT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
                 validator->getCounters().alertAborts++;
-                txEntry->setTxResult(TxEntry::TX_ABORT_PEER);
-            } else if (peerEntry->peerAlertSet == txEntry->getPeerSet()) {
+		txEntry->setTxResult(TxEntry::TX_ABORT_PEER);
+	    } else if (peerEntry->peerAlertSet == txEntry->getPeerSet()) {
                 txEntry->setTxState(TxEntry::TX_ABORT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
                 validator->getCounters().alertAborts++;
-                txEntry->setTxResult(TxEntry::TX_ABORT_ALERT);
+		txEntry->setTxResult(TxEntry::TX_ABORT_ALERT);
             } else if (txEntry->isExclusionViolated()) {
                 txEntry->setTxState(TxEntry::TX_ABORT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
-                txEntry->setTxResult(TxEntry::TX_ABORT_PISI);
+		txEntry->setTxResult(TxEntry::TX_ABORT_PISI);
             }
         } else if (txEntry->getTxState() == TxEntry::TX_PENDING) {
             if (txEntry->isExclusionViolated()) {
                 txEntry->setTxState(TxEntry::TX_ABORT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
-		txEntry->setTxResult(TxEntry::TX_ABORT_PISI_INIT);
+                txEntry->setTxResult(TxEntry::TX_ABORT_PISI_INIT);
             } else if (txEntry->getPeerSet() == peerEntry->peerSeenSet
                     && peerEntry->peerAlertSet.empty()) {
                 txEntry->setTxState(TxEntry::TX_COMMIT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
-		txEntry->setTxResult(TxEntry::TX_COMMIT_INIT);
+                txEntry->setTxResult(TxEntry::TX_COMMIT_INIT);
             }
         }
     }
+
+
+    if (txEntry->getTxCIState() == TxEntry::TX_CI_QUEUED
+            && txEntry->getTxState() == TxEntry::TX_OUTOFORDER) {
+        if (validator->logTx(LOG_ALWAYS, txEntry)) {
+            //trigger conclusion, but keep state because this CI has never been added to activeTxSet
+            txEntry->setSStamp(0);
+            validator->sendSSNInfo(txEntry); //so that peers do not wait for alert
+            txEntry->setTxCIState(TxEntry::TX_CI_SEALED);
+            validator->conclude(txEntry);
+        } else
+            abort();
+    }
+
 
     //Logging must precede sending tx CI reply
     //Note that our overall scheme does not need to log local transactions at all
@@ -193,11 +219,10 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
             (txEntry->getTxState() == TxEntry::TX_COMMIT && peerEntry->peerTxState == TxEntry::TX_ABORT)) {
         abort(); //there must be a design problem -- debug
         txEntry->setTxState(TxEntry::TX_CONFLICT);
-	txEntry->setTxResult(TxEntry::TX_ABORT_CONFLICT);
+        txEntry->setTxResult(TxEntry::TX_ABORT_CONFLICT);
     }
-    RAMCLOUD_LOG(NOTICE, "evaluate cts %lu  states %u %u %u %lu %lu",
-            (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(), txEntry->getTxCIState(), peerEntry->peerTxState,
-            peerEntry->peerSeenSet.size(), peerEntry->peerAlertSet.size());
+    RAMCLOUD_LOG(NOTICE, "evaluate cts %lu  states %u %u %u",
+	(uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(), txEntry->getTxCIState(), peerEntry->peerTxState);
     return true; //concluded
 }
 
@@ -205,11 +230,13 @@ inline bool
 PeerInfo::logAndSend(TxEntry *txEntry, Validator *validator) {
     validator->updateTxPStampSStamp(*txEntry);
 
+    RAMCLOUD_LOG(NOTICE, "logAndSend: cts %lu meta %lu %lu", (uint64_t)(txEntry->getCTS() >> 64),
+            txEntry->getPStamp(), txEntry->getSStamp());
+
     if (txEntry->getTxState() == TxEntry::TX_ALERT) {
         //this is in recovery case; skip logging and sending in pending state
         txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
     } else if (validator->logTx(LOG_ALWAYS, txEntry)) { //log CI before initial sending
-        assert(txEntry->getTxState() == TxEntry::TX_PENDING);
         validator->sendSSNInfo(txEntry);
         txEntry->setTxCIState(TxEntry::TX_CI_LISTENING);
     } else {
@@ -221,8 +248,139 @@ PeerInfo::logAndSend(TxEntry *txEntry, Validator *validator) {
 }
 
 bool
+PeerInfo::add(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp, uint64_t sstamp,
+        TxEntry *txEntry, Validator *validator) {
+    PeerEntry* peerEntry = new PeerEntry();
+    peerEntry->isValid = true;
+    peerEntry->txEntry = txEntry;
+    peerEntry->meta.cStamp = cts >> 64;
+    if (txEntry != NULL) {
+        if (txEntry->getCTS() != cts) abort();
+        if (txEntry->getPeerSet().size() == 0) abort();
+        peerEntry->meta.pStamp = std::max(peerEntry->meta.pStamp, txEntry->getPStamp());
+        peerEntry->meta.sStamp = std::min(peerEntry->meta.sStamp, txEntry->getSStamp());
+    }
+    if (peerTxState != 0) {
+        peerEntry->meta.pStamp = std::max(peerEntry->meta.pStamp, pstamp);
+        peerEntry->meta.sStamp = std::min(peerEntry->meta.sStamp, sstamp);
+        peerEntry->peerSeenSet.insert(peerId);
+        if (peerTxState == TxEntry::TX_ALERT) {
+            peerEntry->peerTxState = TxEntry::TX_ALERT;
+            peerEntry->peerAlertSet.insert(peerId);
+        } else if (peerTxState == TxEntry::TX_ABORT || peerTxState == TxEntry::TX_OUTOFORDER) {
+            assert(peerEntry->peerTxState != TxEntry::TX_COMMIT);
+            peerEntry->peerTxState = TxEntry::TX_ABORT;
+        } else if (peerTxState == TxEntry::TX_COMMIT) {
+            assert(peerEntry->peerTxState != TxEntry::TX_ABORT);
+            peerEntry->peerTxState = TxEntry::TX_COMMIT;
+        }
+    }
+
+    RAMCLOUD_LOG(NOTICE, "addPeer %lu txEntry %lu peerState %u peerId %lu seen %lu",
+            (uint64_t)(cts >> 64),
+            (uint64_t)txEntry,
+            peerTxState,
+            peerId, peerEntry->peerSeenSet.size());
+
+    if (!peerInfo.insert(std::make_pair(cts, peerEntry)).second) {
+        RAMCLOUD_LOG(NOTICE, "addPeer failed %lu %lu txEntry %lu", (uint64_t)(cts >> 64),
+                (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry);
+        delete peerEntry;
+        return false;
+    }
+    validator->getCounters().addPeers.fetch_add(1);
+    //monitor(cts, validator);
+    iteratorQueue.push(peerEntry);
+    return true;
+}
+
+bool
 PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp, uint64_t sstamp,
-        uint32_t &myTxState, uint64_t &myPStamp, uint64_t &mySStamp, Validator *validator) {
+        TxEntry *txEntry, Validator *validator) {
+    PeerInfoIterator it;
+    PeerEntry* peerEntry;
+
+    it = peerInfo.find(cts);
+    if (it == peerInfo.end()) {
+        peerEntry = new PeerEntry();
+        peerEntry->isValid = true;
+        peerEntry->meta.cStamp = cts >> 64;
+
+        RAMCLOUD_LOG(NOTICE, "addPeer %lu txEntry %lu peerState %u meta %lu %lu peerId %lu",
+                (uint64_t)(cts >> 64),
+                (uint64_t)txEntry,
+                peerTxState,
+                pstamp, sstamp,
+                peerId);
+
+        if (!peerInfo.insert(std::make_pair(cts, peerEntry)).second) {
+            RAMCLOUD_LOG(NOTICE, "addPeer failed %lu txEntry %lu", (uint64_t)(cts >> 64),
+                    (uint64_t)txEntry);
+            delete peerEntry;
+            return false;
+        }
+        validator->getCounters().addPeers.fetch_add(1);
+    } else {
+        peerEntry = it->second;
+    }
+
+    if (peerEntry->isValid) {
+        peerEntry->meta.pStamp = std::max(peerEntry->meta.pStamp, pstamp);
+        peerEntry->meta.sStamp = std::min(peerEntry->meta.sStamp, sstamp);
+        if (peerTxState > 0) {
+            peerEntry->peerSeenSet.insert(peerId);
+            if (peerTxState == TxEntry::TX_ALERT) {
+                peerEntry->peerTxState = TxEntry::TX_ALERT;
+                peerEntry->peerAlertSet.insert(peerId);
+            } else if (peerTxState == TxEntry::TX_ABORT || peerTxState == TxEntry::TX_OUTOFORDER) {
+                assert(peerEntry->peerTxState != TxEntry::TX_COMMIT);
+                peerEntry->peerTxState = TxEntry::TX_ABORT;
+            } else if (peerTxState == TxEntry::TX_COMMIT) {
+                assert(peerEntry->peerTxState != TxEntry::TX_ABORT);
+                peerEntry->peerTxState = TxEntry::TX_COMMIT;
+            }
+        }
+
+        RAMCLOUD_LOG(NOTICE, "updatePeer %lu txEntry %lu peerState %u peerId %lu seen %lu",
+                (uint64_t)(cts >> 64),
+                (uint64_t)txEntry,
+                peerTxState,
+                peerId, peerEntry->peerSeenSet.size());
+
+        if (txEntry != NULL) {
+            if (peerEntry->txEntry)
+                abort();
+            peerEntry->txEntry = txEntry;
+
+            if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
+                logAndSend(txEntry, validator);
+                iteratorQueue.push(peerEntry);
+            } /*else if (txEntry->getTxCIState() == TxEntry::TX_CI_QUEUED
+                    && txEntry->getTxState() == TxEntry::TX_OUTOFORDER) {
+                //trigger conclusion, but keep state because this CI has never been added to activeTxSet
+                txEntry->setSStamp(0);
+                logAndSend(txEntry, validator);
+                txEntry->setTxCIState(TxEntry::TX_CI_SEALED);
+                validator->conclude(txEntry);
+                return true;
+            }
+*/
+        }
+
+        if (peerEntry->txEntry) {
+            evaluate(peerEntry, peerEntry->txEntry, validator);
+        }
+    } else {
+        RAMCLOUD_LOG(NOTICE, "updatePeer ignored: cts %lu %lu peerId %lu", (uint64_t)(cts >> 64),
+                (uint64_t)(cts & (((__uint128_t)1<<64) -1)), peerId);
+    }
+
+    return true;
+}
+/*
+bool
+PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp, uint64_t sstamp,
+        TxEntry *inTxEntry, Validator *validator) {
     TxEntry *txEntry= NULL;
     PeerInfoIterator it;
 
@@ -230,14 +388,19 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
     ///The lock/unlock of the global mutex and per-entry mutex is designed to avoid
     ///the race condition that iterator is referring to a peerEntry (or its txEntry)
     ///which has been freed right after find().
-    mutexForPeerAdd.lock();
+//Fixme    mutexForPeerAdd.lock();
     it = peerInfo.find(cts);
     if (it != peerInfo.end()) {
         PeerEntry* peerEntry = it->second;
         if (peerEntry == NULL) abort();
         peerEntry->mutexForPeerUpdate.lock();
-        mutexForPeerAdd.unlock();
+//Fixme        mutexForPeerAdd.unlock();
         if (peerEntry->isValid) {
+            if (inTxEntry != NULL) {
+                if (peerEntry->txEntry != NULL && peerEntry->txEntry != inTxEntry)
+                    abort();
+                peerEntry->txEntry = inTxEntry;
+            }
             peerEntry->meta.pStamp = std::max(peerEntry->meta.pStamp, pstamp);
             peerEntry->meta.sStamp = std::min(peerEntry->meta.sStamp, sstamp);
             peerEntry->peerSeenSet.insert(peerId);
@@ -251,24 +414,24 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
                 assert(peerEntry->peerTxState != TxEntry::TX_ABORT);
                 peerEntry->peerTxState = TxEntry::TX_COMMIT;
             }
-
             txEntry = peerEntry->txEntry;
 
-            RAMCLOUD_LOG(NOTICE, "updatePeer %lu txEntry %lu peerState %u peerId %lu cnt %lu %lu",
+            RAMCLOUD_LOG(NOTICE, "updatePeer %lu txEntry %lu peerState %u peerId %lu seen %lu",
                     (uint64_t)(cts >> 64),
-                    (uint64_t)txEntry, peerEntry->peerTxState,
-                    peerId, peerEntry->peerSeenSet.size(), peerEntry->peerAlertSet.size());
+                    (uint64_t)txEntry,
+                    peerTxState,
+                    peerId, peerEntry->peerSeenSet.size());
 
             if (txEntry != NULL) {
                 if (txEntry->getCTS() != cts) abort(); //make sure txEntry contents not corrupted
                 txEntry->setPStamp(std::max(txEntry->getPStamp(), peerEntry->meta.pStamp));
                 txEntry->setSStamp(std::min(txEntry->getSStamp(), peerEntry->meta.sStamp));
 
-                evaluate(peerEntry, txEntry, validator);
+                if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
+                    logAndSend(txEntry, validator);
+                }
 
-                myTxState = txEntry->getTxState();
-                myPStamp = txEntry->getPStamp();
-                mySStamp = txEntry->getSStamp();
+                evaluate(peerEntry, txEntry, validator);
             }
         } else {
             RAMCLOUD_LOG(NOTICE, "updatePeer ignored: finished cts %lu %lu peerId %lu", (uint64_t)(cts >> 64),
@@ -276,18 +439,20 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
         }
         peerEntry->mutexForPeerUpdate.unlock();
         return true;
+    } else {
+
     }
-    mutexForPeerAdd.unlock();
+//Fixme    mutexForPeerAdd.unlock();
     RAMCLOUD_LOG(NOTICE, "updatePeer ignored: no cts %lu peerId %lu", (uint64_t)(cts >> 64), peerId);
     return false;
-}
+}*/
 
 bool
 PeerInfo::send(Validator *validator) {
     uint64_t nsTime = validator->getClockValue();
     uint64_t currentTick = nsTime / tickUnit;
 
-    while (!activeTxQueue.empty()) {
+    /*while (!activeTxQueue.empty()) {
         CTS cts;
         if (!activeTxQueue.pop(cts))
             abort();
@@ -296,54 +461,59 @@ PeerInfo::send(Validator *validator) {
         it = peerInfo.find(cts);
         if (it != peerInfo.end()) {
             iteratorQueue.push(it->second);
-        } else {
-            RAMCLOUD_LOG(NOTICE, "monitoring retry: cts %lu", (uint64_t)(cts >> 64));
-            activeTxQueue.push(cts);
         }
-    }
+    }*/
 
     //the use of iterator of concurrent_unordered_map while another thread doing erase
     //is observed with a lock-up problem with mutexForPeerUpdate. For now let's protect
     //the whole section with mutexForPeerAdd.
+
+    if (currentTick == lastTick)
+        return false;
 
     uint64_t count = iteratorQueue.size();
     while (count > 0 && !iteratorQueue.empty()) {
         PeerEntry *peerEntry = iteratorQueue.front();
         iteratorQueue.pop();
         count--;
-        peerEntry->mutexForPeerUpdate.lock();
+        /*
+        //peerEntry->mutexForPeerUpdate.lock();
         if (!peerEntry->isValid) {
-            peerEntry->mutexForPeerUpdate.unlock();
-            delete peerEntry;
-            validator->getCounters().deletedPeers++;
+            //peerEntry->mutexForPeerUpdate.unlock();
+            //Fixme delete peerEntry;
+            //validator->getCounters().deletedPeers++;
             continue;
         }
 
         TxEntry* txEntry = peerEntry->txEntry;
-        if (txEntry == NULL) {
+        if (txEntry == NULL) { //Fixme: should not null
             iteratorQueue.push(peerEntry);
-            peerEntry->mutexForPeerUpdate.unlock();
-	        RAMCLOUD_LOG(NOTICE, "requeue: cts %lu", peerEntry->meta.cStamp);
+            //peerEntry->mutexForPeerUpdate.unlock();
             continue;
+        }*/
+        TxEntry* txEntry = peerEntry->txEntry;
+        if (!peerEntry->isValid || txEntry == NULL) {
+            delete peerEntry;
+            validator->getCounters().deletedPeers++;
+            continue; //peerEntry removed
         }
 
         if (currentTick > lastTick)
-            RAMCLOUD_LOG(NOTICE, "finding: cts %lu states %u %u %u %u %u now %lu",
+            RAMCLOUD_LOG(NOTICE, "finding: cts %lu states %u %u %u now %lu",
                 (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(),
-                txEntry->getTxCIState(), peerEntry->peerTxState,
-                peerEntry->peerSeenSet.size(), peerEntry->peerAlertSet.size(), nsTime);
+                txEntry->getTxCIState(), peerEntry->peerTxState, nsTime);
 
-        if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
+       /* if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
             logAndSend(txEntry, validator);
             evaluate(peerEntry, txEntry, validator);
-        }
+        }*/
 
         if (txEntry->getTxCIState() == TxEntry::TX_CI_LISTENING) {
             if (txEntry->getTxState() != TxEntry::TX_ALERT
                 && nsTime > (uint64_t)(txEntry->getCTS() >> 64)
                 && nsTime - (uint64_t)(txEntry->getCTS() >> 64) > alertThreshold) {
                 txEntry->setTxState(TxEntry::TX_ALERT);
-                RAMCLOUD_LOG(NOTICE, "Timeout: cts %lu states %u %u %u now %lu",
+                RAMCLOUD_LOG(NOTICE, "timeout cts %lu states %u %u %u now %lu",
                         (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(),
                         txEntry->getTxCIState(), peerEntry->peerTxState, nsTime);
             }
@@ -359,20 +529,20 @@ PeerInfo::send(Validator *validator) {
             }
         }
 
-        if (txEntry->getTxCIState() == TxEntry::TX_CI_QUEUED
+       /* if (txEntry->getTxCIState() == TxEntry::TX_CI_QUEUED
                 && txEntry->getTxState() == TxEntry::TX_OUTOFORDER) {
             //trigger conclusion, but keep state because this CI has never been added to activeTxSet
             txEntry->setSStamp(0);
             validator->sendSSNInfo(txEntry); //so that peers do not wait for alert
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
             evaluate(peerEntry, txEntry, validator);
-        }
+        }*/
 
         if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED) {
             iteratorQueue.push(peerEntry);
         }
 
-        peerEntry->mutexForPeerUpdate.unlock();
+        //peerEntry->mutexForPeerUpdate.unlock();
 
         //Fixme: think about how to unlock the mutex before inserting into concludeQ within evaluate() so that
         //serialize() does not need to wait for mutex
