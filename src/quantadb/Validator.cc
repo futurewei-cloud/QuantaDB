@@ -268,7 +268,6 @@ Validator::scheduleDistributedTxs() {
     //expressed in the cluster time unit (due to current sequencer implementation).
     //During testing, ignore the timing constraint imposed by the local clock.
     TxEntry *txEntry;
-    TxEntry *prevTxEntry = NULL;
     uint64_t lastTick = 0;
     do {
         if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (__uint128_t)-1 : get128bClockValue()))) {
@@ -285,8 +284,6 @@ Validator::scheduleDistributedTxs() {
                         (uint64_t)(txEntry->getCTS() >> 64),
                         (uint64_t)(lastScheduledTxCTS >> 64));
 
-                assert(prevTxEntry != txEntry);
-
                 //abort this CI, which has arrived later than a scheduled CI
                 //aborting is fine because its SSN info has never been sent to its peers
                 //although, in recovery case, SSN info could have been sent to its peers, the order of recovery should be preserved
@@ -298,7 +295,6 @@ Validator::scheduleDistributedTxs() {
             while (!distributedTxSet.add(txEntry));
             RAMCLOUD_LOG(NOTICE, "schedule %lu",(uint64_t)(txEntry->getCTS() >> 64));
             lastScheduledTxCTS = txEntry->getCTS();
-            prevTxEntry = txEntry;
         }
 
         //log counters every 10s
@@ -335,9 +331,9 @@ Validator::serialize() {
         uint64_t it;
         txEntry = localTxQueue.findFirst(it);
         while (txEntry) {
-	    if (rpcService) {
-	        rpcService->recordTxCommitDispatch(txEntry);
-	    }
+            if (rpcService) {
+                rpcService->recordTxCommitDispatch(txEntry);
+            }
             assert(txEntry->getPeerSet().size() == 0);
             if (!activeTxSet.blocks(txEntry)) {
                 /* There is no need to update activeTXs because this tx is validated
@@ -370,8 +366,7 @@ Validator::serialize() {
 
             //enable blocking incoming dependent transactions
             if (!activeTxSet.add(txEntry))
-		abort();
-
+                abort();
 
             //enable sending SSN info to peer
             txEntry->setTxCIState(TxEntry::TX_CI_SCHEDULED);
@@ -381,15 +376,6 @@ Validator::serialize() {
                          (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
                          activeTxSet.getRemovedTxCount());
         }
-
-        /*while (concludeQueue.try_pop(txEntry)) {
-            finish(txEntry);
-
-            RAMCLOUD_LOG(NOTICE, "pop concludeQueue  cts %lu %lu in %lu  out %lu",
-                    (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
-                    concludeQueue.inCount.load(), concludeQueue.outCount.load());
-            hasEvent = true;
-        }*/
     } //end while(true)
 }
 
@@ -405,7 +391,7 @@ Validator::conclude(TxEntry *txEntry) {
         //for late cross-shard tx, it is never added to activeTxSet; just convert the state
         if (txEntry->getTxState() == TxEntry::TX_OUTOFORDER) {
             txEntry->setTxState(TxEntry::TX_ABORT);
-	    txEntry->setTxResult(TxEntry::TX_ABORT_CONFLICT);
+            txEntry->setTxResult(TxEntry::TX_ABORT_CONFLICT);
         } else {
             activeTxSet.remove(txEntry);
         }
@@ -470,7 +456,7 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         counters.trivialAborts.fetch_add(1);
         txEntry->setTxState(TxEntry::TX_ABORT);
         txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
-	txEntry->setTxResult(TxEntry::TX_ABORT_TRIVIAL);
+        txEntry->setTxResult(TxEntry::TX_ABORT_TRIVIAL);
         return false; //skip queueing
     }
 
@@ -492,9 +478,6 @@ Validator::insertTxEntry(TxEntry *txEntry) {
                 (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry,
                 counters.queuedDistributedTxs.load());
         std::set<uint64_t>::iterator it;
-        /*for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
-            RAMCLOUD_LOG(NOTICE, "peerId %lu", *it);
-        }*/
         // Only tracking the cross shard tx
         txEntry->local_commit = getClockValue();
         txEntry->setTxResult(TxEntry::TX_UNCOMMIT);

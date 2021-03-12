@@ -69,43 +69,13 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
         } else if (txEntry != it->second->txEntry){
             RAMCLOUD_LOG(NOTICE, "duplicate %lu txEntry new %lu old %lu",
                     (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry, (uint64_t)it->second->txEntry);
-            exit(0); //should not have called add() with old CTS and should not have found non-zero txEntry
+            abort(); //should not have called add() with old CTS and should not have found non-zero txEntry
         }
         existing->mutexForPeerUpdate.unlock();
     }
     mutexForPeerAdd.unlock();
     return true;
 }
-/*
-//Fixme: unused currently
-bool
-PeerInfo::addPartial(CTS cts, uint64_t peerId, uint8_t peerTxState, uint64_t eta, uint64_t pi,
-        Validator *validator) {
-    //mutexForPeerAdd.lock();
-    PeerInfoIterator it = peerInfo.find(cts);
-    if (it == peerInfo.end()) {
-        RAMCLOUD_LOG(NOTICE, "addPartial %lu %lu ", (uint64_t)(cts >> 64),
-                (uint64_t)(cts & (((__uint128_t)1<<64) -1)));
-
-        PeerEntry* entry = new PeerEntry();
-        entry->isValid = true;
-        entry->txEntry = NULL;
-        entry->meta.cStamp = cts >> 64;
-        if (!peerInfo.insert(std::make_pair(cts, entry)).second)
-		abort();
-        validator->getCounters().addPeers++;
-        //mutexForPeerAdd.unlock();
-
-        //Because the global mutex has been unlocked above, the CI might have been processed
-        //by other threads before the following call is completed, so the peerEntry may or may not be
-        //found, and the returning txEntry may or may not be found.
-        bool isFound;
-        update(cts, peerId, peerTxState, eta, pi, validator, isFound);
-    } else {
-        //mutexForPeerAdd.unlock();
-    }
-    return true;
-}*/
 
 bool
 PeerInfo::remove(CTS cts, Validator *validator) {
@@ -119,7 +89,6 @@ PeerInfo::remove(CTS cts, Validator *validator) {
         peerEntry->isValid = false;
         //delete peerEntry->txEntry;
         peerEntry->txEntry = NULL;
-        //peerInfo.unsafe_erase(it);
         peerInfo.unsafe_erase(cts);
         peerEntry->mutexForPeerUpdate.unlock();
         //delete peerEntry;
@@ -166,12 +135,12 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
             if (txEntry->isExclusionViolated()) {
                 txEntry->setTxState(TxEntry::TX_ABORT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
-		txEntry->setTxResult(TxEntry::TX_ABORT_PISI_INIT);
+                txEntry->setTxResult(TxEntry::TX_ABORT_PISI_INIT);
             } else if (txEntry->getPeerSet() == peerEntry->peerSeenSet
                     && peerEntry->peerAlertSet.empty()) {
                 txEntry->setTxState(TxEntry::TX_COMMIT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
-		txEntry->setTxResult(TxEntry::TX_COMMIT_INIT);
+                txEntry->setTxResult(TxEntry::TX_COMMIT_INIT);
             }
         }
     }
@@ -193,7 +162,7 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
             (txEntry->getTxState() == TxEntry::TX_COMMIT && peerEntry->peerTxState == TxEntry::TX_ABORT)) {
         abort(); //there must be a design problem -- debug
         txEntry->setTxState(TxEntry::TX_CONFLICT);
-	txEntry->setTxResult(TxEntry::TX_ABORT_CONFLICT);
+        txEntry->setTxResult(TxEntry::TX_ABORT_CONFLICT);
     }
     RAMCLOUD_LOG(NOTICE, "evaluate cts %lu  states %u %u %u %lu %lu",
             (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(), txEntry->getTxCIState(), peerEntry->peerTxState,
