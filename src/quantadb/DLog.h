@@ -95,7 +95,10 @@ class DLog {
         }
         void remove() {
             int ret = unlink(path.c_str());
-            assert(ret == 0);
+            if (ret != 0) {
+                printf("FatalError: failed to delete log file %s at %s::%d\n", path.c_str(), __FILE__, __LINE__);
+                exit (1);
+            }
             delete this; 
         }
     } chunk_t;
@@ -541,7 +544,10 @@ class DLog {
             if (sscanf(dent->d_name, "DLog-%d", &logno) == 1) {
                 std::string path = std::string(logdir) + "/" + std::string(dent->d_name);
                 int ret = unlink(path.c_str());
-                assert(ret == 0);
+                if (ret != 0) {
+                    printf("FatalError: failed to delete log file %s at %s::%d\n", path.c_str(), __FILE__, __LINE__);
+                    exit (1);
+                }
            }
         }
 
