@@ -54,7 +54,7 @@ uint64_t mt_lookup_test_s(uint64_t index)
 	bgn_time = getusec();
 	while (thread_run_run) 
 	{
-		idx = (ctr & (ELEM_BOUND -1)) + index;
+		idx = (ctr % (ELEM_BOUND -1)) + index;
 		elem_ret[0] = my_hashtable.get(elem[idx+0].key);
 		elem_ret[1] = my_hashtable.get(elem[idx+1].key);
 		elem_ret[2] = my_hashtable.get(elem[idx+2].key);
@@ -83,7 +83,7 @@ uint64_t mt_insert_test_s(uint64_t index)
 	bgn_time = getusec();
 	while (thread_run_run) 
 	{
-		idx = (ctr & (ELEM_BOUND -1)) + index;
+		idx = (ctr % (ELEM_BOUND -1)) + index;
 		elem_ret = my_hashtable.put(elem[idx+0].key, &elem[idx+0]);
 		elem_ret = my_hashtable.put(elem[idx+1].key, &elem[idx+1]);
 		elem_ret = my_hashtable.put(elem[idx+2].key, &elem[idx+2]);
