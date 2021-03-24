@@ -158,7 +158,7 @@ public:
             ((buckets_[bucket].hdr_.valid_ & (1 << hint.slot_)) != 0) ) { // this slot is still valid.
             if (buckets_[bucket].ptr_[hint.slot_] == hint.ptr_) {
                 buckets_[bucket].ptr_[hint.slot_] = ptr;
-                #ifndef  PMEMHASH_STAT
+                #ifdef  PMEMHASH_STAT
                 update_ctr_++;
                 #endif  // PMEMHASH_STAT
                 return true;
@@ -209,7 +209,7 @@ public:
             successful = __sync_bool_compare_and_swap((uint64_t*)hdr_ptr, (uint64_t)l_hdr.hdr64, (uint64_t)l_new_hdr.hdr64);
         } while (!successful);
 
-        #ifndef  PMEMHASH_STAT
+        #ifdef  PMEMHASH_STAT
         insert_ctr_++;
         if (evict)
             evict_ctr_++;
