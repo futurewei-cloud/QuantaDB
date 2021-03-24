@@ -20,21 +20,58 @@
 #include <pthread.h>
 #include "hash_map.h"
 
+/*
+ * Define key type
+ */
+#if defined(STR_KEY)
+    #include "clhash.h"
+    void *clhash_random = get_random_key_for_clhash(uint64_t(0x23a23cf5033c3c81),uint64_t(0xb3816f6a2c68e530));
+    class StrKey {
+        public:
+        char keystr[32];
+        uint32_t keyhash;
+        inline bool operator==(const StrKey & Key)
+        {
+            return memcmp(this->keystr, Key.keystr, sizeof(keystr)) == 0; 
+        }
+    };
+    #define KeyType StrKey
+    const char *key_type_msg = "str[32]";
+    struct HashKey{
+        uint32_t operator()(const KeyType &k) { return clhash(clhash_random, k.keystr, sizeof(k.keystr)); }
+    };
+
+    #ifdef  PMEMHASH_PREHASH
+    const char * pre_hash_msg = "pre hash";
+    #else
+    const char * pre_hash_msg = "";
+    #endif
+#else // default to INT_KEY
+    #define KeyType uint64_t
+    const char *key_type_msg = "int64_t";
+    const char * pre_hash_msg = "";
+#endif
+
 class Element
 {
 public:
-    uint64_t key;
+    KeyType key;
     uint64_t value;
 
-    Element(uint64_t k = 0, uint64_t v = 0) { key=k; value=v; }
-    inline uint64_t getKey() { return key; }
+    //Element(uint64_t k = 0, uint64_t v = 0) { key=k; value=v; }
+    inline KeyType & getKey() { return key; }
 };
+
+#if defined(STR_KEY)
+    hash_table<Element, KeyType, uint64_t, HashKey> my_hashtable;
+#else
+    hash_table<Element, KeyType, uint64_t, std::hash<uint64_t>> my_hashtable;
+#endif
 
 uint64_t TOTAL_ELEM_SIZE;
 uint32_t ELEM_BOUND;
 Element *elem;
 
-hash_table<Element, uint64_t, uint64_t, std::hash<uint64_t>> my_hashtable;
 volatile int thread_run_run = 0;			// global switch
 
 inline uint64_t getusec()
@@ -54,7 +91,7 @@ uint64_t mt_lookup_test_s(uint64_t index)
 	bgn_time = getusec();
 	while (thread_run_run) 
 	{
-		idx = (ctr % (ELEM_BOUND -1)) + index;
+		idx = (ctr % ELEM_BOUND) + index;
 		elem_ret[0] = my_hashtable.get(elem[idx+0].key);
 		elem_ret[1] = my_hashtable.get(elem[idx+1].key);
 		elem_ret[2] = my_hashtable.get(elem[idx+2].key);
@@ -83,7 +120,7 @@ uint64_t mt_insert_test_s(uint64_t index)
 	bgn_time = getusec();
 	while (thread_run_run) 
 	{
-		idx = (ctr % (ELEM_BOUND -1)) + index;
+		idx = (ctr % ELEM_BOUND) + index;
 		elem_ret = my_hashtable.put(elem[idx+0].key, &elem[idx+0]);
 		elem_ret = my_hashtable.put(elem[idx+1].key, &elem[idx+1]);
 		elem_ret = my_hashtable.put(elem[idx+2].key, &elem[idx+2]);
@@ -144,13 +181,17 @@ uint64_t run_parallel(int nthreads, int run_time/* #sec */, thread_func_t func)
 void init_elem(bool contention)
 {
 	for (uint32_t i = 0; i < TOTAL_ELEM_SIZE; i++) {
-		if (contention) {
-			elem[i].key = rand();
-			elem[i].value = elem[i].key << 2;
-		} else {
-			elem[i].key = i;
-			elem[i].value = i << 2;
-		}
+        uint32_t kid = (contention)? rand()%TOTAL_ELEM_SIZE : i;
+        #ifdef  STR_KEY
+          bzero(&elem[i].key, sizeof(elem[i].key.keystr));
+          snprintf(elem[i].key.keystr, sizeof(elem[i].key.keystr), "key-%d", kid); 
+          #ifdef PMEMHASH_PREHASH
+          elem[i].key.keyhash = clhash(clhash_random, (const char *)elem[i].key.keystr, sizeof(elem[i].key.keystr));
+          #endif
+        #else // INT_KEY
+          elem[i].key = kid;
+        #endif
+		elem[i].value = kid << 2;
 	}
 }
 
@@ -164,12 +205,11 @@ int main(int ac, char *av[])
         exit(1);
     }
 
-    printf("Pmemhash benchmark. Elem bound = %d\n", ELEM_BOUND);
-
-	uint64_t total;
+    printf("Pmemhash benchmark. Elem bound: %d, keyType: %s %s \n", ELEM_BOUND, key_type_msg, pre_hash_msg);
 
 	setlocale(LC_NUMERIC, "");
 
+	uint64_t total;
 	for (uint32_t i = 0; i < 2 ; i++) {
 		init_elem(i);
 		printf("========== Hash Map MT Insert Benchmark - contention:%d ==\n", i);
