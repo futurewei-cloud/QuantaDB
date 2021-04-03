@@ -25,7 +25,7 @@
 #include <vector>
 #include <assert.h>
 
-#define DEFAULT_BUCKET_COUNT 1024*1024
+#define DEFAULT_BUCKET_COUNT 64*1024*1024
 #define BUCKET_SIZE 32
 #define VICTIM_LIST_SIZE (BUCKET_SIZE)
 
@@ -221,6 +221,54 @@ public:
         ret.ptr_ = ptr;
 
         return ret;
+    }
+
+    elem_pointer<Elem> get_by_slot_addr(const K& key, void* slot_addr) {
+      if (slot_addr != NULL) {
+	Elem *l_ptr = *(Elem **)(slot_addr);
+	//FIXME: make this getKey to be in a KeyExtractor
+	if (l_ptr->getKey() == key) {
+	  CLT_BELEM_SRCH_CNT_INCR (search_cnt);
+	  return elem_pointer<Elem>(0, 0, l_ptr);
+	}
+      }
+      return elem_pointer<Elem>(0, 0, NULL);
+    }
+
+    void* find_slot_addr(const K& key) {
+        uint8_t l_slot;
+        auto bucket = bucketize(key);
+        struct hash_bucket<Elem>& l_bucket = buckets_[bucket];
+
+        uint8_t l_sig = signature(key);
+        __m256i l_sig256 = _mm256_setr_epi8(
+                l_sig, l_sig, l_sig, l_sig, l_sig, l_sig, l_sig, l_sig,
+                l_sig, l_sig, l_sig, l_sig, l_sig, l_sig, l_sig, l_sig,
+                l_sig, l_sig, l_sig, l_sig, l_sig, l_sig, l_sig, l_sig,
+                l_sig, l_sig, l_sig, l_sig, l_sig, l_sig, l_sig, l_sig);
+        //uint32_t sig_matching_bits = _mm256_cmpeq_epi8_mask(l_bucket.sig_.sig256, l_sig256);
+        __m256i l_cmpeq_ret = _mm256_cmpeq_epi8(l_bucket.sig_.sig256_, l_sig256);
+        uint32_t sig_matching_bits = _mm256_movemask_epi8(l_cmpeq_ret);
+        uint32_t valid_matching_sig = sig_matching_bits & l_bucket.hdr_.valid_;
+	    uint32_t search_cnt = 0;
+	    LOOKUP_CNT_INCR ();
+
+        do {
+	    search_cnt++;
+            l_slot = __builtin_ffs(valid_matching_sig);
+            if (l_slot == 0) break;
+            Elem *l_ptr = l_bucket.ptr_[l_slot-1];
+
+            //FIXME: make this getKey to be in a KeyExtractor
+            if (l_ptr->getKey() == key) {
+                    CLT_BELEM_SRCH_CNT_INCR (search_cnt);
+		    return (void *) &l_bucket.ptr_[l_slot-1];
+            }
+            valid_matching_sig &= ~(1ULL << (l_slot-1));
+        } while (l_slot < BUCKET_SIZE);
+
+        CLT_BELEM_SRCH_CNT_INCR (search_cnt);
+        return NULL;
     }
 
     elem_pointer<Elem> find_or_prepare_insert(const K& key) {

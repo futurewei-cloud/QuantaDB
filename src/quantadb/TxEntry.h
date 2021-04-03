@@ -63,11 +63,11 @@ class TxEntry {
     boost::scoped_array<KVLayout *> writeSet;
     boost::scoped_array<KVLayout *> readSet;
 
-    //Handy hash value of write/read key for Bloom Filter etc.
-    //a 64-bit number is composed of 2 32-bit numbers in upper 32 bits and lower 32 bits
-    boost::scoped_array<uint64_t> writeSetHash;
-    boost::scoped_array<uint64_t> readSetHash;
+    //Cache the KVStore address, where the KV pointer is stored
+    boost::scoped_array<void *> writeSetKVSPtr;
+    boost::scoped_array<void *> readSetKVSPtr;
 
+    //TODO: remove KVLayout pointers cache
     //Handy pointer to KV store tuple that is matching the readSet/writeSet key
     boost::scoped_array<KVLayout *> writeSetInStore;
     boost::scoped_array<KVLayout *> readSetInStore;
@@ -76,6 +76,10 @@ class TxEntry {
     uint32_t writeSetIndex;
     uint32_t readSetIndex;
 
+    //Handy hash value of write/read key for Bloom Filter etc.
+    //a 64-bit number is composed of 2 32-bit numbers in upper 32 bits and lower 32 bits
+    boost::scoped_array<uint64_t> writeSetHash;
+    boost::scoped_array<uint64_t> readSetHash;
     PUBLIC:
     // local timer to track performance 
     uint64_t local_commit = 0; 
@@ -162,6 +166,8 @@ class TxEntry {
     inline boost::scoped_array<uint64_t>& getReadSetHash() { return readSetHash; }
     inline boost::scoped_array<KVLayout *>& getWriteSetInStore() { return writeSetInStore; }
     inline boost::scoped_array<KVLayout *>& getReadSetInStore() { return readSetInStore; }
+    inline void *getReadSetKVSPtr(uint64_t i) { return readSetKVSPtr[i]; }
+    inline void *getWriteSetKVSPtr(uint64_t i) { return writeSetKVSPtr[i]; }
     inline uint32_t& getWriteSetIndex() { return writeSetIndex; }
     inline uint32_t& getReadSetIndex() { return readSetIndex; }
     inline void setCTS(__uint128_t val) { cts = val; }
@@ -176,6 +182,8 @@ class TxEntry {
     bool insertReadSet(KVLayout* kv, uint32_t i);
     inline void insertWriteSetInStore(KVLayout* kv, uint32_t i) { writeSetInStore[i] = kv; }
     inline void insertReadSetInStore(KVLayout* kv, uint32_t i) { readSetInStore[i] = kv; }
+    inline void cacheWriteSetKVPtr(void* ptr, uint32_t i) { writeSetKVSPtr[i] = ptr; }
+    inline void cacheReadSetKVPtr(void* ptr, uint32_t i) { readSetKVSPtr[i] = ptr; }
     bool correctReadSet(uint32_t size);
  
 

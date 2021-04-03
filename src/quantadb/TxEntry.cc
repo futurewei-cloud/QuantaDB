@@ -31,16 +31,24 @@ TxEntry::TxEntry(uint32_t _readSetSize, uint32_t _writeSetSize) {
     if (writeSetSize > 0) {
         writeSet.reset(new KVLayout *[writeSetSize]);
         writeSetHash.reset(new uint64_t[writeSetSize]);
-        writeSetInStore.reset(new KVLayout *[writeSetSize]);
-        for (uint32_t i = 0; i < writeSetSize; i++)
-            writeSet[i] = writeSetInStore[i] = NULL;
+	writeSetInStore.reset(new KVLayout *[writeSetSize]);
+        writeSetKVSPtr.reset(new void *[writeSetSize]);
+        for (uint32_t i = 0; i < writeSetSize; i++) {
+	  writeSet[i] = NULL;
+	  writeSetInStore[i] = NULL;
+	  writeSetKVSPtr[i] = NULL;
+	}
     }
     if (readSetSize > 0) {
         readSet.reset(new KVLayout *[readSetSize]);
         readSetHash.reset(new uint64_t[readSetSize]);
-        readSetInStore.reset(new KVLayout *[readSetSize]);
-        for (uint32_t i = 0; i < readSetSize; i++)
-            readSet[i] = readSetInStore[i] = NULL;
+	readSetInStore.reset(new KVLayout *[readSetSize]);
+        readSetKVSPtr.reset(new void *[readSetSize]);
+        for (uint32_t i = 0; i < readSetSize; i++) {
+	  readSet[i] = NULL;
+	  readSetInStore[i] = NULL;
+	  readSetKVSPtr[i] = NULL;
+	}
     }
 
     rpcHandle = NULL;

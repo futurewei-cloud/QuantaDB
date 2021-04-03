@@ -54,6 +54,15 @@ public:
     bool putNew(KVLayout *kv, __uint128_t cts, uint64_t pi);
     bool put(KVLayout *kv, __uint128_t cts, uint64_t pi, uint8_t *valuePtr, uint32_t valueLength);
     KVLayout * fetch(KLayout& k);
+    void * findKVSPtr(KLayout& k);
+    inline KVLayout *fetch_by_KVSPtr(KLayout& k, void* kvsptr)
+    {
+      elem_pointer<KVLayout> lptr = my_hashtable->get_by_slot_addr(k, kvsptr);
+      if (lptr.ptr_ != NULL) {
+	return lptr.ptr_;
+      }
+      return NULL;
+    }
     // the following three functions will be obsoleted
     //bool getMeta(KLayout& k, DSSNMeta &meta);
     //bool getValue(KLayout& k, uint8_t *&valuePtr, uint32_t &valueLength);

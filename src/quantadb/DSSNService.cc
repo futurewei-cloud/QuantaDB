@@ -724,7 +724,10 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
                 validator->getCounters().preputErrors++;
                 break;
             }
-            txEntry->insertReadSet(nkv, readSetIdx++);
+	    void* ptr = kvStore->findKVSPtr(pkv.k);
+            txEntry->insertReadSet(nkv, readSetIdx);
+	    txEntry->cacheReadSetKVPtr(ptr, readSetIdx);
+	    readSetIdx++;
             assert(readSetIdx <= numRequests);
 
         } else if (*type == WireFormat::TxPrepare::REMOVE) {
@@ -765,7 +768,10 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
                 break;
             }
-            txEntry->insertWriteSet(nkv, writeSetIdx++);
+	    void* ptr = kvStore->findKVSPtr(pkv.k);
+            txEntry->insertWriteSet(nkv, writeSetIdx);
+	    txEntry->cacheWriteSetKVPtr(ptr, writeSetIdx);
+	    writeSetIdx++;
             assert(writeSetIdx <= (numRequests - numReadRequests));
         } else if (*type == WireFormat::TxPrepare::WRITE ||
 		   *type == WireFormat::TxPrepare::READ_MODIFY_WRITE) {
@@ -818,7 +824,10 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
                 break;
             }
-            txEntry->insertWriteSet(nkv, writeSetIdx++);
+	    void* ptr = kvStore->findKVSPtr(pkv.k);
+            txEntry->insertWriteSet(nkv, writeSetIdx);
+	    txEntry->cacheWriteSetKVPtr(ptr, writeSetIdx);
+            writeSetIdx++;
             assert(writeSetIdx <= (numRequests - numReadRequests));
 
             /*
@@ -836,7 +845,10 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
              * to do validation, there will not be self-inflicted pi equal to eta violation.
              */
             if (*type == WireFormat::TxPrepare::READ_MODIFY_WRITE) {
-                txEntry->insertReadSet(nkv, readSetIdx++);
+	        void* ptr = kvStore->findKVSPtr(pkv.k);
+                txEntry->insertReadSet(nkv, readSetIdx);
+		txEntry->cacheReadSetKVPtr(ptr, readSetIdx);
+		readSetIdx++;
                 assert(readSetIdx <= numRequests);
                 nkv->meta().cStamp = currentReq->GetCStamp();
             }

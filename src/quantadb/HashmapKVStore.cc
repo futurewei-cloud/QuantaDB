@@ -89,4 +89,10 @@ KVLayout * HashmapKVStore::fetch(KLayout& k)
     return lptr.ptr_;
 }
 
+void *HashmapKVStore::findKVSPtr(KLayout& k)
+{
+    void* ptr = my_hashtable->find_slot_addr(k);
+    return ptr;
+}
+
 } // QDB

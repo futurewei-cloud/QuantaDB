@@ -102,8 +102,7 @@ Validator::updateTxPStampSStamp(TxEntry &txEntry) {
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
         if (readSet[i] == NULL)
             abort(); //make sure the size of over-provisioned array has been corrected
-
-        KVLayout *kv = kvStore.fetch(readSet[i]->k);
+	KVLayout *kv = kvStore.fetch_by_KVSPtr(readSet[i]->k, txEntry.getReadSetKVSPtr(i));
         if (kv) {
             //A safety check to ensure that the version in the kv store
             //is the same one when the read has occurred.
@@ -121,19 +120,21 @@ Validator::updateTxPStampSStamp(TxEntry &txEntry) {
                 return false;
             }
         }
+	//TODO: Let's say KVSPtrs were not there when we tried to cache KVS Pointer, is it possible for other clients to install them in between?
         txEntry.insertReadSetInStore(kv, i);
     }
 
     //update pstamp of transaction
     auto  &writeSet = txEntry.getWriteSet();
     for (uint32_t i = 0; i < txEntry.getWriteSetSize(); i++) {
-        KVLayout *kv = kvStore.fetch(writeSet[i]->k);
+        KVLayout *kv = kvStore.fetch_by_KVSPtr(writeSet[i]->k, txEntry.getWriteSetKVSPtr(i));
         if (kv) {
             txEntry.setPStamp(std::max(txEntry.getPStamp(), kv->meta().pStamp));
             if (txEntry.isExclusionViolated()) {
                 return false;
             }
         }
+	//TODO: Let's say KVSPtrs were not there when we tried to cache KVS Pointer, is it possible for other clients to install them in between?
         txEntry.insertWriteSetInStore(kv, i);
     }
 
