@@ -33,6 +33,7 @@ class ActiveTxSet {
     CountBloomFilter<uint8_t> cbf;
     std::atomic<uint64_t> removedTxCount{0};
     std::atomic<uint64_t> addedTxCount{0};
+    std::atomic_flag lock = ATOMIC_FLAG_INIT;
 
     PUBLIC:
     // false if the key is failed to be added due to overflow

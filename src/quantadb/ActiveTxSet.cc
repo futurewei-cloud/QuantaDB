@@ -20,6 +20,7 @@ namespace QDB {
 
 bool
 ActiveTxSet::add(TxEntry *txEntry) {
+    while(lock.test_and_set(std::memory_order_acquire));
     for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
         bool success = cbf.add(txEntry->getReadSetHash()[i]);
         assert(success);
@@ -28,6 +29,7 @@ ActiveTxSet::add(TxEntry *txEntry) {
             for (int j = i - 1; j >= 0; j--) {
                 cbf.remove(txEntry->getReadSetHash()[j]);
             }
+	    lock.clear(std::memory_order_release);
             return false;
         }
     }
@@ -42,19 +44,23 @@ ActiveTxSet::add(TxEntry *txEntry) {
             for (uint32_t j = 0; j < txEntry->getReadSetSize(); j++) {
                 cbf.remove(txEntry->getReadSetHash()[j]);
             }
+	    lock.clear(std::memory_order_release);
             return false;
         }
     }
     addedTxCount.fetch_add(1);
+    lock.clear(std::memory_order_release);
     return true;
 }
 
 bool
 ActiveTxSet::remove(TxEntry *txEntry) {
+    while(lock.test_and_set(std::memory_order_acquire));
     for (uint32_t i = 0; i < txEntry->getReadSetSize(); i++) {
         if (!cbf.remove(txEntry->getReadSetHash()[i])) {
             //abort();
             RAMCLOUD_LOG(ERROR, "CBF failed to remove entry: %lu, readset %d", (uint64_t)(txEntry->getCTS() >> 64), i);
+	    lock.clear(std::memory_order_release);
             return false;
         }
     }
@@ -62,39 +68,47 @@ ActiveTxSet::remove(TxEntry *txEntry) {
         if (!cbf.remove(txEntry->getWriteSetHash()[i])) {
             //abort();
             RAMCLOUD_LOG(ERROR, "CBF failed to remove entry: %lu, writeset %d", (uint64_t)(txEntry->getCTS() >> 64), i);
+	    lock.clear(std::memory_order_release);
             return false;
         }
     }
     removedTxCount.fetch_add(1);
+    lock.clear(std::memory_order_release);
     return true;
 }
 
 bool
 ActiveTxSet::blocks(TxEntry *txEntry) {
+    while(lock.test_and_set(std::memory_order_acquire));
     for (uint32_t i = txEntry->getReadSetIndex(); i < txEntry->getReadSetSize(); i++) {
         if (cbf.shouldNotAdd(txEntry->getReadSetHash()[i])) {
             txEntry->getReadSetIndex() = i;
+	    lock.clear(std::memory_order_release);
             return true;
         }
     }
     for (uint32_t i = 0; i < txEntry->getReadSetIndex(); i++) {
         if (cbf.shouldNotAdd(txEntry->getReadSetHash()[i])) {
             txEntry->getReadSetIndex() = i;
+	    lock.clear(std::memory_order_release);
             return true;
         }
     }
     for (uint32_t i = txEntry->getWriteSetIndex(); i < txEntry->getWriteSetSize(); i++) {
         if (cbf.shouldNotAdd(txEntry->getWriteSetHash()[i])) {
             txEntry->getWriteSetIndex() = i;
+	    lock.clear(std::memory_order_release);
             return true;
         }
     }
     for (uint32_t i = 0; i < txEntry->getWriteSetIndex(); i++) {
         if (cbf.shouldNotAdd(txEntry->getWriteSetHash()[i])) {
             txEntry->getWriteSetIndex() = i;
+	    lock.clear(std::memory_order_release);
             return true;
         }
     }
+    lock.clear(std::memory_order_release);
     return false;
 }
 
