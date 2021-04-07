@@ -152,7 +152,9 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
     if (txEntry->getTxCIState() == TxEntry::TX_CI_CONCLUDED) {
         if (validator->logTx(LOG_ALWAYS, txEntry)) {
             txEntry->setTxCIState(TxEntry::TX_CI_SEALED);
-            validator->conclude(txEntry);
+	    validator->conclude(txEntry);
+	    //TODO: insert the txEntry to the concludequeue
+	    //validator->insertConcludeQueue(txEntry);
         } else
             abort();
     }

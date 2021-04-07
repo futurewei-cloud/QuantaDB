@@ -49,6 +49,9 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
         serializeThread = std::thread(&Validator::serialize, this);
         peeringThread = std::thread(&Validator::peer, this);
         schedulingThread = std::thread(&Validator::scheduleDistributedTxs, this);
+	for(uint64_t i =0; i< NUM_CONCLUDE_THREADS; i++) {
+	    concludeThreads[i] = std::thread(&Validator::concludeThreadFunc, this, i);
+	}
 
     }
 }
@@ -307,14 +310,6 @@ Validator::scheduleDistributedTxs() {
                 lastTick = currentTick;
             }
         }
-
-        while (concludeQueue.try_pop(txEntry)) {
-            finish(txEntry);
-
-            RAMCLOUD_LOG(NOTICE, "pop concludeQueue  cts %lu %lu in %lu  out %lu",
-                    (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
-                    concludeQueue.inCount.load(), concludeQueue.outCount.load());
-        }
     } while (isAlive && !isUnderTest);
 }
 
@@ -341,6 +336,8 @@ Validator::serialize() {
                  * and concluded shortly. If the conclude() does through a queue and another
                  * task, then we should add tx to active tx set here.
                  */
+	        if (!activeTxSet.add(txEntry))
+		    abort();
 
                 if (txEntry->getCTS() == 0) {
                     //This feature may allow tx client to do without a clock
@@ -350,10 +347,8 @@ Validator::serialize() {
 
                 validateLocalTx(*txEntry);
 
-                if (conclude(txEntry)) {
-                    logTx(LOG_DEBUG, txEntry); //for debugging only, not for recovery
-                    localTxQueue.remove(it, txEntry);
-                }
+		localTxQueue.remove(it, txEntry);
+		insertConcludeQueue(txEntry);
             }
             hasEvent = true;
             txEntry = localTxQueue.findNext(it);
@@ -399,7 +394,9 @@ Validator::conclude(TxEntry *txEntry) {
 
         RAMCLOUD_LOG(NOTICE, "conclude distTx %lu state %u", (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState());
     } else {
+        activeTxSet.remove(txEntry);
         RAMCLOUD_LOG(NOTICE, "conclude localTx %lu state %u", (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState());
+	logTx(LOG_DEBUG, txEntry); //for debugging only, not for recovery
     }
 
     sendTxCommitReply(txEntry);
@@ -416,6 +413,8 @@ Validator::conclude(TxEntry *txEntry) {
 
     txEntry->setTxCIState(TxEntry::TX_CI_FINISHED);
 
+    //TODO: Eliminate the following for the distributed transaction.
+    //The conclude() should be called by conclude thread only.
     if (txEntry->getPeerSet().size() >= 1) {
         return insertConcludeQueue(txEntry);
     }
@@ -436,6 +435,27 @@ Validator::finish(TxEntry *txEntry) {
 
     delete txEntry;
     return true;
+}
+
+void
+Validator::concludeThreadFunc(uint64_t tId) {
+
+    TxEntry *txEntry;
+    uint64_t threadId = tId;
+
+    do {
+        while (concludeQueue.try_pop(txEntry/*, threadId*/)) {
+	  if (txEntry->getPeerSet().size() == 0) {
+              conclude(txEntry);
+	  } else {
+	      finish(txEntry);
+	      RAMCLOUD_LOG(NOTICE, "pop concludeQueue  cts %lu %lu in %lu  out %lu",
+			   (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
+			   concludeQueue.inCount.load(), concludeQueue.outCount.load());
+
+	  }
+	}
+    } while (isAlive && !isUnderTest);
 }
 
 void

@@ -104,6 +104,8 @@ static const uint32_t LOG_INFO = 3u;
 static const uint32_t LOG_DEBUG = 4u;
 static const uint32_t LOG_ALWAYS = LOG_BASELINE;
 
+#define NUM_CONCLUDE_THREADS 3
+
 class Validator {
     PROTECTED:
 
@@ -129,6 +131,7 @@ class Validator {
     std::thread schedulingThread;
     std::thread serializeThread;
     std::thread peeringThread;
+    std::thread concludeThreads[NUM_CONCLUDE_THREADS];
 
     // all SSN data maintenance operations
     bool updateKVReadSetPStamp(TxEntry& txEntry);
@@ -145,6 +148,9 @@ class Validator {
     // perform SSN validation on a local transaction
     bool validateLocalTx(TxEntry& txEntry);
 
+    // conclude thread function
+    void concludeThreadFunc(uint64_t tId);
+
     // handle garbage collection
     void peer();
 
@@ -157,7 +163,6 @@ class Validator {
     // put arbitrary message into tx log, depending on log level
     /// (3,4) is used because there is implicit 'this' parameter in argument list
     bool logMessage(uint32_t level, const char* fmt, ...) __attribute__ ((format (gnu_printf, 3, 4)));
-
 
     PUBLIC:
 
