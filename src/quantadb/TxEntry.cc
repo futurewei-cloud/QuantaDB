@@ -15,11 +15,15 @@
 
 #include <iostream>
 #include "TxEntry.h"
-#include "MurmurHash3.h"
+#include "ConcurrentBitmap.h"
 
 namespace QDB {
 
 TxEntry::TxEntry(uint32_t _readSetSize, uint32_t _writeSetSize) {
+    if (_readSetSize > TUPLE_ENTRY_MAX || _writeSetSize > TUPLE_ENTRY_MAX) {
+        printf("read or write set of the transaction exceeded the maximum supported size: %d", TUPLE_ENTRY_MAX);
+	exit(1);
+    }
     sstamp = std::numeric_limits<uint64_t>::max();
     pstamp = 0;
     txState = TX_PENDING;
@@ -37,6 +41,7 @@ TxEntry::TxEntry(uint32_t _readSetSize, uint32_t _writeSetSize) {
 	  writeSet[i] = NULL;
 	  writeSetInStore[i] = NULL;
 	  writeSetKVSPtr[i] = NULL;
+	  writeTupleSkipLock[i] = false;
 	}
     }
     if (readSetSize > 0) {
@@ -48,6 +53,7 @@ TxEntry::TxEntry(uint32_t _readSetSize, uint32_t _writeSetSize) {
 	  readSet[i] = NULL;
 	  readSetInStore[i] = NULL;
 	  readSetKVSPtr[i] = NULL;
+	  readTupleSkipLock[i] = false;
 	}
     }
 
@@ -77,9 +83,17 @@ bool
 TxEntry::insertReadSet(KVLayout* kv, uint32_t i) {
     assert(i < readSetSize);
     readSet[i] = kv;
-    uint64_t indexes[2];
-    RAMCloud::MurmurHash3_x64_128(kv->k.getkeybuf(), kv->k.keyLength, 0, indexes);
-    readSetHash[i] = ((indexes[0] << 32) | (indexes[1] & 0xffffffff));
+    uint64_t hash = kv->k.getKeyHash();
+    readSetHash[i] = hash;
+
+    //Apply local lock filter
+    uint64_t loc = ConcurrentBitmap::getBitLocation(hash);
+    auto lookup = lockTableFilter.find(loc);
+    if (lookup != lockTableFilter.end()) {
+        readTupleSkipLock[i] = true;
+    } else {
+        lockTableFilter.insert(loc);
+    }
     return true;
 }
 
@@ -87,9 +101,18 @@ bool
 TxEntry::insertWriteSet(KVLayout* kv, uint32_t i) {
     assert(i < writeSetSize);
     writeSet[i] = kv;
-    uint64_t indexes[2];
-    RAMCloud::MurmurHash3_x64_128(kv->k.getkeybuf(), kv->k.keyLength, 0, indexes);
-    writeSetHash[i] = ((indexes[0] << 32) | (indexes[1] & 0xffffffff));
+    uint64_t hash = kv->k.getKeyHash();
+    writeSetHash[i] = hash;
+
+    //Apply local lock filter
+    uint64_t loc = ConcurrentBitmap::getBitLocation(hash);
+    auto lookup = lockTableFilter.find(loc);
+    if (lookup != lockTableFilter.end()) {
+      writeTupleSkipLock[i] = true;
+    } else {
+        lockTableFilter.insert(loc);
+    }
+
     return true;
 }
 

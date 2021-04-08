@@ -319,6 +319,8 @@ Validator::serialize() {
      * This loop handles the DSSN serialization window critical section
      */
     bool hasEvent = true;
+    uint64_t blocks =0;
+    uint64_t counts = 0;
     while (isAlive && (!isUnderTest || hasEvent)) {
         hasEvent = false;
 
@@ -349,9 +351,18 @@ Validator::serialize() {
 
 		localTxQueue.remove(it, txEntry);
 		insertConcludeQueue(txEntry);
-            }
+            } else {
+	        blocks++;
+	    }
             hasEvent = true;
             txEntry = localTxQueue.findNext(it);
+	    counts++;
+	    if ((counts % 80000)==0) {
+	        RAMCLOUD_LOG(NOTICE, "activeTxSet stats: counts=%lu, blocks=%lu",
+			     counts, blocks);
+		counts = 0;
+		blocks = 0;
+	    }
         }
 
         // process due commit-intents on cross-shard transaction queue

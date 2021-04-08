@@ -45,10 +45,11 @@ endif
 ifeq ($(QDBTX),yes)
 #QDB specific test files
 TESTS_SRCFILES := \
-          src/quantadb/SlabTest.cc \
-          src/quantadb/MemStreamIoTest.cc \
-    	  src/quantadb/DataLogTest.cc \
-    	  src/quantadb/TxLogTest.cc \
+	          src/quantadb/ConcurrentBitmapTest.cc \
+		  src/quantadb/SlabTest.cc \
+		  src/quantadb/MemStreamIoTest.cc \
+		  src/quantadb/DataLogTest.cc \
+		  src/quantadb/TxLogTest.cc \
 		  src/quantadb/DLogTest.cc \
 		  src/quantadb/SkipListTest.cc \
 		  src/quantadb/HashmapTest.cc \
@@ -56,11 +57,11 @@ TESTS_SRCFILES := \
 		  src/quantadb/ClusterTimeServiceTest.cc \
 		  src/quantadb/DSSNServiceTest.cc \
 		  src/quantadb/RamCloudDSSNTest.cc \
-          src/quantadb/MultiOpTest.cc \
-          src/quantadb/MultiReadTest.cc \
-          src/quantadb/MultiWriteTest.cc \
-          src/quantadb/MultiRemoveTest.cc \
-	      src/quantadb/TpcCDSSNTest.cc \
+		  src/quantadb/MultiOpTest.cc \
+		  src/quantadb/MultiReadTest.cc \
+		  src/quantadb/MultiWriteTest.cc \
+		  src/quantadb/MultiRemoveTest.cc \
+		  src/quantadb/TpcCDSSNTest.cc \
 		  src/quantadb/TransactionDSSNTest.cc \
 		  src/quantadb/SequencerTest.cc \
 		  src/quantadb/ValidatorTest.cc \

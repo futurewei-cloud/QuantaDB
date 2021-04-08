@@ -83,7 +83,7 @@ struct VLayout {
 struct KLayout {
 	uint32_t keyLength = 0;
     #ifdef  PMEMHASH_PREHASH
-    uint32_t keyhash;
+    uint64_t keyhash;
     #endif
 
     friend bool operator==(const KLayout &lhs, const KLayout &rhs);
@@ -111,6 +111,14 @@ struct KLayout {
         #ifdef  PMEMHASH_PREHASH
         keyhash = clhash(clhash_random, (const char*)key, keyLength);
         #endif
+    }
+    inline uint64_t getKeyHash()
+    {
+#ifdef  PMEMHASH_PREHASH
+        return keyhash;
+#else
+	return clhash(clhash_random, (const char*)key, keyLength);
+#endif
     }
 
     const char *getkeybuf() const { return (const char *)key; }

@@ -16,7 +16,7 @@
 #ifndef ACTIVE_TX_SET_H
 #define ACTIVE_TX_SET_H
 
-#include "CountBloomFilter.h"
+#include "ConcurrentBitmap.h"
 #include "TxEntry.h"
 
 namespace QDB {
@@ -30,10 +30,9 @@ namespace QDB {
  */
 class ActiveTxSet {
     PROTECTED:
-    CountBloomFilter<uint8_t> cbf;
+    ConcurrentBitmap cbm;
     std::atomic<uint64_t> removedTxCount{0};
     std::atomic<uint64_t> addedTxCount{0};
-    std::atomic_flag lock = ATOMIC_FLAG_INIT;
 
     PUBLIC:
     // false if the key is failed to be added due to overflow
@@ -49,8 +48,8 @@ class ActiveTxSet {
     uint64_t getCount() { return addedTxCount - removedTxCount; }
 
     // for testing
-    bool clear() { return cbf.clear(); }
-    bool isClean() { return cbf.isClean(); }
+    bool clear() { return cbm.clear(); }
+    bool isClean() { return cbm.isClean(); }
 
     ActiveTxSet() {}
 

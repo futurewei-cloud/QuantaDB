@@ -22,6 +22,8 @@
 
 namespace QDB {
 
+#define TUPLE_ENTRY_MAX 128
+
 /**
  * Each TxEntry object represents a single transaction.
  *
@@ -62,6 +64,15 @@ class TxEntry {
     uint32_t readSetSize;
     boost::scoped_array<KVLayout *> writeSet;
     boost::scoped_array<KVLayout *> readSet;
+    /*
+     * Track the Tuple lock state.  If the lockTableFilter lookup performance
+     * is ok, we can elminate the write/readSetLockState array.  When we
+     * validate the transaction, we can simply iterate through the
+     * lockTableFilter to acquire the tuple locks.
+     */
+    bool writeTupleSkipLock[TUPLE_ENTRY_MAX];
+    bool readTupleSkipLock[TUPLE_ENTRY_MAX];
+    std::set<uint64_t> lockTableFilter;
 
     //Cache the KVStore address, where the KV pointer is stored
     boost::scoped_array<void *> writeSetKVSPtr;
@@ -168,6 +179,8 @@ class TxEntry {
     inline boost::scoped_array<KVLayout *>& getReadSetInStore() { return readSetInStore; }
     inline void *getReadSetKVSPtr(uint64_t i) { return readSetKVSPtr[i]; }
     inline void *getWriteSetKVSPtr(uint64_t i) { return writeSetKVSPtr[i]; }
+    inline bool isReadTupleSkipLock(uint64_t i) { return readTupleSkipLock[i]; }
+    inline bool isWriteTupleSkipLock(uint64_t i) { return writeTupleSkipLock[i]; }
     inline uint32_t& getWriteSetIndex() { return writeSetIndex; }
     inline uint32_t& getReadSetIndex() { return readSetIndex; }
     inline void setCTS(__uint128_t val) { cts = val; }
