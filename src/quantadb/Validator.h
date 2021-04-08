@@ -104,7 +104,7 @@ static const uint32_t LOG_INFO = 3u;
 static const uint32_t LOG_DEBUG = 4u;
 static const uint32_t LOG_ALWAYS = LOG_BASELINE;
 
-#define NUM_CONCLUDE_THREADS 3
+#define NUM_CONCLUDE_THREADS 5
 
 class Validator {
     PROTECTED:

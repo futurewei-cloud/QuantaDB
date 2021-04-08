@@ -192,7 +192,7 @@ main(int argc, char *argv[])
              "The server should run the master service only (no backup)")
             ("maxCores",
              ProgramOptions::value<uint32_t>(
-                &config.maxCores)->default_value(32),
+                &config.maxCores)->default_value(16),
              "Limit on number of cores to use for the dispatch and worker "
              "threads. This value should not exceed the number of cores "
              "available on the machine. RAMCloud will try to keep its usage "
