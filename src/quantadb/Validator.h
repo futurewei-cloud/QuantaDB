@@ -151,7 +151,7 @@ class Validator {
     // conclude thread function
     void concludeThreadFunc(uint64_t tId);
 
-    // handle garbage collection
+    // handle peer info exchange
     void peer();
 
     // reconstruct meta data from tx log
@@ -192,7 +192,6 @@ class Validator {
     bool updatePeerInfo(uint64_t cts, uint64_t peerId, uint64_t eta, uint64_t pi, TxEntry *&txEntry);
     bool conclude(TxEntry *txEntry);
     bool insertConcludeQueue(TxEntry *txEntry);
-    bool finish(TxEntry *txEntry);    // handle validation commit/abort conclusion
     bool receiveSSNInfo(uint64_t peerId, __uint128_t cts,
             uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState,
             uint64_t &myPStamp, uint64_t &mySStamp, uint32_t &myTxState);

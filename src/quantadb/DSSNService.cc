@@ -1043,7 +1043,7 @@ DSSNService::handleSendInfoAsync(Rpc* rpc)
         throw MessageTooShortError(HERE);
     assert(reqHdr->senderPeerId != getServerId());
     uint64_t myPStamp, mySStamp = 0; //dummies to satisfy API
-    uint32_t myTxState; //dummy to satisfy API
+    uint32_t myTxState = -1; //dummy to satisfy API
     validator->receiveSSNInfo(reqHdr->senderPeerId, reqHdr->cts,
             reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState,
             myPStamp, mySStamp, myTxState);

@@ -155,7 +155,7 @@ class TxEntry {
 	TX_ABORT_PEER = 14,     // Abort from peer abort.
 	TX_ABORT_PISI = 15,     // Abort from Si-Pi conflict.
 	TX_ABORT_PISI_INIT = 16, // Abort from initial Si-Pi conflict
-	TX_ABORT_CONFLICT = 17, // Abort from initial Si-Pi conflict
+	TX_ABORT_LATE = 17, // Abort from initial Si-Pi conflict
 	TX_ABORT_TRIVIAL = 18,  // Abort for trivial reason.
      };
 
@@ -216,7 +216,7 @@ class TxEntry {
 			return ("TX_ABORT_PISI");
 		case TX_ABORT_PISI_INIT:
 			return ("TX_ABORT_PISI_INIT");
-		case TX_ABORT_CONFLICT:
+		case TX_ABORT_LATE:
 			return ("TX_ABORT_CONFLICT");
 		case TX_ABORT_TRIVIAL:
 			return ("TX_ABORT_TRIVIAL");
