@@ -320,11 +320,17 @@ public:
 	    return 0;
     }
 
+    uint8_t signature(const K & key) {
 #ifdef  PMEMHASH_PREHASH
-    uint8_t signature(const K & key) { return (key.keyhash / bucket_count_) & 0xFF; }
+        uint8_t sig = (key.keyhash / bucket_count_) & 0xFF;
 #else
-    uint8_t signature(const K & key) { return (Hash{}(key) / bucket_count_) & 0xFF; }
+	uint8_t sig = (Hash{}(key) / bucket_count_) & 0xFF;
 #endif
+        if (sig == 0xFF) {
+            return 1;
+        }
+        return sig;
+    }
 
 private:
 #ifdef  PMEMHASH_PREHASH
