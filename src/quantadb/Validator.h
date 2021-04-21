@@ -131,6 +131,7 @@ class Validator {
     std::thread schedulingThread;
     std::thread serializeThread;
     std::thread peeringThread;
+    std::thread peerAlertThread;
     std::thread concludeThreads[NUM_CONCLUDE_THREADS];
 
     // all SSN data maintenance operations
@@ -153,6 +154,7 @@ class Validator {
 
     // handle peer info exchange
     void peer();
+    void monitor();
 
     // reconstruct meta data from tx log
     bool recover();

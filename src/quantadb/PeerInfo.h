@@ -79,7 +79,7 @@ struct PeerEvent {
 class PeerInfo {
     PROTECTED:
     tbb::concurrent_unordered_map<CTS, uint32_t> peerInfo;
-    PeerEntry peerEntry[TBLSZ];
+    PeerEntry peerEntryTable[TBLSZ];
     std::queue<uint32_t> recycleQueue;
     uint64_t lastTick = 0;
     uint64_t tickUnit = 10000000; //10ms per tick
@@ -104,7 +104,10 @@ class PeerInfo {
     bool add(CTS cts, TxEntry* txEntry, Validator* validator);
 
     //send tx SSN info to peers
-    bool send(Validator *validator);
+    bool send(PeerEntry *peerEntry, Validator *validator);
+
+    //monitor SSN peer status
+    bool monitor(Validator *validator);
 
     //update peer info of a tx identified by cts
     bool update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi,

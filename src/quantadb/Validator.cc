@@ -48,6 +48,7 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
 #endif
         serializeThread = std::thread(&Validator::serialize, this);
         peeringThread = std::thread(&Validator::peer, this);
+        peerAlertThread = std::thread(&Validator::monitor, this);
         schedulingThread = std::thread(&Validator::scheduleDistributedTxs, this);
         for(uint64_t i =0; i< NUM_CONCLUDE_THREADS; i++) {
             concludeThreads[i] = std::thread(&Validator::concludeThreadFunc, this, i);
@@ -64,6 +65,8 @@ Validator::~Validator() {
             peeringThread.join();
         if (schedulingThread.joinable())
             schedulingThread.join();
+        if (peerAlertThread.joinable())
+            peerAlertThread.join();
         logCounters();
     }
     delete &localTxQueue;
@@ -383,12 +386,13 @@ Validator::serialize() {
                          activeTxSet.getRemovedTxCount());
         }
         counts++;
+        /*
         if ((counts % 800000)==0) {
-            RAMCLOUD_LOG(NOTICE, "scheduled %lu activeTxSet count %lu",
+            RAMCLOUD_LOG(NOTICE, "scheduled %lu activeTxSet count %lu %lu",
                  distributedTxSet.addedTxCount.load() - distributedTxSet.removedTxCount.load(),
-                 activeTxSet.getCount());
+                 activeTxSet.getCount(), activeTxSet.getRemovedTxCount());
             counts = 0;
-        }
+        }*/
     } //end while(true)
 }
 
@@ -451,10 +455,10 @@ Validator::concludeThreadFunc(uint64_t tId) {
         while (concludeQueue.try_pop(txEntry/*, threadId*/)) {
             if (txEntry->getPeerSet().size() == 0) {
                 conclude(txEntry);
-            } else {
                 RAMCLOUD_LOG(NOTICE, "pop concludeQueue  cts %lu %lu in %lu  out %lu",
                         (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
                         concludeQueue.inCount.load(), concludeQueue.outCount.load());
+            } else {
 
             }
         }
@@ -464,7 +468,14 @@ Validator::concludeThreadFunc(uint64_t tId) {
 void
 Validator::peer() {
     do {
-        peerInfo.send(this);
+        peerInfo.processEvent(this);
+    } while (isAlive && !isUnderTest);
+}
+
+void
+Validator::monitor() {
+    do {
+        peerInfo.monitor(this);
     } while (isAlive && !isUnderTest);
 }
 
