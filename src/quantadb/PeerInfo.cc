@@ -69,12 +69,15 @@ PeerInfo::processEvent(Validator *validator) {
                         peerEvent->peerPStamp, peerEvent->peerSStamp,
                         myTxState, myPStamp, mySStamp, validator);
             }
+            validator->getCounters().peerEventUpds++;
         } else if (peerEvent->eventType == 3) { //insert with txEntry
             add(peerEvent->cts, peerEvent->txEntry, validator);
+            validator->getCounters().peerEventAdds++;
         } else if (peerEvent->eventType == 2) { //remove
             PeerInfoIterator it = peerInfo.find(peerEvent->cts);
             recycleQueue.push(it->second);
             RAMCLOUD_LOG(NOTICE, "recycle idx %u", it->second);
+            validator->getCounters().peerEventDels++;
         }
         delete peerEvent;
     }

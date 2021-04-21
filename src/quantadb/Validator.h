@@ -68,6 +68,9 @@ struct Counters {
     // evaluatedDistributedTxs tracked bydistributedT
     // queuedLocalTxs tracked by localTxQueue
     // evaluatedLocalTxs tracked by localTxQueue
+    std::atomic<uint64_t> peerEventAdds{0};
+    std::atomic<uint64_t> peerEventDels{0};
+    std::atomic<uint64_t> peerEventUpds{0};
     std::atomic<uint64_t> infoSends{0};
     std::atomic<uint64_t> infoReceives{0};
     std::atomic<uint64_t> infoRequests{0};

@@ -82,6 +82,12 @@ class DistributedTxSet {
     PUBLIC:
     std::atomic<uint64_t> addedTxCount{0};
     std::atomic<uint64_t> removedTxCount{0};
+    std::atomic<uint64_t> indepIns{0};
+    std::atomic<uint64_t> indepOuts{0};
+    std::atomic<uint64_t> coldIns{0};
+    std::atomic<uint64_t> coldOuts{0};
+    std::atomic<uint64_t> hotIns{0};
+    std::atomic<uint64_t> hotOuts{0};
 
     // return true if the CI is added successfully
     bool add(TxEntry *txEntry);

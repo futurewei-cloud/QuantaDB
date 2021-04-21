@@ -112,6 +112,7 @@ DistributedTxSet::addToHotTxs(TxEntry *txEntry) {
             abort();
         }
         addedTxCount.fetch_add(1);
+        hotIns++;
         return true;
     }
     return false; //limited by CBF depth
@@ -130,6 +131,7 @@ DistributedTxSet::addToColdTxs(TxEntry *txEntry) {
             abort();
         }
         addedTxCount.fetch_add(1);
+        coldIns++;
         return true;
     }
     return addToHotTxs(txEntry); //limited by CBF depth, move it to hot queue
@@ -148,6 +150,7 @@ DistributedTxSet::addToIndependentTxs(TxEntry *txEntry) {
             abort();
         }
         addedTxCount.fetch_add(1);
+        indepIns++;
         return true;
     }
     return addToColdTxs(txEntry); //limited by CBF depth, move it to cold queue
@@ -195,6 +198,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
         hotDependQueue.remove(itHot, txHot);
         removeFromCBF(hotDependCBF, txHot);
         removedTxCount.fetch_add(1);
+        hotOuts++;
         if (txHot->getCTS() < lastActivated) {
             //RAMCLOUD_LOG(NOTICE, "activate hot %lu less %lu", (uint64_t)(txHot->getCTS() >> 64), (uint64_t)(lastActivated >> 64));
         } else
@@ -208,6 +212,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
         coldDependQueue.remove(itCold, txCold);
         removeFromCBF(coldDependCBF, txCold);
         removedTxCount.fetch_add(1);
+        coldOuts++;
         if (txCold->getCTS() < lastActivated) {
             //RAMCLOUD_LOG(NOTICE, "activate cold %lu less %lu", (uint64_t)(txCold->getCTS() >> 64), (uint64_t)(lastActivated >> 64));
         } else
@@ -221,6 +226,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
                 independentQueue.remove(itIndepend, txIndepend);
                 removeFromCBF(independentCBF, txIndepend);
                 removedTxCount.fetch_add(1);
+                indepOuts++;
                 if (lastActivated != (__int128_t)-1 && txIndepend->getCTS() < lastActivated) {
                     //RAMCLOUD_LOG(ERROR, "activate indep %lu less %lu", (uint64_t)(txIndepend->getCTS() >> 64), (uint64_t)(lastActivated >> 64));
                 } else
