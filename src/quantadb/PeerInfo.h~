@@ -47,13 +47,9 @@ namespace QDB {
  *
  */
 
-#define TBLSZ 8192
-
 typedef __uint128_t CTS;
-typedef tbb::concurrent_unordered_map<CTS, uint32_t>::iterator PeerInfoIterator;
 
 struct PeerEntry {
-    CTS cts = 0;
     bool isValid = true;
     std::mutex mutexForPeerUpdate; //mutex for this peer entry
     std::set<uint64_t> peerSeenSet; //peers seen so far
@@ -63,28 +59,31 @@ struct PeerEntry {
     TxEntry *txEntry = NULL; //reference to the associated commit intent
 };
 
-class  Validator;
-
 struct PeerEvent {
     CTS cts;
     uint64_t peerId = 0;
-    uint32_t eventType = 0;
     uint32_t peerTxState = 0;
     uint64_t peerPStamp = 0;
     uint64_t peerSStamp = 0;
     TxEntry* txEntry = NULL;
-    PeerEntry *peerEntry = NULL;
 };
+
+class  Validator;
+
+typedef tbb::concurrent_unordered_map<CTS, PeerEntry *>::iterator PeerInfoIterator;
 
 class PeerInfo {
     PROTECTED:
-    tbb::concurrent_unordered_map<CTS, uint32_t> peerInfo;
-    PeerEntry peerEntryTable[TBLSZ];
-    std::queue<uint32_t> recycleQueue;
+    tbb::concurrent_unordered_map<CTS, PeerEntry *> peerInfo;
+    std::mutex mutexForPeerAdd;
     uint64_t lastTick = 0;
     uint64_t tickUnit = 10000000; //10ms per tick
-    uint64_t alertThreshold = 10 * tickUnit;
+    uint64_t alertThreshold = 0;//Fixme 10 * tickUnit;
+    boost::lockfree::queue<CTS> activeTxQueue{1000};
+    std::queue<PeerEntry *> iteratorQueue;
     boost::lockfree::queue<PeerEvent *> eventQueue{1000};
+    std::atomic<uint64_t> inEvents{0};
+    std::atomic<uint64_t> outEvents{0};
 
     //evaluate the new states of the commit intent; caller is supposed to hold the mutex
     inline bool evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator);
@@ -93,29 +92,38 @@ class PeerInfo {
     inline bool logAndSend(TxEntry *txEntry, Validator *validator);
 
     PUBLIC:
-    PeerInfo();
     ~PeerInfo();
 
 	//add a tx for tracking peer info
     ///txEntry may or may not be NULL
     bool add(CTS cts, TxEntry* txEntry, Validator* validator);
 
-    //send tx SSN info to peers
-    bool send(PeerEntry *peerEntry, Validator *validator);
-
-    //monitor SSN peer status
-    bool monitor(Validator *validator);
-
     //update peer info of a tx identified by cts
     bool update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi,
-            uint32_t &myTxState, uint64_t &myEta, uint64_t &myPi, Validator *validator);
+            TxEntry *txEntry, Validator *validator);
 
-    bool poseEvent(uint32_t eventType, CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi, TxEntry *txEntry, PeerEntry *peerEntry);
+    //remove corresponding peer info
+    bool remove(CTS cts, Validator* validator);
+
+    //send tx SSN info to peers
+    bool send(Validator *validator);
+
+    bool poseEvent(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi, TxEntry *txEntry);
 
     bool processEvent(Validator *validator);
 
     //current capacity
     uint32_t size();
+
+    //enable sending peer info
+    bool monitor(CTS cts, Validator *validator);
+
+    PRIVATE:
+
+    bool add(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp, uint64_t sstamp,
+            TxEntry *inTxEntry, Validator *validator);
+
+
 }; // end PeerInfo class
 
 } // end namespace QDB

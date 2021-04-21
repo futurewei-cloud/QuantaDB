@@ -25,13 +25,6 @@ PeerInfo::PeerInfo() {
 }
 
 PeerInfo::~PeerInfo() {
-    /*
-    auto itr = peerInfo.begin();
-    while (itr != peerInfo.end()) {
-        PeerEntry *peerEntry = (*itr).second;
-        itr = peerInfo.unsafe_erase(itr);
-        delete peerEntry;
-    }*/
 }
 
 bool
@@ -69,20 +62,18 @@ PeerInfo::processEvent(Validator *validator) {
             if (!update(peerEvent->cts, peerEvent->peerId, peerEvent->peerTxState,
                     peerEvent->peerPStamp, peerEvent->peerSStamp,
                     myTxState, myPStamp, mySStamp, validator)) {
-                add(peerEvent->cts, NULL, validator);
+                while (!add(peerEvent->cts, NULL, validator)) {
+                    std::this_thread::sleep_for(std::chrono::microseconds(100));
+                }
                 update(peerEvent->cts, peerEvent->peerId, peerEvent->peerTxState,
                         peerEvent->peerPStamp, peerEvent->peerSStamp,
                         myTxState, myPStamp, mySStamp, validator);
             }
         } else if (peerEvent->eventType == 3) { //insert with txEntry
             add(peerEvent->cts, peerEvent->txEntry, validator);
-            //PeerInfoIterator it = peerInfo.find(peerEvent->cts);
-
-            //send(&peerEntryTable[it->second], validator);
         } else if (peerEvent->eventType == 2) { //remove
             PeerInfoIterator it = peerInfo.find(peerEvent->cts);
             recycleQueue.push(it->second);
-            entryCount--;
             RAMCLOUD_LOG(NOTICE, "recycle idx %u", it->second);
         }
         delete peerEvent;
@@ -94,7 +85,11 @@ bool
 PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
     PeerInfoIterator it = peerInfo.find(cts);
     if (it == peerInfo.end()) {
-        uint32_t freeIdx = recycleQueue.front();  //Fixme: check failure case
+        if (recycleQueue.empty()) {
+            RAMCLOUD_LOG(ERROR, "addPeer failed %lu full", (uint64_t)(cts >> 64));
+            return false;
+        }
+        uint32_t freeIdx = recycleQueue.front();
         PeerEntry* entry = &peerEntryTable[freeIdx];
         entry->mutexForPeerUpdate.lock();
 
@@ -105,7 +100,7 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
             RAMCLOUD_LOG(NOTICE, "addPeer failed %lu %lu txEntry %lu idx %u", (uint64_t)(cts >> 64),
                     (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry, freeIdx);
             entry->mutexForPeerUpdate.unlock();
-            return false; //Fixme handle this case
+            return false;
         }
         if (entry->txEntry) {
             RAMCLOUD_LOG(NOTICE, "remove old cts %lu for cts %lu idx %u",
@@ -322,18 +317,14 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
 
 bool
 PeerInfo::send(PeerEntry *peerEntry, Validator *validator) {
-    //peerEntry->mutexForPeerUpdate.lock();
     if (!peerEntry->isValid) {
         RAMCLOUD_LOG(ERROR, "bogus: cts %lu", peerEntry->meta.cStamp);
-        //poseEvent(2, 0, 0, 0, 0, 0, NULL, peerEntry);
-        //peerEntry->mutexForPeerUpdate.unlock();
         return false;
     }
 
     TxEntry* txEntry = peerEntry->txEntry;
     if (txEntry == NULL) {
         RAMCLOUD_LOG(ERROR, "missing: cts %lu", peerEntry->meta.cStamp);
-        //peerEntry->mutexForPeerUpdate.unlock();
         return false;
     }
 
@@ -351,16 +342,6 @@ PeerInfo::send(PeerEntry *peerEntry, Validator *validator) {
         evaluate(peerEntry, txEntry, validator);
     }
 
-    if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED) {
-        if (!iteratorQueue.push(peerEntry))
-            RAMCLOUD_LOG(ERROR, "queue full 2: cts %lu", peerEntry->meta.cStamp);
-        if (peerEntry->txEntry == NULL)
-            RAMCLOUD_LOG(ERROR, "queue error: cts %lu", peerEntry->meta.cStamp);
-       RAMCLOUD_LOG(NOTICE, "monitor cts %lu", peerEntry->meta.cStamp);
-        entryCount++;
-    }
-
-    //peerEntry->mutexForPeerUpdate.unlock();
     return true;
 }
 
@@ -369,37 +350,21 @@ PeerInfo::monitor(Validator *validator) {
     uint64_t nsTime = validator->getClockValue();
     uint64_t currentTick = nsTime / tickUnit;
     PeerEntry *peerEntry;
-    PeerEntry *firstEntry = NULL;
     uint32_t count = TBLSZ;
 
-    while (count > 0 && iteratorQueue.pop(peerEntry)) {
-        count--;/*
-        if (firstEntry == NULL)
-            firstEntry = peerEntry;
-        else if (firstEntry == peerEntry) {
-            if (!iteratorQueue.push(peerEntry))
-                RAMCLOUD_LOG(ERROR, "queue full 5: cts %lu", peerEntry->meta.cStamp);
-            RAMCLOUD_LOG(NOTICE, "queue length %u", count);
-            return true;
-        }
-
-        count++;*/
+    while (count > 0) {
+        count--;
+        peerEntry = &peerEntryTable[count];
         peerEntry->mutexForPeerUpdate.lock();
         if (!peerEntry->isValid) {
             RAMCLOUD_LOG(ERROR, "bogus: cts %lu", peerEntry->meta.cStamp);
-            //poseEvent(2, 0, 0, 0, 0, 0, NULL, peerEntry);
             peerEntry->mutexForPeerUpdate.unlock();
             continue;
         }
 
         TxEntry* txEntry = peerEntry->txEntry;
-        if (txEntry == NULL) { //cannot be
-        /*
-            if (!iteratorQueue.push(peerEntry))
-                RAMCLOUD_LOG(ERROR, "queue full 1: cts %lu", peerEntry->meta.cStamp);
-            */
+        if (txEntry == NULL) {
             peerEntry->mutexForPeerUpdate.unlock();
-            RAMCLOUD_LOG(NOTICE, "unmonitor cts %lu", peerEntry->meta.cStamp);
             continue;
         }
 
@@ -408,7 +373,7 @@ PeerInfo::monitor(Validator *validator) {
                 (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(),
                 txEntry->getTxCIState(), peerEntry->peerTxState,
                 peerEntry->peerSeenSet.size(), peerEntry->peerAlertSet.size(), nsTime);
-                /*
+            /*
             for (uint32_t i = 0; i < TBLSZ; i++) {
                 if (this->peerEntryTable[i].txEntry && (this->peerEntry[i].txEntry->getTxState() & 2) == 0)
                     RAMCLOUD_LOG(NOTICE, "table %u: cts %lu state %u %u", i,
@@ -438,12 +403,6 @@ PeerInfo::monitor(Validator *validator) {
                 }
             }
         }
-
-        if (txEntry->getTxCIState() < TxEntry::TX_CI_CONCLUDED) {
-            if (!iteratorQueue.push(peerEntry))
-                RAMCLOUD_LOG(ERROR, "queue full 3: cts %lu", peerEntry->meta.cStamp);
-        }
-
         peerEntry->mutexForPeerUpdate.unlock();
     }
     lastTick = currentTick;
