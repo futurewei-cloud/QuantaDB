@@ -75,6 +75,7 @@ PeerInfo::processEvent(Validator *validator) {
             validator->getCounters().peerEventAdds++;
         } else if (peerEvent->eventType == 2) { //remove
             PeerInfoIterator it = peerInfo.find(peerEvent->cts);
+            peerEntryTable[it->second].isConcluded = true;
             recycleQueue.push(it->second);
             RAMCLOUD_LOG(NOTICE, "recycle idx %u", it->second);
             validator->getCounters().peerEventDels++;
@@ -108,13 +109,12 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
         if (entry->txEntry) {
             RAMCLOUD_LOG(NOTICE, "remove old cts %lu for cts %lu idx %u",
                     (uint64_t)(entry->cts >> 64), (uint64_t)(cts >> 64), freeIdx);
-            entry->isValid = false; //Fixme
             peerInfo.unsafe_erase(entry->cts);
             delete entry->txEntry;
             entry->txEntry = NULL;
             validator->getCounters().deletedPeers++;
         }
-        entry->isValid = true;
+        entry->isConcluded = false;
         entry->cts = cts;
         entry->peerAlertSet.clear();
         entry->peerSeenSet.clear();
@@ -136,8 +136,13 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
     } else if (txEntry != NULL) {
         PeerEntry* existing = &peerEntryTable[it->second];
         existing->mutexForPeerUpdate.lock();
-        if (existing->isValid && existing->txEntry == NULL) {
-            if (txEntry->getCTS() != cts) abort();
+        if (txEntry->getCTS() != cts) {
+            RAMCLOUD_LOG(ERROR, "inconsistent peer %lu txEntry %lu",
+                    (uint64_t)(cts >> 64), (uint64_t)(txEntry->getCTS() >> 64));
+            existing->mutexForPeerUpdate.unlock();
+            return false;
+        }
+        if (existing->txEntry == NULL) {
             existing->txEntry = txEntry;
             txEntry->setPStamp(std::max(txEntry->getPStamp(), existing->meta.pStamp));
             txEntry->setSStamp(std::min(txEntry->getSStamp(), existing->meta.sStamp));
@@ -148,9 +153,10 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
             RAMCLOUD_LOG(NOTICE, "matchPeer %lu %lu txEntry %lu", (uint64_t)(txEntry->getCTS() >> 64),
                     (uint64_t)(txEntry->getCTS() & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry);
         } else if (txEntry != existing->txEntry){
-            RAMCLOUD_LOG(NOTICE, "duplicate %lu txEntry new %lu old %lu",
+            RAMCLOUD_LOG(ERROR, "duplicate %lu txEntry new %lu old %lu",
                     (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry, (uint64_t)existing->txEntry);
-            abort(); //should not have called add() with old CTS and should not have found non-zero txEntry
+            existing->mutexForPeerUpdate.unlock();
+            return false; //should not have called add() with old CTS and should not have found non-zero txEntry
         }
         existing->mutexForPeerUpdate.unlock();
     }
@@ -263,7 +269,7 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
                     (uint64_t)(cts >> 64), (uint64_t)(entry->cts >> 64), it->second);
             return false;
         }
-        if (entry->isValid) {
+        if (!entry->isConcluded) {
             entry->meta.pStamp = std::max(entry->meta.pStamp, pstamp);
             entry->meta.sStamp = std::min(entry->meta.sStamp, sstamp);
             entry->peerSeenSet.insert(peerId);
@@ -320,7 +326,7 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
 
 bool
 PeerInfo::send(PeerEntry *peerEntry, Validator *validator) {
-    if (!peerEntry->isValid) {
+    if (peerEntry->isConcluded) {
         RAMCLOUD_LOG(ERROR, "bogus: cts %lu", peerEntry->meta.cStamp);
         return false;
     }
@@ -358,13 +364,11 @@ PeerInfo::monitor(Validator *validator) {
     while (count > 0) {
         count--;
         peerEntry = &peerEntryTable[count];
-        peerEntry->mutexForPeerUpdate.lock();
-        if (!peerEntry->isValid) {
-            RAMCLOUD_LOG(ERROR, "bogus: cts %lu", peerEntry->meta.cStamp);
-            peerEntry->mutexForPeerUpdate.unlock();
+        if (peerEntry->isConcluded) {
             continue;
         }
 
+        peerEntry->mutexForPeerUpdate.lock();
         TxEntry* txEntry = peerEntry->txEntry;
         if (txEntry == NULL) {
             peerEntry->mutexForPeerUpdate.unlock();
@@ -372,11 +376,12 @@ PeerInfo::monitor(Validator *validator) {
         }
 
         if (currentTick > lastTick && (nsTime - (txEntry->getCTS() >> 64)) > 1000000000) {
+            /*
             RAMCLOUD_LOG(NOTICE, "finding: cts %lu states %u %u %u %lu %lu now %lu",
                 (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(),
                 txEntry->getTxCIState(), peerEntry->peerTxState,
                 peerEntry->peerSeenSet.size(), peerEntry->peerAlertSet.size(), nsTime);
-            /*
+
             for (uint32_t i = 0; i < TBLSZ; i++) {
                 if (this->peerEntryTable[i].txEntry && (this->peerEntry[i].txEntry->getTxState() & 2) == 0)
                     RAMCLOUD_LOG(NOTICE, "table %u: cts %lu state %u %u", i,
