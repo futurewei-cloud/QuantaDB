@@ -28,11 +28,12 @@ PeerInfo::~PeerInfo() {
 }
 
 bool
-PeerInfo::poseEvent(uint32_t eventType, CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi, TxEntry *txEntry, PeerEntry *peerEntry) {
+PeerInfo::poseEvent(uint32_t eventType, CTS cts, uint64_t peerId, uint8_t peerPosition, uint32_t peerTxState, uint64_t eta, uint64_t pi, TxEntry *txEntry, PeerEntry *peerEntry) {
     PeerEvent *peerEvent = new PeerEvent();
     peerEvent->eventType = eventType;
     peerEvent->cts = cts;
     peerEvent->peerId = peerId;
+    peerEvent->peerPosition = peerPosition;
     peerEvent->peerTxState = peerTxState;
     peerEvent->peerPStamp = eta;
     peerEvent->peerSStamp = pi;
@@ -59,15 +60,16 @@ PeerInfo::processEvent(Validator *validator) {
         if (peerEvent->eventType == 1) { //insert without txEntry
             uint32_t myTxState;
             uint64_t myPStamp, mySStamp;
+            uint8_t myPeerPosition;
             if (!update(peerEvent->cts, peerEvent->peerId, peerEvent->peerTxState,
-                    peerEvent->peerPStamp, peerEvent->peerSStamp,
-                    myTxState, myPStamp, mySStamp, validator)) {
+                    peerEvent->peerPStamp, peerEvent->peerSStamp, peerEvent->peerPosition,
+                    myTxState, myPStamp, mySStamp, myPeerPosition, validator)) {
                 while (!add(peerEvent->cts, NULL, validator)) {
                     std::this_thread::sleep_for(std::chrono::microseconds(100));
                 }
                 update(peerEvent->cts, peerEvent->peerId, peerEvent->peerTxState,
-                        peerEvent->peerPStamp, peerEvent->peerSStamp,
-                        myTxState, myPStamp, mySStamp, validator);
+                        peerEvent->peerPStamp, peerEvent->peerSStamp, peerEvent->peerPosition,
+                        myTxState, myPStamp, mySStamp, myPeerPosition, validator);
             }
             validator->getCounters().peerEventUpds++;
         } else if (peerEvent->eventType == 3) { //insert with txEntry
@@ -116,15 +118,14 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
         }
         entry->isConcluded = false;
         entry->cts = cts;
-        entry->peerAlertSet.clear();
-        entry->peerSeenSet.clear();
+        entry->peerAlertSet = 0;;
+        entry->peerSeenSet = 0;
         entry->peerTxState = TxEntry::TX_PENDING;
         entry->meta.cStamp = cts >> 64;
         entry->meta.pStamp = entry->meta.pStampPrev = 0;
         entry->meta.sStampPrev = entry->meta.sStamp = 0xffffffffffffffff;
         if (txEntry != NULL) {
             if (txEntry->getCTS() != cts) abort();
-            if (txEntry->getPeerSet().size() == 0) abort();
             entry->meta.pStamp = txEntry->getPStamp();
             entry->meta.sStamp = txEntry->getSStamp();
             entry->txEntry = txEntry;
@@ -199,7 +200,7 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
                 txEntry->setTxResult(TxEntry::TX_ABORT_PISI_INIT);
             } else if (txEntry->getPeerSet() == peerEntry->peerSeenSet
-                    && peerEntry->peerAlertSet.empty()) {
+                    && !peerEntry->peerAlertSet) {
                 txEntry->setTxState(TxEntry::TX_COMMIT);
                 txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
                 txEntry->setTxResult(TxEntry::TX_COMMIT_INIT);
@@ -214,9 +215,7 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
     if (txEntry->getTxCIState() == TxEntry::TX_CI_CONCLUDED) {
         if (validator->logTx(LOG_ALWAYS, txEntry)) {
             txEntry->setTxCIState(TxEntry::TX_CI_SEALED);
-	    validator->conclude(txEntry);
-	    //TODO: insert the txEntry to the concludequeue
-	    //validator->insertConcludeQueue(txEntry);
+            validator->conclude(txEntry);
         } else
             abort();
     }
@@ -228,9 +227,9 @@ PeerInfo::evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator)
         txEntry->setTxState(TxEntry::TX_CONFLICT);
         txEntry->setTxResult(TxEntry::TX_ABORT_LATE);
     }
-    RAMCLOUD_LOG(NOTICE, "evaluate cts %lu  states %u %u %u %lu %lu",
+    RAMCLOUD_LOG(NOTICE, "evaluate cts %lu  states %u %u %u %lu %lu %lu",
             (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(), txEntry->getTxCIState(), peerEntry->peerTxState,
-            peerEntry->peerSeenSet.size(), peerEntry->peerAlertSet.size());
+            txEntry->getPeerSet(), peerEntry->peerSeenSet, peerEntry->peerAlertSet);
     return true; //concluded
 }
 
@@ -254,8 +253,8 @@ PeerInfo::logAndSend(TxEntry *txEntry, Validator *validator) {
 }
 
 bool
-PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp, uint64_t sstamp,
-        uint32_t &myTxState, uint64_t &myPStamp, uint64_t &mySStamp, Validator *validator) {
+PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp, uint64_t sstamp, uint8_t peerPosition,
+        uint32_t &myTxState, uint64_t &myPStamp, uint64_t &mySStamp, uint8_t &myPeerPosition, Validator *validator) {
     TxEntry *txEntry= NULL;
     PeerInfoIterator it;
 
@@ -272,10 +271,10 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
         if (!entry->isConcluded) {
             entry->meta.pStamp = std::max(entry->meta.pStamp, pstamp);
             entry->meta.sStamp = std::min(entry->meta.sStamp, sstamp);
-            entry->peerSeenSet.insert(peerId);
+            entry->peerSeenSet |= (1 << peerPosition);
             if (peerTxState == TxEntry::TX_ALERT) {
                 entry->peerTxState = TxEntry::TX_ALERT;
-                entry->peerAlertSet.insert(peerId);
+                entry->peerAlertSet |= (1 << peerPosition);
             } else if (peerTxState == TxEntry::TX_ABORT || peerTxState == TxEntry::TX_OUTOFORDER) {
                 assert(entry->peerTxState != TxEntry::TX_COMMIT);
                 entry->peerTxState = TxEntry::TX_ABORT;
@@ -289,7 +288,7 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
             RAMCLOUD_LOG(NOTICE, "updatePeer %lu txEntry %lu peerState %u peerId %lu cnt %lu %lu",
                     (uint64_t)(cts >> 64),
                     (uint64_t)txEntry, entry->peerTxState,
-                    peerId, entry->peerSeenSet.size(), entry->peerAlertSet.size());
+                    peerId, entry->peerSeenSet, entry->peerAlertSet);
 
             if (txEntry != NULL) {
                 if (txEntry->getCTS() != cts) abort(); //make sure txEntry contents not corrupted
@@ -301,6 +300,7 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
                 myTxState = txEntry->getTxState();
                 myPStamp = txEntry->getPStamp();
                 mySStamp = txEntry->getSStamp();
+                myPeerPosition = txEntry->getPeerPosition();
             }
             if (myTxState == 0) {
             /*
@@ -361,6 +361,9 @@ PeerInfo::monitor(Validator *validator) {
     PeerEntry *peerEntry;
     uint32_t count = TBLSZ;
 
+    if (currentTick <= lastTick)
+        return true;
+
     while (count > 0) {
         count--;
         peerEntry = &peerEntryTable[count];
@@ -375,18 +378,18 @@ PeerInfo::monitor(Validator *validator) {
             continue;
         }
 
-        if (currentTick > lastTick && (nsTime - (txEntry->getCTS() >> 64)) > 1000000000) {
+        if ((nsTime - (txEntry->getCTS() >> 64)) > 1000000000) {
             /*
             RAMCLOUD_LOG(NOTICE, "finding: cts %lu states %u %u %u %lu %lu now %lu",
                 (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(),
                 txEntry->getTxCIState(), peerEntry->peerTxState,
-                peerEntry->peerSeenSet.size(), peerEntry->peerAlertSet.size(), nsTime);
+                peerEntry->peerSeenSet, peerEntry->peerAlertSet, nsTime);
 
             for (uint32_t i = 0; i < TBLSZ; i++) {
                 if (this->peerEntryTable[i].txEntry && (this->peerEntry[i].txEntry->getTxState() & 2) == 0)
                     RAMCLOUD_LOG(NOTICE, "table %u: cts %lu state %u %u", i,
                             (uint64_t)(this->peerEntryTable[i].cts>>64),
-                            this->peerEntryTable[i].isValid,
+                            this->peerEntryTable[i].isConcluded,
                             this->peerEntryTable[i].txEntry ? this->peerEntryTable[i].txEntry->getTxState() : 0);
             }*/
         }
@@ -403,12 +406,7 @@ PeerInfo::monitor(Validator *validator) {
 
             if (txEntry->getTxState() == TxEntry::TX_ALERT) {
                 //request missing SSN info from peers periodically;
-                if (currentTick > lastTick) {
-                    std::set<uint64_t>::iterator it;
-                    for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
-                        validator->requestSSNInfo(txEntry, true, *it);
-                    }
-                }
+                validator->requestSSNInfo(txEntry, false, NULL);
             }
         }
         peerEntry->mutexForPeerUpdate.unlock();

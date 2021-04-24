@@ -40,7 +40,7 @@ class DSSNService : public Service {
    bool sendTxCommitReply(TxEntry *txEntry);
 
    bool sendDSSNInfo(__uint128_t cts, TxEntry *txEntry, bool isSpecific = false, uint64_t target = 0);
-   bool sendDSSNInfo(__uint128_t cts, uint8_t txState, uint64_t pStamp, uint64_t sStamp, uint64_t target);
+   bool sendDSSNInfo(__uint128_t cts, uint8_t txState, uint64_t pStamp, uint64_t sStamp, uint8_t position, uint64_t target);
    void recordTxCommitDispatch(TxEntry *txEntry);
    bool requestDSSNInfo(TxEntry *txEntry, bool isSpecific = false, uint64_t target = 0);
 

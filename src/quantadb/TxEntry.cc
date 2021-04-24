@@ -22,7 +22,7 @@ namespace QDB {
 TxEntry::TxEntry(uint32_t _readSetSize, uint32_t _writeSetSize) {
     if (_readSetSize > TUPLE_ENTRY_MAX || _writeSetSize > TUPLE_ENTRY_MAX) {
         printf("read or write set of the transaction exceeded the maximum supported size: %d", TUPLE_ENTRY_MAX);
-	exit(1);
+        exit(1);
     }
     sstamp = std::numeric_limits<uint64_t>::max();
     pstamp = 0;
@@ -35,26 +35,26 @@ TxEntry::TxEntry(uint32_t _readSetSize, uint32_t _writeSetSize) {
     if (writeSetSize > 0) {
         writeSet.reset(new KVLayout *[writeSetSize]);
         writeSetHash.reset(new uint64_t[writeSetSize]);
-	writeSetInStore.reset(new KVLayout *[writeSetSize]);
+        writeSetInStore.reset(new KVLayout *[writeSetSize]);
         writeSetKVSPtr.reset(new void *[writeSetSize]);
         for (uint32_t i = 0; i < writeSetSize; i++) {
-	  writeSet[i] = NULL;
-	  writeSetInStore[i] = NULL;
-	  writeSetKVSPtr[i] = NULL;
-	  writeTupleSkipLock[i] = false;
-	}
+            writeSet[i] = NULL;
+            writeSetInStore[i] = NULL;
+            writeSetKVSPtr[i] = NULL;
+            writeTupleSkipLock[i] = false;
+        }
     }
     if (readSetSize > 0) {
         readSet.reset(new KVLayout *[readSetSize]);
         readSetHash.reset(new uint64_t[readSetSize]);
-	readSetInStore.reset(new KVLayout *[readSetSize]);
+        readSetInStore.reset(new KVLayout *[readSetSize]);
         readSetKVSPtr.reset(new void *[readSetSize]);
         for (uint32_t i = 0; i < readSetSize; i++) {
-	  readSet[i] = NULL;
-	  readSetInStore[i] = NULL;
-	  readSetKVSPtr[i] = NULL;
-	  readTupleSkipLock[i] = false;
-	}
+            readSet[i] = NULL;
+            readSetInStore[i] = NULL;
+            readSetKVSPtr[i] = NULL;
+            readTupleSkipLock[i] = false;
+        }
     }
 
     rpcHandle = NULL;
@@ -157,6 +157,7 @@ TxEntry::serializeSize(uint32_t *wsSzRet, uint32_t *rsSzRet, uint32_t *psSzRet)
         // peerSet
         psSz += sizeof(uint32_t);
         psSz += peerSet.size() * sizeof(uint64_t);
+        psSz += sizeof(uint8_t);
         sz += psSz;
     }
     if (wsSzRet) *wsSzRet = wsSz;
@@ -214,6 +215,7 @@ TxEntry::serialize( outMemStream& out )
             uint64_t peer = *it;
             out.write(&peer, sizeof(peer));
         }
+        out.write(&myPeerPosition, sizeof(myPeerPosition));
     }
 }
 
@@ -266,6 +268,7 @@ TxEntry::deSerialize_additional( inMemStream& in )
         in.read(&peer, sizeof(peer));
         insertPeerSet(peer);
     }
+    in.read(&myPeerPosition, sizeof(myPeerPosition));
 }
 
 void

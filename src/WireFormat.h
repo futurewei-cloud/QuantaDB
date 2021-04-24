@@ -672,6 +672,7 @@ struct DSSNRequestInfoAsync {
         uint64_t pstamp;
         uint64_t sstamp;
         uint8_t txState;
+        uint8_t senderPeerPosition;
     } __attribute__((packed));
 };
 
@@ -686,6 +687,7 @@ struct DSSNSendInfoAsync {
         uint64_t pstamp;
         uint64_t sstamp;
         uint8_t txState;
+        uint8_t senderPeerPosition;
     } __attribute__((packed));
 };
 

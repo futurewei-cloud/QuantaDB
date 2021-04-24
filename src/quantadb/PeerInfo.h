@@ -56,8 +56,8 @@ struct PeerEntry {
     CTS cts = 0;
     bool isConcluded = true;
     std::mutex mutexForPeerUpdate; //mutex for this peer entry
-    std::set<uint64_t> peerSeenSet; //peers seen so far
-    std::set<uint64_t> peerAlertSet; //peers seen currently in alert state
+    uint64_t peerSeenSet; //peers seen so far
+    uint64_t peerAlertSet; //peers seen currently in alert state
     uint32_t peerTxState = TxEntry::TX_PENDING; //summary state of all seen peers
     DSSNMeta meta; //summary of pstamp and sstamp of all seen peers
     TxEntry *txEntry = NULL; //reference to the associated commit intent
@@ -74,6 +74,7 @@ struct PeerEvent {
     uint64_t peerSStamp = 0;
     TxEntry* txEntry = NULL;
     PeerEntry *peerEntry = NULL;
+    uint8_t peerPosition = 0;
 };
 
 class PeerInfo {
@@ -107,10 +108,10 @@ class PeerInfo {
     bool monitor(Validator *validator);
 
     //update peer info of a tx identified by cts
-    bool update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi,
-            uint32_t &myTxState, uint64_t &myEta, uint64_t &myPi, Validator *validator);
+    bool update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi, uint8_t peerPosition,
+            uint32_t &myTxState, uint64_t &myEta, uint64_t &myPi, uint8_t &myPeerPosition, Validator *validator);
 
-    bool poseEvent(uint32_t eventType, CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi, TxEntry *txEntry, PeerEntry *peerEntry);
+    bool poseEvent(uint32_t eventType, CTS cts, uint64_t peerId, uint8_t peerPosition, uint32_t peerTxState, uint64_t eta, uint64_t pi, TxEntry *txEntry, PeerEntry *peerEntry);
 
     bool processEvent(Validator *validator);
 

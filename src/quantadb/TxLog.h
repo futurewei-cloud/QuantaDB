@@ -52,7 +52,7 @@ class TxLog {
     ///how long should TxLog keep the tx states?
     uint32_t getTxState(__uint128_t cts);
 
-    bool getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t &sStamp);
+    bool getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t &sStamp, uint8_t &position);
 
     //obtain the first (non-concluded) commit-intent in the log
     ///the returned id is used for iterating through the non-concluded commit-intents

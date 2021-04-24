@@ -669,6 +669,8 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
     for (uint32_t i = 0; i < participantCount; i++) {
         if (participants[i].dssnServerId != getServerId())
             txEntry->insertPeerSet(participants[i].dssnServerId);
+        else
+            txEntry->setPeerPosition(i);
     }
     uint32_t readSetIdx = 0;
     uint32_t writeSetIdx = 0;
@@ -949,7 +951,8 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
 bool
 DSSNService::sendDSSNInfo(__uint128_t cts, TxEntry *txEntry, bool isSpecific, uint64_t target)
 {
-    RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
+    RAMCLOUD_LOG(NOTICE, "%s cts %lu %u %lu %lu", __FUNCTION__,
+            (uint64_t)(cts >> 64), isSpecific, target, txEntry->getPeerPosition());
     Metric* m = mMonitor->getOpMetric(DSSNServiceSendDSSNInfo);
     OpTrace t(m);
     WireFormat::DSSNSendInfoAsync::Request req;
@@ -960,6 +963,7 @@ DSSNService::sendDSSNInfo(__uint128_t cts, TxEntry *txEntry, bool isSpecific, ui
     req.pstamp = txEntry->getPStamp();
     req.sstamp = txEntry->getSStamp();
     req.txState = txEntry->getTxState();
+    req.senderPeerPosition = txEntry->getPeerPosition();
 
     char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
     uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);
@@ -969,7 +973,7 @@ DSSNService::sendDSSNInfo(__uint128_t cts, TxEntry *txEntry, bool isSpecific, ui
                 msg, length, sid);
     } else if (txEntry != NULL) {
         std::set<uint64_t>::iterator it;
-        for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
+        for (it = txEntry->getParticipantSet().begin(); it != txEntry->getParticipantSet().end(); it++) {
             ServerId sid(*it);
             Notifier::notify(context, WireFormat::DSSN_SEND_INFO_ASYNC,
                     msg, length, sid);
@@ -979,7 +983,7 @@ DSSNService::sendDSSNInfo(__uint128_t cts, TxEntry *txEntry, bool isSpecific, ui
 }
 
 bool
-DSSNService::sendDSSNInfo(__uint128_t cts, uint8_t txState, uint64_t pStamp, uint64_t sStamp, uint64_t target)
+DSSNService::sendDSSNInfo(__uint128_t cts, uint8_t txState, uint64_t pStamp, uint64_t sStamp, uint8_t position, uint64_t target)
 {
     RAMCLOUD_LOG(NOTICE, "%s", __FUNCTION__);
 
@@ -990,6 +994,7 @@ DSSNService::sendDSSNInfo(__uint128_t cts, uint8_t txState, uint64_t pStamp, uin
     req.pstamp = pStamp;
     req.sstamp = sStamp;
     req.txState = txState;
+    req.senderPeerPosition = position;
 
     char *msg = reinterpret_cast<char *>(&req) + sizeof(WireFormat::Notification::Request);
     uint32_t length = sizeof(req) - sizeof(WireFormat::Notification::Request);
@@ -1022,7 +1027,7 @@ DSSNService::requestDSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t target)
         RAMCLOUD_LOG(NOTICE, "notify cts %lu to peer %lu", (uint64_t)(txEntry->getCTS() >> 64), target);
     } else {
         std::set<uint64_t>::iterator it;
-        for (it = txEntry->getPeerSet().begin(); it != txEntry->getPeerSet().end(); it++) {
+        for (it = txEntry->getParticipantSet().begin(); it != txEntry->getParticipantSet().end(); it++) {
             ServerId sid(*it);
             Notifier::notify(context, WireFormat::DSSN_REQUEST_INFO_ASYNC,
                     msg, length, sid);
@@ -1044,9 +1049,10 @@ DSSNService::handleSendInfoAsync(Rpc* rpc)
     assert(reqHdr->senderPeerId != getServerId());
     uint64_t myPStamp, mySStamp = 0; //dummies to satisfy API
     uint32_t myTxState = -1; //dummy to satisfy API
+    uint8_t myPeerPosition = 0; //dummy to satisfy API
     validator->receiveSSNInfo(reqHdr->senderPeerId, reqHdr->cts,
-            reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState,
-            myPStamp, mySStamp, myTxState);
+            reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState, reqHdr->senderPeerPosition,
+            myPStamp, mySStamp, myTxState, myPeerPosition);
 }
 
 void
@@ -1059,7 +1065,7 @@ DSSNService::handleRequestInfoAsync(Rpc* rpc)
             rpc->requestPayload->getStart<WireFormat::DSSNRequestInfoAsync::Request>();
     if (reqHdr == NULL)
         throw MessageTooShortError(HERE);
-    validator->replySSNInfo(reqHdr->senderPeerId, reqHdr->cts, reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState);
+    validator->replySSNInfo(reqHdr->senderPeerId, reqHdr->cts, reqHdr->pstamp, reqHdr->sstamp, reqHdr->txState, reqHdr->senderPeerPosition);
 }
 
 void

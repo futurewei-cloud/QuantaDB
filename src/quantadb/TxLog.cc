@@ -63,7 +63,7 @@ TxLog::getNextPendingTx(uint64_t idIn, uint64_t &idOut, DSSNMeta &meta, std::set
         meta.pStamp = tx.getPStamp();
         meta.sStamp = tx.getSStamp();
         meta.cStamp = tx.getCTS();
-        peerSet =   tx.getPeerSet();
+        peerSet =   tx.getParticipantSet();
         writeSet.reset(new KVLayout*[tx.getWriteSetIndex()]);
         memcpy(writeSet.get(), tx.getWriteSet().get(), sizeof(KVLayout*) * tx.getWriteSetIndex()); 
         return true;
@@ -132,7 +132,7 @@ TxLog::getTxState(__uint128_t cts)
 }
 
 bool
-TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t &sStamp)
+TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t &sStamp, uint8_t &myPosition)
 {
     uint32_t dlen, retry = 0;
     TxLogTailer_t * tal;
@@ -160,6 +160,7 @@ TxLog::getTxInfo(__uint128_t cts, uint32_t &txState, uint64_t &pStamp, uint64_t 
             txState = myState;
             pStamp = tx.getPStamp();
             sStamp = tx.getSStamp();
+            myPosition = tx.getPeerPosition();
             return true;
         }
 
@@ -238,7 +239,7 @@ TxLog::dump(int fd)
             CTS_MARKED(tal->length)? "CTS MArking" : "");
 
         dprintf(fd, "\tpeerSet: ");
-        peerSet =   tx->getPeerSet();
+        peerSet =   tx->getParticipantSet();
         for(std::set<uint64_t>::iterator it = peerSet.begin(); it != peerSet.end(); it++) {
             uint64_t peer = *it;
             dprintf(fd, "%lu, ", peer);

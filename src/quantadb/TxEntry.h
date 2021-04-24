@@ -58,6 +58,7 @@ class TxEntry {
     //Set of IDs of participant shards excluding self
     ///use std::set for sake of equality check
     std::set<uint64_t> peerSet;
+    uint8_t myPeerPosition = 0;
 
     //write set and read set under validation
     uint32_t writeSetSize;
@@ -166,9 +167,11 @@ class TxEntry {
     inline uint64_t getSStamp() { return sstamp; }
     inline uint32_t getTxState() { return txState; }
     inline uint32_t getTxCIState() { return commitIntentState; }
+    inline uint8_t getPeerPosition() { return myPeerPosition; }
     inline void* getRpcHandle() { return rpcHandle; }
     inline void insertPeerSet(uint64_t peerId) { peerSet.insert(peerId); }
-    inline  std::set< uint64_t>& getPeerSet() { return peerSet; }
+    inline  std::set< uint64_t>& getParticipantSet() { return peerSet; }
+    inline uint64_t getPeerSet() { return ((uint64_t)(1 << (peerSet.size() + 1)) - 1 ) ^ (1 << myPeerPosition); }
     inline boost::scoped_array<KVLayout *>& getWriteSet() { return writeSet; }
     inline boost::scoped_array<KVLayout *>& getReadSet() { return readSet; }
     inline uint32_t getWriteSetSize() { return writeSetSize; }
@@ -188,6 +191,7 @@ class TxEntry {
     inline void setPStamp(uint64_t val) { pstamp = val; }
     inline void setTxState(uint32_t val) { txState = val; }
     inline void setTxCIState(uint32_t val) { commitIntentState = val; }
+    inline void setPeerPosition(uint32_t val) { myPeerPosition = val; }
     inline void setTxResult(uint32_t val) { commitResult = val; }
     inline void setRpcHandle(void *rpc) { rpcHandle = rpc; }
     inline bool isExclusionViolated() { return sstamp <= pstamp; }

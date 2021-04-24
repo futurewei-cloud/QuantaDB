@@ -294,7 +294,7 @@ Validator::scheduleDistributedTxs() {
                 //set the states and let peerInfo handling thread to do the rest
                 txEntry->setTxState(TxEntry::TX_OUTOFORDER);
                 counters.lateScheduleErrors++;
-                peerInfo.poseEvent(3, txEntry->getCTS(), 0, 0, 0, 0, txEntry, NULL);
+                peerInfo.poseEvent(3, txEntry->getCTS(), 0, 0, 0, 0, 0, txEntry, NULL);
                 continue;
             }
             while (!distributedTxSet.add(txEntry));
@@ -333,7 +333,6 @@ Validator::serialize() {
             if (rpcService) {
                 rpcService->recordTxCommitDispatch(txEntry);
             }
-            assert(txEntry->getPeerSet().size() == 0);
             if (!activeTxSet.blocks(txEntry)) {
                 /* There is no need to update activeTXs because this tx is validated
                  * and concluded shortly. If the conclude() does through a queue and another
@@ -378,7 +377,7 @@ Validator::serialize() {
 
             //enable sending SSN info to peer
             txEntry->setTxCIState(TxEntry::TX_CI_SCHEDULED);
-            peerInfo.poseEvent(3, txEntry->getCTS(), 0, 0, 0, 0, txEntry, NULL);
+            peerInfo.poseEvent(3, txEntry->getCTS(), 0, 0, 0, 0, 0, txEntry, NULL);
             hasEvent = true;
 
             RAMCLOUD_LOG(NOTICE, "activate  cts %lu %lu cnt %lu",
@@ -404,7 +403,7 @@ Validator::conclude(TxEntry *txEntry) {
         updateKVWriteSet(*txEntry);
     }
 
-    if (txEntry->getPeerSet().size() >= 1) {
+    if (txEntry->getParticipantSet().size() >= 1) {
         //for late cross-shard tx, it is never added to activeTxSet; just convert the state
         if (txEntry->getTxState() == TxEntry::TX_OUTOFORDER) {
             txEntry->setTxState(TxEntry::TX_ABORT);
@@ -428,7 +427,7 @@ Validator::conclude(TxEntry *txEntry) {
         counters.aborts++;
     else {
         counters.concludeErrors++;
-        RAMCLOUD_LOG(NOTICE, "concludeErr %lu %u peerSet %lu", (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(), txEntry->getPeerSet().size());
+        RAMCLOUD_LOG(NOTICE, "concludeErr %lu %u peerSet %lu", (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState(), txEntry->getPeerSet());
         abort();
     }
 
@@ -436,8 +435,8 @@ Validator::conclude(TxEntry *txEntry) {
 
     //TODO: Eliminate the following for the distributed transaction.
     //The conclude() should be called by conclude thread only.
-    if (txEntry->getPeerSet().size() >= 1) {
-        return peerInfo.poseEvent(2, txEntry->getCTS(), 0, 0, 0, 0, NULL, NULL);
+    if (txEntry->getParticipantSet().size() >= 1) {
+        return peerInfo.poseEvent(2, txEntry->getCTS(), 0, 0, 0, 0, 0, NULL, NULL);
     }
 
     logTx(LOG_DEBUG, txEntry); //for debugging only, not for recovery
@@ -453,7 +452,7 @@ Validator::concludeThreadFunc(uint64_t tId) {
 
     do {
         while (concludeQueue.try_pop(txEntry/*, threadId*/)) {
-            if (txEntry->getPeerSet().size() == 0) {
+            if (txEntry->getParticipantSet().size() == 0) {
                 conclude(txEntry);
                 RAMCLOUD_LOG(NOTICE, "pop concludeQueue  cts %lu %lu in %lu  out %lu",
                         (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
@@ -494,7 +493,7 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         return false; //skip queueing
     }
 
-    if (txEntry->getPeerSet().size() == 0) {
+    if (txEntry->getParticipantSet().size() == 0) {
         //single-shard tx
         RAMCLOUD_LOG(NOTICE, "insert localTx cts %lu txEntry %lu cnt %lu",
                 (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry,
@@ -545,15 +544,15 @@ Validator::get128bClockValue() {
 
 bool
 Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
-        uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState,
-        uint64_t &myPStamp, uint64_t &mySStamp, uint32_t &myTxState) {
+        uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState, uint8_t peerPosition,
+        uint64_t &myPStamp, uint64_t &mySStamp, uint32_t &myTxState, uint8_t &myPeerPosition) {
     RAMCLOUD_LOG(NOTICE, "receive cts %lu from %lu peerState %u ",
             (uint64_t)(cts >> 64), peerId, peerTxState);
 
     counters.infoReceives++;
-    if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, myTxState, myPStamp, mySStamp, this)) {
+    if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, peerPosition, myTxState, myPStamp, mySStamp, myPeerPosition, this)) {
         bool ret;
-        if ((ret = txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp))
+        if ((ret = txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp, myPeerPosition))
                 && myTxState != TxEntry::TX_PENDING) {
             //The commit intent is concluded
             counters.latePeers++;
@@ -564,7 +563,7 @@ Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
         //hence not finding an existing peer entry,
         //by creating a peer entry without commit intent txEntry
         //and then updating the peer entry.
-        peerInfo.poseEvent(1, cts, peerId, peerTxState, pstamp, sstamp, NULL, NULL);
+        peerInfo.poseEvent(1, cts, peerId, peerPosition, peerTxState, pstamp, sstamp, NULL, NULL);
 
         counters.earlyPeers++;
 
@@ -574,17 +573,18 @@ Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
 }
 
 void
-Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState) {
+Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState, uint8_t peerPosition) {
     assert(peerTxState != TxEntry::TX_CONFLICT);
 
     if (rpcService == NULL) //unit test may make rpcService NULL
         return;
 
     uint32_t myTxState = 0;
+    uint8_t myPeerPosition = 0;
     uint64_t myPStamp = 0, mySStamp = -1;
-    if (receiveSSNInfo(peerId, cts, pstamp, sstamp, peerTxState,
-            myPStamp, mySStamp, myTxState)) {
-        rpcService->sendDSSNInfo(cts, myTxState, myPStamp, mySStamp, peerId);
+    if (receiveSSNInfo(peerId, cts, pstamp, sstamp, peerTxState, peerPosition,
+            myPStamp, mySStamp, myTxState, myPeerPosition)) {
+        rpcService->sendDSSNInfo(cts, myTxState, myPStamp, mySStamp, myPeerPosition, peerId);
         counters.infoReplies++;
     } else {
         //This is the case when the local CI has not been created
@@ -600,7 +600,7 @@ Validator::sendSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t targetPeerId)
             rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry);
         else
             rpcService->sendDSSNInfo(txEntry->getCTS(), txEntry, true, targetPeerId);
-        RAMCLOUD_LOG(NOTICE, "send: cts %lu target %lu", (uint64_t)(txEntry->getCTS() >> 64), targetPeerId);
+        RAMCLOUD_LOG(NOTICE, "send: cts %lu target %lu %u", (uint64_t)(txEntry->getCTS() >> 64), targetPeerId, txEntry->getPeerPosition());
         counters.infoSends.fetch_add(1);
     }
 }
@@ -639,7 +639,7 @@ Validator::recover() {
     uint64_t it = 0;
     DSSNMeta meta;
     TxEntry *txEntry = new TxEntry(0, 0);
-    while (txLog.getNextPendingTx(it, it, meta, txEntry->getPeerSet(),
+    while (txLog.getNextPendingTx(it, it, meta, txEntry->getParticipantSet(),
             txEntry->getWriteSet())) {
         txEntry->setTxState(TxEntry::TX_ALERT); //indicate a recovered entry
         insertTxEntry(txEntry);

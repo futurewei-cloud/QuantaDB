@@ -121,7 +121,8 @@ TEST_F(TxLogTest, TxLogUnitTest)
         uint32_t tx_state = ((idx % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT;
         uint32_t txState;
         uint64_t pStamp, sStamp;
-        bool ret = txlog->getTxInfo(idx, txState, pStamp, sStamp);
+        uint8_t position;
+        bool ret = txlog->getTxInfo(idx, txState, pStamp, sStamp, position);
         EXPECT_EQ(ret, true);
         EXPECT_EQ(tx_state, txState);
         EXPECT_EQ(pStamp, idx);
@@ -223,8 +224,9 @@ void readBackwardFromLog(TxLogTest *c, int *run_run)
     {
         uint32_t txState;
         uint64_t pStamp, sStamp;
+        uint8_t position;
         for (__uint128_t cts = 0; cts < NUM_ENTRY; cts++) {
-            bool ret = c->txlog->getTxInfo(cts, txState, pStamp, sStamp);
+            bool ret = c->txlog->getTxInfo(cts, txState, pStamp, sStamp, position);
             if (ret) {
                 EXPECT_EQ(txState, ((cts % 2) == 0)? TxEntry::TX_PENDING : TxEntry::TX_COMMIT);
                 EXPECT_EQ(cts, pStamp);

@@ -198,9 +198,9 @@ class Validator {
     bool conclude(TxEntry *txEntry);
     bool insertConcludeQueue(TxEntry *txEntry);
     bool receiveSSNInfo(uint64_t peerId, __uint128_t cts,
-            uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState,
-            uint64_t &myPStamp, uint64_t &mySStamp, uint32_t &myTxState);
-    void replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState);
+            uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState, uint8_t peerPosition,
+            uint64_t &myPStamp, uint64_t &mySStamp, uint32_t &myTxState, uint8_t &myPeerPosition);
+    void replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState, uint8_t peerPosition);
     void sendTxCommitReply(TxEntry *txEntry);
 
     // calculate sstamp and pstamp using local read/write sets
