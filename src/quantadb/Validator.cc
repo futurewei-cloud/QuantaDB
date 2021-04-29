@@ -84,6 +84,7 @@ Validator::testRun() {
     scheduleDistributedTxs();
     serialize();
     peer();
+    concludeThreadFunc(0);
     return true;
 }
 
