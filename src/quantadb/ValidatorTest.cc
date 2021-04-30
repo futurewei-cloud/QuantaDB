@@ -154,7 +154,7 @@ TEST_F(ValidatorTest, BATKVStorePutGet) {
 TEST_F(ValidatorTest, BATKVStorePutPerf) {
     uint64_t start, stop;
 
-    fillTxEntry(1,1000000);
+    fillTxEntry(1,128);
 
     uint32_t size = txEntry[0]->getWriteSetSize();
     auto& writeSet = txEntry[0]->getWriteSet();
@@ -167,7 +167,6 @@ TEST_F(ValidatorTest, BATKVStorePutPerf) {
     GTEST_COUT << "Sec per write: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
     //printTxEntry(1);
 
-    freeTxEntry(1);
 }
 
 TEST_F(ValidatorTest, BATKVStorePutGetMulti) {
@@ -194,25 +193,23 @@ TEST_F(ValidatorTest, BATValidateLocalTx) {
 
     validator.localTxQueue.add(txEntry[0]);
     validator.serialize();
+    validator.concludeThreadFunc(0);
     EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
     kv = validator.kvStore.fetch(k);
     ASSERT_TRUE(NULL!=kv);
     EXPECT_EQ(sizeof(dataBlob), kv->v.valueLength);
     EXPECT_EQ(0, std::memcmp(dataBlob, kv->v.valuePtr, kv->v.valueLength));
-
-    freeTxEntry(1);
 
     fillTxEntry(1, 4); //one write key, three read keys
 
     validator.localTxQueue.add(txEntry[0]);
     validator.serialize();
+    validator.concludeThreadFunc(0);
     EXPECT_EQ(3, (int)txEntry[0]->txState); //COMMIT
     kv = validator.kvStore.fetch(k);
     ASSERT_TRUE(NULL!=kv);
     EXPECT_EQ(sizeof(dataBlob), kv->v.valueLength);
     EXPECT_EQ(0, std::memcmp(dataBlob, kv->v.valuePtr, kv->v.valueLength));
-
-    freeTxEntry(1);
 }
 
 TEST_F(ValidatorTest, BATValidateLocalTxPerf) {
@@ -281,7 +278,6 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf) {
 
     printTxEntryCommits(size);
 
-    freeTxEntry(size);
 }
 
 TEST_F(ValidatorTest, BATValidateLocalTxPerf2) {
@@ -313,7 +309,6 @@ TEST_F(ValidatorTest, BATValidateLocalTxPerf2) {
 
     printTxEntryCommits(size);
 
-    freeTxEntry(size);
 }
 
 TEST_F(ValidatorTest, BATValidateLocalTxs) {
@@ -331,14 +326,19 @@ TEST_F(ValidatorTest, BATValidateLocalTxs) {
     }
     //validator.localTxQueue.schedule(true);
     start = Cycles::rdtscp();
-    validator.serialize();
+    for (int i = 0; i < size; i++) {
+        TxEntry *tmp;
+	validator.localTxQueue.pop(tmp);
+	validator.activeTxSet.blocks(tmp);
+	validator.validateLocalTx(*tmp);
+	validator.conclude(tmp);
+    }
     stop = Cycles::rdtscp();
     GTEST_COUT << "Serialize local txs: Total cycles (" << size << " txs): " << (stop - start) << std::endl;
     GTEST_COUT << "Sec per local tx: " << (Cycles::toSeconds(stop - start) / size)  << std::endl;
 
     printTxEntryCommits(size);
 
-    freeTxEntry(size);
 }
 
 TEST_F(ValidatorTest, BATActiveTxSet) {
@@ -388,6 +388,13 @@ void activeTxSetRemove(ValidatorTest *test, uint32_t th)
 }
 
 TEST_F(ValidatorTest, BATActiveTxSetMulti) {
+      std::cout << "[Test Skipped]: "
+	      << ::testing::UnitTest::GetInstance()->current_test_info()->test_case_name()
+	      << ":"
+	      << ::testing::UnitTest::GetInstance()->current_test_info()->name()
+	      << std::endl;
+
+#if 0 //Comment out this case.  We have switched from counting bloomfilter to concurrentbitmap, and concurrentbitmap has its own unit test
     fillTxEntry(NUM, 20, 0);
 
     EXPECT_EQ(true, validator.activeTxSet.isClean());
@@ -407,6 +414,7 @@ TEST_F(ValidatorTest, BATActiveTxSetMulti) {
     EXPECT_EQ(true, validator.activeTxSet.isClean());
 
     freeTxEntry(NUM);
+    #endif
 }
 
 TEST_F(ValidatorTest, BATPeerInfo) {
@@ -489,6 +497,7 @@ TEST_F(ValidatorTest, BATValidateDistributedTxs) {
 
     for (int i = 0; i < size; i += 10) {
     	validator.serialize();
+	validator.concludeThreadFunc(0);
     	for (int j = 0; j < 10; j++) {
     		if (i + j  < size) {
     	        txEntry[i+j]->setTxCIState(TxEntry::TX_CI_LISTENING);
@@ -499,7 +508,6 @@ TEST_F(ValidatorTest, BATValidateDistributedTxs) {
 
 	EXPECT_EQ(0, (int)validator.distributedTxSet.count());
 
-	freeTxEntry(size);
 }
 
 TEST_F(ValidatorTest, BATDistributedTxSetPerf) {

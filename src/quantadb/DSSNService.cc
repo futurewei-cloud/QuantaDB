@@ -26,7 +26,6 @@ DSSNService::DSSNService(Context* context, ServerList* serverList,
 , serverList(serverList)
 , serverConfig(serverConfig)
 {
-    RAMCLOUD_LOG(NOTICE, "%s", getServerAddress().c_str());  //Mike, please remove it.
     kvStore = new HashmapKVStore();
     validator = new Validator(*kvStore, this, serverConfig->master.isTesting);
     tabletManager = new TabletManager();
@@ -480,8 +479,6 @@ DSSNService::multiWrite(const WireFormat::MultiOp::Request* reqHdr,
         while (validator->testRun()) {
             if (txEntry->getTxCIState() < TxEntry::TX_CI_FINISHED)
                 continue;
-            //reply already sent in testRun(), free memory now
-            delete txEntry;
             return;
         }
 
@@ -594,8 +591,6 @@ DSSNService::write(const WireFormat::WriteDSSN::Request* reqHdr,
             while (validator->testRun()) {
                 if (txEntry->getTxCIState() < TxEntry::TX_CI_FINISHED)
                     continue;
-                //reply already sent in testRun(), free memory now
-                delete txEntry;
                 return;
             }
 
@@ -873,8 +868,6 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
             while (validator->testRun()) {
                 if (txEntry->getTxCIState() < TxEntry::TX_CI_FINISHED)
                     continue;
-                //reply already sent in testRun(), free memory now
-                delete txEntry;
                 return;
             }
 
