@@ -90,7 +90,7 @@ class ValidatorTest : public ::testing::Test {
         uint8_t myPeerPosition;
     	validator.peerInfo.add(txEntry->getCTS(), txEntry, &validator);
     	for (uint64_t peerId = 0; peerId <= txEntry->getParticipantSet().size(); peerId++) {
-    		validator.receiveSSNInfo(peerId, txEntry->getCTS(), 0, 0xfffffff, txEntry->getTxState(), 1,
+    		validator.receiveSSNInfo(peerId, txEntry->getCTS(), 0, 0xfffffff, txEntry->getTxState(), peerId + 1,
     		                 myPStamp, mySStamp, myTxState, myPeerPosition);
     	}
 
@@ -432,7 +432,7 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 		    uint32_t myTxState;
 		    uint8_t myPeerPosition;
 			EXPECT_EQ(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
-			validator.receiveSSNInfo(peer, txEntry[ent]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, 1,
+			validator.receiveSSNInfo(peer, txEntry[ent]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, peer+1,
 			        myPStamp, mySStamp, myTxState, myPeerPosition);
 		}
 		EXPECT_NE(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
@@ -457,7 +457,7 @@ TEST_F(ValidatorTest, BATPeerInfo2) {
             myPStamp, mySStamp, myTxState, myPeerPosition);
     EXPECT_EQ(true, ret);
 
-    validator.receiveSSNInfo(0, txEntry[1]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, 1,
+    validator.receiveSSNInfo(0, txEntry[1]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, 2,
             myPStamp, mySStamp, myTxState, myPeerPosition);
     ret = validator.peerInfo.add(txEntry[1]->getCTS(), txEntry[1], &validator);
     EXPECT_EQ(true, ret);
@@ -476,7 +476,7 @@ TEST_F(ValidatorTest, BATPeerInfoReceivedEarly) {
             TxEntry::TX_PENDING,
             1, /* peer position */
             myPStamp, mySStamp, myTxState, myPeerPosition);
-    EXPECT_EQ(true, ret);
+    EXPECT_EQ(false, ret);
     EXPECT_EQ(1, (int)validator.getCounters().earlyPeers);
 }
 
@@ -497,7 +497,7 @@ TEST_F(ValidatorTest, BATValidateDistributedTxs) {
 
     for (int i = 0; i < size; i += 10) {
     	validator.serialize();
-	validator.concludeThreadFunc(0);
+    	validator.concludeThreadFunc(0);
     	for (int j = 0; j < 10; j++) {
     		if (i + j  < size) {
     	        txEntry[i+j]->setTxCIState(TxEntry::TX_CI_LISTENING);
