@@ -23,7 +23,7 @@
 # variables in the file private/MakefragPrivateTop.
 include $(wildcard private/MakefragPrivateTop)
 
-DEBUG ?= yes
+DEBUG ?= no
 DEBUG_OPT ?= no
 YIELD ?= no
 SSE ?= sse4.2

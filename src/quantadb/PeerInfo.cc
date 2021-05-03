@@ -73,9 +73,7 @@ PeerInfo::processEvent(Validator *validator) {
             }
             validator->getCounters().peerEventUpds++;
         } else if (peerEvent->eventType == 3) { //insert with txEntry
-            while (!add(peerEvent->cts, peerEvent->txEntry, validator)) {
-                std::this_thread::sleep_for(std::chrono::microseconds(100));
-            }
+            add(peerEvent->cts, peerEvent->txEntry, validator);
             validator->getCounters().peerEventAdds++;
         } else if (peerEvent->eventType == 2) { //remove
             PeerInfoIterator it = peerInfo.find(peerEvent->cts);
@@ -99,17 +97,17 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
         }
         uint32_t freeIdx = recycleQueue.front();
         PeerEntry* entry = &peerEntryTable[freeIdx];
-        //entry->mutexForPeerUpdate.lock();
-
-        if (!entry->isConcluded) {
-            RAMCLOUD_LOG(ERROR, "addPeer failed %lu bad entry", (uint64_t)(cts >> 64));
-            return false;
-        }
+        entry->mutexForPeerUpdate.lock();
 
         RAMCLOUD_LOG(NOTICE, "addPeer %lu %lu txEntry %lu idx %u", (uint64_t)(cts >> 64),
                 (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry, freeIdx);
 
-
+        if (!peerInfo.insert(std::make_pair(cts, freeIdx)).second) {
+            RAMCLOUD_LOG(NOTICE, "addPeer failed %lu %lu txEntry %lu idx %u", (uint64_t)(cts >> 64),
+                    (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry, freeIdx);
+            entry->mutexForPeerUpdate.unlock();
+            return false;
+        }
         if (entry->txEntry) {
             RAMCLOUD_LOG(NOTICE, "remove old cts %lu for cts %lu idx %u",
                     (uint64_t)(entry->cts >> 64), (uint64_t)(cts >> 64), freeIdx);
@@ -131,16 +129,9 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
             entry->meta.pStamp = txEntry->getPStamp();
             entry->meta.sStamp = txEntry->getSStamp();
             entry->txEntry = txEntry;
-            if (!peerInfo.insert(std::make_pair(cts, freeIdx)).second) {
-                RAMCLOUD_LOG(ERROR, "addPeer failed %lu %lu txEntry %lu idx %u", (uint64_t)(cts >> 64),
-                        (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry, freeIdx);
-                //entry->mutexForPeerUpdate.unlock();
-                return false;
-            }
-            send(entry, validator);
+            send(&peerEntryTable[freeIdx], validator);
         }
-
-        //entry->mutexForPeerUpdate.unlock();
+        entry->mutexForPeerUpdate.unlock();
         recycleQueue.pop();
         validator->getCounters().addPeers.fetch_add(1);
     } else if (txEntry != NULL) {
@@ -335,8 +326,16 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
 
 bool
 PeerInfo::send(PeerEntry *peerEntry, Validator *validator) {
+    if (peerEntry->isConcluded) {
+        RAMCLOUD_LOG(ERROR, "bogus: cts %lu", peerEntry->meta.cStamp);
+        return false;
+    }
 
     TxEntry* txEntry = peerEntry->txEntry;
+    if (txEntry == NULL) {
+        RAMCLOUD_LOG(ERROR, "missing: cts %lu", peerEntry->meta.cStamp);
+        return false;
+    }
 
     if (txEntry->getTxCIState() == TxEntry::TX_CI_SCHEDULED) {
         logAndSend(txEntry, validator);

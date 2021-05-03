@@ -5734,6 +5734,7 @@ tpcc_oneClient(double runSeconds, TPCC::Driver* driver, bool latencyTest = false
         }
         bool outcome = false;
         int randNum = rand() % 100;
+        randNum = 60;
         if (latencyTest) {
             randNum = 99;
         }
