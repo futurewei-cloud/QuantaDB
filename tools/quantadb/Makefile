@@ -23,7 +23,7 @@ CFLAGS += -g
 %:%.o
 	g++ -o $@ $^
 
-TARGETS = txlog datalog rdtscp rdtscp_test2 process_cpu phc_test slab_bench slab_bench_je slab_bench_tc
+TARGETS = txlog datalog rdtscp rdtscp_test2 process_cpu phc_test slab_bench slab_bench_je
 
 all: $(TARGETS)
 
@@ -33,7 +33,7 @@ txlog.o: txlog.cc
 datalog.o: datalog.cc $(TOP)/src/quantadb/DataLog.h
 	g++ -c $(CFLAGS) $< -o $@
 
-txlog: txlog.o TxLog.o TxEntry.o MurmurHash3.o
+txlog: txlog.o TxLog.o TxEntry.o MurmurHash3.o clhash.o KVStore.o
 	g++ -o $@ $^ -lpthread
 
 datalog: datalog.o
