@@ -55,7 +55,6 @@ typedef tbb::concurrent_unordered_map<CTS, uint32_t>::iterator PeerInfoIterator;
 struct PeerEntry {
     CTS cts = 0;
     bool isConcluded = true;
-    std::mutex mutexForPeerUpdate; //mutex for this peer entry
     uint64_t peerSeenSet; //peers seen so far
     uint64_t peerAlertSet; //peers seen currently in alert state
     uint32_t peerTxState = TxEntry::TX_PENDING; //summary state of all seen peers

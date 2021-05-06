@@ -71,6 +71,7 @@ PeerInfo::processEvent(Validator *validator) {
                 update(peerEvent->cts, peerEvent->peerId, peerEvent->peerTxState,
                         peerEvent->peerPStamp, peerEvent->peerSStamp, peerEvent->peerPosition,
                         myTxState, myPStamp, mySStamp, myPeerPosition, validator);
+                validator->getCounters().earlyPeers++;
             }
             validator->getCounters().peerEventUpds++;
         } else if (peerEvent->eventType == 3) { //insert with txEntry
@@ -98,7 +99,6 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
         }
         uint32_t freeIdx = recycleQueue.front();
         PeerEntry* entry = &peerEntryTable[freeIdx];
-        entry->mutexForPeerUpdate.lock();
 
         RAMCLOUD_LOG(NOTICE, "addPeer %lu %lu txEntry %lu idx %u", (uint64_t)(cts >> 64),
                 (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry, freeIdx);
@@ -106,7 +106,6 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
         if (!peerInfo.insert(std::make_pair(cts, freeIdx)).second) {
             RAMCLOUD_LOG(NOTICE, "addPeer failed %lu %lu txEntry %lu idx %u", (uint64_t)(cts >> 64),
                     (uint64_t)(cts & (((__uint128_t)1<<64) -1)), (uint64_t)txEntry, freeIdx);
-            entry->mutexForPeerUpdate.unlock();
             return false;
         }
         if (entry->txEntry) {
@@ -132,16 +131,13 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
             entry->txEntry = txEntry;
             send(&peerEntryTable[freeIdx], validator);
         }
-        entry->mutexForPeerUpdate.unlock();
         recycleQueue.pop();
         validator->getCounters().addPeers.fetch_add(1);
     } else if (txEntry != NULL) {
         PeerEntry* existing = &peerEntryTable[it->second];
-        existing->mutexForPeerUpdate.lock();
         if (txEntry->getCTS() != cts) {
             RAMCLOUD_LOG(ERROR, "inconsistent peer %lu txEntry %lu",
                     (uint64_t)(cts >> 64), (uint64_t)(txEntry->getCTS() >> 64));
-            existing->mutexForPeerUpdate.unlock();
             return false;
         }
         if (existing->txEntry == NULL) {
@@ -157,10 +153,8 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
         } else if (txEntry != existing->txEntry){
             RAMCLOUD_LOG(ERROR, "duplicate %lu txEntry new %lu old %lu",
                     (uint64_t)(txEntry->getCTS() >> 64), (uint64_t)txEntry, (uint64_t)existing->txEntry);
-            existing->mutexForPeerUpdate.unlock();
             return false; //should not have called add() with old CTS and should not have found non-zero txEntry
         }
-        existing->mutexForPeerUpdate.unlock();
     }
     return true;
 }
@@ -263,7 +257,6 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
     it = peerInfo.find(cts);
     if (it != peerInfo.end()) {
         PeerEntry* entry = &peerEntryTable[it->second];
-        entry->mutexForPeerUpdate.lock();
         if (entry->cts != cts) {
             RAMCLOUD_LOG(ERROR, "updatePeer mismatch cts %lu old cts %lu idx %u",
                     (uint64_t)(cts >> 64), (uint64_t)(entry->cts >> 64), it->second);
@@ -318,7 +311,6 @@ PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp
             RAMCLOUD_LOG(NOTICE, "updatePeer ignored: finished cts %lu %lu peerId %lu", (uint64_t)(cts >> 64),
                     (uint64_t)(cts & (((__uint128_t)1<<64) -1)), peerId);
         }
-        entry->mutexForPeerUpdate.unlock();
         return true;
     }
     RAMCLOUD_LOG(NOTICE, "updatePeer ignored: no cts %lu peerId %lu", (uint64_t)(cts >> 64), peerId);
@@ -372,10 +364,8 @@ PeerInfo::monitor(Validator *validator) {
             continue;
         }
 
-        peerEntry->mutexForPeerUpdate.lock();
         TxEntry* txEntry = peerEntry->txEntry;
         if (txEntry == NULL) {
-            peerEntry->mutexForPeerUpdate.unlock();
             continue;
         }
 
@@ -410,7 +400,6 @@ PeerInfo::monitor(Validator *validator) {
                 validator->requestSSNInfo(txEntry, false, 0);
             }
         }
-        peerEntry->mutexForPeerUpdate.unlock();
     }
     lastTick = currentTick;
 

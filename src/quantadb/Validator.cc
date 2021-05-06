@@ -562,26 +562,7 @@ Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
             (uint64_t)(cts >> 64), peerId, peerTxState);
 
     counters.infoReceives++;
-    if (!peerInfo[hash(cts)]->update(cts, peerId, peerTxState, pstamp, sstamp, peerPosition, myTxState, myPStamp, mySStamp, myPeerPosition, this)) {
-        bool ret;
-        if ((ret = txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp, myPeerPosition))
-                && myTxState != TxEntry::TX_PENDING) {
-            //The commit intent is concluded
-            counters.latePeers++;
-            return true;
-        }
-
-        //Handle the fact that peer info is received before its tx commit intent is received,
-        //hence not finding an existing peer entry,
-        //by creating a peer entry without commit intent txEntry
-        //and then updating the peer entry.
-        peerInfo[hash(cts)]->poseEvent(1, cts, peerId, peerPosition, peerTxState, pstamp, sstamp, NULL, NULL);
-
-        counters.earlyPeers++;
-
-        return false; //caller should not trust returned meta data
-    }
-    return true;
+    return peerInfo[hash(cts)]->poseEvent(1, cts, peerId, peerPosition, peerTxState, pstamp, sstamp, NULL, NULL);
 }
 
 void
@@ -594,8 +575,8 @@ Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint6
     uint32_t myTxState = 0;
     uint8_t myPeerPosition = 0;
     uint64_t myPStamp = 0, mySStamp = -1;
-    if (receiveSSNInfo(peerId, cts, pstamp, sstamp, peerTxState, peerPosition,
-            myPStamp, mySStamp, myTxState, myPeerPosition)) {
+    if (txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp, myPeerPosition)
+                    && myTxState != TxEntry::TX_PENDING) {
         rpcService->sendDSSNInfo(cts, myTxState, myPStamp, mySStamp, myPeerPosition, peerId);
         counters.infoReplies++;
     } else {
