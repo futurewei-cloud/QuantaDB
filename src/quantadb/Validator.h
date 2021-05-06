@@ -108,6 +108,7 @@ static const uint32_t LOG_DEBUG = 4u;
 static const uint32_t LOG_ALWAYS = LOG_BASELINE;
 
 #define NUM_CONCLUDE_THREADS 5
+#define NUM_PEER_THREADS 8
 
 class Validator {
     PROTECTED:
@@ -121,10 +122,10 @@ class Validator {
     SkipList<__uint128_t> &reorderQueue;
     DistributedTxSet &distributedTxSet;
     ActiveTxSet &activeTxSet;
-    PeerInfo &peerInfo;
 	ConcludeQueue &concludeQueue;
 	TxLog &txLog;
     ClusterTimeService clock;
+    PeerInfo* peerInfo[NUM_PEER_THREADS];
     __uint128_t lastScheduledTxCTS;
     //LATER DependencyMatrix blockedTxSet;
     Counters counters;
@@ -133,7 +134,7 @@ class Validator {
     // threads
     std::thread schedulingThread;
     std::thread serializeThread;
-    std::thread peeringThread;
+    std::thread peeringThread[NUM_PEER_THREADS];
     std::thread peerAlertThread;
     std::thread concludeThreads[NUM_CONCLUDE_THREADS];
 
@@ -156,8 +157,9 @@ class Validator {
     void concludeThreadFunc(uint64_t tId);
 
     // handle peer info exchange
-    void peer();
+    void peer(uint32_t tid);
     void monitor();
+    inline uint32_t hash(__uint128_t cts) { return isUnderTest ? 0 : (cts % 7919) % NUM_PEER_THREADS; }
 
     // reconstruct meta data from tx log
     bool recover();

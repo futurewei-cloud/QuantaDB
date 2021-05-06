@@ -88,7 +88,7 @@ class ValidatorTest : public ::testing::Test {
         uint64_t myPStamp, mySStamp;
         uint32_t myTxState;
         uint8_t myPeerPosition;
-    	validator.peerInfo.add(txEntry->getCTS(), txEntry, &validator);
+    	validator.peerInfo[0]->add(txEntry->getCTS(), txEntry, &validator);
     	for (uint64_t peerId = 0; peerId <= txEntry->getParticipantSet().size(); peerId++) {
     		validator.receiveSSNInfo(peerId, txEntry->getCTS(), 0, 0xfffffff, txEntry->getTxState(), peerId + 1,
     		                 myPStamp, mySStamp, myTxState, myPeerPosition);
@@ -422,7 +422,7 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 	fillTxEntry(5, 10, 2); //5 txs of 10 keys and 2 peers
 
 	for (int ent = 0; ent < 5; ent++) {
-		validator.peerInfo.add(txEntry[ent]->getCTS(), txEntry[ent], &validator);
+		validator.peerInfo[0]->add(txEntry[ent]->getCTS(), txEntry[ent], &validator);
         txEntry[ent]->setTxCIState(TxEntry::TX_CI_LISTENING);
 	}
 
@@ -437,7 +437,7 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 		}
 		EXPECT_NE(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
 	}
-	EXPECT_EQ((uint32_t)5, validator.peerInfo.size());
+	EXPECT_EQ((uint32_t)5, validator.peerInfo[0]->size());
 	//validator.peerInfo.sweep(&validator);
 	//EXPECT_EQ((uint32_t)2, validator.peerInfo.size());
 
@@ -452,14 +452,14 @@ TEST_F(ValidatorTest, BATPeerInfo2) {
     uint32_t myTxState;
     uint8_t myPeerPosition;
 
-    validator.peerInfo.add(txEntry[0]->getCTS(), txEntry[0], &validator);
+    validator.peerInfo[0]->add(txEntry[0]->getCTS(), txEntry[0], &validator);
     bool ret = validator.receiveSSNInfo(0, txEntry[0]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, 1,
             myPStamp, mySStamp, myTxState, myPeerPosition);
     EXPECT_EQ(true, ret);
 
     validator.receiveSSNInfo(0, txEntry[1]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, 2,
             myPStamp, mySStamp, myTxState, myPeerPosition);
-    ret = validator.peerInfo.add(txEntry[1]->getCTS(), txEntry[1], &validator);
+    ret = validator.peerInfo[0]->add(txEntry[1]->getCTS(), txEntry[1], &validator);
     EXPECT_EQ(true, ret);
 
     freeTxEntry(2);

@@ -227,7 +227,7 @@ DistributedTxSet::findReadyTx(ActiveTxSet &activeTxSet) {
                 removeFromCBF(independentCBF, txIndepend);
                 removedTxCount.fetch_add(1);
                 indepOuts++;
-                if (lastActivated != (__int128_t)-1 && txIndepend->getCTS() < lastActivated) {
+                if (lastActivated != (__uint128_t)-1 && txIndepend->getCTS() < lastActivated) {
                     //RAMCLOUD_LOG(ERROR, "activate indep %lu less %lu", (uint64_t)(txIndepend->getCTS() >> 64), (uint64_t)(lastActivated >> 64));
                 } else
                     lastActivated = txIndepend->getCTS();

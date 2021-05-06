@@ -32,7 +32,6 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
   reorderQueue(*new SkipList<__uint128_t>()),
   distributedTxSet(*new DistributedTxSet()),
   activeTxSet(*new ActiveTxSet()),
-  peerInfo(*new PeerInfo()),
   concludeQueue(*new ConcludeQueue()),
 #ifdef  QDBTXRECOVERY
   txLog(*new TxLog(true, _rpcService ?_rpcService->getServerAddress() : "0.0.0.0")) {
@@ -40,6 +39,9 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
   txLog(*new TxLog(false, _rpcService ?_rpcService->getServerAddress() : "0.0.0.0")) {
 #endif
     lastScheduledTxCTS = 0;
+    for (uint32_t i = 0; i < NUM_PEER_THREADS; i++) {
+        peerInfo[i] = new PeerInfo(i);
+    }
 
     // Fixme: may need to use TBB to pin the threads to specific cores LATER
     if (!isUnderTest) {
@@ -47,10 +49,12 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
         recover();
 #endif
         serializeThread = std::thread(&Validator::serialize, this);
-        peeringThread = std::thread(&Validator::peer, this);
+        for (uint32_t i = 0; i < NUM_PEER_THREADS; i++) {
+            peeringThread[i] = std::thread(&Validator::peer, this, i);
+        }
         peerAlertThread = std::thread(&Validator::monitor, this);
         schedulingThread = std::thread(&Validator::scheduleDistributedTxs, this);
-        for(uint64_t i =0; i< NUM_CONCLUDE_THREADS; i++) {
+        for (uint64_t i = 0; i < NUM_CONCLUDE_THREADS; i++) {
             concludeThreads[i] = std::thread(&Validator::concludeThreadFunc, this, i);
         }
     }
@@ -61,8 +65,10 @@ Validator::~Validator() {
         isAlive = false;
         if (serializeThread.joinable())
             serializeThread.join();
-        if (peeringThread.joinable())
-            peeringThread.join();
+        for (uint32_t i = 0; i < NUM_PEER_THREADS; i++) {
+            if (peeringThread[i].joinable())
+                peeringThread[i].join();
+        }
         if (schedulingThread.joinable())
             schedulingThread.join();
         if (peerAlertThread.joinable())
@@ -73,8 +79,10 @@ Validator::~Validator() {
     delete &reorderQueue;
     delete &distributedTxSet;
     delete &activeTxSet;
-    delete &peerInfo;
     delete &concludeQueue;
+    for (uint32_t i = 0; i < NUM_PEER_THREADS; i++) {
+        delete peerInfo[i];
+    }
 }
 
 bool
@@ -83,7 +91,7 @@ Validator::testRun() {
         return false;
     scheduleDistributedTxs();
     serialize();
-    peer();
+    peer(0);
     monitor();
     concludeThreadFunc(0);
     return true;
@@ -296,7 +304,7 @@ Validator::scheduleDistributedTxs() {
                 //set the states and let peerInfo handling thread to do the rest
                 txEntry->setTxState(TxEntry::TX_OUTOFORDER);
                 counters.lateScheduleErrors++;
-                peerInfo.poseEvent(3, txEntry->getCTS(), 0, 0, 0, 0, 0, txEntry, NULL);
+                peerInfo[hash(txEntry->getCTS())]->poseEvent(3, txEntry->getCTS(), 0, 0, 0, 0, 0, txEntry, NULL);
                 continue;
             }
             while (!distributedTxSet.add(txEntry));
@@ -379,7 +387,7 @@ Validator::serialize() {
 
             //enable sending SSN info to peer
             txEntry->setTxCIState(TxEntry::TX_CI_SCHEDULED);
-            peerInfo.poseEvent(3, txEntry->getCTS(), 0, 0, 0, 0, 0, txEntry, NULL);
+            peerInfo[hash(txEntry->getCTS())]->poseEvent(3, txEntry->getCTS(), 0, 0, 0, 0, 0, txEntry, NULL);
             hasEvent = true;
 
             RAMCLOUD_LOG(NOTICE, "activate  cts %lu %lu cnt %lu",
@@ -438,7 +446,7 @@ Validator::conclude(TxEntry *txEntry) {
     //TODO: Eliminate the following for the distributed transaction.
     //The conclude() should be called by conclude thread only.
     if (txEntry->getParticipantSet().size() >= 1) {
-        return peerInfo.poseEvent(2, txEntry->getCTS(), 0, 0, 0, 0, 0, NULL, NULL);
+        return peerInfo[hash(txEntry->getCTS())]->poseEvent(2, txEntry->getCTS(), 0, 0, 0, 0, 0, NULL, NULL);
     }
 
     logTx(LOG_DEBUG, txEntry); //for debugging only, not for recovery
@@ -467,16 +475,18 @@ Validator::concludeThreadFunc(uint64_t tId) {
 }
 
 void
-Validator::peer() {
+Validator::peer(uint32_t tid) {
     do {
-        peerInfo.processEvent(this);
+        peerInfo[tid]->processEvent(this);
     } while (isAlive && !isUnderTest);
 }
 
 void
 Validator::monitor() {
     do {
-        peerInfo.monitor(this);
+        for (uint32_t i = 0; i < NUM_PEER_THREADS; i++) {
+            peerInfo[i]->monitor(this);
+        }
     } while (isAlive && !isUnderTest);
 }
 
@@ -552,7 +562,7 @@ Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
             (uint64_t)(cts >> 64), peerId, peerTxState);
 
     counters.infoReceives++;
-    if (!peerInfo.update(cts, peerId, peerTxState, pstamp, sstamp, peerPosition, myTxState, myPStamp, mySStamp, myPeerPosition, this)) {
+    if (!peerInfo[hash(cts)]->update(cts, peerId, peerTxState, pstamp, sstamp, peerPosition, myTxState, myPStamp, mySStamp, myPeerPosition, this)) {
         bool ret;
         if ((ret = txLog.getTxInfo(cts, myTxState, myPStamp, mySStamp, myPeerPosition))
                 && myTxState != TxEntry::TX_PENDING) {
@@ -565,7 +575,7 @@ Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
         //hence not finding an existing peer entry,
         //by creating a peer entry without commit intent txEntry
         //and then updating the peer entry.
-        peerInfo.poseEvent(1, cts, peerId, peerPosition, peerTxState, pstamp, sstamp, NULL, NULL);
+        peerInfo[hash(cts)]->poseEvent(1, cts, peerId, peerPosition, peerTxState, pstamp, sstamp, NULL, NULL);
 
         counters.earlyPeers++;
 

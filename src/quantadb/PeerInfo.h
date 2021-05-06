@@ -86,6 +86,7 @@ class PeerInfo {
     uint64_t tickUnit = 10000000; //10ms per tick
     uint64_t alertThreshold = 10 * tickUnit;
     boost::lockfree::queue<PeerEvent *> eventQueue{1000};
+    uint32_t tid;
 
     //evaluate the new states of the commit intent; caller is supposed to hold the mutex
     inline bool evaluate(PeerEntry *peerEntry, TxEntry *txEntry, Validator *validator);
@@ -94,7 +95,7 @@ class PeerInfo {
     inline bool logAndSend(TxEntry *txEntry, Validator *validator);
 
     PUBLIC:
-    PeerInfo();
+    PeerInfo(uint32_t tid);
     ~PeerInfo();
 
 	//add a tx for tracking peer info

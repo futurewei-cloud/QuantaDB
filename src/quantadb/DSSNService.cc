@@ -944,7 +944,7 @@ DSSNService::sendTxCommitReply(TxEntry *txEntry)
 bool
 DSSNService::sendDSSNInfo(__uint128_t cts, TxEntry *txEntry, bool isSpecific, uint64_t target)
 {
-    RAMCLOUD_LOG(NOTICE, "%s cts %lu %u %lu %lu", __FUNCTION__,
+    RAMCLOUD_LOG(NOTICE, "%s cts %lu %u %lu %u", __FUNCTION__,
             (uint64_t)(cts >> 64), isSpecific, target, txEntry->getPeerPosition());
     Metric* m = mMonitor->getOpMetric(DSSNServiceSendDSSNInfo);
     OpTrace t(m);

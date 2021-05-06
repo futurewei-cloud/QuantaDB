@@ -19,7 +19,8 @@
 
 namespace QDB {
 
-PeerInfo::PeerInfo() {
+PeerInfo::PeerInfo(uint32_t tid) {
+    this->tid = tid;
     for (uint32_t i = 0; i < TBLSZ; i++)
         recycleQueue.push(i);
 }
@@ -39,8 +40,8 @@ PeerInfo::poseEvent(uint32_t eventType, CTS cts, uint64_t peerId, uint8_t peerPo
     peerEvent->peerSStamp = pi;
     peerEvent->txEntry = txEntry;
     peerEvent->peerEntry = peerEntry;
-    RAMCLOUD_LOG(NOTICE, "pose event %u cts %lu txEntry %lu peerEntry %lu",
-            eventType, (uint64_t)(cts >> 64), (uint64_t)txEntry, (uint64_t)peerEntry);
+    RAMCLOUD_LOG(NOTICE, "pose event %u (%u) cts %lu txEntry %lu peerEntry %lu",
+            eventType, this->tid, (uint64_t)(cts >> 64), (uint64_t)txEntry, (uint64_t)peerEntry);
     bool ret = eventQueue.push(peerEvent);
     if (!ret)
         RAMCLOUD_LOG(ERROR, "queue full 3: cts %lu", (uint64_t)(cts >> 64));
@@ -54,8 +55,8 @@ PeerInfo::processEvent(Validator *validator) {
         if (!eventQueue.pop(peerEvent))
             abort();
 
-        RAMCLOUD_LOG(NOTICE, "process event %u cts %lu txEntry %lu",
-                peerEvent->eventType, (uint64_t)(peerEvent->cts >> 64), (uint64_t)peerEvent->txEntry);
+        RAMCLOUD_LOG(NOTICE, "process event %u (%u) cts %lu txEntry %lu",
+                peerEvent->eventType, this->tid, (uint64_t)(peerEvent->cts >> 64), (uint64_t)peerEvent->txEntry);
 
         if (peerEvent->eventType == 1) { //insert without txEntry
             uint32_t myTxState;
@@ -406,7 +407,7 @@ PeerInfo::monitor(Validator *validator) {
 
             if (txEntry->getTxState() == TxEntry::TX_ALERT) {
                 //request missing SSN info from peers periodically;
-                validator->requestSSNInfo(txEntry, false, NULL);
+                validator->requestSSNInfo(txEntry, false, 0);
             }
         }
         peerEntry->mutexForPeerUpdate.unlock();
