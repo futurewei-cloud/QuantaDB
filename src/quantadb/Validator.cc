@@ -284,7 +284,6 @@ Validator::scheduleDistributedTxs() {
     //expressed in the cluster time unit (due to current sequencer implementation).
     //During testing, ignore the timing constraint imposed by the local clock.
     TxEntry *txEntry;
-    uint64_t lastTick = 0;
     do {
         if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (__uint128_t)-1 : get128bClockValue()))) {
             if (txEntry->getCTS() == lastScheduledTxCTS) {
@@ -310,16 +309,6 @@ Validator::scheduleDistributedTxs() {
             while (!distributedTxSet.add(txEntry));
             RAMCLOUD_LOG(NOTICE, "schedule %lu",(uint64_t)(txEntry->getCTS() >> 64));
             lastScheduledTxCTS = txEntry->getCTS();
-        }
-
-        //log counters every 10s
-        if (!isUnderTest && logLevel >= LOG_INFO) {
-            uint64_t nsTime = getClockValue();
-            uint64_t currentTick = nsTime / 10000000000;
-            if (lastTick < currentTick) {
-                logCounters();
-                lastTick = currentTick;
-            }
         }
     } while (isAlive && !isUnderTest);
 }
@@ -483,9 +472,21 @@ Validator::peer(uint32_t tid) {
 
 void
 Validator::monitor() {
+    uint64_t lastTick = 0;
     do {
         for (uint32_t i = 0; i < NUM_PEER_THREADS; i++) {
             peerInfo[i]->monitor(this);
+        }
+
+
+        //log counters every 10s
+        if (!isUnderTest && logLevel >= LOG_INFO) {
+            uint64_t nsTime = getClockValue();
+            uint64_t currentTick = nsTime / 10000000000;
+            if (lastTick < currentTick) {
+                logCounters();
+                lastTick = currentTick;
+            }
         }
     } while (isAlive && !isUnderTest);
 }
@@ -528,7 +529,8 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         txEntry->setTxResult(TxEntry::TX_UNCOMMIT);
         txEntry->setTxCIState(TxEntry::TX_CI_QUEUED); //set it before inserting to queue lest another thread might set CIState first
 
-        //while (!peerInfo.add(txEntry->getCTS(), txEntry, this));
+        if (txEntry->local_commit >= (txEntry->getCTS() >> 64))
+            counters.lates++;
 
         if (!reorderQueue.insert(txEntry->getCTS(), txEntry)) {
             counters.busyAborts.fetch_add(1);
@@ -657,6 +659,7 @@ Validator::logCounters() {
     c += snprintf(val + c, s - c, "rejectedWrites:%lu, ", counters.rejectedWrites.load());
     c += snprintf(val + c, s - c, "precommitReads:%lu, ", counters.precommitReads.load());
     c += snprintf(val + c, s - c, "commitIntents:%lu, ", counters.commitIntents.load());
+    c += snprintf(val + c, s - c, "lates:%lu, ", counters.lates.load());
     c += snprintf(val + c, s - c, "recovers:%lu, ", counters.recovers.load());
     c += snprintf(val + c, s - c, "duplicates:%lu, ", counters.duplicates.load());
     c += snprintf(val + c, s - c, "trivialAborts:%lu, ", counters.trivialAborts.load());
@@ -667,7 +670,6 @@ Validator::logCounters() {
     c += snprintf(val + c, s - c, "addPeers:%lu, ", counters.addPeers.load());
     c += snprintf(val + c, s - c, "earlyPeers:%lu, ", counters.earlyPeers.load());
     c += snprintf(val + c, s - c, "matchEarlyPeers:%lu, ", counters.matchEarlyPeers.load());
-    c += snprintf(val + c, s - c, "latePeers:%lu, ", counters.latePeers.load());
     c += snprintf(val + c, s - c, "deletedPeers:%lu, ", counters.deletedPeers.load());
     c += snprintf(val + c, s - c, "queuedDistributedTxs:%lu, ", counters.queuedDistributedTxs.load());
     //c += snprintf(val + c, s - c, "scheduledDistributedTxs:%lu, ", distributedTxSet.addedTxCount.load());

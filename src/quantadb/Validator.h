@@ -53,6 +53,7 @@ struct Counters {
     std::atomic<uint64_t> precommitReads{0};
     std::atomic<uint64_t> precommitWrites{0};
     std::atomic<uint64_t> commitIntents{0};
+    std::atomic<uint64_t> lates{0};
     std::atomic<uint64_t> duplicates{0};
     std::atomic<uint64_t> recovers{0};
     std::atomic<uint64_t> trivialAborts{0};
@@ -61,7 +62,6 @@ struct Counters {
     std::atomic<uint64_t> addPeers{0};
     std::atomic<uint64_t> earlyPeers{0};
     std::atomic<uint64_t> matchEarlyPeers{0};
-    std::atomic<uint64_t> latePeers{0};
     std::atomic<uint64_t> deletedPeers{0};
     std::atomic<uint64_t> queuedDistributedTxs{0};
     // scheduledDistributedTxs tracked by distributedTxSet
