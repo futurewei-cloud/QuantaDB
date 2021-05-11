@@ -111,7 +111,7 @@ PeerInfo::add(CTS cts, TxEntry *txEntry, Validator *validator) {
         if (entry->txEntry) {
             RAMCLOUD_LOG(NOTICE, "remove old cts %lu for cts %lu idx %u",
                     (uint64_t)(entry->cts >> 64), (uint64_t)(cts >> 64), freeIdx);
-            peerInfo.unsafe_erase(entry->cts);
+            peerInfo.erase(entry->cts);
             delete entry->txEntry;
             entry->txEntry = NULL;
             validator->getCounters().deletedPeers++;

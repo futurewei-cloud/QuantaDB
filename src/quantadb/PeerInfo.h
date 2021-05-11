@@ -50,7 +50,7 @@ namespace QDB {
 #define TBLSZ 8192
 
 typedef __uint128_t CTS;
-typedef tbb::concurrent_unordered_map<CTS, uint32_t>::iterator PeerInfoIterator;
+typedef std::map<CTS, uint32_t>::iterator PeerInfoIterator;
 
 struct PeerEntry {
     CTS cts = 0;
@@ -78,7 +78,7 @@ struct PeerEvent {
 
 class PeerInfo {
     PROTECTED:
-    tbb::concurrent_unordered_map<CTS, uint32_t> peerInfo;
+    std::map<CTS, uint32_t> peerInfo;
     PeerEntry peerEntryTable[TBLSZ];
     std::queue<uint32_t> recycleQueue;
     uint64_t lastTick = 0;

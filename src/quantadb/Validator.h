@@ -91,15 +91,6 @@ struct Counters {
     std::atomic<uint64_t> commitDeletes{0};
 };
 
-/*enum LogLevel {
-    LOG_NONE = 0u,
-    LOG_ERROR = 1u,
-    LOG_WARN,
-    LOG_INFO,
-    LOG_DEBUG,
-    LOG_ALWAYS = 5u,
-};*/
-
 static const uint32_t LOG_BASELINE = 0u;
 static const uint32_t LOG_ERROR = 1u;
 static const uint32_t LOG_WARN = 2u;
@@ -130,6 +121,7 @@ class Validator {
     //LATER DependencyMatrix blockedTxSet;
     Counters counters;
     uint32_t logLevel = LOG_INFO;
+    boost::lockfree::queue<TxEntry *> crossTxQueue{1000};
 
     // threads
     std::thread schedulingThread;

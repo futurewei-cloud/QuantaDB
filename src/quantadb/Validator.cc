@@ -285,6 +285,11 @@ Validator::scheduleDistributedTxs() {
     //During testing, ignore the timing constraint imposed by the local clock.
     TxEntry *txEntry;
     do {
+        while (!crossTxQueue.empty()) {
+            crossTxQueue.pop(txEntry);
+            reorderQueue.insert(txEntry->getCTS(), txEntry);
+        }
+
         if ((txEntry = (TxEntry *)reorderQueue.try_pop(isUnderTest ? (__uint128_t)-1 : get128bClockValue()))) {
             if (txEntry->getCTS() == lastScheduledTxCTS) {
                 RAMCLOUD_LOG(NOTICE, "duplicate %lu", (uint64_t)(txEntry->getCTS() >> 64));
@@ -532,7 +537,7 @@ Validator::insertTxEntry(TxEntry *txEntry) {
         if (txEntry->local_commit >= (txEntry->getCTS() >> 64))
             counters.lates++;
 
-        if (!reorderQueue.insert(txEntry->getCTS(), txEntry)) {
+        if (!crossTxQueue.push(txEntry)) {
             counters.busyAborts.fetch_add(1);
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxCIState(TxEntry::TX_CI_CONCLUDED);
