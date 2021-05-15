@@ -60,6 +60,8 @@ struct PeerEntry {
     uint32_t peerTxState = TxEntry::TX_PENDING; //summary state of all seen peers
     DSSNMeta meta; //summary of pstamp and sstamp of all seen peers
     TxEntry *txEntry = NULL; //reference to the associated commit intent
+
+    inline bool isExclusionViolated() { return meta.sStamp <= meta.pStamp; }
 };
 
 class  Validator;

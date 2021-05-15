@@ -117,7 +117,7 @@ Validator::updateTxPStampSStamp(TxEntry &txEntry) {
     for (uint32_t i = 0; i < txEntry.getReadSetSize(); i++) {
         if (readSet[i] == NULL)
             abort(); //make sure the size of over-provisioned array has been corrected
-	KVLayout *kv = kvStore.fetch_by_KVSPtr(readSet[i]->k, txEntry.getReadSetKVSPtr(i));
+        KVLayout *kv = kvStore.fetch_by_KVSPtr(readSet[i]->k, txEntry.getReadSetKVSPtr(i));
         if (kv) {
             //A safety check to ensure that the version in the kv store
             //is the same one when the read has occurred.
@@ -283,8 +283,8 @@ Validator::scheduleDistributedTxs() {
     //Move commit intents from reorder queue when they are due in view of local clock,
     //expressed in the cluster time unit (due to current sequencer implementation).
     //During testing, ignore the timing constraint imposed by the local clock.
-    TxEntry *txEntry;
     do {
+        TxEntry *txEntry;
         while (!crossTxQueue.empty()) {
             crossTxQueue.pop(txEntry);
             reorderQueue.insert(txEntry->getCTS(), txEntry);
@@ -353,20 +353,20 @@ Validator::serialize() {
 
                 validateLocalTx(*txEntry);
 
-		localTxQueue.remove(it, txEntry);
-		insertConcludeQueue(txEntry);
+                localTxQueue.remove(it, txEntry);
+                insertConcludeQueue(txEntry);
             } else {
-	        blocks++;
-	    }
+                blocks++;
+            }
             hasEvent = true;
             txEntry = localTxQueue.findNext(it);
-	    counts++;
-	    if ((counts % 80000)==0) {
-	        RAMCLOUD_LOG(NOTICE, "activeTxSet stats: counts=%lu, blocks=%lu",
-			     counts, blocks);
-		counts = 0;
-		blocks = 0;
-	    }
+            counts++;
+            if ((counts % 80000)==0) {
+                RAMCLOUD_LOG(NOTICE, "activeTxSet stats: counts=%lu, blocks=%lu",
+                        counts, blocks);
+                counts = 0;
+                blocks = 0;
+            }
         }
 
         // process due commit-intents on cross-shard transaction queue
@@ -420,7 +420,6 @@ Validator::conclude(TxEntry *txEntry) {
     } else {
         activeTxSet.remove(txEntry);
         RAMCLOUD_LOG(NOTICE, "conclude localTx %lu state %u", (uint64_t)(txEntry->getCTS() >> 64), txEntry->getTxState());
-	logTx(LOG_DEBUG, txEntry); //for debugging only, not for recovery
     }
 
     sendTxCommitReply(txEntry);
@@ -452,18 +451,14 @@ void
 Validator::concludeThreadFunc(uint64_t tId) {
 
     TxEntry *txEntry;
-    uint64_t threadId = tId;
-
     do {
-        while (concludeQueue.try_pop(txEntry/*, threadId*/)) {
-            if (txEntry->getParticipantSet().size() == 0) {
-                conclude(txEntry);
-                RAMCLOUD_LOG(NOTICE, "pop concludeQueue  cts %lu %lu in %lu  out %lu",
-                        (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
-                        concludeQueue.inCount.load(), concludeQueue.outCount.load());
-            } else {
+        while (concludeQueue.try_pop(txEntry)) {
+            //or if (txEntry->getParticipantSet().size() >= 1) continue;
 
-            }
+            conclude(txEntry);
+            RAMCLOUD_LOG(NOTICE, "pop concludeQueue  cts %lu %lu in %lu  out %lu",
+                    (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
+                    concludeQueue.inCount.load(), concludeQueue.outCount.load());
         }
     } while (isAlive && !isUnderTest);
 }
