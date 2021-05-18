@@ -306,7 +306,8 @@ Validator::scheduleDistributedTxs() {
                 //aborting is fine because its SSN info has never been sent to its peers
                 //although, in recovery case, SSN info could have been sent to its peers, the order of recovery should be preserved
                 //set the states and let peerInfo handling thread to do the rest
-                txEntry->setTxState(TxEntry::TX_OUTOFORDER);
+                txEntry->setSStamp(0); //Fixme: later not needed as event can carry the zero
+                txEntry->isOutOfOrder = true;
                 counters.lateScheduleErrors++;
                 peerInfo[hash(txEntry->getCTS())]->poseEvent(3, txEntry->getCTS(), 0, 0, 0, 0, 0, txEntry, NULL);
                 continue;
@@ -409,7 +410,7 @@ Validator::conclude(TxEntry *txEntry) {
 
     if (txEntry->getParticipantSet().size() >= 1) {
         //for late cross-shard tx, it is never added to activeTxSet; just convert the state
-        if (txEntry->getTxState() == TxEntry::TX_OUTOFORDER) {
+        if (txEntry->isOutOfOrder) {
             txEntry->setTxState(TxEntry::TX_ABORT);
             txEntry->setTxResult(TxEntry::TX_ABORT_LATE);
         } else {

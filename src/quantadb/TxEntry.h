@@ -93,6 +93,7 @@ class TxEntry {
     boost::scoped_array<uint64_t> writeSetHash;
     boost::scoped_array<uint64_t> readSetHash;
     PUBLIC:
+    bool isOutOfOrder = false; //Fixme: can overload TxCIState later
     // local timer to track performance 
     uint64_t local_commit = 0; 
     enum {
@@ -141,10 +142,7 @@ class TxEntry {
         /// no new transactions involving its read/write sets can/should proceed.
         TX_CONFLICT = 5,
 
-        /// Transaction has reached an abort conclusion due to being late
-        TX_OUTOFORDER = 6,
-
-        /// Indicator of a fabricated tx entry for logging purpose
+       /// Indicator of a fabricated tx entry for logging purpose
         TX_FABRICATED = 99
     };
 
