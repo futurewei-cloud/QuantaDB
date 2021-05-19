@@ -85,13 +85,9 @@ class ValidatorTest : public ::testing::Test {
     }
 
     void fillTxEntryPeers(TxEntry *txEntry) {
-        uint64_t myPStamp, mySStamp;
-        uint32_t myTxState;
-        uint8_t myPeerPosition;
     	validator.peerInfo[0]->add(txEntry->getCTS(), txEntry, &validator);
     	for (uint64_t peerId = 0; peerId <= txEntry->getParticipantSet().size(); peerId++) {
-    		validator.receiveSSNInfo(peerId, txEntry->getCTS(), 0, 0xfffffff, txEntry->getTxState(), peerId + 1,
-    		                 myPStamp, mySStamp, myTxState, myPeerPosition);
+    		validator.receiveSSNInfo(peerId, txEntry->getCTS(), 0, 0xfffffff, txEntry->getTxState(), peerId + 1);
     	}
 
     }
@@ -428,12 +424,8 @@ TEST_F(ValidatorTest, BATPeerInfo) {
 
 	for (int ent = 1; ent < 4; ent++) {
 		for (uint64_t peer = 0; peer < 2; peer++) {
-		    uint64_t myPStamp, mySStamp;
-		    uint32_t myTxState;
-		    uint8_t myPeerPosition;
 			EXPECT_EQ(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
-			validator.receiveSSNInfo(peer, txEntry[ent]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, peer+1,
-			        myPStamp, mySStamp, myTxState, myPeerPosition);
+			validator.receiveSSNInfo(peer, txEntry[ent]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, peer+1);
 		}
 		EXPECT_NE(TxEntry::TX_PENDING, txEntry[ent]->getTxState());
 	}
@@ -453,12 +445,10 @@ TEST_F(ValidatorTest, BATPeerInfo2) {
     uint8_t myPeerPosition;
 
     validator.peerInfo[0]->add(txEntry[0]->getCTS(), txEntry[0], &validator);
-    bool ret = validator.receiveSSNInfo(0, txEntry[0]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, 1,
-            myPStamp, mySStamp, myTxState, myPeerPosition);
+    bool ret = validator.receiveSSNInfo(0, txEntry[0]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, 1);
     EXPECT_EQ(true, ret);
 
-    validator.receiveSSNInfo(0, txEntry[1]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, 2,
-            myPStamp, mySStamp, myTxState, myPeerPosition);
+    validator.receiveSSNInfo(0, txEntry[1]->getCTS(), 0, 0xfffffff, TxEntry::TX_PENDING, 2);
     ret = validator.peerInfo[0]->add(txEntry[1]->getCTS(), txEntry[1], &validator);
     EXPECT_EQ(true, ret);
 
@@ -474,8 +464,8 @@ TEST_F(ValidatorTest, BATPeerInfoReceivedEarly) {
             cts,
             0, 0xfffffff, /*pstamp, sstamp*/
             TxEntry::TX_PENDING,
-            1, /* peer position */
-            myPStamp, mySStamp, myTxState, myPeerPosition);
+            1 /* peer position */
+            );
     EXPECT_EQ(false, ret);
     EXPECT_EQ(1, (int)validator.getCounters().earlyPeers);
 }

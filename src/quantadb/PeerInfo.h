@@ -110,8 +110,7 @@ class PeerInfo {
     bool monitor(Validator *validator);
 
     //update peer info of a tx identified by cts
-    bool update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi, uint8_t peerPosition,
-            uint32_t &myTxState, uint64_t &myEta, uint64_t &myPi, uint8_t &myPeerPosition, Validator *validator);
+    bool update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t eta, uint64_t pi, uint8_t peerPosition, Validator *validator);
 
     bool poseEvent(uint32_t eventType, CTS cts, uint64_t peerId, uint8_t peerPosition, uint32_t peerTxState, uint64_t eta, uint64_t pi, TxEntry *txEntry, PeerEntry *peerEntry);
 

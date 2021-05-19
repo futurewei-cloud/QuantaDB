@@ -59,18 +59,13 @@ PeerInfo::processEvent(Validator *validator) {
                 peerEvent->eventType, this->tid, (uint64_t)(peerEvent->cts >> 64), (uint64_t)peerEvent->txEntry);
 
         if (peerEvent->eventType == 1) { //insert without txEntry (triggered by peer info handler)
-            uint32_t myTxState;
-            uint64_t myPStamp, mySStamp;
-            uint8_t myPeerPosition;
             if (!update(peerEvent->cts, peerEvent->peerId, peerEvent->peerTxState,
-                    peerEvent->peerPStamp, peerEvent->peerSStamp, peerEvent->peerPosition,
-                    myTxState, myPStamp, mySStamp, myPeerPosition, validator)) {
+                    peerEvent->peerPStamp, peerEvent->peerSStamp, peerEvent->peerPosition, validator)) {
                 while (!add(peerEvent->cts, NULL, validator)) {
                     std::this_thread::sleep_for(std::chrono::microseconds(100));
                 }
                 update(peerEvent->cts, peerEvent->peerId, peerEvent->peerTxState,
-                        peerEvent->peerPStamp, peerEvent->peerSStamp, peerEvent->peerPosition,
-                        myTxState, myPStamp, mySStamp, myPeerPosition, validator);
+                        peerEvent->peerPStamp, peerEvent->peerSStamp, peerEvent->peerPosition, validator);
                 validator->getCounters().earlyPeers++;
             }
             validator->getCounters().peerEventUpds++;
@@ -253,8 +248,7 @@ PeerInfo::logAndSend(TxEntry *txEntry, Validator *validator) {
 }
 
 bool
-PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp, uint64_t sstamp, uint8_t peerPosition,
-        uint32_t &myTxState, uint64_t &myPStamp, uint64_t &mySStamp, uint8_t &myPeerPosition, Validator *validator) {
+PeerInfo::update(CTS cts, uint64_t peerId, uint32_t peerTxState, uint64_t pstamp, uint64_t sstamp, uint8_t peerPosition, Validator *validator) {
     TxEntry *txEntry= NULL;
     PeerInfoIterator it;
 

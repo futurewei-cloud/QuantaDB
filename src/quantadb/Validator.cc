@@ -283,8 +283,8 @@ Validator::scheduleDistributedTxs() {
     //Move commit intents from reorder queue when they are due in view of local clock,
     //expressed in the cluster time unit (due to current sequencer implementation).
     //During testing, ignore the timing constraint imposed by the local clock.
+    TxEntry *txEntry;
     do {
-        TxEntry *txEntry;
         while (!crossTxQueue.empty()) {
             crossTxQueue.pop(txEntry);
             reorderQueue.insert(txEntry->getCTS(), txEntry);
@@ -559,8 +559,7 @@ Validator::get128bClockValue() {
 
 bool
 Validator::receiveSSNInfo(uint64_t peerId, __uint128_t cts,
-        uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState, uint8_t peerPosition,
-        uint64_t &myPStamp, uint64_t &mySStamp, uint32_t &myTxState, uint8_t &myPeerPosition) {
+        uint64_t pstamp, uint64_t sstamp, uint8_t peerTxState, uint8_t peerPosition) {
     RAMCLOUD_LOG(NOTICE, "receive cts %lu from %lu peerState %u ",
             (uint64_t)(cts >> 64), peerId, peerTxState);
 

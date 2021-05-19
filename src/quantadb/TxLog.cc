@@ -198,7 +198,6 @@ static const char *txStateToStr(uint32_t txState)
     case TxEntry::TX_CONFLICT: return (const char*)"TX_CONFLICT";
     case TxEntry::TX_ABORT: return (const char*)"TX_ABORT";
     case TxEntry::TX_FABRICATED: return (const char*)"TX_FABRICATED";
-    case TxEntry::TX_OUTOFORDER: return (const char*)"TX_OUTOFORDER";
     }
     assert(0);
     return (const char*)"TX_UNKNOWN";
