@@ -202,6 +202,7 @@ class Validator {
     // used for invoking RPCs
     void sendSSNInfo(TxEntry *txEntry, bool isSpecific = false, uint64_t targetPeerId = 0);
     void requestSSNInfo(TxEntry *txEntry, bool isSpecific = false, uint64_t targetPeerId = 0);
+    void sendSSNInfo(__uint128_t cts, uint8_t txState, uint64_t pStamp, uint64_t sStamp, uint8_t position, uint64_t target = 0);
 
     // used for obtaining clock value in nanosecond unit
     uint64_t getClockValue();
@@ -212,6 +213,7 @@ class Validator {
 
     // put commit intent into tx log, depending on log level
     bool logTx(uint32_t currentLevel, TxEntry *txEntry);
+    TxLog& getLog() {return txLog;}
 
     // used for setting debug logging level
     void setLogLevel(uint32_t level) {logLevel = (level < LOG_DEBUG) ? level : LOG_DEBUG;}

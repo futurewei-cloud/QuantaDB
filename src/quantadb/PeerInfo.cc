@@ -79,6 +79,29 @@ PeerInfo::processEvent(Validator *validator) {
             recycleQueue.push(it->second);
             RAMCLOUD_LOG(NOTICE, "recycle idx %u cts %lu", it->second, (uint64_t)(peerEvent->cts >> 64));
             validator->getCounters().peerEventDels++;
+        } else if (peerEvent->eventType == 4) { //info request (triggered by peer info handler)
+            uint32_t myTxState = 0;
+            uint8_t myPeerPosition = 0;
+            uint64_t myPStamp = 0, mySStamp = -1;
+            PeerInfoIterator it = peerInfo.find(peerEvent->cts);
+            if (it != peerInfo.end()) {
+                PeerEntry* peerEntry = &peerEntryTable[it->second];
+                TxEntry* txEntry = peerEntry->txEntry;
+                if (txEntry) {
+                    validator->sendSSNInfo(peerEvent->cts,
+                            txEntry->getTxState(), txEntry->getPStamp(), txEntry->getSStamp(),
+                            txEntry->getPeerPosition(), peerEvent->peerId);
+                }
+                validator->getCounters().infoReplies++;
+            } else if (validator->getLog().getTxInfo(peerEvent->cts, myTxState, myPStamp, mySStamp, myPeerPosition)
+                    && myTxState != TxEntry::TX_PENDING) {
+                validator->sendSSNInfo(peerEvent->cts, myTxState, myPStamp, mySStamp, myPeerPosition, peerEvent->peerId);
+                validator->getCounters().infoLogReplies++;
+            } else {
+                //This is the case when the local CI has not been created
+                //no reply at all
+                RAMCLOUD_LOG(NOTICE, "cannot replySSNInfo %lu", (uint64_t)(peerEvent->cts >> 64));
+            }
         }
         delete peerEvent;
     }

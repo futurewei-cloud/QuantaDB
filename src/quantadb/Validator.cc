@@ -574,6 +574,9 @@ Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint6
     if (rpcService == NULL) //unit test may make rpcService NULL
         return;
 
+    peerInfo[hash(cts)]->poseEvent(4, cts, peerId, peerPosition, peerTxState, pstamp, sstamp, NULL, NULL);
+
+/*
     uint32_t myTxState = 0;
     uint8_t myPeerPosition = 0;
     uint64_t myPStamp = 0, mySStamp = -1;
@@ -585,8 +588,16 @@ Validator::replySSNInfo(uint64_t peerId, __uint128_t cts, uint64_t pstamp, uint6
         //This is the case when the local CI has not been created
         //no reply at all
         RAMCLOUD_LOG(NOTICE, "cannot replySSNInfo %lu", (uint64_t)(cts >> 64));
+    }*/
+}
+
+void
+Validator::sendSSNInfo(__uint128_t cts, uint8_t txState, uint64_t pStamp, uint64_t sStamp, uint8_t position, uint64_t target) {
+    if (rpcService) {
+        rpcService->sendDSSNInfo(cts, txState, pStamp, sStamp, position, target);
     }
 }
+
 
 void
 Validator::sendSSNInfo(TxEntry *txEntry, bool isSpecific, uint64_t targetPeerId) {
