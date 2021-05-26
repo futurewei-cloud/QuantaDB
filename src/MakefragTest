@@ -65,6 +65,7 @@ TESTS_SRCFILES := \
 		  src/quantadb/TransactionDSSNTest.cc \
 		  src/quantadb/SequencerTest.cc \
 		  src/quantadb/ValidatorTest.cc \
+		  src/quantadb/WorkerPoolTest.cc \
 		  src/MockCluster.cc \
 		  src/MockTransport.cc \
 		  src/TestRunner.cc \

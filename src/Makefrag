@@ -91,6 +91,7 @@ SHARED_SRCFILES := \
 		   src/quantadb/DSSNService.cc \
 		   src/quantadb/DSSNServiceMonitor.cc \
 		   src/quantadb/DistributedTxSet.cc \
+           src/quantadb/WorkerPool.cc \
 		   src/quantadb/TxLog.cc \
 		   src/IndexKey.cc \
 		   src/IndexletManager.cc \
