@@ -14,6 +14,8 @@
  */
 
 #include "WorkerPool.h"
+#include "Logger.h"
+#include "RamCloud.h"
 
 namespace QDB {
 
@@ -21,15 +23,28 @@ void
 Worker::workerTask()
 {
     while (1) {
-        Task* task = mTasks.get();
-        if (task != NULL) {
-            task->callback();
-            mWorkerPool->freeTask(task);
-            mNumTasks--;
-        } else if((mNumTasks == 0) && (mAction == WORKER_GO_IDLE)) {
-            mAction = WORKER_ACTION_RESET;
+        if (mNumTasks > 0) {
+            Task* task = mTasks.get();
+            if (task != NULL) {
+                RAMCLOUD_LOG(NOTICE, "worker %lu start task", mId);
+#ifdef PROFILE_TASK_EXEC_TIME
+                uint64_t start = RAMCloud::Cycles::rdtsc();
+                task->callback();
+                mTaskExecLatencyCycles += (RAMCloud::Cycles::rdtsc() - start);
+#else
+                task->callback();
+#endif
+                mNumTaskExec++;
+                mWorkerPool->freeTask(task);
+                mNumTasks--;
+                //RAMCLOUD_LOG(ERROR, "worker %lu finish task", mId);
+            }
+        } else if(mState == WORKER_IDLE_PENDING) {
+            if (!__sync_bool_compare_and_swap(&mState, WORKER_IDLE_PENDING, WORKER_IDLE) || mNumTasks) continue;
             std::unique_lock<std::mutex> lock(mMtx);
             mCV.wait(lock);
+            lock.unlock();
+#ifdef PROFILE_TASK_EXEC_TIME
             // Track the spinup latency statistic
             mNumSpinup++;
             uint64_t latencyCycles = RAMCloud::Cycles::rdtsc() - mSpinupRequestTimeStamp;
@@ -40,8 +55,13 @@ Worker::workerTask()
             if (mNumSpinup == mCounterResetCycles) {
                 mSpinupLatencyCycles = 0;
                 mNumSpinup = 0;
+                mTaskExecLatencyCycles = 0;
+                mNumTaskExec = 0;
             }
-        } else if ((mAction == WORKER_GO_EXIT)) {
+#endif
+        } else if (mState == WORKER_WARMUP) {
+            mState = WORKER_ACTIVE;
+        } else if ((mState == WORKER_EXIT)) {
             return;
         }
     }
@@ -53,34 +73,33 @@ WorkerPool::enqueue(Task* task) {
     /* 1. choose an active worker to enqueue the task.  If none
      *  available, wakeup one.
      */
-    uint64_t numActiveWorkers = mNumActiveWorkers;
     Worker* worker = NULL;
+    uint64_t index = 0;
+    uint64_t workerIdx = 0;
+    uint64_t numActiveWorkers = mNumActiveWorkers;
     if (numActiveWorkers > 0) {
-        uint64_t index = 0;
-        uint64_t workerIdx = 0;
-        if (mThreadPinningCountDown > 0) {
-            workerIdx = mPinnedThreadIdx;
-            mThreadPinningCountDown--;
-        } else {
-            index = __sync_fetch_and_add(&mRoundRabinIndex, 1);
-            workerIdx = index % numActiveWorkers;
-        }
+        index = __sync_fetch_and_add(&mRoundRabinIndex, 1);
+        workerIdx = index % numActiveWorkers;
         worker = mActiveList.at(workerIdx);
         //printf("rr index: %lu, worker %lu, countdown:%lu, numWorkers:%lu\n", mRoundRabinIndex, worker->getId(), mThreadPinningCountDown, numActiveWorkers);
     } else {
         const std::lock_guard<std::mutex> lock(mWorkerMgmtLock);
+        uint64_t currentTime = RAMCloud::Cycles::rdtsc();
+        mNextAdjustCycle = currentTime +
+            RAMCloud::Cycles::fromMicroseconds(mAdjustmentIntervalUs);
         if (mNumActiveWorkers > 0) {
             worker = mActiveList.front();
         } else {
             worker = mIdleList.back();
             mIdleList.pop_back();
-            worker->goActive();
+            while (!worker->goActive());
             mActiveList.push_back(worker);
             mNumActiveWorkers++;
         }
     }
     assert(worker);
     if (!worker->enqueue(task)) {
+        RAMCLOUD_LOG(NOTICE, "enqueue failed at worker %lu", worker->getId());
         return enqueue(task);
     }
     /* 2. perform worker management.  When there are >=1 workers,
@@ -92,39 +111,41 @@ WorkerPool::enqueue(Task* task) {
         const std::lock_guard<std::mutex> lock(mWorkerMgmtLock);
         mNextAdjustCycle = currentTime +
             RAMCloud::Cycles::fromMicroseconds(mAdjustmentIntervalUs);
+
         if (mNumActiveWorkers > 0) {
             worker = mActiveList.back();
-
-            if ((mThreadPinningCountDown == 0) &&
-                (worker->getTaskQueueLength() > mHighWaterMark)) {
+            /*
+             * Spinup the workers
+             */
+            //double avgQueueLength = getAvgTaskQueuesLength(false);
+            //if (avgQueueLength > mHighWaterMark) {
+            if (worker->getTaskQueueLength() > mHighWaterMark) {
                 //Spinup the number of active workers
                 if (mIdleList.size() > 0) {
-                    /*
-                      Absorb incoming load up to 1/2 of the oldest worker
-                      worker = mActiveList.front();
-                      uint64_t pinCount = worker->getTaskQueueLength() >> 1;
-                    */
-                    uint64_t pinCount = mHighWaterMark - 1;
                     worker = mIdleList.back();
-                    mIdleList.pop_back();
-                    worker->goActive();
-                    mActiveList.push_back(worker);
-                    mPinnedThreadIdx = mActiveList.size() - 1;
-                    mThreadPinningCountDown = pinCount;
-                    mNumActiveWorkers++;
+                    if (worker->goActive()) {
+                        mIdleList.pop_back();
+                        mActiveList.push_back(worker);
+                        mNumActiveWorkers++;
+                        RAMCLOUD_LOG(NOTICE, "worker %lu go active", worker->getId());
+                    }
                 }
                 return;
             }
-
+            /*
+             * Spindown the workers
+             */
             worker = mActiveList.front();
-            if ((worker->getTaskQueueLength() < mLowWaterMark) &&
+            //if ((avgQueueLength <= mLowWaterMark) &&
+            if ((worker->getTaskQueueLength() <= mLowWaterMark) &&
                 (mNumActiveWorkers > mMinActiveWorkers)) {
-                //Spindown the number of active workers
-                mNumActiveWorkers--;
                 worker = mActiveList.back();
-                mActiveList.pop_back();
-                worker->goIdle();
-                mIdleList.push_back(worker);
+                if (worker->goIdle()) {
+                    mNumActiveWorkers--;
+                    mActiveList.pop_back();
+                    mIdleList.push_back(worker);
+                    RAMCLOUD_LOG(NOTICE, "worker %lu go to sleep", worker->getId());
+                }
             }
         }
     }

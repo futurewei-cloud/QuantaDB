@@ -20,6 +20,13 @@
 
 namespace QDB {
 
+#define WORKERPOOL_ENQUEUE_TASK(threadpool, method, object, data)   \
+    {                                                               \
+        Task* t = threadpool->allocTask();                          \
+        t->callback = std::bind(&method, object, data);             \
+        threadpool->enqueue(t);                                     \
+    } while(0);
+
 struct Task {
     std::function<void()> callback;
 };
@@ -87,47 +94,58 @@ struct Task {
  class WorkerPool;
  
  class Worker {
-     enum WorkerAction {
-         WORKER_ACTION_RESET,
-         WORKER_GO_IDLE,
-         WORKER_GO_ACTIVE,
-         WORKER_GO_EXIT
+     enum WorkerState {
+         WORKER_IDLE_PENDING,
+         WORKER_IDLE,
+         WORKER_WARMUP,
+         WORKER_ACTIVE,
+         WORKER_EXIT
      };
      
  public:
      Worker(uint64_t id, WorkerPool* wp) {
-         mAction = WORKER_GO_IDLE;
+         mState = WORKER_IDLE_PENDING;
          mId = id;
          mNumSpinup = 0;
          mNumTasks = 0;
          mMaxSpinupLatencyCycles = 0;
+         mNumTaskExec = 0;
+         mTaskExecLatencyCycles = 0;
          mWorkerPool = wp;
          auto workerTask = std::bind(&Worker::workerTask, this);
          mThread = new std::thread(workerTask);
      }
      ~Worker() {
-         mAction = WORKER_GO_EXIT;
+         mState = WORKER_EXIT;
          mCV.notify_one();
          mThread->join();
          delete mThread;
      }
-     void goActive() {
-         mAction = WORKER_GO_ACTIVE;
+     bool goActive() {
+         if (!__sync_bool_compare_and_swap(&mState, WORKER_IDLE, WORKER_WARMUP)) return false;
+
+         std::unique_lock<std::mutex> lock(mMtx);
          mCV.notify_one();
+         lock.unlock();
          mSpinupRequestTimeStamp = RAMCloud::Cycles::rdtsc();
+         return true;
      }
-     void goIdle() {
-         mAction = WORKER_GO_IDLE;
+
+     bool goIdle() {
+         if (!__sync_bool_compare_and_swap(&mState, WORKER_ACTIVE, WORKER_IDLE_PENDING)) return false;
+         return true;
      }
+
      void workerTask();
 
-     bool enqueue(Task* t) {
+     inline bool enqueue(Task* t) {
          bool result = false;
-         if (mAction == WORKER_GO_ACTIVE) {
+         mNumTasks++;
+         if (mState == WORKER_ACTIVE) {
              result = mTasks.put(t);
-             if (result) {
-                 mNumTasks++;
-             }
+         }
+         if (!result) {
+             mNumTasks--;
          }
          return result;
      }
@@ -135,6 +153,7 @@ struct Task {
          return mNumTasks;
      }
      uint64_t getId() { return mId; }
+     uint64_t getNumSpinup() { return mNumSpinup; }
      uint64_t getSpinupLatencyUs() {
          uint64_t spinupTime = 0;
          uint64_t avgSpinupCycles = 0;
@@ -147,15 +166,25 @@ struct Task {
      uint64_t getMaxSpinupLatencyUs() {
          return RAMCloud::Cycles::toMicroseconds(mMaxSpinupLatencyCycles);
      }
+     uint64_t getNumTaskExec() {
+         return mNumTaskExec;
+     }
+     uint64_t getTaskExecLatencyUs() {
+         uint64_t avgTaskExecCycles = 0;
+         if (mNumTaskExec) {
+             avgTaskExecCycles = mTaskExecLatencyCycles/mNumTaskExec;
+         }
+         return RAMCloud::Cycles::toMicroseconds(avgTaskExecCycles);
+     }
  private:
+     std::atomic<uint64_t> mNumTasks;
+     WorkerState mState;
      uint64_t mId;
      std::thread* mThread;
      WorkerPool* mWorkerPool;
      std::mutex mMtx;
      std::condition_variable mCV;
-     WorkerAction mAction;
      MPSCQueue<Task *> mTasks;
-     std::atomic<uint64_t> mNumTasks;
      /*
       * Counters to track the spinup latency
       */
@@ -163,6 +192,8 @@ struct Task {
      uint64_t mSpinupLatencyCycles;
      uint64_t mNumSpinup;
      uint64_t mMaxSpinupLatencyCycles;
+     uint64_t mTaskExecLatencyCycles;
+     uint64_t mNumTaskExec;
      static const uint64_t mCounterResetCycles = 100;
  };
 
@@ -179,12 +210,12 @@ struct Task {
          mActiveList.reserve(maxWorkers);
          mRoundRabinIndex = 0;
          mShutdown = false;
-         mThreadPinningCountDown = 0;
-         mPinnedThreadIdx = 0;
+
          // 1. Create the Workers & Enqueue the Workers to the idle list
          for (uint64_t i = 0; i < maxWorkers; i++) {
              Worker* w = new Worker(i+1, this);
              mIdleList.push_back(w);
+             mWorkerList.push_back(w);
          }
          mNextAdjustCycle = RAMCloud::Cycles::rdtsc() +
              RAMCloud::Cycles::fromMicroseconds(mAdjustmentIntervalUs);
@@ -215,29 +246,42 @@ struct Task {
      uint64_t isTaskQueuesEmpty() {
          //For unit testing only
          uint64_t count = 0;
-         const std::lock_guard<std::mutex> lock(mWorkerMgmtLock);
 
-         for (uint64_t i = 0; i < mActiveList.size(); i++) {
-             Worker* w = mActiveList.at(i);
-             count += w->getTaskQueueLength();
-         }
-         for (uint64_t i = 0; i < mIdleList.size(); i++) {
-             Worker* w = mIdleList.at(i);
+         for (uint64_t i = 0; i < mWorkerList.size(); i++) {
+             Worker* w = mWorkerList.at(i);
              count += w->getTaskQueueLength();
          }
 
          return (count == 0);
      }
 
+     double getAvgTaskQueuesLength() {
+         uint64_t count = 0;
+         double result = 0;
+         uint64_t numActiveWorkers = mNumActiveWorkers;
+
+         if (mNumActiveWorkers == 0) return 0;
+
+         for (uint64_t i = (mTotalWorkers - numActiveWorkers); i < mTotalWorkers; i++) {
+             Worker* w = mWorkerList.at(i);
+             count += w->getTaskQueueLength();
+         }
+
+         result = ((double)count)/numActiveWorkers;
+
+         return result;
+     }
+
      uint64_t getAvgSpinupLatencyUs() {
          uint64_t latency = 0;
          uint64_t numWorkers = 0;
-         const std::lock_guard<std::mutex> lock(mWorkerMgmtLock);
 
-         for (uint64_t i = 0; i < mActiveList.size(); i++) {
-             Worker* w = mActiveList.at(i);
-             latency += w->getSpinupLatencyUs();
-             numWorkers++;
+         for (uint64_t i = 0; i < mWorkerList.size(); i++) {
+             Worker* w = mWorkerList.at(i);
+             if (w->getNumSpinup()) {
+                 latency += w->getSpinupLatencyUs();
+                 numWorkers++;
+             }
          }
 
          return (latency/numWorkers);
@@ -245,10 +289,9 @@ struct Task {
 
      uint64_t getMaxSpinupLatencyUs() {
          uint64_t latency = 0;
-         const std::lock_guard<std::mutex> lock(mWorkerMgmtLock);
 
-         for (uint64_t i = 0; i < mActiveList.size(); i++) {
-             Worker* w = mActiveList.at(i);
+         for (uint64_t i = 0; i < mWorkerList.size(); i++) {
+             Worker* w = mWorkerList.at(i);
              if (latency < w->getMaxSpinupLatencyUs()) {
                  latency = w->getMaxSpinupLatencyUs();
              }
@@ -257,7 +300,21 @@ struct Task {
          return latency;
      }
 
+     uint64_t getAvgTaskExecLatencyUs() {
+         uint64_t latency = 0;
+         uint64_t numWorkers = 0;
 
+         for (uint64_t i = 0; i < mWorkerList.size(); i++) {
+             Worker* w = mWorkerList.at(i);
+             if (w->getNumTaskExec()) {
+                 latency += w->getTaskExecLatencyUs();
+                 numWorkers++;
+             }
+         }
+         if (!numWorkers) return 0;
+
+         return (latency/numWorkers);
+     }
      /**
       * The enqueue API
       * - The application need to allocate the memory for the task.  The WorkerPool will free
@@ -290,39 +347,42 @@ struct Task {
      void enqueue(Task* task);
 
      inline void freeTask(Task* t) {
-         delete t;
-#if 0
+#ifdef TASKMEMPOOL
          mTaskMemPool.freeTask(t);
+#else
+         delete t;
 #endif
      }
      inline Task* allocTask() {
-         Task* t = new Task();
-#if 0
+#ifdef TASKMEMPOOL
          //  Use the Task memory pool
          Task* t = mTaskMemPool.allocTask();
+#else
+         Task* t = new Task();
 #endif
          return t;
      }
  private:
      std::vector<Worker*> mActiveList;
      std::vector<Worker*> mIdleList;
+     std::vector<Worker*> mWorkerList;  //Entire worker list (read-only)
      uint64_t mTotalWorkers;
      uint64_t mMinActiveWorkers;
      std::atomic<uint64_t> mNumActiveWorkers;
      std::mutex mWorkerMgmtLock;
      uint64_t mRoundRabinIndex;
-     uint64_t mThreadPinningCountDown;
-     uint64_t mPinnedThreadIdx;
+#ifdef TASKMEMPOOL
      //Task Memory Pool
      TaskMemPool mTaskMemPool;
+#endif
      /*
       * Thread pool management controls
       */
      uint64_t mHighWaterMark;
      uint64_t mLowWaterMark;
-     uint64_t mNextAdjustCycle;
+     std::atomic<uint64_t> mNextAdjustCycle;
      // Flag to indicate the worker pool is shutting down
      bool mShutdown;
-     static const uint64_t mAdjustmentIntervalUs = 50;
+     static const uint64_t mAdjustmentIntervalUs = 1000;
  };
 }
