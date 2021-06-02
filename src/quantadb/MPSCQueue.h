@@ -44,137 +44,137 @@ class MPSCQueue {
    */
     struct Queue {
         Queue(uint64_t size) {
-	    mElemPtrs = new T[size];
-	    mIndex = 0;
-	    mRemovedIndex = 0;
-	    mCapacity = size;
-	    for (uint64_t i = 0; i<size; i++) {
-	        mElemPtrs[i] = 0;
-	    }
-	}
-      /**
-       * Insert an element into the Queue
-       * Return true if there is a space
-       */
+            mElemPtrs = new T[size];
+            mIndex = 0;
+            mRemovedIndex = 0;
+            mCapacity = size;
+            for (uint64_t i = 0; i<size; i++) {
+                mElemPtrs[i] = 0;
+            }
+        }
+        /**
+         * Insert an element into the Queue
+         * Return true if there is a space
+         */
         inline bool put(T pelem) {
-	    uint64_t myIndex = __sync_fetch_and_add(&mIndex, 1);
-	    if (myIndex < mCapacity) {
-	        mElemPtrs[myIndex] = pelem;
-		return true;
-	    } else {
-	        mIndex = mCapacity;
-	    }
-	    return false;
-	}
-      /**
-       * Return an element from the queue and advance the index to the next
-       * element.
-       * Return NULL to the consumer if all of the elements are consumed.
-       */
+            uint64_t myIndex = __sync_fetch_and_add(&mIndex, 1);
+            if (myIndex < mCapacity) {
+                mElemPtrs[myIndex] = pelem;
+                return true;
+            } else {
+                mIndex = mCapacity;
+            }
+            return false;
+        }
+        /**
+         * Return an element from the queue and advance the index to the next
+         * element.
+         * Return NULL to the consumer if all of the elements are consumed.
+         */
         inline T get() {
-	    T pelem = NULL;
-	    if (mRemovedIndex < mIndex) {
-	        if (!mElemPtrs[mRemovedIndex]) {
-		    return NULL;
-		}
-	        pelem = mElemPtrs[mRemovedIndex];
-		mElemPtrs[mRemovedIndex] = NULL;
-		mRemovedIndex++;
-	    }
-	    return pelem;
-	}
-      /**
-       * Helper function to check if all elements have already consumed
-       * on the current Queue
-       */
+            T pelem = NULL;
+            if (mRemovedIndex < mIndex) {
+                if (!mElemPtrs[mRemovedIndex]) {
+                    return NULL;
+                }
+                pelem = mElemPtrs[mRemovedIndex];
+                mElemPtrs[mRemovedIndex] = NULL;
+                mRemovedIndex++;
+            }
+            return pelem;
+        }
+        /**
+         * Helper function to check if all elements have already consumed
+         * on the current Queue
+         */
         inline bool isEmpty() {
-	    if (mRemovedIndex == mIndex) return true;
-	    return false;
-	}
-      /**
-       * Helper function to clear the state of the current Queue
-       */
+            if (mRemovedIndex == mIndex) return true;
+            return false;
+        }
+        /**
+         * Helper function to clear the state of the current Queue
+         */
         inline void clear() {
-	    mIndex = 0;
-	    mRemovedIndex = 0;
-	}
+            mIndex = 0;
+            mRemovedIndex = 0;
+        }
         T *mElemPtrs;
         uint64_t mIndex;
         uint64_t mRemovedIndex;
         uint64_t mCapacity;
     };
-  public:
+ public:
     /**
      * The constructor for the MPSCQueue.
      * \param size
      *      The capacity of the MPSCQueue
      */
-      MPSCQueue(uint64_t size) {
-          mQueue[0] = new Queue(size);
-	  mQueue[1] = new Queue(size);
-	  mPQIndex = 0;
-	  mCQIndex = 1;
-	  mCapacity = size;
-      }
-      MPSCQueue(): MPSCQueue(MPSCQ_DEFAULT_CAP) { }
-      ~MPSCQueue () {
-	  delete mQueue[0];
-	  delete mQueue[1];
-      }
-      /**
-       * Insert an element to the current producer queue.  Return true if
-       * the element is inserted succesfully.
-       * \param pelem
-       *      The element to be inserted
-       */
-      bool put(T pelem) {
-	  return mQueue[mPQIndex]->put(pelem);
-      }
-      /**
-       * Retrieve a element from the current consumer queue.  Return Null if
-       * both queues are empty.
-       * If the current consumer queue is empty, the function attempts to switch
-       * to the other queue.
-       *
-       */
-      T get() {
-          if (isCQEmpty()) {
-              if (!isPQEmpty()) {
-                  switchQ();
-              }
-          }
-	  return mQueue[mCQIndex]->get();
-      }
-      uint32_t getCapacity() { return mCapacity; }
-  private:
-      /**
-       * helper function to check if the current producer queue is empty
-       * return true if the queue is empty
-       */
-      inline bool isPQEmpty() {
-	  return mQueue[mPQIndex]->isEmpty();
-      }
-      /**
-       * helper function to check if the current consumer queue is empty
-       * return true if the queue is empty
-       *
-       */
-      inline bool isCQEmpty() {
-	  return mQueue[mCQIndex]->isEmpty();
-      }
-      /**
-       * helper function to swap the consumer queue with the producer queue
-       *
-       */
-      inline void switchQ() {
-	  uint64_t nextPQIndex = (mPQIndex + 1) % 2;
-	  mCQIndex = mPQIndex;
-	  mQueue[nextPQIndex]->clear();
-	  mPQIndex = nextPQIndex;
-      }
-      std::atomic<uint32_t> mPQIndex;
-      uint32_t mCQIndex;
-      Queue* mQueue[2];
-      uint32_t mCapacity;
+    MPSCQueue(uint64_t size) {
+        mQueue[0] = new Queue(size);
+        mQueue[1] = new Queue(size);
+        mPQIndex = 0;
+        mCQIndex = 1;
+        mCapacity = size;
+    }
+    MPSCQueue(): MPSCQueue(MPSCQ_DEFAULT_CAP) { }
+    ~MPSCQueue () {
+        delete mQueue[0];
+        delete mQueue[1];
+    }
+    /**
+     * Insert an element to the current producer queue.  Return true if
+     * the element is inserted succesfully.
+     * \param pelem
+     *      The element to be inserted
+     */
+    bool put(T pelem) {
+        return mQueue[mPQIndex]->put(pelem);
+    }
+    /**
+     * Retrieve a element from the current consumer queue.  Return Null if
+     * both queues are empty.
+     * If the current consumer queue is empty, the function attempts to switch
+     * to the other queue.
+     *
+     */
+    T get() {
+        if (isCQEmpty()) {
+            if (!isPQEmpty()) {
+                switchQ();
+            }
+        }
+        return mQueue[mCQIndex]->get();
+    }
+    uint32_t getCapacity() { return mCapacity; }
+ private:
+    /**
+     * helper function to check if the current producer queue is empty
+     * return true if the queue is empty
+     */
+    inline bool isPQEmpty() {
+        return mQueue[mPQIndex]->isEmpty();
+    }
+    /**
+     * helper function to check if the current consumer queue is empty
+     * return true if the queue is empty
+     *
+     */
+    inline bool isCQEmpty() {
+        return mQueue[mCQIndex]->isEmpty();
+    }
+    /**
+     * helper function to swap the consumer queue with the producer queue
+     *
+     */
+    inline void switchQ() {
+        uint64_t nextPQIndex = (mPQIndex + 1) % 2;
+        mCQIndex = mPQIndex;
+        mQueue[nextPQIndex]->clear();
+        mPQIndex = nextPQIndex;
+    }
+    std::atomic<uint32_t> mPQIndex;
+    uint32_t mCQIndex;
+    Queue* mQueue[2];
+    uint32_t mCapacity;
  };
 }
