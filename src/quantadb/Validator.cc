@@ -54,9 +54,8 @@ Validator::Validator(HashmapKVStore &_kvStore, DSSNService *_rpcService, bool _i
         }
         peerAlertThread = std::thread(&Validator::monitor, this);
         schedulingThread = std::thread(&Validator::scheduleDistributedTxs, this);
-        for (uint64_t i = 0; i < NUM_CONCLUDE_THREADS; i++) {
-            concludeThreads[i] = std::thread(&Validator::concludeThreadFunc, this, i);
-        }
+        concludeThreadPool = new WorkerPool(NUM_CONCLUDE_THREADS,
+                                            1, 1.0);
     }
 }
 
@@ -75,6 +74,7 @@ Validator::~Validator() {
             peerAlertThread.join();
         logCounters();
     }
+    delete concludeThreadPool;
     delete &localTxQueue;
     delete &reorderQueue;
     delete &distributedTxSet;
@@ -262,10 +262,17 @@ Validator::read(KLayout& k, KVLayout *&kv) {
 
 bool
 Validator::insertConcludeQueue(TxEntry *txEntry) {
-    RAMCLOUD_LOG(NOTICE, "insert concludeQueue  cts %lu %lu in %lu out %lu",
-            (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
-            concludeQueue.inCount.load(), concludeQueue.outCount.load());
-    return concludeQueue.push(txEntry);
+#if 0
+    RAMCLOUD_LOG(NOTICE, "insert concludeThreadPool  cts %lu %lu, active workers: %lu, avg task exec latency(us): %lu "
+                 "avg queue length: %lf",
+                 (uint64_t)((txEntry)->getCTS() >> 64), (uint64_t)((txEntry)->getCTS() & (((__uint128_t)1<<64) -1)),
+                 concludeThreadPool->getNumActiveWorkers(),
+                 concludeThreadPool->getAvgTaskExecLatencyUs(),
+                 concludeThreadPool->getAvgTaskQueuesLength());
+#endif
+    WORKERPOOL_ENQUEUE_TASK(concludeThreadPool, Validator::conclude, this, txEntry);
+    return true;
+
 }
 
 

@@ -29,6 +29,7 @@
 #include "DistributedTxSet.h"
 #include "DSSNService.h"
 #include "TxLog.h"
+#include "WorkerPool.h"
 #include <stdarg.h>
 
 namespace QDB {
@@ -128,7 +129,7 @@ class Validator {
     std::thread serializeThread;
     std::thread peeringThread[NUM_PEER_THREADS];
     std::thread peerAlertThread;
-    std::thread concludeThreads[NUM_CONCLUDE_THREADS];
+    WorkerPool* concludeThreadPool;
 
     // all SSN data maintenance operations
     bool updateKVReadSetPStamp(TxEntry& txEntry);
