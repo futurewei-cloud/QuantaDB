@@ -76,27 +76,33 @@ WorkerPool::enqueue(Task* task) {
     Worker* worker = NULL;
     uint64_t index = 0;
     uint64_t workerIdx = 0;
-    uint64_t numActiveWorkers = mNumActiveWorkers;
-    if (numActiveWorkers > 0) {
-        index = __sync_fetch_and_add(&mRoundRabinIndex, 1);
-        workerIdx = index % numActiveWorkers;
-        worker = mActiveList.at(workerIdx);
-        //printf("rr index: %lu, worker %lu, countdown:%lu, numWorkers:%lu\n", mRoundRabinIndex, worker->getId(), mThreadPinningCountDown, numActiveWorkers);
+    if (mNumActiveWorkers > 0) {
+        do {
+            index = __sync_fetch_and_add(&mRoundRabinIndex, 1);
+            workerIdx = index % mNumActiveWorkers;
+            try {
+                worker = mActiveList.at(workerIdx);
+            } catch (std::exception &e) {
+
+            }
+        } while (worker == NULL);
     } else {
-        const std::lock_guard<std::mutex> lock(mWorkerMgmtLock);
-        uint64_t currentTime = RAMCloud::Cycles::rdtsc();
-        mNextAdjustCycle = currentTime +
-            RAMCloud::Cycles::fromMicroseconds(mAdjustmentIntervalUs);
-        if (mNumActiveWorkers > 0) {
-            worker = mActiveList.front();
-        } else {
-            worker = mIdleList.back();
-            mIdleList.pop_back();
-            while (!worker->goActive());
-            mActiveList.push_back(worker);
-            mNumActiveWorkers++;
+        if (mNextAdjustCycle == 0) {
+            uint64_t currentTime = RAMCloud::Cycles::rdtsc();
+            if (__sync_bool_compare_and_swap(&mNextAdjustCycle, 0,
+                                             (currentTime +
+                                              RAMCloud::Cycles::fromMicroseconds(mAdjustmentIntervalUs)))) {
+                worker = mIdleList.back();
+                mIdleList.pop_back();
+                while (!worker->goActive());
+                mActiveList.push_back(worker);
+                mNumActiveWorkers++;
+            }
         }
+        while (mNumActiveWorkers == 0);
+        worker = mActiveList.front();
     }
+
     assert(worker);
     if (!worker->enqueue(task)) {
         RAMCLOUD_LOG(NOTICE, "enqueue failed at worker %lu", worker->getId());
@@ -107,45 +113,62 @@ WorkerPool::enqueue(Task* task) {
      * one
      */
     uint64_t currentTime = RAMCloud::Cycles::rdtsc();
-    if (currentTime > mNextAdjustCycle) {
-        const std::lock_guard<std::mutex> lock(mWorkerMgmtLock);
-        mNextAdjustCycle = currentTime +
-            RAMCloud::Cycles::fromMicroseconds(mAdjustmentIntervalUs);
-
-        if (mNumActiveWorkers > 0) {
-            worker = mActiveList.back();
-            /*
-             * Spinup the workers
-             */
-            //double avgQueueLength = getAvgTaskQueuesLength(false);
-            //if (avgQueueLength > mHighWaterMark) {
-            if (worker->getTaskQueueLength() > mHighWaterMark) {
-                //Spinup the number of active workers
-                if (mIdleList.size() > 0) {
-                    worker = mIdleList.back();
-                    if (worker->goActive()) {
-                        mIdleList.pop_back();
-                        mActiveList.push_back(worker);
-                        mNumActiveWorkers++;
-                        RAMCLOUD_LOG(NOTICE, "worker %lu go active", worker->getId());
-                    }
-                }
-                return;
-            }
-            /*
-             * Spindown the workers
-             */
+    uint64_t scheduleTime = mNextAdjustCycle;
+    if (currentTime > scheduleTime) {
+        if (__sync_bool_compare_and_swap(&mNextAdjustCycle, scheduleTime,
+                                         (currentTime +
+                                          RAMCloud::Cycles::fromMicroseconds(mAdjustmentIntervalUs)))) {
+            Task *t = allocTask();
+            t->callback = std::bind(&WorkerPool::resourceManagementTask,
+                                    this);
             worker = mActiveList.front();
-            //if ((avgQueueLength <= mLowWaterMark) &&
-            if ((worker->getTaskQueueLength() <= mLowWaterMark) &&
-                (mNumActiveWorkers > mMinActiveWorkers)) {
-                worker = mActiveList.back();
-                if (worker->goIdle()) {
-                    mNumActiveWorkers--;
-                    mActiveList.pop_back();
-                    mIdleList.push_back(worker);
-                    RAMCLOUD_LOG(NOTICE, "worker %lu go to sleep", worker->getId());
+            if (worker) {
+                if (!worker->enqueue(t)) {
+                    freeTask(t);
                 }
+            }
+        }
+    }
+}
+
+void
+WorkerPool::resourceManagementTask() {
+    Worker *worker = NULL;
+    if (mNumActiveWorkers > 0) {
+        worker = mActiveList.back();
+        /*
+         * Spinup the workers
+         */
+        double avgQueueLength = getAvgTaskQueuesLength();
+        if (avgQueueLength > mHighWaterMark) {
+            //Spinup the number of active workers
+            if (mIdleList.size() > 0) {
+                worker = mIdleList.back();
+                if (worker->goActive()) {
+                    mIdleList.pop_back();
+                    mActiveList.push_back(worker);
+                    mNumActiveWorkers++;
+                    RAMCLOUD_LOG(NOTICE, "worker %lu go active", worker->getId());
+                }
+            }
+            return;
+        }
+        /*
+         * Spindown the workers
+         */
+        double spinDownThreshold = mLowWaterMark;
+        if (spinDownThreshold == 0) {
+            spinDownThreshold = 1.0 - 2.0/mNumActiveWorkers; //At least 2 workers have no work
+        }
+
+        if ((avgQueueLength < spinDownThreshold)  &&
+            (mNumActiveWorkers > mMinActiveWorkers)) {
+            worker = mActiveList.back();
+            if (worker->goIdle()) {
+                mNumActiveWorkers--;
+                mActiveList.pop_back();
+                mIdleList.push_back(worker);
+                RAMCLOUD_LOG(NOTICE, "worker %lu go to sleep", worker->getId());
             }
         }
     }

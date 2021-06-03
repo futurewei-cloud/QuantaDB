@@ -199,13 +199,14 @@ struct Task {
 
  class WorkerPool {
  public:
-     WorkerPool(uint64_t maxWorkers, uint64_t minWorkers = 1, int highWM=10, int lowWM=2) {
+     WorkerPool(uint64_t maxWorkers, uint64_t minWorkers = 1, double highWM=10, double lowWM=1) {
          mNumActiveWorkers = 0;
          mTotalWorkers = maxWorkers;
-         mMinActiveWorkers = minWorkers;
+         mMinActiveWorkers = (minWorkers > 0) ? minWorkers : 1;
          assert (minWorkers <= maxWorkers);
          mHighWaterMark = highWM;
-         mLowWaterMark = lowWM;
+         mLowWaterMark = (lowWM > 0) ? lowWM : 0;
+
          mIdleList.reserve(maxWorkers);
          mActiveList.reserve(maxWorkers);
          mRoundRabinIndex = 0;
@@ -217,8 +218,7 @@ struct Task {
              mIdleList.push_back(w);
              mWorkerList.push_back(w);
          }
-         mNextAdjustCycle = RAMCloud::Cycles::rdtsc() +
-             RAMCloud::Cycles::fromMicroseconds(mAdjustmentIntervalUs);
+         mNextAdjustCycle = 0;
      }
 
      ~WorkerPool() {
@@ -325,8 +325,7 @@ struct Task {
       *   monitoring+control is done periodically.  The algorithm is described as follow:
       *
       *   When the task queue of the active workers exceed the high watermark,
-      *   the WorkerPool library will spin up an active worker from the IdleList.  This active
-      *   worker will temporary absorb the incoming loads up to the (highwatermark - 1).
+      *   the WorkerPool library will spin up an active worker from the IdleList.
       *   Ideally, we should load balance all existing pending tasks to it.  However,
       *   that will require a slower multi-producer + multi-consumer queue per worker and
       *   load balance will be more expensive since we need to iterate through all of the active
@@ -345,6 +344,7 @@ struct Task {
       **/
 
      void enqueue(Task* task);
+     void resourceManagementTask();
 
      inline void freeTask(Task* t) {
 #ifdef TASKMEMPOOL
@@ -369,7 +369,6 @@ struct Task {
      uint64_t mTotalWorkers;
      uint64_t mMinActiveWorkers;
      std::atomic<uint64_t> mNumActiveWorkers;
-     std::mutex mWorkerMgmtLock;
      uint64_t mRoundRabinIndex;
 #ifdef TASKMEMPOOL
      //Task Memory Pool
@@ -378,9 +377,9 @@ struct Task {
      /*
       * Thread pool management controls
       */
-     uint64_t mHighWaterMark;
-     uint64_t mLowWaterMark;
-     std::atomic<uint64_t> mNextAdjustCycle;
+     double mHighWaterMark;
+     double mLowWaterMark;
+     uint64_t mNextAdjustCycle;
      // Flag to indicate the worker pool is shutting down
      bool mShutdown;
      static const uint64_t mAdjustmentIntervalUs = 1000;
