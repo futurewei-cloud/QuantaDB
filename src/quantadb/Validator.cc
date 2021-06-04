@@ -242,6 +242,12 @@ Validator::initialWrite(KVLayout &kv) {
 
 bool
 Validator::read(KLayout& k, KVLayout *&kv) {
+    //Fixme: add delay if it is blocked by activeTxSet
+    while (activeTxSet.blocks(k.getKeyHash())) {
+        std::this_thread::sleep_for(std::chrono::microseconds(1));
+        //counters.duplicates++; //Fixme
+    }
+
     //FIXME: This read can happen concurrently while conclude() is
     //modifying the KVLayout instance.
     kv = kvStore.fetch(k);
@@ -312,7 +318,10 @@ Validator::scheduleDistributedTxs() {
                 peerInfo[hash(txEntry->getCTS())]->poseEvent(3, txEntry->getCTS(), 0, 0, 0, 0, 0, txEntry, NULL);
                 continue;
             }
-            while (!distributedTxSet.add(txEntry));
+
+            //Skipping distributedTxSet dependency tracking and delay
+            //while (!distributedTxSet.add(txEntry)); //Fixme remove later
+            scheduledTxQueue.push(txEntry);
             RAMCLOUD_LOG(NOTICE, "schedule %lu",(uint64_t)(txEntry->getCTS() >> 64));
             lastScheduledTxCTS = txEntry->getCTS();
         }
@@ -371,10 +380,25 @@ Validator::serialize() {
         }
 
         // process due commit-intents on cross-shard transaction queue
-        while ((txEntry = distributedTxSet.findReadyTx(activeTxSet))) {
+/*        while ((txEntry = distributedTxSet.findReadyTx(activeTxSet))) {
+            if (rpcService) {
+                rpcService->recordTxCommitDispatch(txEntry);
+            }*/
+        while (!scheduledTxQueue.empty()) {
+            txEntry = scheduledTxQueue.front();
+            scheduledTxQueue.pop();
             if (rpcService) {
                 rpcService->recordTxCommitDispatch(txEntry);
             }
+
+            if (activeTxSet.blocks(txEntry)) {
+                txEntry->setSStamp(0); //Fixme: later not needed as event can carry the zero
+                txEntry->isOutOfOrder = true;
+                counters.busyAborts++;
+                peerInfo[hash(txEntry->getCTS())]->poseEvent(3, txEntry->getCTS(), 0, 0, 0, 0, 0, txEntry, NULL);
+                continue;
+            }
+
 
             //enable blocking incoming dependent transactions
             if (!activeTxSet.add(txEntry))

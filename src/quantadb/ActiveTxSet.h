@@ -43,6 +43,8 @@ class ActiveTxSet {
 
     bool blocks(TxEntry *txEntry);
 
+    bool blocks(uint64_t hash) { return cbm.shouldNotAdd(hash); }
+
     // for testing
     uint64_t getRemovedTxCount() { return removedTxCount; }
     uint64_t getCount() { return addedTxCount - removedTxCount; }

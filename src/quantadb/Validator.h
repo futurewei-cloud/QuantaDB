@@ -165,6 +165,8 @@ class Validator {
 
     PUBLIC:
 
+    std::queue<TxEntry *> scheduledTxQueue;
+
 	Validator(HashmapKVStore &kvStore, DSSNService *rpcService = NULL, bool isTesting = false);
 	~Validator();
 
