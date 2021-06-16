@@ -35,6 +35,11 @@
 
 namespace RAMCloud {
 
+#ifndef QDB_NO_THROTTLE
+//Fixme: a hack to implement exponential back-off: this counter should be tracked by client instance instead.
+static uint32_t rejectCount = 0;
+#endif
+
 /**
  * Constructor for a transaction.
  *
@@ -412,10 +417,13 @@ Transaction::ReadOp::wait(bool* objectExists)
             switch (batchedRequest->request.status) {
                 case STATUS_OK:
                     version = batchedRequest->request.version;
-		    meta = batchedRequest->request.meta;
+                    meta = batchedRequest->request.meta;
                     data = buf->getValue(&dataLength);
                     break;
                 case STATUS_OBJECT_DOESNT_EXIST:
+#ifndef QDB_NO_THROTTLE
+                case STATUS_RETRY:
+#endif
                     objectFound = false;
                     break;
                 default:
@@ -436,22 +444,30 @@ Transaction::ReadOp::wait(bool* objectExists)
             entry->rejectRules.doesntExist = true;
             entry->rejectRules.givenVersion = version;
             entry->rejectRules.versionNeGiven = true;
+#ifndef QDB_NO_THROTTLE
+            rejectCount = 0;
+#endif
 #else
-	    entry->meta = meta;
-	    entry->rejectRules.cstamp = meta.cstamp;
-	    assert(entry->meta.sstamp == QDB_MD_INFINITY);
+            entry->meta = meta;
+            entry->rejectRules.cstamp = meta.cstamp;
+            assert(entry->meta.sstamp == QDB_MD_INFINITY);
 #endif
         } else {
 
             // Object did not exists at the time of the read so remember to
             // reject (abort) the transaction if it does exist.
             entry->rejectRules.exists = true;
-	    objectFound = false;
+            objectFound = false;
 #ifdef QDBTX
-	    //DSSN: abort this transaction
-	    entry->meta = {QDB_MD_INFINITY, QDB_MD_INFINITY,
-			   QDB_MD_INFINITY};
-	    entry->rejectRules.cstamp = QDB_MD_INFINITY;
+            //DSSN: abort this transaction
+            entry->meta = {QDB_MD_INFINITY, QDB_MD_INFINITY,
+                    QDB_MD_INFINITY};
+            entry->rejectRules.cstamp = QDB_MD_INFINITY;
+#ifndef QDB_NO_THROTTLE
+            // throttle to alleviate congestion or excessive contention
+            std::this_thread::sleep_for(std::chrono::microseconds(std::rand() % (10 * (1 << rejectCount))));
+            if (rejectCount < 10) rejectCount++;
+#endif
 #endif
         }
 

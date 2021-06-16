@@ -262,7 +262,7 @@ DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
 
     // std::cout << "MultiRead nReq=" << numRequests << " InitRespLen=" << oldResponseLength << std::endl;
 
-    // Each iteration extracts one request from request rpc, finds the
+    // Each iteration extracts oneoldResponseLength request from request rpc, finds the
     // corresponding object, and appends the response to the response rpc.
     for (uint32_t i = 0; ; i++) {
         // If the RPC response has exceeded the legal limit, truncate it
@@ -308,9 +308,11 @@ DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
         k.setkey(&tableId, sizeof(tableId), 0);
         k.setkey(stringKey, currentReq->keyLength, sizeof(tableId));
 
-        KVLayout *kv;
+        KVLayout *kv = NULL;
         if (!validator->read(k, kv)) {
             currentResp->status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
+            if (kv)
+                currentResp->status = RAMCloud::STATUS_RETRY;
             continue;
         }
 
@@ -721,10 +723,10 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
                 validator->getCounters().preputErrors++;
                 break;
             }
-	    void* ptr = kvStore->findKVSPtr(pkv.k);
+            void* ptr = kvStore->findKVSPtr(pkv.k);
             txEntry->insertReadSet(nkv, readSetIdx);
-	    txEntry->cacheReadSetKVPtr(ptr, readSetIdx);
-	    readSetIdx++;
+            txEntry->cacheReadSetKVPtr(ptr, readSetIdx);
+            readSetIdx++;
             assert(readSetIdx <= numRequests);
 
         } else if (*type == WireFormat::TxPrepare::REMOVE) {
@@ -765,10 +767,10 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
                 break;
             }
-	    void* ptr = kvStore->findKVSPtr(pkv.k);
+            void* ptr = kvStore->findKVSPtr(pkv.k);
             txEntry->insertWriteSet(nkv, writeSetIdx);
-	    txEntry->cacheWriteSetKVPtr(ptr, writeSetIdx);
-	    writeSetIdx++;
+            txEntry->cacheWriteSetKVPtr(ptr, writeSetIdx);
+            writeSetIdx++;
             assert(writeSetIdx <= (numRequests - numReadRequests));
         } else if (*type == WireFormat::TxPrepare::WRITE ||
 		   *type == WireFormat::TxPrepare::READ_MODIFY_WRITE) {
@@ -821,9 +823,9 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
                 respHdr->vote = WireFormat::TxPrepare::ABORT;
                 break;
             }
-	    void* ptr = kvStore->findKVSPtr(pkv.k);
+            void* ptr = kvStore->findKVSPtr(pkv.k);
             txEntry->insertWriteSet(nkv, writeSetIdx);
-	    txEntry->cacheWriteSetKVPtr(ptr, writeSetIdx);
+            txEntry->cacheWriteSetKVPtr(ptr, writeSetIdx);
             writeSetIdx++;
             assert(writeSetIdx <= (numRequests - numReadRequests));
 
@@ -842,10 +844,10 @@ DSSNService::txCommit(const WireFormat::TxCommitDSSN::Request* reqHdr,
              * to do validation, there will not be self-inflicted pi equal to eta violation.
              */
             if (*type == WireFormat::TxPrepare::READ_MODIFY_WRITE) {
-	        void* ptr = kvStore->findKVSPtr(pkv.k);
+                void* ptr = kvStore->findKVSPtr(pkv.k);
                 txEntry->insertReadSet(nkv, readSetIdx);
-		txEntry->cacheReadSetKVPtr(ptr, readSetIdx);
-		readSetIdx++;
+                txEntry->cacheReadSetKVPtr(ptr, readSetIdx);
+                readSetIdx++;
                 assert(readSetIdx <= numRequests);
                 nkv->meta().cStamp = currentReq->GetCStamp();
             }

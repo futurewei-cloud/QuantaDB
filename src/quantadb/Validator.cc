@@ -242,11 +242,12 @@ Validator::initialWrite(KVLayout &kv) {
 
 bool
 Validator::read(KLayout& k, KVLayout *&kv) {
-    //Fixme: add delay if it is blocked by activeTxSet
-    while (activeTxSet.blocks(k.getKeyHash())) {
-        std::this_thread::sleep_for(std::chrono::microseconds(1));
-        //counters.duplicates++; //Fixme
+#ifndef QDB_NO_THROTTLE
+    if (activeTxSet.blocks(k.getKeyHash())) {
+        kv = (KVLayout *)1; //any non-zero value as an indicator
+        return false;
     }
+#endif
 
     //FIXME: This read can happen concurrently while conclude() is
     //modifying the KVLayout instance.
