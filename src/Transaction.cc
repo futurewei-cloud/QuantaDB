@@ -421,9 +421,6 @@ Transaction::ReadOp::wait(bool* objectExists)
                     data = buf->getValue(&dataLength);
                     break;
                 case STATUS_OBJECT_DOESNT_EXIST:
-#ifndef QDB_NO_THROTTLE
-                case STATUS_RETRY:
-#endif
                     objectFound = false;
                     break;
                 default:

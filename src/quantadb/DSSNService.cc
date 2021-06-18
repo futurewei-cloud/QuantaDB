@@ -311,8 +311,6 @@ DSSNService::multiRead(const WireFormat::MultiOp::Request* reqHdr,
         KVLayout *kv = NULL;
         if (!validator->read(k, kv)) {
             currentResp->status = RAMCloud::STATUS_OBJECT_DOESNT_EXIST;
-            if (kv)
-                currentResp->status = RAMCloud::STATUS_RETRY;
             continue;
         }
 
